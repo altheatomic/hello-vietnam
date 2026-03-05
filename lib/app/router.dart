@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../core/auth/auth_repository.dart';
 
 import '../features/home/presentation/home_page.dart';
 import '../features/planner/presentation/trip_planner_page.dart';
@@ -8,6 +9,9 @@ import '../features/profile/presentation/profile_page.dart';
 
 import '../features/forum/presentation/forum_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
+import '../features/auth/presentation/login_page.dart';
+import '../features/auth/presentation/register_page.dart';
+import '../features/auth/presentation/forgot_password_page.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -26,6 +30,9 @@ class AppRoutes {
   static const popularApps = '/popular-apps';
   static const aiSearch = '/ai-search';
   static const wishlist = '/wishlist';
+  static const login = '/login';
+  static const register = '/register';
+  static const forgotPassword = '/forgot-password';
 }
 
 GoRouter buildRouter() {
@@ -79,6 +86,9 @@ GoRouter buildRouter() {
         path: AppRoutes.popularApps,
         builder: (c, s) => const PopularAppsPage(),
       ),
+      GoRoute(path: AppRoutes.login, builder: (c, s) => const LoginPage()),
+      GoRoute(path: AppRoutes.register, builder: (c, s) => const RegisterPage()),
+      GoRoute(path: AppRoutes.forgotPassword, builder: (c, s) => const ForgotPasswordPage()),
     ],
   );
 }
@@ -88,11 +98,18 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
 
   final StatefulNavigationShell navigationShell;
 
-  void _onTap(int index) => navigationShell.goBranch(
-    index,
-    // if the user taps on the current tab, it should go to the initial location of that tab
-    initialLocation: index == navigationShell.currentIndex,
-  );
+  void _onTap(BuildContext context, int index) {
+    // Profile tab (index 3): redirect to login if not authenticated
+    if (index == 3 && !AuthState.instance.isLoggedIn) {
+      context.push(AppRoutes.login);
+      return;
+    }
+
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +117,7 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: _onTap,
+        onDestinationSelected: (index) => _onTap(context, index),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.map_outlined), label: 'Trip'),
