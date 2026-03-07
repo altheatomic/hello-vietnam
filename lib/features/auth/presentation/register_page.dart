@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/auth/auth_repository.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -47,11 +48,12 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    // Placeholder: go back to login after sign up
+    // Placeholder: auto login after sign up and navigate to Home.
+    AuthState.instance.login();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Account created! Please login.')),
+      const SnackBar(content: Text('Account created and logged in successfully!')),
     );
-    context.go(AppRoutes.login);
+    context.go(AppRoutes.home);
   }
 
   void _onGoogleSignIn() {

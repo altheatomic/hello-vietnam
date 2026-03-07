@@ -10,6 +10,7 @@ import '../features/profile/presentation/profile_page.dart';
 import '../features/forum/presentation/forum_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
 import '../features/feedback/presentation/feedback_page.dart';
+import '../features/get_started/presentation/get_started_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
@@ -17,6 +18,7 @@ import '../features/auth/presentation/forgot_password_page.dart';
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 class AppRoutes {
+  static const getStarted = '/get-started';
   static const home = '/home';
   static const tripPlanner = '/trip-planner';
   static const messages = '/messages';
@@ -40,9 +42,14 @@ GoRouter buildRouter() {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: true,
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.getStarted,
     routes: [
       // Routes outside of bottom navigation.
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.getStarted,
+        builder: (c, s) => const GetStartedPage(),
+      ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.forum,

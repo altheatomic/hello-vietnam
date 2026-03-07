@@ -450,7 +450,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         const SizedBox(height: 40),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: _buildMainButton('Go to Home', () => context.go(AppRoutes.home)),
+          child: _buildMainButton(
+            'Back to Login',
+            () => context.go(AppRoutes.login),
+          ),
         ),
         const SizedBox(height: 50),
       ],
