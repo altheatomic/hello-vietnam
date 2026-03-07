@@ -1,105 +1,143 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
+import '../data/home_mock_data.dart';
+import 'widgets/home_banner.dart';
+import 'widgets/feature_grid.dart';
+import 'widgets/recommendation_section.dart';
+import 'widgets/recommendation_card.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final items = <_HomeNavItem>[
-      _HomeNavItem(
-        title: 'Explore',
-        subtitle: 'Khám phá địa điểm & gợi ý',
-        icon: Icons.explore_outlined,
-        route: AppRoutes.explore,
-      ),
-      _HomeNavItem(
-        title: 'Forum',
-        subtitle: 'Cộng đồng hỏi đáp',
-        icon: Icons.forum_outlined,
-        route: AppRoutes.forum,
-      ),
-      _HomeNavItem(
-        title: 'Popular Phrases',
-        subtitle: 'Câu phổ biến (du lịch/giao tiếp)',
-        icon: Icons.translate_outlined,
-        route: AppRoutes.phrases,
-      ),
-      _HomeNavItem(
-        title: 'AI Search',
-        subtitle: 'Tìm kiếm bằng AI',
-        icon: Icons.auto_awesome_outlined,
-        route: AppRoutes.aiSearch,
-      ),
-      _HomeNavItem(
-        title: 'Wish List',
-        subtitle: 'Danh sách muốn đi / muốn làm',
-        icon: Icons.favorite_border,
-        route: AppRoutes.wishlist,
-      ),
-      _HomeNavItem(
-        title: 'Recommend',
-        subtitle: 'Gợi ý theo sở thích',
-        icon: Icons.recommend_outlined,
-        route: AppRoutes.recommend,
-      ),
-      _HomeNavItem(
-        title: 'Popular Apps',
-        subtitle: 'App hữu ích cho du lịch VN',
-        icon: Icons.apps_outlined,
-        route: AppRoutes.popularApps,
-      ),
-      _HomeNavItem(
-        title: 'Send Feedback',
-        subtitle: 'Góp ý / báo lỗi',
-        icon: Icons.feedback_outlined,
-        route: AppRoutes.feedback,
-      ),
-    ];
+    final statusBarHeight = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hello Vietnam'),
-        actions: [
-          IconButton(
-            tooltip: 'Wish List',
-            onPressed: () => context.push(AppRoutes.wishlist),
-            icon: const Icon(Icons.favorite_border),
+      backgroundColor: AppColors.background,
+      body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Blue header section ────────────────────
+              Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF87CEEB), // sky blue
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(20),
+                  ),
+                ),
+                padding: EdgeInsets.fromLTRB(
+                  AppConstants.pagePadding, statusBarHeight + 12, AppConstants.pagePadding, 20,
+                ),
+                child: Column(
+                  children: [
+                    // App bar row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Wanderly',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFFFF176),
+                          ),
+                        ),
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.notifications_outlined, size: 22),
+                            color: Colors.white,
+                            onPressed: () {
+                              // TODO: navigate to notifications
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // Search bar
+                    const SearchBarWidget(),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // ── Banner ───────────────────────────────────
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppConstants.pagePadding),
+                child: HomeBanner(),
+              ),
+
+              const SizedBox(height: 28),
+
+              // ── Feature grid (8 buttons) ─────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppConstants.pagePadding),
+                child: FeatureGrid(items: homeFeatures),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ── Best Destination ─────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: RecommendationSection(
+                  title: 'Best Destination',
+                  backgroundImage: AppConstants.destinationBgUrl,
+                  children: mockDestinations.map((d) {
+                    return RecommendationCard(
+                      name: d.name,
+                      category: d.category,
+                      rating: d.rating,
+                      imagePath: d.imagePath,
+                      isFavorite: d.isFavorite,
+                      onTap: () {
+                        // TODO: navigate to destination detail
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ── Best Dishes ──────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: RecommendationSection(
+                  title: 'Best Dishes',
+                  backgroundImage: AppConstants.dishesBgUrl,
+                  children: mockDishes.map((d) {
+                    return RecommendationCard(
+                      name: d.name,
+                      category: d.category,
+                      rating: d.rating,
+                      imagePath: d.imagePath,
+                      isFavorite: d.isFavorite,
+                      onTap: () {
+                        // TODO: navigate to dish detail
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+            ],
           ),
-        ],
-      ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          final item = items[index];
-          return Card(
-            child: ListTile(
-              leading: Icon(item.icon),
-              title: Text(item.title),
-              subtitle: Text(item.subtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push(item.route),
-            ),
-          );
-        },
       ),
     );
   }
-}
-
-class _HomeNavItem {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final String route;
-
-  const _HomeNavItem({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.route,
-  });
 }
