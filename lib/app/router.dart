@@ -9,6 +9,7 @@ import '../features/profile/presentation/profile_page.dart';
 
 import '../features/forum/presentation/forum_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
+import '../features/feedback/presentation/feedback_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
@@ -38,8 +39,41 @@ class AppRoutes {
 GoRouter buildRouter() {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
+    debugLogDiagnostics: true,
     initialLocation: AppRoutes.home,
     routes: [
+      // Routes outside of bottom navigation.
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.forum,
+        builder: (c, s) => const ForumPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.popularApps,
+        builder: (c, s) => const PopularAppsPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.feedback,
+        builder: (c, s) => const FeedbackPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.login,
+        builder: (c, s) => const LoginPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.register,
+        builder: (c, s) => const RegisterPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.forgotPassword,
+        builder: (c, s) => const ForgotPasswordPage(),
+      ),
+
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return _ScaffoldWithBottomNav(navigationShell: navigationShell);
@@ -79,16 +113,6 @@ GoRouter buildRouter() {
           ),
         ],
       ),
-
-      // pages outside of the bottom navigation, they will be pushed on top of the shell
-      GoRoute(path: AppRoutes.forum, builder: (c, s) => const ForumPage()),
-      GoRoute(
-        path: AppRoutes.popularApps,
-        builder: (c, s) => const PopularAppsPage(),
-      ),
-      GoRoute(path: AppRoutes.login, builder: (c, s) => const LoginPage()),
-      GoRoute(path: AppRoutes.register, builder: (c, s) => const RegisterPage()),
-      GoRoute(path: AppRoutes.forgotPassword, builder: (c, s) => const ForgotPasswordPage()),
     ],
   );
 }
