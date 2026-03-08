@@ -88,7 +88,7 @@ class HomePage extends StatelessWidget {
                 child: FeatureGrid(items: homeFeatures),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
 
               // ── Best Destination ─────────────────────────
               Padding(
