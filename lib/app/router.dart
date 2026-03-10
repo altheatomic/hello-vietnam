@@ -10,6 +10,7 @@ import '../features/profile/presentation/profile_page.dart';
 import '../features/forum/presentation/forum_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
 import '../features/feedback/presentation/feedback_page.dart';
+import '../features/notification/presentation/notification_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
@@ -36,6 +37,7 @@ class AppRoutes {
   static const login = '/login';
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
+  static const notification = '/notification';
 }
 
 GoRouter buildRouter() {
@@ -79,6 +81,11 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.forgotPassword,
         builder: (c, s) => const ForgotPasswordPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.notification,
+        builder: (c, s) => const NotificationPage(),
       ),
 
       StatefulShellRoute.indexedStack(
