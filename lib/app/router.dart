@@ -14,6 +14,11 @@ import '../features/get_started/presentation/get_started_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
+import '../features/explore/presentation/explore_page.dart';
+import '../features/explore/presentation/explore_search_page.dart';
+import '../features/explore/presentation/explore_search_result_page.dart';
+import '../features/explore/presentation/explore_category_page.dart';
+import '../features/explore/presentation/explore_detail_page.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -30,6 +35,10 @@ class AppRoutes {
   static const feedback = '/send-feedback';
   static const recommend = '/recommend';
   static const explore = '/explore';
+  static const exploreSearch = '/explore-search';
+  static const exploreSearchResult = '/explore-search-result';
+  static const exploreCategory = '/explore-category';
+  static const exploreDetail = '/explore-detail';
   static const popularApps = '/popular-apps';
   static const aiSearch = '/ai-search';
   static const wishlist = '/wishlist';
@@ -79,6 +88,41 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.forgotPassword,
         builder: (c, s) => const ForgotPasswordPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.explore,
+        builder: (c, s) => const ExplorePage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.exploreSearch,
+        builder: (c, s) => const ExploreSearchPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.exploreSearchResult,
+        builder: (c, s) => ExploreSearchResultPage(
+          destination: s.extra as String? ?? '',
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.exploreCategory,
+        builder: (c, s) => ExploreCategoryPage(
+          initialTab: s.extra as int? ?? 0,
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.exploreDetail,
+        builder: (c, s) {
+          final args = s.extra as Map<String, String>;
+          return ExploreDetailPage(
+            itemId: args['id'] ?? '',
+            itemName: args['name'] ?? '',
+          );
+        },
       ),
 
       StatefulShellRoute.indexedStack(
@@ -170,7 +214,7 @@ class _CustomBottomNav extends StatelessWidget {
     _NavItem(icon: Icons.home_outlined,           selectedIcon: Icons.home_rounded,            label: 'Home'),
     _NavItem(icon: Icons.calendar_month_outlined,  selectedIcon: Icons.calendar_month_rounded,  label: 'Trip Planner'),
     _NavItem(icon: Icons.search_rounded,          selectedIcon: Icons.search_rounded,          label: ''), // center
-    _NavItem(icon: Icons.chat_bubble_outline,      selectedIcon: Icons.chat_bubble_rounded,     label: 'Messages'),
+    _NavItem(icon: Icons.forum_outlined,            selectedIcon: Icons.forum_rounded,           label: 'Forum'),
     _NavItem(icon: Icons.person_outline_rounded,   selectedIcon: Icons.person_rounded,          label: 'Profile'),
   ];
 

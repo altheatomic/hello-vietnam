@@ -121,7 +121,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
             // ── Best Dishes ──────────────────────────────
             Padding(
@@ -144,7 +144,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
           ],
         ),
       ),
