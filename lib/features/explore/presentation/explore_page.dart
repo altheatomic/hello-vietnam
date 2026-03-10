@@ -5,6 +5,8 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import '../data/explore_mock_data.dart';
 import '../domain/explore_item.dart';
+import 'widgets/explore_floating_back_button.dart';
+import 'widgets/explore_preview_widgets.dart';
 
 /// Background image URL for the header area.
 const _headerBgUrl =
@@ -19,10 +21,25 @@ class ExplorePage extends StatefulWidget {
 
 class _ExplorePageState extends State<ExplorePage> {
   int _selectedFilter = 0;
+  late final PageController _featuredController;
 
   /// Keys for each category section so we can scroll to them.
-  final List<GlobalKey> _sectionKeys =
-      List.generate(exploreCategories.length, (_) => GlobalKey());
+  final List<GlobalKey> _sectionKeys = List.generate(
+    exploreCategories.length,
+    (_) => GlobalKey(),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _featuredController = PageController(viewportFraction: 0.42);
+  }
+
+  @override
+  void dispose() {
+    _featuredController.dispose();
+    super.dispose();
+  }
 
   void _scrollToSection(int index) {
     setState(() => _selectedFilter = index);
@@ -42,164 +59,192 @@ class _ExplorePageState extends State<ExplorePage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          // ── Header with background image ────────────────
-          SliverToBoxAdapter(
-            child: Stack(
-              children: [
-                // Background image (15% opacity)
-                Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.15,
-                    child: Image.network(
-                      _headerBgUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: AppColors.primaryLight.withValues(alpha: 0.1),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Header content
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppConstants.pagePadding,
-                    statusBarH + 8,
-                    AppConstants.pagePadding,
-                    16,
-                  ),
-                  child: Column(
-                    children: [
-                      // Back button
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: GestureDetector(
-                          onTap: () => context.pop(),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.chevron_left, color: Colors.black87, size: 24),
-                              const SizedBox(width: 2),
-                              Text(
-                                'Back',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              // ── Header with background image ────────────────
+              SliverToBoxAdapter(
+                child: Stack(
+                  children: [
+                    // Background image (15% opacity)
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: 0.15,
+                        child: Image.network(
+                          _headerBgUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: AppColors.primaryLight.withValues(
+                                  alpha: 0.1,
                                 ),
                               ),
-                            ],
-                          ),
                         ),
                       ),
+                    ),
 
-                      const SizedBox(height: 12),
-
-                      // Title (blue)
-                      Text(
-                        'Discover Vietnamese Culture and\nLocal Specialties',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                          height: 1.3,
-                        ),
+                    // Header content
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        AppConstants.pagePadding,
+                        statusBarH + 56,
+                        AppConstants.pagePadding,
+                        16,
                       ),
-
-                      const SizedBox(height: 16),
-
-                      // Search bar (tap to open search page)
-                      GestureDetector(
-                        onTap: () => context.push(AppRoutes.exploreSearch),
-                        child: Container(
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(45),
-                            border: Border.all(
-                              color: AppColors.primaryLight.withValues(alpha: 0.5),
+                      child: Column(
+                        children: [
+                          // Title (blue)
+                          Text(
+                            'Discover Vietnamese Culture and\nLocal Specialties',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                              height: 1.3,
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              const SizedBox(width: 14),
-                              Icon(Icons.search_rounded, color: AppColors.primary, size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Search for destinations',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade400,
-                                    fontSize: 14,
+
+                          const SizedBox(height: 16),
+
+                          // Search bar (tap to open search page)
+                          GestureDetector(
+                            onTap: () => context.push(AppRoutes.exploreSearch),
+                            child: Container(
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(45),
+                                border: Border.all(
+                                  color: AppColors.primaryLight.withValues(
+                                    alpha: 0.5,
                                   ),
                                 ),
                               ),
-                              Container(
-                                margin: const EdgeInsets.only(right: 6),
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryLight.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(Icons.camera_alt_outlined, color: AppColors.primary, size: 18),
+                              child: Row(
+                                children: [
+                                  const SizedBox(width: 14),
+                                  Icon(
+                                    Icons.search_rounded,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Search for destinations',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade400,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 6),
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryLight.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt_outlined,
+                                      color: AppColors.primary,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 8)),
+
+              // ── Featured suggestions (horizontal scroll) ────
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 164,
+                  child: PageView.builder(
+                    controller: _featuredController,
+                    physics: const BouncingScrollPhysics(
+                      parent: PageScrollPhysics(),
+                    ),
+                    itemCount: exploreFeatured.length,
+                    itemBuilder: (context, index) {
+                      final item = exploreFeatured[index];
+                      return AnimatedBuilder(
+                        animation: _featuredController,
+                        builder: (context, child) {
+                          final page = _featuredController.hasClients
+                              ? (_featuredController.page ??
+                                    _featuredController.initialPage.toDouble())
+                              : _featuredController.initialPage.toDouble();
+                          final distance = (page - index).abs().clamp(0.0, 1.0);
+                          final emphasis = (1 - distance).clamp(0.0, 1.0);
+
+                          return Transform.scale(
+                            scale: 0.9 + (emphasis * 0.1),
+                            alignment: Alignment.center,
+                            child: Transform.translate(
+                              offset: Offset(0, 10 - (emphasis * 10)),
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                  left: index == 0
+                                      ? AppConstants.pagePadding
+                                      : 6,
+                                  right: index == exploreFeatured.length - 1
+                                      ? AppConstants.pagePadding
+                                      : 6,
+                                ),
+                                child: _FeaturedCard(
+                                  item: item,
+                                  emphasis: emphasis,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 8)),
-
-          // ── Featured suggestions (horizontal scroll) ────
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 120,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppConstants.pagePadding),
-                itemCount: exploreFeatured.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final item = exploreFeatured[index];
-                  return _FeaturedCard(item: item);
-                },
               ),
-            ),
-          ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-          // ── Sticky filter chips ─────────────────────────
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _StickyFilterDelegate(
-              selectedIndex: _selectedFilter,
-              onTap: _scrollToSection,
-            ),
-          ),
-
-          // ── All categories on one page ───────────────────
-          ...List.generate(exploreCategories.length, (i) {
-            final category = exploreCategories[i];
-            return SliverToBoxAdapter(
-              child: _CategorySection(
-                key: _sectionKeys[i],
-                category: category,
-                categoryIndex: i,
+              // ── Sticky filter chips ─────────────────────────
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyFilterDelegate(
+                  selectedIndex: _selectedFilter,
+                  onTap: _scrollToSection,
+                ),
               ),
-            );
-          }),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              // ── All categories on one page ───────────────────
+              ...List.generate(exploreCategories.length, (i) {
+                final category = exploreCategories[i];
+                return SliverToBoxAdapter(
+                  child: _CategorySection(
+                    key: _sectionKeys[i],
+                    category: category,
+                    categoryIndex: i,
+                  ),
+                );
+              }),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ],
+          ),
+          ExploreFloatingBackButton(onTap: () => context.pop()),
         ],
       ),
     );
@@ -215,27 +260,33 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
   _StickyFilterDelegate({required this.selectedIndex, required this.onTap});
 
   @override
-  double get minExtent => 90;
+  double get minExtent => 126;
   @override
-  double get maxExtent => 90;
+  double get maxExtent => 126;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     final statusBarH = MediaQuery.of(context).padding.top;
     final labels = ['Activities', 'Culture', 'Food', 'Local Products'];
     return Container(
       color: Colors.white,
-      padding: EdgeInsets.only(top: statusBarH > 0 ? statusBarH : 0),
+      padding: EdgeInsets.only(top: statusBarH + 34),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SizedBox(
             height: 36,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppConstants.pagePadding),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.pagePadding,
+              ),
               itemCount: labels.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final isSelected = index == selectedIndex;
                 return GestureDetector(
@@ -245,7 +296,9 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color: isSelected ? AppColors.primary : Colors.transparent,
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.transparent,
                           width: 2.5,
                         ),
                       ),
@@ -255,7 +308,9 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                       labels[index],
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                         color: isSelected ? AppColors.primary : Colors.grey,
                       ),
                     ),
@@ -278,38 +333,64 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
 // ─── Featured suggestion card ────────────────────────────────────────
 
 class _FeaturedCard extends StatelessWidget {
-  const _FeaturedCard({required this.item});
+  const _FeaturedCard({required this.item, this.emphasis = 1});
+
   final ExploreItem item;
+  final double emphasis;
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = Color.lerp(
+      Colors.white.withValues(alpha: 0.55),
+      AppColors.primaryLight.withValues(alpha: 0.95),
+      emphasis,
+    )!;
+    final shadowColor = Color.lerp(
+      Colors.black.withValues(alpha: 0.05),
+      AppColors.primary.withValues(alpha: 0.18),
+      emphasis,
+    )!;
+
     return GestureDetector(
       onTap: () {
-        context.push(AppRoutes.exploreDetail, extra: {'id': item.id, 'name': item.name});
+        context.push(
+          AppRoutes.exploreDetail,
+          extra: {'id': item.id, 'name': item.name},
+        );
       },
-      child: SizedBox(
-        width: 140,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: borderColor, width: 1.2 + emphasis),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 16 + (emphasis * 14),
+              offset: Offset(0, 8 + (emphasis * 6)),
+            ),
+          ],
+        ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(22),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Container(
-                color: Colors.grey.shade300,
-                child: Icon(Icons.image_outlined, size: 40, color: Colors.grey.shade400),
-              ),
+              ExplorePreviewImage(imagePath: item.imagePath, borderRadius: 22),
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        Colors.black.withValues(alpha: 0.6),
+                        Colors.black.withValues(alpha: 0.58),
                         Colors.transparent,
                       ],
                     ),
@@ -317,7 +398,9 @@ class _FeaturedCard extends StatelessWidget {
                   child: Text(
                     item.name,
                     style: const TextStyle(
-                      color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -333,7 +416,11 @@ class _FeaturedCard extends StatelessWidget {
 // ─── Category section ────────────────────────────────────────────────
 
 class _CategorySection extends StatelessWidget {
-  const _CategorySection({super.key, required this.category, required this.categoryIndex});
+  const _CategorySection({
+    super.key,
+    required this.category,
+    required this.categoryIndex,
+  });
   final ExploreCategory category;
   final int categoryIndex;
 
@@ -341,7 +428,10 @@ class _CategorySection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppConstants.pagePadding, 12, AppConstants.pagePadding, 8,
+        AppConstants.pagePadding,
+        12,
+        AppConstants.pagePadding,
+        8,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -411,7 +501,10 @@ class _ExploreItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        context.push(AppRoutes.exploreDetail, extra: {'id': item.id, 'name': item.name});
+        context.push(
+          AppRoutes.exploreDetail,
+          extra: {'id': item.id, 'name': item.name},
+        );
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
@@ -420,7 +513,11 @@ class _ExploreItemCard extends StatelessWidget {
           children: [
             Container(
               color: Colors.grey.shade200,
-              child: Icon(Icons.image_outlined, size: 36, color: Colors.grey.shade400),
+              child: Icon(
+                Icons.image_outlined,
+                size: 36,
+                color: Colors.grey.shade400,
+              ),
             ),
             Positioned(
               bottom: 0,
@@ -441,7 +538,9 @@ class _ExploreItemCard extends StatelessWidget {
                 child: Text(
                   item.name,
                   style: const TextStyle(
-                    color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),

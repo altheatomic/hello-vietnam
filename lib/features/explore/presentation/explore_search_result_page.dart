@@ -4,8 +4,15 @@ import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import '../data/explore_search_results_data.dart';
+import 'widgets/explore_floating_back_button.dart';
+import 'widgets/explore_preview_widgets.dart';
 
-const List<String> _filterLabels = ['ACTIVITIES', 'CULTURE', 'FOOD', 'LOCAL PRODUCTS'];
+const List<String> _filterLabels = [
+  'ACTIVITIES',
+  'CULTURE',
+  'FOOD',
+  'LOCAL PRODUCTS',
+];
 
 class ExploreSearchResultPage extends StatefulWidget {
   final String destination;
@@ -34,107 +41,105 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          // ── Top bar: back + search ─────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                12, statusBarH + 8, AppConstants.pagePadding, 4,
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => context.pop(),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.chevron_left, color: Colors.white, size: 24),
-                    ),
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    60,
+                    statusBarH + 8,
+                    AppConstants.pagePadding,
+                    4,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(45),
-                        border: Border.all(
-                          color: AppColors.primaryLight.withValues(alpha: 0.5),
+                  child: Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(45),
+                      border: Border.all(
+                        color: AppColors.primaryLight.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.search_rounded,
+                          color: AppColors.primary,
+                          size: 18,
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          const SizedBox(width: 12),
-                          Icon(Icons.search_rounded, color: AppColors.primary, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            _results.destination,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _results.destination,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Title: "Discover [City]!" ──────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppConstants.pagePadding, 10, AppConstants.pagePadding, 8,
-              ),
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                  children: [
-                    const TextSpan(text: 'Discover '),
-                    TextSpan(
-                      text: '${_results.destination}!',
-                      style: const TextStyle(color: AppColors.primary),
-                    ),
-                  ],
                 ),
               ),
-            ),
-          ),
 
-          // ── Sticky filter chips ────────────────────────
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _StickyFilterDelegate(
-              selectedIndex: _selectedFilter,
-              onTap: (i) => setState(() => _selectedFilter = i),
-            ),
-          ),
-
-          // ── Result cards ───────────────────────────────
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              AppConstants.pagePadding, 10, AppConstants.pagePadding, 24,
-            ),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => _ResultCard(item: items[index]),
-                childCount: items.length,
+              // ── Title: "Discover [City]!" ──────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppConstants.pagePadding,
+                    10,
+                    AppConstants.pagePadding,
+                    8,
+                  ),
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                      children: [
+                        const TextSpan(text: 'Discover '),
+                        TextSpan(
+                          text: '${_results.destination}!',
+                          style: const TextStyle(color: AppColors.primary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
+
+              // ── Sticky filter chips ────────────────────────
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyFilterDelegate(
+                  selectedIndex: _selectedFilter,
+                  onTap: (i) => setState(() => _selectedFilter = i),
+                ),
+              ),
+
+              // ── Result cards ───────────────────────────────
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppConstants.pagePadding,
+                  10,
+                  AppConstants.pagePadding,
+                  24,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _ResultCard(item: items[index]),
+                    childCount: items.length,
+                  ),
+                ),
+              ),
+            ],
           ),
+          ExploreFloatingBackButton(onTap: () => context.pop()),
         ],
       ),
     );
@@ -155,16 +160,27 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => 90;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     final statusBarH = MediaQuery.of(context).padding.top;
     return Container(
       color: Colors.white,
-      padding: EdgeInsets.only(top: statusBarH > 0 ? statusBarH : 0, bottom: 6, left: 0, right: 0),
+      padding: EdgeInsets.only(
+        top: statusBarH > 0 ? statusBarH : 0,
+        bottom: 6,
+        left: 0,
+        right: 0,
+      ),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppConstants.pagePadding),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConstants.pagePadding,
+        ),
         itemCount: _filterLabels.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final isSelected = index == selectedIndex;
           return GestureDetector(
@@ -207,7 +223,19 @@ class _ResultCard extends StatefulWidget {
 }
 
 class _ResultCardState extends State<_ResultCard> {
-  int _currentPage = 0;
+  late final PageController _imageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _imageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _imageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -215,86 +243,135 @@ class _ResultCardState extends State<_ResultCard> {
 
     return GestureDetector(
       onTap: () {
-        context.push(AppRoutes.exploreDetail, extra: {'id': widget.item.id, 'name': widget.item.name});
+        context.push(
+          AppRoutes.exploreDetail,
+          extra: {'id': widget.item.id, 'name': widget.item.name},
+        );
       },
       child: Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Column(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: AspectRatio(
-              aspectRatio: 16 / 10,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  PageView.builder(
-                    itemCount: imageCount,
-                    onPageChanged: (i) => setState(() => _currentPage = i),
-                    itemBuilder: (context, i) {
-                      return Container(
-                        color: Colors.grey.shade300,
-                        child: Icon(Icons.image_outlined, size: 48, color: Colors.grey.shade400),
-                      );
-                    },
-                  ),
-                  Positioned(
-                    top: 10, right: 10,
-                    child: Icon(
-                      widget.item.isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: widget.item.isFavorite ? AppColors.primary : Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  if (imageCount > 1)
-                    Positioned(
-                      bottom: 10, left: 12,
-                      child: Row(
-                        children: List.generate(imageCount, (i) {
-                          return Container(
-                            width: i == _currentPage ? 18 : 6, height: 6,
-                            margin: const EdgeInsets.only(right: 4),
-                            decoration: BoxDecoration(
-                              color: i == _currentPage ? Colors.white : Colors.white.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          );
-                        }),
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: AspectRatio(
+                aspectRatio: 16 / 10,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    PageView.builder(
+                      controller: _imageController,
+                      physics: const BouncingScrollPhysics(
+                        parent: PageScrollPhysics(),
                       ),
-                    ),
-                  Positioned(
-                    bottom: 10, right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 14),
-                          const SizedBox(width: 3),
-                          Text(
-                            widget.item.rating.toStringAsFixed(1),
-                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                      itemCount: imageCount,
+                      itemBuilder: (context, i) {
+                        return AnimatedBuilder(
+                          animation: _imageController,
+                          builder: (context, child) {
+                            final page = _imageController.hasClients
+                                ? (_imageController.page ??
+                                      _imageController.initialPage.toDouble())
+                                : _imageController.initialPage.toDouble();
+                            final distance = (page - i).abs().clamp(0.0, 1.0);
+                            final emphasis = (1 - distance).clamp(0.0, 1.0);
+
+                            return Transform.scale(
+                              scale: 0.94 + (emphasis * 0.06),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.06 + (emphasis * 0.16),
+                                      ),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: ExplorePreviewImage(
+                            imagePath: widget.item.images[i],
+                            borderRadius: 16,
                           ),
-                        ],
+                        );
+                      },
+                    ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Icon(
+                        widget.item.isFavorite
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: widget.item.isFavorite
+                            ? AppColors.primary
+                            : Colors.white,
+                        size: 24,
                       ),
                     ),
-                  ),
-                ],
+                    if (imageCount > 1)
+                      Positioned(
+                        bottom: 10,
+                        left: 12,
+                        child: ExploreLiquidDots(
+                          controller: _imageController,
+                          itemCount: imageCount,
+                        ),
+                      ),
+                    Positioned(
+                      bottom: 10,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              widget.item.rating.toStringAsFixed(1),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            widget.item.name,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+            const SizedBox(height: 8),
+            Text(
+              widget.item.name,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
