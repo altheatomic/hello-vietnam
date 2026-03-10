@@ -4,11 +4,52 @@ This repository contains a Flutter app designed to run on a **real Android devic
 
 ---
 
+## 0) Source of truth for tool versions
+
+The team must follow the versions below.
+
+Use exactly:
+
+- **Flutter 3.38.9**
+- **Dart 3.10.8**
+- **JDK 21** from **Android Studio JBR**
+- **Recommended Android Studio:** Ladybug 2024.2.1 Patch 3
+
+Project constraint in `pubspec.yaml`:
+
+```yaml
+environment:
+  sdk: ">=3.10.8 <3.11.0"
+  flutter: "3.38.9"
+```
+
+This means:
+
+- Dart 3.10.x only
+- Flutter must be 3.38.9
+- Do not install the latest stable blindly.
+
+Check:
+
+````bash
+flutter --version
+dart --version
+
+Verify:
+
+```bash
+flutter doctor
+````
+
+If your versions are different, fix them before running the project.
+
 ## 1) Tech stack
 
 - Flutter (Dart)
 - Routing: `go_router`
-- Android build: Gradle + Android SDK/NDK (managed by Android Studio)
+- Android build: Gradle + Android SDK/NDK
+- IDE: Android Studio, VS Code
+- Device connection: ADB via Android SDK Platform-Tools
 
 ---
 
@@ -21,22 +62,34 @@ This repository contains a Flutter app designed to run on a **real Android devic
 - `android/` — Android-specific build configuration (**not** where you write Flutter UI)
 - `test/` — unit/widget tests
 
+Important:
+
+- Write Flutter UI in lib/
+- Do not build Flutter UI inside android/
+
 ---
 
 ## 3) Requirements (Windows)
 
 Install:
 
-- Flutter SDK
+- Flutter SDK 3.38.9
 - Android Studio (includes Android SDK tools)
 - ADB (comes via Android SDK platform-tools)
 - A USB cable that supports **data** (not “charge-only”)
 
-Verify:
+Recommended Android SDK setup:
 
-```bash
-flutter doctor
-```
+- Android SDK location: your own local path
+- Android platform installed: android-36
+- Android Build-Tools: 35.0.0
+- Emulator installed
+- All Android licenses accepted
+  Machine-specific paths must not be committed.
+
+  ![Android Studio](images/AndroidStudio.png)
+  ![SDK Platforms](images/SDKPlatforms.png)
+  ![SDK Tools](images/SDKTools.png)
 
 ## 4) First-time setup (after cloning)
 
