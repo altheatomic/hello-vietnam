@@ -21,9 +21,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
+  bool _isLoading = false;
+
   // Resend timer
   int _resendSeconds = 60;
   Timer? _resendTimer;
+
+  void _setLoading(bool loading) {
+    setState(() => _isLoading = loading);
+  }
 
   static const _illustrationUrl =
       'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Login/ForgotPassword.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvTG9naW4vRm9yZ290UGFzc3dvcmQucG5nIiwiaWF0IjoxNzcyNjI2MzA2LCJleHAiOjE4MDQxNjIzMDZ9.h2oWLRKqI4Wx0vxZKnLJ9H01JMY4otDXRIyC8VIkF9c';
@@ -60,37 +66,98 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     if (step == 1) _startResendTimer();
   }
 
-  void _onConfirmEmail() {
+  void _resendOTP() async {
+    _setLoading(true);
+    try {
+      // TODO: Call API to resend OTP
+      await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+      _showSnack('Verification code resent');
+      _startResendTimer();
+    } catch (e) {
+      _showSnack('Failed to resend code. Please try again.');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void _onConfirmEmail() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
       _showSnack('Please enter your email');
       return;
     }
-    _goToStep(1);
+
+    // Basic email validation
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(email)) {
+      _showSnack('Please enter a valid email address');
+      return;
+    }
+
+    _setLoading(true);
+    try {
+      // TODO: Call API to send reset email
+      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      _showSnack('Verification code sent to $email');
+      _goToStep(1);
+    } catch (e) {
+      _showSnack('Failed to send verification code. Please try again.');
+    } finally {
+      _setLoading(false);
+    }
   }
 
-  void _onConfirmOTP() {
+  void _onConfirmOTP() async {
     final otp = _otpControllers.map((c) => c.text).join();
     if (otp.length < 4) {
       _showSnack('Please enter the 4-digit code');
       return;
     }
-    _goToStep(2);
+
+    _setLoading(true);
+    try {
+      // TODO: Call API to verify OTP
+      await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+      _showSnack('OTP verified successfully');
+      _goToStep(2);
+    } catch (e) {
+      _showSnack('Invalid OTP. Please try again.');
+    } finally {
+      _setLoading(false);
+    }
   }
 
-  void _onConfirmNewPassword() {
+  void _onConfirmNewPassword() async {
     final pw = _passwordController.text;
     final cpw = _confirmPasswordController.text;
+
     if (pw.isEmpty || cpw.isEmpty) {
       _showSnack('Please fill in all fields');
       return;
     }
+
+    if (pw.length < 6) {
+      _showSnack('Password must be at least 6 characters long');
+      return;
+    }
+
     if (pw != cpw) {
       _showSnack('Passwords do not match');
       return;
     }
-    _resendTimer?.cancel();
-    _goToStep(3);
+
+    _setLoading(true);
+    try {
+      // TODO: Call API to reset password
+      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      _showSnack('Password reset successfully');
+      _resendTimer?.cancel();
+      _goToStep(3);
+    } catch (e) {
+      _showSnack('Failed to reset password. Please try again.');
+    } finally {
+      _setLoading(false);
+    }
   }
 
   void _showSnack(String msg) {
@@ -230,7 +297,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 24),
-        _buildMainButton('Confirm email', _onConfirmEmail),
+        _buildMainButton('Confirm email', _onConfirmEmail, isLoading: _isLoading),
       ],
     );
   }
@@ -314,11 +381,31 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ),
                 ),
                 onChanged: (value) {
+                  // Handle paste of full OTP code
+                  if (value.length > 1 && i == 0) {
+                    final otpChars = value.split('');
+                    for (int j = 0; j < 4 && j < otpChars.length; j++) {
+                      _otpControllers[j].text = otpChars[j];
+                    }
+                    if (otpChars.length >= 4) {
+                      _otpFocusNodes[3].requestFocus();
+                    }
+                    return;
+                  }
+
                   if (value.isNotEmpty && i < 3) {
                     _otpFocusNodes[i + 1].requestFocus();
                   }
                   if (value.isEmpty && i > 0) {
                     _otpFocusNodes[i - 1].requestFocus();
+                  }
+                },
+                onTap: () {
+                  // Clear all fields when tapping on any OTP field
+                  if (_otpControllers.every((c) => c.text.isEmpty)) {
+                    for (final c in _otpControllers) {
+                      c.clear();
+                    }
                   }
                 },
               ),
@@ -327,7 +414,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
 
         const SizedBox(height: 24),
-        _buildMainButton('Verify', _onConfirmOTP),
+        _buildMainButton('Verify', _onConfirmOTP, isLoading: _isLoading),
         const SizedBox(height: 20),
 
         // Resend
@@ -335,17 +422,31 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Resend code in ',
+              _resendSeconds > 0 ? 'Resend code in ' : 'Didn\'t receive code? ',
               style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
             ),
-            Text(
-              '00:${_resendSeconds.toString().padLeft(2, '0')}',
-              style: const TextStyle(
-                color: Color(0xFF42A5F5),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+            if (_resendSeconds > 0)
+              Text(
+                '00:${_resendSeconds.toString().padLeft(2, '0')}',
+                style: const TextStyle(
+                  color: Color(0xFF42A5F5),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              )
+            else
+              GestureDetector(
+                onTap: _resendOTP,
+                child: const Text(
+                  'Resend',
+                  style: TextStyle(
+                    color: Color(0xFF42A5F5),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ],
@@ -396,7 +497,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
         ),
         const SizedBox(height: 24),
-        _buildMainButton('Continue', _onConfirmNewPassword),
+        _buildMainButton('Continue', _onConfirmNewPassword, isLoading: _isLoading),
       ],
     );
   }
@@ -498,11 +599,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  Widget _buildMainButton(String label, VoidCallback onPressed) {
+  Widget _buildMainButton(String label, VoidCallback onPressed, {bool isLoading = false}) {
     return SizedBox(
       height: 52,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFB3E5FC),
           foregroundColor: const Color(0xFF1A1A2E),
@@ -510,7 +611,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
-        child: Text(label),
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A1A2E)),
+                ),
+              )
+            : Text(label),
       ),
     );
   }
