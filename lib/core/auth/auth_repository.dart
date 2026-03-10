@@ -33,9 +33,20 @@ class AuthRepository extends ChangeNotifier {
     }
   }
 
-  Future<void> signUp({required String email, required String password}) async {
+  Future<void> signUp(
+      {required String name,
+      required String email,
+      required String password}) async {
     try {
-      await _supabase.auth.signUp(email: email, password: password);
+      final response = await _supabase.auth.signUp(email: email, password: password);
+      final user = response.user;
+      if (user != null) {
+        await _supabase.from('user_account').insert({
+          'id_user': user.id,
+          'full_name': name,
+          'username': email,
+        });
+      }
     } on AuthException catch (e) {
       // Handle error
       debugPrint(e.message);
