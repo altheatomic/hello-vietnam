@@ -142,7 +142,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     width: double.infinity,
                     height: totalHeight,
                     alignment: Alignment.topCenter,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
                     loadingBuilder: (_, child, progress) {
                       if (progress == null) return child;
                       return const Center(
@@ -418,7 +418,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             width: 200,
             height: 200,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Icon(
+            errorBuilder: (_, _, _) => const Icon(
               Icons.check_circle_outline,
               size: 80,
               color: Color(0xFF42A5F5),

@@ -11,21 +11,13 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  static const String _headerImageUrl =
-      'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Login/Login.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvTG9naW4vTG9naW4ucG5nIiwiaWF0IjoxNzcyNjA5MTE1LCJleHAiOjE4MDQxNDUxMTV9.EDIZqwz4akn6G4rj1uiRA5mQhDQOH8e17QNTWeh6Jco';
-
-  static const String _googleLogoUrl =
-      'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Login/Google_Logo.svg.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvTG9naW4vR29vZ2xlX0xvZ28uc3ZnLnBuZyIsImlhdCI6MTc3MjYwOTQ3MywiZXhwIjoxODA0MTQ1NDczfQ.chqQWTwgf4ZxTx6pJdUNjkLPiUCE7kqSfT51prRYg_g';
-
-  bool _loggedHeaderImageError = false;
-  bool _loggedGoogleImageError = false;
-
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _rememberMe = true;
   bool _obscurePassword = true;
   bool _emailError = false;
   bool _passwordError = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -34,8 +26,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _onContinue() {
-    // TODO: Implement login logic
+  void _onContinue() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
@@ -47,9 +38,25 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // Placeholder: set auth state and navigate to Home page
-    AuthState.instance.login();
-    context.go(AppRoutes.home);
+    setState(() => _isLoading = true);
+
+    try {
+      await AuthRepository.instance.signIn(email: email, password: password);
+      if (!mounted) return;
+      context.go(AppRoutes.profile);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to sign in: ${e.toString()}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   void _onGoogleSignIn() {
@@ -137,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
             top: MediaQuery.of(context).padding.top + 8,
             left: 12,
             child: IconButton(
-              onPressed: () => context.go(AppRoutes.getStarted),
+              onPressed: () => context.pop(),
               style: IconButton.styleFrom(
                 backgroundColor: Colors.white.withValues(alpha: 0.7),
               ),
@@ -165,7 +172,7 @@ class _LoginPageState extends State<LoginPage> {
           height: 350 + statusBarHeight,
           color: const Color(0xFFB3E5FC),
           child: Image.network(
-            _headerImageUrl,
+            'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Login/Login.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvTG9naW4vTG9naW4ucG5nIiwiaWF0IjoxNzcyNjA5MTE1LCJleHAiOjE4MDQxNDUxMTV9.EDIZqwz4akn6G4rj1uiRA5mQhDQOH8e17QNTWeh6Jco',
             fit: BoxFit.contain,
             width: double.infinity,
             loadingBuilder: (context, child, loadingProgress) {
@@ -175,11 +182,6 @@ class _LoginPageState extends State<LoginPage> {
               );
             },
             errorBuilder: (context, error, stackTrace) {
-              if (!_loggedHeaderImageError) {
-                debugPrint('Login header image failed: $_headerImageUrl');
-                debugPrint('Login header image error: $error');
-                _loggedHeaderImageError = true;
-              }
               return const Center(
                 child: Icon(Icons.flight_takeoff, size: 80, color: Colors.white),
               );
@@ -363,7 +365,7 @@ class _LoginPageState extends State<LoginPage> {
     return SizedBox(
       height: 52,
       child: ElevatedButton(
-        onPressed: _onContinue,
+        onPressed: _isLoading ? null : _onContinue,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFB3E5FC),
           foregroundColor: const Color(0xFF1A1A2E),
@@ -376,7 +378,7 @@ class _LoginPageState extends State<LoginPage> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        child: const Text('Continue'),
+        child: _isLoading ? const CircularProgressIndicator() : const Text('Continue'),
       ),
     );
   }
@@ -414,15 +416,10 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         icon: Image.network(
-          _googleLogoUrl,
+          'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Login/Google_Logo.svg.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvTG9naW4vR29vZ2xlX0xvZ28uc3ZnLnBuZyIsImlhdCI6MTc3MjYwOTQ3MywiZXhwIjoxODA0MTQ1NDczfQ.chqQWTwgf4ZxTx6pJdUNjkLPiUCE7kqSfT51prRYg_g',
           width: 24,
           height: 24,
           errorBuilder: (context, error, stackTrace) {
-            if (!_loggedGoogleImageError) {
-              debugPrint('Google logo failed: $_googleLogoUrl');
-              debugPrint('Google logo error: $error');
-              _loggedGoogleImageError = true;
-            }
             return const Text(
               'G',
               style: TextStyle(

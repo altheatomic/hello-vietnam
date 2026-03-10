@@ -17,6 +17,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
+
 
   @override
   void dispose() {
@@ -27,8 +29,7 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  void _onSignUp() {
-    // TODO: Implement sign up logic
+  void _onSignUp() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -48,12 +49,33 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    // Placeholder: auto login after sign up and navigate to Home.
-    AuthState.instance.login();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Account created and logged in successfully!')),
-    );
-    context.go(AppRoutes.home);
+    setState(() => _isLoading = true);
+
+    try {
+      await AuthRepository.instance.signUp(email: email, password: password);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Success! Please check your email for a confirmation link.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      context.go(AppRoutes.login);
+
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sign up failed: ${e.toString()}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   void _onGoogleSignIn() {
@@ -293,7 +315,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return SizedBox(
       height: 52,
       child: ElevatedButton(
-        onPressed: _onSignUp,
+        onPressed: _isLoading ? null : _onSignUp,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFB3E5FC),
           foregroundColor: const Color(0xFF1A1A2E),
@@ -306,7 +328,7 @@ class _RegisterPageState extends State<RegisterPage> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        child: const Text('Sign up'),
+        child: _isLoading ? const CircularProgressIndicator() : const Text('Sign up'),
       ),
     );
   }

@@ -131,7 +131,7 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
 
   void _onTap(BuildContext context, int index) {
     // Profile tab (index 3): redirect to login if not authenticated
-    if (index == 3 && !AuthState.instance.isLoggedIn) {
+    if (index == 3 && !AuthRepository.instance.isLoggedIn) {
       context.push(AppRoutes.login);
       return;
     }

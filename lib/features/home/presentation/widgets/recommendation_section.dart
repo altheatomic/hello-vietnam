@@ -72,7 +72,7 @@ class RecommendationSection extends StatelessWidget {
                         horizontal: AppConstants.pagePadding,
                       ),
                       itemCount: children.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 14),
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
                       itemBuilder: (_, i) => children[i],
                     ),
                   ),
@@ -110,14 +110,14 @@ class RecommendationSection extends StatelessWidget {
                 if (loadingProgress == null) return child;
                 return _fallbackGradient();
               },
-              errorBuilder: (_, __, ___) => _fallbackGradient(),
+              errorBuilder: (_, _, _) => _fallbackGradient(),
             )
           : Image.asset(
               backgroundImage,
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
-              errorBuilder: (_, __, ___) => _fallbackGradient(),
+              errorBuilder: (_, _, _) => _fallbackGradient(),
             ),
     );
   }

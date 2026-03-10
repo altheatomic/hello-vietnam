@@ -1,24 +1,55 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Simple auth state manager.
-/// Tracks whether the user is currently logged in.
-/// Will be replaced with real auth logic later.
-class AuthState extends ChangeNotifier {
+class AuthRepository extends ChangeNotifier {
   // Singleton
-  static final AuthState instance = AuthState._();
-  AuthState._();
+  static final AuthRepository instance = AuthRepository._();
 
-  bool _isLoggedIn = false;
-
-  bool get isLoggedIn => _isLoggedIn;
-
-  void login() {
-    _isLoggedIn = true;
-    notifyListeners();
+  AuthRepository._() {
+    _authSubscription =
+        _supabase.auth.onAuthStateChange.listen((data) {
+      _user = data.session?.user;
+      notifyListeners();
+    });
   }
 
-  void logout() {
-    _isLoggedIn = false;
-    notifyListeners();
+  final _supabase = Supabase.instance.client;
+  User? _user;
+  late final StreamSubscription<AuthState> _authSubscription;
+
+
+  User? get user => _user;
+  bool get isLoggedIn => _user != null;
+
+  Future<void> signIn({required String email, required String password}) async {
+    try {
+      await _supabase.auth.signInWithPassword(email: email, password: password);
+    } on AuthException catch (e) {
+      // Handle error
+      debugPrint(e.message);
+      rethrow;
+    }
+  }
+
+  Future<void> signUp({required String email, required String password}) async {
+    try {
+      await _supabase.auth.signUp(email: email, password: password);
+    } on AuthException catch (e) {
+      // Handle error
+      debugPrint(e.message);
+      rethrow;
+    }
+  }
+
+  Future<void> signOut() async {
+    await _supabase.auth.signOut();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription.cancel();
+    super.dispose();
   }
 }
