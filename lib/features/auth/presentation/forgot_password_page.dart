@@ -1,8 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/auth/auth_repository.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -12,20 +12,14 @@ class ForgotPasswordPage extends StatefulWidget {
 }
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
-  int _step = 0; // 0: email, 1: OTP, 2: new password, 3: success
+  int _step = 0; // 0: email, 1: check email, 2: new password, 3: success
   final _emailController = TextEditingController();
-  final _otpControllers = List.generate(4, (_) => TextEditingController());
-  final _otpFocusNodes = List.generate(4, (_) => FocusNode());
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
   bool _isLoading = false;
-
-  // Resend timer
-  int _resendSeconds = 60;
-  Timer? _resendTimer;
 
   void _setLoading(bool loading) {
     setState(() => _isLoading = loading);
@@ -37,44 +31,28 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   void dispose() {
     _emailController.dispose();
-    for (final c in _otpControllers) {
-      c.dispose();
-    }
-    for (final f in _otpFocusNodes) {
-      f.dispose();
-    }
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _resendTimer?.cancel();
     super.dispose();
-  }
-
-  void _startResendTimer() {
-    _resendSeconds = 60;
-    _resendTimer?.cancel();
-    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_resendSeconds <= 0) {
-        timer.cancel();
-      } else {
-        setState(() => _resendSeconds--);
-      }
-    });
   }
 
   void _goToStep(int step) {
     setState(() => _step = step);
-    if (step == 1) _startResendTimer();
   }
 
-  void _resendOTP() async {
+  void _onEmailLinkClicked() {
+    // User clicked the email link, proceed to password reset
+    _goToStep(2);
+  }
+
+  void _resendResetEmail() async {
     _setLoading(true);
     try {
-      // TODO: Call API to resend OTP
-      await Future.delayed(const Duration(seconds: 1)); // Simulate API call
-      _showSnack('Verification code resent');
-      _startResendTimer();
+      final email = _emailController.text.trim();
+      await AuthRepository.instance.resetPassword(email: email);
+      _showSnack('Password reset email resent! Check your inbox.');
     } catch (e) {
-      _showSnack('Failed to resend code. Please try again.');
+      _showSnack('Failed to resend email. Please try again.');
     } finally {
       _setLoading(false);
     }
@@ -96,32 +74,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
     _setLoading(true);
     try {
-      // TODO: Call API to send reset email
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
-      _showSnack('Verification code sent to $email');
+      await AuthRepository.instance.resetPassword(email: email);
+      _showSnack('Password reset email sent! Check your inbox.');
       _goToStep(1);
     } catch (e) {
-      _showSnack('Failed to send verification code. Please try again.');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  void _onConfirmOTP() async {
-    final otp = _otpControllers.map((c) => c.text).join();
-    if (otp.length < 4) {
-      _showSnack('Please enter the 4-digit code');
-      return;
-    }
-
-    _setLoading(true);
-    try {
-      // TODO: Call API to verify OTP
-      await Future.delayed(const Duration(seconds: 1)); // Simulate API call
-      _showSnack('OTP verified successfully');
-      _goToStep(2);
-    } catch (e) {
-      _showSnack('Invalid OTP. Please try again.');
+      _showSnack('Failed to send reset email. Please try again.');
     } finally {
       _setLoading(false);
     }
@@ -148,13 +105,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
     _setLoading(true);
     try {
-      // TODO: Call API to reset password
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
-      _showSnack('Password reset successfully');
-      _resendTimer?.cancel();
+      await AuthRepository.instance.updatePassword(newPassword: pw);
+      _showSnack('Password updated successfully');
       _goToStep(3);
     } catch (e) {
-      _showSnack('Failed to reset password. Please try again.');
+      _showSnack('Failed to update password. Please try again.');
     } finally {
       _setLoading(false);
     }
@@ -239,7 +194,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ),
                     Expanded(
                       child: Text(
-                        _step == 2 ? 'Create new password' : 'Forgot Password',
+                        _step == 2 ? 'Create new password' : 'Check your email',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 20,
@@ -264,7 +219,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           child: _step == 0
               ? _buildEmailStep()
               : _step == 1
-                  ? _buildOTPStep()
+                  ? _buildEmailCheckStep()
                   : _buildNewPasswordStep(),
         ),
 
@@ -280,7 +235,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text(
-          'Please enter your email to receive\nverification code',
+          'Please enter your email to receive\npassword reset link',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 15,
@@ -302,16 +257,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  // ─── Step 1: OTP ───
+  // ─── Step 1: Check Email ───
 
-  Widget _buildOTPStep() {
+  Widget _buildEmailCheckStep() {
     final email = _emailController.text.trim();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text(
-          'Enter your OTP',
+          'Check your email',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 15,
@@ -320,133 +275,60 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Verification code sent to ',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+        RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 14,
+              height: 1.5,
             ),
-            Text(
-              email,
-              style: const TextStyle(
-                color: Color(0xFF42A5F5),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-
-        // OTP boxes
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(4, (i) {
-            return Container(
-              width: 35,
-              height: 53,
-              margin: const EdgeInsets.symmetric(horizontal: 6),
-              child: TextField(
-                controller: _otpControllers[i],
-                focusNode: _otpFocusNodes[i],
-                textAlign: TextAlign.center,
-                textAlignVertical: TextAlignVertical.center,
-                keyboardType: TextInputType.number,
-                maxLength: 1,
-                maxLines: 1,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            children: [
+              const TextSpan(text: 'We\'ve sent a password reset link to\n'),
+              TextSpan(
+                text: email,
                 style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A2E),
+                  color: Color(0xFF42A5F5),
+                  fontWeight: FontWeight.w600,
                 ),
-                decoration: InputDecoration(
-                  counterText: '',
-                  contentPadding: EdgeInsets.zero,
-                  isDense: true,
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    borderSide: const BorderSide(color: Color(0xFF42A5F5), width: 1.5),
-                  ),
-                ),
-                onChanged: (value) {
-                  // Handle paste of full OTP code
-                  if (value.length > 1 && i == 0) {
-                    final otpChars = value.split('');
-                    for (int j = 0; j < 4 && j < otpChars.length; j++) {
-                      _otpControllers[j].text = otpChars[j];
-                    }
-                    if (otpChars.length >= 4) {
-                      _otpFocusNodes[3].requestFocus();
-                    }
-                    return;
-                  }
-
-                  if (value.isNotEmpty && i < 3) {
-                    _otpFocusNodes[i + 1].requestFocus();
-                  }
-                  if (value.isEmpty && i > 0) {
-                    _otpFocusNodes[i - 1].requestFocus();
-                  }
-                },
-                onTap: () {
-                  // Clear all fields when tapping on any OTP field
-                  if (_otpControllers.every((c) => c.text.isEmpty)) {
-                    for (final c in _otpControllers) {
-                      c.clear();
-                    }
-                  }
-                },
               ),
-            );
-          }),
+              const TextSpan(text: '\n\nClick the link to reset your password.'),
+            ],
+          ),
         ),
-
-        const SizedBox(height: 24),
-        _buildMainButton('Verify', _onConfirmOTP, isLoading: _isLoading),
+        const SizedBox(height: 32),
+        // Email icon
+        const Center(
+          child: Icon(
+            Icons.email_outlined,
+            size: 64,
+            color: Color(0xFFB3E5FC),
+          ),
+        ),
+        const SizedBox(height: 32),
+        _buildMainButton('I\'ve clicked the link', _onEmailLinkClicked),
         const SizedBox(height: 20),
 
         // Resend
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              _resendSeconds > 0 ? 'Resend code in ' : 'Didn\'t receive code? ',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+            const Text(
+              'Didn\'t receive the email? ',
+              style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
-            if (_resendSeconds > 0)
-              Text(
-                '00:${_resendSeconds.toString().padLeft(2, '0')}',
-                style: const TextStyle(
+            GestureDetector(
+              onTap: _resendResetEmail,
+              child: const Text(
+                'Resend',
+                style: TextStyle(
                   color: Color(0xFF42A5F5),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                ),
-              )
-            else
-              GestureDetector(
-                onTap: _resendOTP,
-                child: const Text(
-                  'Resend',
-                  style: TextStyle(
-                    color: Color(0xFF42A5F5),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    decoration: TextDecoration.underline,
-                  ),
+                  decoration: TextDecoration.underline,
                 ),
               ),
+            ),
           ],
         ),
       ],

@@ -58,6 +58,29 @@ class AuthRepository extends ChangeNotifier {
     await _supabase.auth.signOut();
   }
 
+  Future<void> resetPassword({required String email}) async {
+    try {
+      await _supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: kIsWeb ? null : 'com.example.hellovietnam://reset-password',
+      );
+    } on AuthException catch (e) {
+      debugPrint('Reset password error: ${e.message}');
+      rethrow;
+    }
+  }
+
+  Future<void> updatePassword({required String newPassword}) async {
+    try {
+      await _supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } on AuthException catch (e) {
+      debugPrint('Update password error: ${e.message}');
+      rethrow;
+    }
+  }
+
   @override
   void dispose() {
     _authSubscription.cancel();
