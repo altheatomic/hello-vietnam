@@ -19,6 +19,7 @@ class _ProfilePageState extends State<ProfilePage> {
   ];
 
   bool _notificationEnabled = false;
+  bool _deleteUserDataEnabled = false;
   String _username = 'AnhLaThangToi';
   String _email = 'thangtoi@gmail.com';
   int _avatarIndex = 0;
@@ -200,16 +201,22 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(height: 14),
                       _SectionCard(
                         children: <Widget>[
-                          _SettingRow(
+                          _SettingSwitchRow(
                             icon: Icons.shield_outlined,
                             title: 'Delete user data',
-                            onTap: () {},
+                            value: _deleteUserDataEnabled,
+                            onChanged: (bool value) {
+                              setState(() {
+                                _deleteUserDataEnabled = value;
+                              });
+                            },
                           ),
                           _SettingRow(
                             icon: Icons.logout_rounded,
                             title: 'Log out',
                             iconColor: const Color(0xFFFF3B30),
                             textColor: const Color(0xFF1C1C1C),
+                            showChevron: false,
                             onTap: _onLogout,
                           ),
                         ],
@@ -253,6 +260,7 @@ class _SettingRow extends StatelessWidget {
     required this.onTap,
     this.iconColor = const Color(0xFFB3B3B3),
     this.textColor = const Color(0xFF1E1E1E),
+    this.showChevron = true,
   });
 
   final IconData icon;
@@ -260,6 +268,7 @@ class _SettingRow extends StatelessWidget {
   final VoidCallback onTap;
   final Color iconColor;
   final Color textColor;
+  final bool showChevron;
 
   @override
   Widget build(BuildContext context) {
@@ -282,10 +291,11 @@ class _SettingRow extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: Color(0xFF1D1D1D),
-            ),
+            if (showChevron)
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF1D1D1D),
+              ),
           ],
         ),
       ),

@@ -17,6 +17,29 @@ class _CurrencyPageState extends State<CurrencyPage> {
   ];
 
   String _selectedCurrency = 'US Dollar';
+  String? _highlightedCurrency;
+  int _selectionTick = 0;
+  static const Color _tapHighlightColor = Color(0xFFEAF7FF);
+  static const Duration _tapHighlightHold = Duration(milliseconds: 80);
+  static const Duration _tapHighlightFade = Duration(milliseconds: 800);
+
+  void _onSelectCurrency(String currency) {
+    _selectionTick++;
+    final int currentTick = _selectionTick;
+    setState(() {
+      _selectedCurrency = currency;
+      _highlightedCurrency = currency;
+    });
+
+    Future<void>.delayed(_tapHighlightHold, () {
+      if (!mounted || _selectionTick != currentTick) {
+        return;
+      }
+      setState(() {
+        _highlightedCurrency = null;
+      });
+    });
+  }
 
   List<Widget> _buildCurrencyRows() {
     final List<Widget> rows = <Widget>[];
@@ -26,29 +49,39 @@ class _CurrencyPageState extends State<CurrencyPage> {
       final bool isSelected = _selectedCurrency == option.label;
 
       rows.add(
-        InkWell(
-          onTap: () {
-            setState(() {
-              _selectedCurrency = option.label;
-            });
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    '${option.label}  ${option.symbol}',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: const Color(0xFF7A7A7A),
-                      fontWeight:
-                          isSelected ? FontWeight.w500 : FontWeight.w400,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: GestureDetector(
+            onTap: () => _onSelectCurrency(option.label),
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: _tapHighlightFade,
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              decoration: BoxDecoration(
+                color: _highlightedCurrency == option.label
+                    ? _tapHighlightColor
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: const Color(0xFF7A7A7A),
+                        fontWeight:
+                            isSelected ? FontWeight.w500 : FontWeight.w400,
+                      ),
+                      child: Text('${option.label}  ${option.symbol}'),
                     ),
                   ),
-                ),
-                _SelectCircle(isSelected: isSelected),
-              ],
+                  _SelectCircle(isSelected: isSelected),
+                ],
+              ),
             ),
           ),
         ),
@@ -72,7 +105,7 @@ class _CurrencyPageState extends State<CurrencyPage> {
     final double topInset = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F3F4),
+      backgroundColor: Colors.white,
       body: Column(
         children: <Widget>[
           Container(
@@ -115,7 +148,7 @@ class _CurrencyPageState extends State<CurrencyPage> {
                   const Text(
                     'Select currency',
                     style: TextStyle(
-                      fontSize: 34,
+                      fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1E1E1E),
                     ),
@@ -156,15 +189,37 @@ class _SelectCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 22,
-      height: 22,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      width: 30,
+      height: 30,
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF2AAEEB) : Colors.transparent,
+        color: Colors.white,
         shape: BoxShape.circle,
         border: Border.all(
-          color: isSelected ? const Color(0xFF2AAEEB) : const Color(0xFFD2D2D2),
-          width: 1.2,
+          color: const Color(0xFFD7D7D7),
+          width: 1.4,
+        ),
+      ),
+      child: Center(
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutBack,
+          scale: isSelected ? 1 : 0,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 180),
+            opacity: isSelected ? 1 : 0,
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: const BoxDecoration(
+                color: Color(0xFF2EB9F8),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
         ),
       ),
     );

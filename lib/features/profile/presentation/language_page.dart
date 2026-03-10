@@ -17,6 +17,29 @@ class _LanguagePageState extends State<LanguagePage> {
   ];
 
   String _selectedLanguage = 'English';
+  String? _highlightedLanguage;
+  int _selectionTick = 0;
+  static const Color _tapHighlightColor = Color(0xFFEAF7FF);
+  static const Duration _tapHighlightHold = Duration(milliseconds: 90);
+  static const Duration _tapHighlightFade = Duration(milliseconds: 900);
+
+  void _onSelectLanguage(String language) {
+    _selectionTick++;
+    final int currentTick = _selectionTick;
+    setState(() {
+      _selectedLanguage = language;
+      _highlightedLanguage = language;
+    });
+
+    Future<void>.delayed(_tapHighlightHold, () {
+      if (!mounted || _selectionTick != currentTick) {
+        return;
+      }
+      setState(() {
+        _highlightedLanguage = null;
+      });
+    });
+  }
 
   List<Widget> _buildLanguageRows() {
     final List<Widget> rows = <Widget>[];
@@ -25,28 +48,39 @@ class _LanguagePageState extends State<LanguagePage> {
       final bool isSelected = _selectedLanguage == language;
 
       rows.add(
-        InkWell(
-          onTap: () {
-            setState(() {
-              _selectedLanguage = language;
-            });
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    language,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: const Color(0xFF666666),
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: GestureDetector(
+            onTap: () => _onSelectLanguage(language),
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: _tapHighlightFade,
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              decoration: BoxDecoration(
+                color: _highlightedLanguage == language
+                    ? _tapHighlightColor
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: const Color(0xFF7A7A7A),
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                      child: Text(language),
                     ),
                   ),
-                ),
-                _SelectCircle(isSelected: isSelected),
-              ],
+                  _SelectCircle(isSelected: isSelected),
+                ],
+              ),
             ),
           ),
         ),
@@ -69,7 +103,7 @@ class _LanguagePageState extends State<LanguagePage> {
     final double topInset = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F3F4),
+      backgroundColor: Colors.white,
       body: Column(
         children: <Widget>[
           Container(
@@ -112,7 +146,7 @@ class _LanguagePageState extends State<LanguagePage> {
                   const Text(
                     'Select language',
                     style: TextStyle(
-                      fontSize: 34,
+                      fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1E1E1E),
                     ),
@@ -143,15 +177,37 @@ class _SelectCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 22,
-      height: 22,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      width: 30,
+      height: 30,
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF2AAEEB) : Colors.transparent,
+        color: Colors.white,
         shape: BoxShape.circle,
         border: Border.all(
-          color: isSelected ? const Color(0xFF2AAEEB) : const Color(0xFFD2D2D2),
-          width: 1.2,
+          color: const Color(0xFFD7D7D7),
+          width: 1.4,
+        ),
+      ),
+      child: Center(
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutBack,
+          scale: isSelected ? 1 : 0,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 180),
+            opacity: isSelected ? 1 : 0,
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: const BoxDecoration(
+                color: Color(0xFF2EB9F8),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
         ),
       ),
     );
