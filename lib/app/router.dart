@@ -11,6 +11,7 @@ import '../features/forum/presentation/forum_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
 import 'package:hellovietnam/features/popular_apps/presentation/popular_apps_detail.dart';
 import '../features/feedback/presentation/feedback_page.dart';
+import '../features/explore/presentation/explore_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
@@ -65,6 +66,11 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.feedback,
         builder: (c, s) => const FeedbackPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.explore,
+        builder: (c, s) => const ExplorePage(),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
