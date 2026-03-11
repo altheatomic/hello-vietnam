@@ -182,6 +182,11 @@ class _ProfilePageState extends State<ProfilePage> {
                             onTap: () => context.push(AppRoutes.currency),
                           ),
                           _SettingRow(
+                            icon: Icons.favorite_border_rounded,
+                            title: 'Wishlist',
+                            onTap: () => context.push(AppRoutes.wishlist),
+                          ),
+                          _SettingRow(
                             icon: Icons.translate_rounded,
                             title: 'Language',
                             onTap: () => context.push(AppRoutes.language),

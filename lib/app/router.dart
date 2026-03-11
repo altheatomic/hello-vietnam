@@ -10,6 +10,7 @@ import '../features/profile/presentation/edit_profile_page.dart';
 import '../features/profile/presentation/change_password_page.dart';
 import '../features/profile/presentation/language_page.dart';
 import '../features/profile/presentation/currency_page.dart';
+import '../features/profile/presentation/wishlist_page.dart';
 
 import '../features/forum/presentation/forum_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
@@ -122,6 +123,11 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.currency,
         builder: (c, s) => const CurrencyPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.wishlist,
+        builder: (c, s) => const WishlistPage(),
       ),
 
       StatefulShellRoute.indexedStack(
