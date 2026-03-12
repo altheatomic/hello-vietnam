@@ -6,12 +6,18 @@ import '../features/home/presentation/home_page.dart';
 import '../features/planner/presentation/trip_planner_page.dart';
 import '../features/messages/presentation/messages_page.dart';
 import '../features/profile/presentation/profile_page.dart';
+import '../features/profile/presentation/edit_profile_page.dart';
+import '../features/profile/presentation/change_password_page.dart';
+import '../features/profile/presentation/language_page.dart';
+import '../features/profile/presentation/currency_page.dart';
+import '../features/profile/presentation/wishlist_page.dart';
 
 import '../features/forum/presentation/forum_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
-import 'package:hellovietnam/features/popular_apps/presentation/popular_apps_detail.dart';
+import '../features/popular_apps/presentation/popular_apps_detail.dart';
 import '../features/feedback/presentation/feedback_page.dart';
 import '../features/explore/presentation/explore_page.dart';
+import '../features/notification/presentation/notification_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
@@ -38,6 +44,11 @@ class AppRoutes {
   static const login = '/login';
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
+  static const notification = '/notification';
+  static const editProfile = '/edit-profile';
+  static const changePassword = '/change-password';
+  static const language = '/language';
+  static const currency = '/currency';
 }
 
 GoRouter buildRouter() {
@@ -88,11 +99,46 @@ GoRouter buildRouter() {
         builder: (c, s) => const ForgotPasswordPage(),
       ),
       GoRoute(
-        path: '/popular-apps',
-        builder: (context, state) => const PopularAppsPage(),
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.notification,
+        builder: (c, s) => const NotificationPage(),
       ),
       GoRoute(
-        path: '/popular-apps/:id',
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.editProfile,
+        builder: (c, s) {
+          final Map<String, dynamic> extra =
+              (s.extra as Map<String, dynamic>?) ?? <String, dynamic>{};
+          return EditProfilePage(
+            initialEmail: (extra['email'] as String?) ?? 'thangtoi@gmail.com',
+            initialUsername: (extra['username'] as String?) ?? 'AnhLaThangToi',
+            initialAvatarIndex: (extra['avatarIndex'] as int?) ?? 0,
+          );
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.changePassword,
+        builder: (c, s) => const ChangePasswordPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.language,
+        builder: (c, s) => const LanguagePage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.currency,
+        builder: (c, s) => const CurrencyPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.wishlist,
+        builder: (c, s) => const WishlistPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '${AppRoutes.popularApps}/:id',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return PopularAppsDetailPage(appId: id);
