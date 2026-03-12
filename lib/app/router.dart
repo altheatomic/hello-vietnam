@@ -14,6 +14,7 @@ import '../features/profile/presentation/wishlist_page.dart';
 
 import '../features/forum/presentation/forum_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
+import '../features/popular_apps/presentation/popular_apps_detail.dart';
 import '../features/feedback/presentation/feedback_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
@@ -129,6 +130,14 @@ GoRouter buildRouter() {
         path: AppRoutes.wishlist,
         builder: (c, s) => const WishlistPage(),
       ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '${AppRoutes.popularApps}/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return PopularAppsDetailPage(appId: id);
+        },
+      ),
 
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -207,20 +216,37 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
 /// Custom bottom navigation bar with rounded top corners and a center
 /// search button inline with other items.
 class _CustomBottomNav extends StatelessWidget {
-  const _CustomBottomNav({
-    required this.currentIndex,
-    required this.onTap,
-  });
+  const _CustomBottomNav({required this.currentIndex, required this.onTap});
 
   final int currentIndex;
   final ValueChanged<int> onTap;
 
   static const _items = <_NavItem>[
-    _NavItem(icon: Icons.home_outlined,           selectedIcon: Icons.home_rounded,            label: 'Home'),
-    _NavItem(icon: Icons.calendar_month_outlined,  selectedIcon: Icons.calendar_month_rounded,  label: 'Trip Planner'),
-    _NavItem(icon: Icons.search_rounded,          selectedIcon: Icons.search_rounded,          label: ''), // center
-    _NavItem(icon: Icons.chat_bubble_outline,      selectedIcon: Icons.chat_bubble_rounded,     label: 'Messages'),
-    _NavItem(icon: Icons.person_outline_rounded,   selectedIcon: Icons.person_rounded,          label: 'Profile'),
+    _NavItem(
+      icon: Icons.home_outlined,
+      selectedIcon: Icons.home_rounded,
+      label: 'Home',
+    ),
+    _NavItem(
+      icon: Icons.calendar_month_outlined,
+      selectedIcon: Icons.calendar_month_rounded,
+      label: 'Trip Planner',
+    ),
+    _NavItem(
+      icon: Icons.search_rounded,
+      selectedIcon: Icons.search_rounded,
+      label: '',
+    ), // center
+    _NavItem(
+      icon: Icons.chat_bubble_outline,
+      selectedIcon: Icons.chat_bubble_rounded,
+      label: 'Messages',
+    ),
+    _NavItem(
+      icon: Icons.person_outline_rounded,
+      selectedIcon: Icons.person_rounded,
+      label: 'Profile',
+    ),
   ];
 
   @override
@@ -228,9 +254,7 @@ class _CustomBottomNav extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(28),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -250,7 +274,9 @@ class _CustomBottomNav extends StatelessWidget {
               final branchIndex = i < 2 ? i : i - 1;
               final isSelected = branchIndex == currentIndex;
               return _buildNavItem(
-                _items[i], isSelected, () => onTap(branchIndex),
+                _items[i],
+                isSelected,
+                () => onTap(branchIndex),
               );
             }),
           ),
@@ -310,11 +336,7 @@ class _CustomBottomNav extends StatelessWidget {
             ),
           ],
         ),
-        child: const Icon(
-          Icons.search_rounded,
-          size: 26,
-          color: Colors.white,
-        ),
+        child: const Icon(Icons.search_rounded, size: 26, color: Colors.white),
       ),
     );
   }
@@ -330,4 +352,3 @@ class _NavItem {
     required this.label,
   });
 }
-
