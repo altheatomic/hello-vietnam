@@ -1,149 +1,61 @@
-import '../domain/explore_destination.dart';
+import '../domain/explore_item.dart';
 
-final List<ExploreDestination> exploreDestinations = [
-  ExploreDestination(
-    id: '1',
-    name: 'Abiansimal',
-    country: 'Indonesia',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?w=500',
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500',
-      'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=500',
-    ],
-    rating: 4.87,
-    reviews: 71,
-    distance: 1669,
-    checkIn: 'Jul 2',
-    checkOut: 'Jul 7',
-    pricePerNight: 360,
-    category: 'Beach',
-  ),
-  ExploreDestination(
-    id: '2',
-    name: 'Bali Retreat',
-    country: 'Indonesia',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1551632440-2c5bc3b4e93b?w=500',
-      'https://images.unsplash.com/photo-1537959459457-641f785f6de3?w=500',
-      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500',
-    ],
-    rating: 4.92,
-    reviews: 128,
-    distance: 1245,
-    checkIn: 'Jul 10',
-    checkOut: 'Jul 15',
-    pricePerNight: 280,
-    category: 'Amazing pools',
-  ),
-  ExploreDestination(
-    id: '3',
-    name: 'Phuket Palace',
-    country: 'Thailand',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1522158537163-37e8e81ff1ad?w=500',
-      'https://images.unsplash.com/photo-1503803106772-097266ccf77f?w=500',
-      'https://images.unsplash.com/photo-1566641992315-c7e62b66ddd1?w=500',
-    ],
-    rating: 4.75,
-    reviews: 94,
-    distance: 1568,
-    checkIn: 'Aug 1',
-    checkOut: 'Aug 7',
-    pricePerNight: 250,
-    category: 'Beach',
-  ),
-  ExploreDestination(
-    id: '4',
-    name: 'Boracay Island',
-    country: 'Philippines',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1532619675605-1ede6c2ed586?w=500',
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500',
-      'https://images.unsplash.com/photo-1453395462474-d7deb29591a0?w=500',
-    ],
-    rating: 4.88,
-    reviews: 156,
-    distance: 1892,
-    checkIn: 'Jul 20',
-    checkOut: 'Jul 27',
-    pricePerNight: 299,
-    category: 'Islands',
-  ),
-  ExploreDestination(
-    id: '5',
-    name: 'Maldives Luxury',
-    country: 'Maldives',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500',
-      'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=500',
-      'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500',
-    ],
-    rating: 4.95,
-    reviews: 203,
-    distance: 3456,
-    checkIn: 'Aug 15',
-    checkOut: 'Aug 22',
-    pricePerNight: 650,
-    category: 'OMG!',
-  ),
-  ExploreDestination(
-    id: '6',
-    name: 'Palau Wonders',
-    country: 'Palau',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500',
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500',
-      'https://images.unsplash.com/photo-1455849318169-8c8e4f87e7b0?w=500',
-    ],
-    rating: 4.82,
-    reviews: 87,
-    distance: 2145,
-    checkIn: 'Sep 1',
-    checkOut: 'Sep 8',
-    pricePerNight: 425,
-    category: 'Islands',
-  ),
-  ExploreDestination(
-    id: '7',
-    name: 'Ha Long Bay Villa',
-    country: 'Vietnam',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500',
-      'https://images.unsplash.com/photo-1502933691298-84fc14542831?w=500',
-      'https://images.unsplash.com/photo-1455849318169-8c8e4f87e7b0?w=500',
-    ],
-    rating: 4.79,
-    reviews: 112,
-    distance: 89,
-    checkIn: 'Jul 5',
-    checkOut: 'Jul 10',
-    pricePerNight: 180,
-    category: 'Amazing pools',
-  ),
-  ExploreDestination(
-    id: '8',
-    name: 'Saigon Penthouse',
-    country: 'Vietnam',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1551632440-2c5bc3b4e93b?w=500',
-      'https://images.unsplash.com/photo-1522158537163-37e8e81ff1ad?w=500',
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500',
-    ],
-    rating: 4.71,
-    reviews: 64,
-    distance: 120,
-    checkIn: 'Jul 8',
-    checkOut: 'Jul 14',
-    pricePerNight: 220,
-    category: 'Beach',
-  ),
+/// ---------------------------------------------------------------
+/// Mock data for the Explore page — swap with API later.
+/// ---------------------------------------------------------------
+
+/// Featured suggestions shown at the top (horizontal scroll).
+const List<ExploreItem> exploreFeatured = [
+  ExploreItem(id: 'f1', name: 'Bun bo',           imagePath: 'assets/images/explore/bun_bo.jpg'),
+  ExploreItem(id: 'f2', name: 'Water puppetry',   imagePath: 'assets/images/explore/water_puppetry.jpg'),
+  ExploreItem(id: 'f3', name: 'Pho',              imagePath: 'assets/images/explore/pho.jpg'),
+  ExploreItem(id: 'f4', name: 'Hoi An',           imagePath: 'assets/images/explore/hoi_an.jpg'),
 ];
 
-final List<String> exploreCategories = [
-  'OMG!',
-  'Beach',
-  'Amazing pools',
-  'Islands',
-  'Trending',
-  'Mountain',
+/// Category tabs data.
+const List<ExploreCategory> exploreCategories = [
+  ExploreCategory(
+    id: 'activities',
+    title: 'Activities',
+    description: 'Hands-on experiences and cultural activities',
+    items: [
+      ExploreItem(id: 'a1', name: 'Floating market',         imagePath: 'assets/images/explore/floating_market.jpg'),
+      ExploreItem(id: 'a2', name: 'Dropping water lanterns',  imagePath: 'assets/images/explore/water_lanterns.jpg'),
+      ExploreItem(id: 'a3', name: 'Floating market',         imagePath: 'assets/images/explore/floating_market_2.jpg'),
+      ExploreItem(id: 'a4', name: 'Dropping water lanterns',  imagePath: 'assets/images/explore/water_lanterns_2.jpg'),
+    ],
+  ),
+  ExploreCategory(
+    id: 'culture',
+    title: 'Culture',
+    description: 'Traditional customs, heritage, and cultural practices',
+    items: [
+      ExploreItem(id: 'c1', name: 'Water puppetry',           imagePath: 'assets/images/explore/water_puppetry.jpg'),
+      ExploreItem(id: 'c2', name: 'Traditional craft villages', imagePath: 'assets/images/explore/craft_villages.jpg'),
+      ExploreItem(id: 'c3', name: 'Water puppetry',           imagePath: 'assets/images/explore/water_puppetry_2.jpg'),
+      ExploreItem(id: 'c4', name: 'Traditional craft villages', imagePath: 'assets/images/explore/craft_villages_2.jpg'),
+    ],
+  ),
+  ExploreCategory(
+    id: 'food',
+    title: 'Food',
+    description: 'Local dishes and culinary specialties from different regions',
+    items: [
+      ExploreItem(id: 'd1', name: 'Beef noodle soup',  imagePath: 'assets/images/explore/beef_noodle.jpg'),
+      ExploreItem(id: 'd2', name: 'Pho',               imagePath: 'assets/images/explore/pho.jpg'),
+      ExploreItem(id: 'd3', name: 'Banh mi',           imagePath: 'assets/images/explore/banh_mi.jpg'),
+      ExploreItem(id: 'd4', name: 'Bun bo',            imagePath: 'assets/images/explore/bun_bo.jpg'),
+    ],
+  ),
+  ExploreCategory(
+    id: 'local_products',
+    title: 'Local Products',
+    description: 'Traditional goods and handcrafted regional products',
+    items: [
+      ExploreItem(id: 'p1', name: 'Conical hats',      imagePath: 'assets/images/explore/conical_hats.jpg'),
+      ExploreItem(id: 'p2', name: 'Bat Trang pottery', imagePath: 'assets/images/explore/bat_trang.jpg'),
+      ExploreItem(id: 'p3', name: 'Conical hats',      imagePath: 'assets/images/explore/conical_hats_2.jpg'),
+      ExploreItem(id: 'p4', name: 'Bat Trang pottery', imagePath: 'assets/images/explore/bat_trang_2.jpg'),
+    ],
+  ),
 ];

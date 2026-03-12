@@ -59,7 +59,7 @@ class RecommendationCard extends StatelessWidget {
                       child: Image.asset(
                         imagePath,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
+                        errorBuilder: (_, __, ___) => Container(
                           color: AppColors.primaryLight.withValues(alpha: 0.2),
                           child: const Center(
                             child: Icon(

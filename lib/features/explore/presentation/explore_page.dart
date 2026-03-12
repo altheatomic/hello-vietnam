@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
-
 import '../data/explore_mock_data.dart';
-import '../domain/explore_destination.dart';
-import 'widgets/search_filter_bar.dart';
-import 'widgets/category_tabs.dart';
-import 'widgets/destination_card.dart';
+import '../domain/explore_item.dart';
+import 'widgets/explore_floating_back_button.dart';
+import 'widgets/explore_preview_widgets.dart';
+
+/// Background image URL for the header area.
+const _headerBgUrl =
+    'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Explore/Explore.jpeg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvRXhwbG9yZS9FeHBsb3JlLmpwZWciLCJpYXQiOjE3NzMxMjc3MzMsImV4cCI6MTgwNDY2MzczM30.ceAzAGzuWrdwtwjN5dpqtzIQkpaKsabDGrNq9FdmEt8';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
@@ -16,126 +20,530 @@ class ExplorePage extends StatefulWidget {
 }
 
 class _ExplorePageState extends State<ExplorePage> {
-  String _selectedCategory = 'Beach';
-  late List<ExploreDestination> _filteredDestinations;
+  int _selectedFilter = 0;
+  late final PageController _featuredController;
+
+  /// Keys for each category section so we can scroll to them.
+  final List<GlobalKey> _sectionKeys = List.generate(
+    exploreCategories.length,
+    (_) => GlobalKey(),
+  );
 
   @override
   void initState() {
     super.initState();
-    _updateFilteredDestinations();
+    _featuredController = PageController(viewportFraction: 0.42);
   }
 
-  void _updateFilteredDestinations() {
-    setState(() {
-      if (_selectedCategory == 'All') {
-        _filteredDestinations = List.from(exploreDestinations);
-      } else {
-        _filteredDestinations = exploreDestinations
-            .where((dest) => dest.category == _selectedCategory)
-            .toList();
-      }
-    });
+  @override
+  void dispose() {
+    _featuredController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToSection(int index) {
+    setState(() => _selectedFilter = index);
+    final keyContext = _sectionKeys[index].currentContext;
+    if (keyContext != null) {
+      Scrollable.ensureVisible(
+        keyContext,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final statusBarHeight = MediaQuery.of(context).padding.top;
+    final statusBarH = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        top: false,
-        child: CustomScrollView(
-          slivers: [
-            // ── Header with search ──────────────────────
-            SliverAppBar(
-              floating: true,
-              snap: true,
-              backgroundColor: Colors.white,
-              elevation: 0,
-              expandedHeight: 0,
-              collapsedHeight: kToolbarHeight + statusBarHeight + 80,
-              toolbarHeight: 0,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  color: Colors.white,
-                  padding: EdgeInsets.only(
-                    top: statusBarHeight + 12,
-                    left: AppConstants.pagePadding,
-                    right: AppConstants.pagePadding,
-                    bottom: 16,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      SearchFilterBar(
-                        onSearchTap: () {
-                          // TODO: Navigate to advanced search
-                        },
-                        onFilterTap: () {
-                          // TODO: Show filter options
-                        },
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              // ── Header with background image ────────────────
+              SliverToBoxAdapter(
+                child: Stack(
+                  children: [
+                    // Background image (15% opacity)
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: 0.15,
+                        child: Image.network(
+                          _headerBgUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: AppColors.primaryLight.withValues(
+                                  alpha: 0.1,
+                                ),
+                              ),
+                        ),
                       ),
-                      const SizedBox(height: 12),
+                    ),
+
+                    // Header content
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        AppConstants.pagePadding,
+                        statusBarH + 56,
+                        AppConstants.pagePadding,
+                        16,
+                      ),
+                      child: Column(
+                        children: [
+                          // Title (blue)
+                          Text(
+                            'Discover Vietnamese Culture and\nLocal Specialties',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                              height: 1.3,
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Search bar (tap to open search page)
+                          GestureDetector(
+                            onTap: () => context.push(AppRoutes.exploreSearch),
+                            child: Container(
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(45),
+                                border: Border.all(
+                                  color: AppColors.primaryLight.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const SizedBox(width: 14),
+                                  Icon(
+                                    Icons.search_rounded,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Search for destinations',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade400,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 6),
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryLight.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt_outlined,
+                                      color: AppColors.primary,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 8)),
+
+              // ── Featured suggestions (horizontal scroll) ────
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 164,
+                  child: PageView.builder(
+                    controller: _featuredController,
+                    physics: const BouncingScrollPhysics(
+                      parent: PageScrollPhysics(),
+                    ),
+                    itemCount: exploreFeatured.length,
+                    itemBuilder: (context, index) {
+                      final item = exploreFeatured[index];
+                      return AnimatedBuilder(
+                        animation: _featuredController,
+                        builder: (context, child) {
+                          final page = _featuredController.hasClients
+                              ? (_featuredController.page ??
+                                    _featuredController.initialPage.toDouble())
+                              : _featuredController.initialPage.toDouble();
+                          final distance = (page - index).abs().clamp(0.0, 1.0);
+                          final emphasis = (1 - distance).clamp(0.0, 1.0);
+
+                          return Transform.scale(
+                            scale: 0.9 + (emphasis * 0.1),
+                            alignment: Alignment.center,
+                            child: Transform.translate(
+                              offset: Offset(0, 10 - (emphasis * 10)),
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                  left: index == 0
+                                      ? AppConstants.pagePadding
+                                      : 6,
+                                  right: index == exploreFeatured.length - 1
+                                      ? AppConstants.pagePadding
+                                      : 6,
+                                ),
+                                child: _FeaturedCard(
+                                  item: item,
+                                  emphasis: emphasis,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+              // ── Sticky filter chips ─────────────────────────
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyFilterDelegate(
+                  selectedIndex: _selectedFilter,
+                  onTap: _scrollToSection,
+                ),
+              ),
+
+              // ── All categories on one page ───────────────────
+              ...List.generate(exploreCategories.length, (i) {
+                final category = exploreCategories[i];
+                return SliverToBoxAdapter(
+                  child: _CategorySection(
+                    key: _sectionKeys[i],
+                    category: category,
+                    categoryIndex: i,
+                  ),
+                );
+              }),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ],
+          ),
+          ExploreFloatingBackButton(onTap: () => context.pop()),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Sticky filter delegate ──────────────────────────────────────────
+
+class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
+  final int selectedIndex;
+  final ValueChanged<int> onTap;
+
+  _StickyFilterDelegate({required this.selectedIndex, required this.onTap});
+
+  @override
+  double get minExtent => 126;
+  @override
+  double get maxExtent => 126;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final statusBarH = MediaQuery.of(context).padding.top;
+    final labels = ['Activities', 'Culture', 'Food', 'Local Products'];
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.only(top: statusBarH + 34),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.pagePadding,
+              ),
+              itemCount: labels.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final isSelected = index == selectedIndex;
+                return GestureDetector(
+                  onTap: () => onTap(index),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.transparent,
+                          width: 2.5,
+                        ),
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      labels[index],
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: isSelected ? AppColors.primary : Colors.grey,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Container(height: 1, color: Colors.grey.shade200),
+        ],
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickyFilterDelegate oldDelegate) =>
+      selectedIndex != oldDelegate.selectedIndex;
+}
+
+// ─── Featured suggestion card ────────────────────────────────────────
+
+class _FeaturedCard extends StatelessWidget {
+  const _FeaturedCard({required this.item, this.emphasis = 1});
+
+  final ExploreItem item;
+  final double emphasis;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = Color.lerp(
+      Colors.white.withValues(alpha: 0.55),
+      AppColors.primaryLight.withValues(alpha: 0.95),
+      emphasis,
+    )!;
+    final shadowColor = Color.lerp(
+      Colors.black.withValues(alpha: 0.05),
+      AppColors.primary.withValues(alpha: 0.18),
+      emphasis,
+    )!;
+
+    return GestureDetector(
+      onTap: () {
+        context.push(
+          AppRoutes.exploreDetail,
+          extra: {'id': item.id, 'name': item.name},
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: borderColor, width: 1.2 + emphasis),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 16 + (emphasis * 14),
+              offset: Offset(0, 8 + (emphasis * 6)),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ExplorePreviewImage(imagePath: item.imagePath, borderRadius: 22),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.58),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Text(
+                    item.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Category section ────────────────────────────────────────────────
+
+class _CategorySection extends StatelessWidget {
+  const _CategorySection({
+    super.key,
+    required this.category,
+    required this.categoryIndex,
+  });
+  final ExploreCategory category;
+  final int categoryIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppConstants.pagePadding,
+        12,
+        AppConstants.pagePadding,
+        8,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Description + Explore button
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  category.description,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  context.push(AppRoutes.exploreCategory, extra: categoryIndex);
+                },
+                child: Text(
+                  'Explore',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 10),
+
+          // 2-column grid
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: category.items.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.3,
+            ),
+            itemBuilder: (context, index) {
+              return _ExploreItemCard(item: category.items[index]);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Single explore item card ────────────────────────────────────────
+
+class _ExploreItemCard extends StatelessWidget {
+  const _ExploreItemCard({required this.item});
+  final ExploreItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        context.push(
+          AppRoutes.exploreDetail,
+          extra: {'id': item.id, 'name': item.name},
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Container(
+              color: Colors.grey.shade200,
+              child: Icon(
+                Icons.image_outlined,
+                size: 36,
+                color: Colors.grey.shade400,
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.55),
+                      Colors.transparent,
                     ],
                   ),
                 ),
-              ),
-            ),
-
-            // ── Category Tabs ───────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 12),
-                child: CategoryTabs(
-                  categories: exploreCategories,
-                  selectedCategory: _selectedCategory,
-                  onCategorySelected: (category) {
-                    _selectedCategory = category;
-                    _updateFilteredDestinations();
-                  },
+                child: Text(
+                  item.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-
-            // ── Destination List ────────────────────────
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final destination = _filteredDestinations[index];
-                  return DestinationCard(
-                    destination: destination,
-                    onTap: () {
-                      // TODO: Navigate to detail page
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${destination.name} tapped'),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                    onFavoriteChanged: (isFavorite) {
-                      // TODO: Save favorite to database
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            isFavorite 
-                              ? '❤️ Added to wishlist' 
-                              : '💔 Removed from wishlist',
-                          ),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                  );
-                },
-                childCount: _filteredDestinations.length,
-              ),
-            ),
-
-            // ── Bottom padding ──────────────────────────
-            SliverToBoxAdapter(
-              child: const SizedBox(height: 32),
             ),
           ],
         ),

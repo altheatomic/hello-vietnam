@@ -17,6 +17,10 @@ import '../features/popular_apps/presentation/popular_apps_page.dart';
 import '../features/popular_apps/presentation/popular_apps_detail.dart';
 import '../features/feedback/presentation/feedback_page.dart';
 import '../features/explore/presentation/explore_page.dart';
+import '../features/explore/presentation/explore_search_page.dart';
+import '../features/explore/presentation/explore_search_result_page.dart';
+import '../features/explore/presentation/explore_category_page.dart';
+import '../features/explore/presentation/explore_detail_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
 import '../features/auth/presentation/login_page.dart';
@@ -38,6 +42,10 @@ class AppRoutes {
   static const feedback = '/send-feedback';
   static const recommend = '/recommend';
   static const explore = '/explore';
+  static const exploreSearch = '/explore-search';
+  static const exploreSearchResult = '/explore-search-result';
+  static const exploreCategory = '/explore-category';
+  static const exploreDetail = '/explore-detail';
   static const popularApps = '/popular-apps';
   static const aiSearch = '/ai-search';
   static const wishlist = '/wishlist';
@@ -82,6 +90,36 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.explore,
         builder: (c, s) => const ExplorePage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.exploreSearch,
+        builder: (c, s) => const ExploreSearchPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.exploreSearchResult,
+        builder: (c, s) => ExploreSearchResultPage(
+          destination: s.extra as String? ?? '',
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.exploreCategory,
+        builder: (c, s) => ExploreCategoryPage(
+          initialTab: s.extra as int? ?? 0,
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.exploreDetail,
+        builder: (c, s) {
+          final args = (s.extra as Map<String, String>?) ?? const <String, String>{};
+          return ExploreDetailPage(
+            itemId: args['id'] ?? '',
+            itemName: args['name'] ?? '',
+          );
+        },
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,

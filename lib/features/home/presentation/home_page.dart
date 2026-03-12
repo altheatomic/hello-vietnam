@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
@@ -64,7 +62,9 @@ class HomePage extends StatelessWidget {
                             size: 22,
                           ),
                           color: Colors.white,
-                          onPressed: () => context.push(AppRoutes.notification),
+                          onPressed: () {
+                            // TODO: navigate to notifications
+                          },
                         ),
                       ),
                     ],
@@ -121,7 +121,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
             // ── Best Dishes ──────────────────────────────
             Padding(
@@ -144,7 +144,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
           ],
         ),
       ),
