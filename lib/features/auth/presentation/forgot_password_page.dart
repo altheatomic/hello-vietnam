@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -12,85 +14,195 @@ class ForgotPasswordPage extends StatefulWidget {
 }
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
-  int _step = 0; // 0: email, 1: OTP, 2: new password, 3: success
+  int _step = 0; // 0: email, 1: check email, 2: new password, 3: success
   final _emailController = TextEditingController();
-  final _otpControllers = List.generate(4, (_) => TextEditingController());
-  final _otpFocusNodes = List.generate(4, (_) => FocusNode());
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  // Resend timer
-  int _resendSeconds = 60;
-  Timer? _resendTimer;
+  bool _isLoading = false;
+  StreamSubscription<AuthState>? _authSubscription;
+
+  void _setLoading(bool loading) {
+    setState(() => _isLoading = loading);
+  }
 
   static const _illustrationUrl =
       'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Login/ForgotPassword.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvTG9naW4vRm9yZ290UGFzc3dvcmQucG5nIiwiaWF0IjoxNzcyNjI2MzA2LCJleHAiOjE4MDQxNjIzMDZ9.h2oWLRKqI4Wx0vxZKnLJ9H01JMY4otDXRIyC8VIkF9c';
 
   @override
-  void dispose() {
-    _emailController.dispose();
-    for (final c in _otpControllers) {
-      c.dispose();
-    }
-    for (final f in _otpFocusNodes) {
-      f.dispose();
-    }
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    _resendTimer?.cancel();
-    super.dispose();
-  }
+  void initState() {
+    super.initState();
+    // Listen for auth state changes (when user clicks reset link)
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final session = data.session;
+      debugPrint('Auth state changed: ${data.event}, has session: ${session != null}');
+      if (session != null && mounted) {
+        // User has been authenticated via reset link, proceed to password step
+        if (_step == 1) {
+          _goToStep(2);
+        } else if (_step == 0) {
+          // If we're still on email step, jump to password step
+          _goToStep(2);
+        }
+      }
+    });
 
-  void _startResendTimer() {
-    _resendSeconds = 60;
-    _resendTimer?.cancel();
-    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_resendSeconds <= 0) {
-        timer.cancel();
-      } else {
-        setState(() => _resendSeconds--);
+    // Check if user already has a valid session (from reset link)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentSession = Supabase.instance.client.auth.currentSession;
+      debugPrint('Initial session check: ${currentSession != null}');
+      if (currentSession != null && mounted) {
+        // User already has session, go directly to password step
+        _goToStep(2);
       }
     });
   }
 
-  void _goToStep(int step) {
-    setState(() => _step = step);
-    if (step == 1) _startResendTimer();
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
-  void _onConfirmEmail() {
+  void _goToStep(int step) {
+    setState(() => _step = step);
+  }
+
+  void _onEmailLinkClicked() {
+    // Check current session
+    final currentSession = Supabase.instance.client.auth.currentSession;
+    if (currentSession != null) {
+      // User has been authenticated via reset link, proceed to password step
+      _goToStep(2);
+    } else {
+      _showSnack('Please click the reset link in your email first, or try refreshing the page');
+    }
+  }
+
+  void _refreshSession() async {
+    _setLoading(true);
+    try {
+      // Force refresh session
+      final currentSession = Supabase.instance.client.auth.currentSession;
+      if (currentSession != null) {
+        _goToStep(2);
+        _showSnack('Session verified! You can now set your new password.');
+      } else {
+        _showSnack('No active session found. Please click the reset link in your email.');
+      }
+    } catch (e) {
+      _showSnack('Failed to verify session. Please try again.');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void _resendResetEmail() async {
+    _setLoading(true);
+    try {
+      final email = _emailController.text.trim();
+      await AuthRepository.instance.resetPassword(email: email);
+      _showSnack('Password reset email resent! Check your inbox.');
+    } catch (e) {
+      String errorMessage = 'Failed to resend email. Please try again.';
+      final errorStr = e.toString();
+
+      if (errorStr.contains('RATE_LIMIT:')) {
+        errorMessage = errorStr.split('RATE_LIMIT:')[1].trim();
+      } else if (errorStr.contains('INVALID_EMAIL:')) {
+        errorMessage = errorStr.split('INVALID_EMAIL:')[1].trim();
+      } else if (errorStr.contains('RESET_FAILED:')) {
+        errorMessage = errorStr.split('RESET_FAILED:')[1].trim();
+      } else if (errorStr.contains('rate limit') || errorStr.contains('Rate limit')) {
+        errorMessage = 'Too many reset emails sent. Please wait 1 hour before trying again.';
+      }
+
+      _showSnack(errorMessage);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void _onConfirmEmail() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
       _showSnack('Please enter your email');
       return;
     }
-    _goToStep(1);
-  }
 
-  void _onConfirmOTP() {
-    final otp = _otpControllers.map((c) => c.text).join();
-    if (otp.length < 4) {
-      _showSnack('Please enter the 4-digit code');
+    // Basic email validation
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(email)) {
+      _showSnack('Please enter a valid email address');
       return;
     }
-    _goToStep(2);
+
+    _setLoading(true);
+    try {
+      await AuthRepository.instance.resetPassword(email: email);
+      _showSnack('Password reset email sent! Check your inbox.');
+      _goToStep(1);
+    } catch (e) {
+      String errorMessage = 'Failed to send reset email. Please try again.';
+      final errorStr = e.toString();
+
+      if (errorStr.contains('RATE_LIMIT:')) {
+        errorMessage = errorStr.split('RATE_LIMIT:')[1].trim();
+      } else if (errorStr.contains('INVALID_EMAIL:')) {
+        errorMessage = errorStr.split('INVALID_EMAIL:')[1].trim();
+      } else if (errorStr.contains('RESET_FAILED:')) {
+        errorMessage = errorStr.split('RESET_FAILED:')[1].trim();
+      } else if (errorStr.contains('rate limit') || errorStr.contains('Rate limit')) {
+        errorMessage = 'Too many reset emails sent. Please wait 1 hour before trying again.';
+      }
+
+      _showSnack(errorMessage);
+    } finally {
+      _setLoading(false);
+    }
   }
 
-  void _onConfirmNewPassword() {
+  void _onConfirmNewPassword() async {
+    // Check if user has a valid session (from reset link)
+    final currentSession = Supabase.instance.client.auth.currentSession;
+    if (currentSession == null) {
+      _showSnack('Please click the reset link in your email first');
+      return;
+    }
+
     final pw = _passwordController.text;
     final cpw = _confirmPasswordController.text;
+
     if (pw.isEmpty || cpw.isEmpty) {
       _showSnack('Please fill in all fields');
       return;
     }
+
+    if (pw.length < 6) {
+      _showSnack('Password must be at least 6 characters long');
+      return;
+    }
+
     if (pw != cpw) {
       _showSnack('Passwords do not match');
       return;
     }
-    _resendTimer?.cancel();
-    _goToStep(3);
+
+    _setLoading(true);
+    try {
+      await AuthRepository.instance.updatePassword(newPassword: pw);
+      _showSnack('Password updated successfully');
+      _goToStep(3);
+    } catch (e) {
+      _showSnack('Failed to update password. Please try again.');
+    } finally {
+      _setLoading(false);
+    }
   }
 
   void _showSnack(String msg) {
@@ -172,7 +284,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ),
                     Expanded(
                       child: Text(
-                        _step == 2 ? 'Create new password' : 'Forgot Password',
+                        _step == 2 ? 'Create new password' : 'Check your email',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 20,
@@ -197,7 +309,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           child: _step == 0
               ? _buildEmailStep()
               : _step == 1
-                  ? _buildOTPStep()
+                  ? _buildEmailCheckStep()
                   : _buildNewPasswordStep(),
         ),
 
@@ -213,7 +325,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text(
-          'Please enter your email to receive\nverification code',
+          'Please enter your email to receive\npassword reset link',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 15,
@@ -230,21 +342,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 24),
-        _buildMainButton('Confirm email', _onConfirmEmail),
+        _buildMainButton('Confirm email', _onConfirmEmail, isLoading: _isLoading),
       ],
     );
   }
 
-  // ─── Step 1: OTP ───
+  // ─── Step 1: Check Email ───
 
-  Widget _buildOTPStep() {
+  Widget _buildEmailCheckStep() {
     final email = _emailController.text.trim();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text(
-          'Enter your OTP',
+          'Check your email',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 15,
@@ -253,97 +365,60 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Verification code sent to ',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+        RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 14,
+              height: 1.5,
             ),
-            Text(
-              email,
-              style: const TextStyle(
-                color: Color(0xFF42A5F5),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-
-        // OTP boxes
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(4, (i) {
-            return Container(
-              width: 35,
-              height: 53,
-              margin: const EdgeInsets.symmetric(horizontal: 6),
-              child: TextField(
-                controller: _otpControllers[i],
-                focusNode: _otpFocusNodes[i],
-                textAlign: TextAlign.center,
-                textAlignVertical: TextAlignVertical.center,
-                keyboardType: TextInputType.number,
-                maxLength: 1,
-                maxLines: 1,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            children: [
+              const TextSpan(text: 'We\'ve sent a password reset link to\n'),
+              TextSpan(
+                text: email,
                 style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A2E),
+                  color: Color(0xFF42A5F5),
+                  fontWeight: FontWeight.w600,
                 ),
-                decoration: InputDecoration(
-                  counterText: '',
-                  contentPadding: EdgeInsets.zero,
-                  isDense: true,
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    borderSide: const BorderSide(color: Color(0xFF42A5F5), width: 1.5),
-                  ),
-                ),
-                onChanged: (value) {
-                  if (value.isNotEmpty && i < 3) {
-                    _otpFocusNodes[i + 1].requestFocus();
-                  }
-                  if (value.isEmpty && i > 0) {
-                    _otpFocusNodes[i - 1].requestFocus();
-                  }
-                },
               ),
-            );
-          }),
+              const TextSpan(text: '\n\n1. Click the link in your email\n2. You\'ll be redirected back here\n3. Click "I\'ve clicked the link" or "Refresh/Verify Session"'),
+            ],
+          ),
         ),
-
-        const SizedBox(height: 24),
-        _buildMainButton('Verify', _onConfirmOTP),
+        const SizedBox(height: 32),
+        // Email icon
+        const Center(
+          child: Icon(
+            Icons.email_outlined,
+            size: 64,
+            color: Color(0xFFB3E5FC),
+          ),
+        ),
+        const SizedBox(height: 32),
+        _buildMainButton('I\'ve clicked the link', _onEmailLinkClicked),
+        const SizedBox(height: 16),
+        _buildMainButton('Refresh/Verify Session', _refreshSession, isLoading: _isLoading),
         const SizedBox(height: 20),
 
         // Resend
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'Resend code in ',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+            const Text(
+              'Didn\'t receive the email? ',
+              style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
-            Text(
-              '00:${_resendSeconds.toString().padLeft(2, '0')}',
-              style: const TextStyle(
-                color: Color(0xFF42A5F5),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+            GestureDetector(
+              onTap: _resendResetEmail,
+              child: const Text(
+                'Resend',
+                style: TextStyle(
+                  color: Color(0xFF42A5F5),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
           ],
@@ -396,7 +471,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
         ),
         const SizedBox(height: 24),
-        _buildMainButton('Continue', _onConfirmNewPassword),
+        _buildMainButton('Continue', _onConfirmNewPassword, isLoading: _isLoading),
       ],
     );
   }
@@ -498,11 +573,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  Widget _buildMainButton(String label, VoidCallback onPressed) {
+  Widget _buildMainButton(String label, VoidCallback onPressed, {bool isLoading = false}) {
     return SizedBox(
       height: 52,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFB3E5FC),
           foregroundColor: const Color(0xFF1A1A2E),
@@ -510,7 +585,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
-        child: Text(label),
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A1A2E)),
+                ),
+              )
+            : Text(label),
       ),
     );
   }

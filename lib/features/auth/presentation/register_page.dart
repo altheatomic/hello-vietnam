@@ -52,7 +52,8 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _isLoading = true);
 
     try {
-      await AuthRepository.instance.signUp(email: email, password: password);
+      await AuthRepository.instance
+          .signUp(name: name, email: email, password: password);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
