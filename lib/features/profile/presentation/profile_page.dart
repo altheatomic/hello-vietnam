@@ -12,10 +12,26 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   static const List<_AvatarPreset> _avatarPresets = <_AvatarPreset>[
-    _AvatarPreset(icon: Icons.person, color: Color(0xFFE7F3FF), iconColor: Color(0xFF8AA4C1)),
-    _AvatarPreset(icon: Icons.directions_car_filled_rounded, color: Color(0xFFFFE8DA), iconColor: Color(0xFF5F6E7A)),
-    _AvatarPreset(icon: Icons.flight_takeoff_rounded, color: Color(0xFFE7F7EF), iconColor: Color(0xFF6D9278)),
-    _AvatarPreset(icon: Icons.landscape_rounded, color: Color(0xFFF1E8FF), iconColor: Color(0xFF8370A8)),
+    _AvatarPreset(
+      icon: Icons.person,
+      color: Color(0xFFE7F3FF),
+      iconColor: Color(0xFF8AA4C1),
+    ),
+    _AvatarPreset(
+      icon: Icons.directions_car_filled_rounded,
+      color: Color(0xFFFFE8DA),
+      iconColor: Color(0xFF5F6E7A),
+    ),
+    _AvatarPreset(
+      icon: Icons.flight_takeoff_rounded,
+      color: Color(0xFFE7F7EF),
+      iconColor: Color(0xFF6D9278),
+    ),
+    _AvatarPreset(
+      icon: Icons.landscape_rounded,
+      color: Color(0xFFF1E8FF),
+      iconColor: Color(0xFF8370A8),
+    ),
   ];
 
   bool _notificationEnabled = false;
@@ -24,20 +40,22 @@ class _ProfilePageState extends State<ProfilePage> {
   String _email = 'thangtoi@gmail.com';
   int _avatarIndex = 0;
 
-  void _onLogout() {
-    AuthState.instance.logout();
+  Future<void> _onLogout() async {
+    await AuthRepository.instance.signOut();
+    if (!mounted) return;
     context.go(AppRoutes.login);
   }
 
   Future<void> _openEditProfile() async {
-    final Map<String, dynamic>? result = await context.push<Map<String, dynamic>>(
-      AppRoutes.editProfile,
-      extra: <String, dynamic>{
-        'email': _email,
-        'username': _username,
-        'avatarIndex': _avatarIndex,
-      },
-    );
+    final Map<String, dynamic>? result = await context
+        .push<Map<String, dynamic>>(
+          AppRoutes.editProfile,
+          extra: <String, dynamic>{
+            'email': _email,
+            'username': _username,
+            'avatarIndex': _avatarIndex,
+          },
+        );
 
     if (!mounted || result == null) {
       return;
@@ -132,13 +150,15 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                   child: Icon(
                                     _avatarPresets[_avatarIndex].icon,
-                                    color: _avatarPresets[_avatarIndex].iconColor,
+                                    color:
+                                        _avatarPresets[_avatarIndex].iconColor,
                                   ),
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: <Widget>[
                                       Text(
                                         _username,
@@ -297,10 +317,7 @@ class _SettingRow extends StatelessWidget {
               ),
             ),
             if (showChevron)
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFF1D1D1D),
-              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF1D1D1D)),
           ],
         ),
       ),
