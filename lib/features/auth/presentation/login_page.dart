@@ -376,7 +376,7 @@ class _LoginPageState extends State<LoginPage> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        child: const Text('Continue'),
+        child: const Text('Login'),
       ),
     );
   }
