@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -20,6 +22,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   bool _obscureConfirmPassword = true;
 
   bool _isLoading = false;
+  StreamSubscription<AuthState>? _authSubscription;
 
   void _setLoading(bool loading) {
     setState(() => _isLoading = loading);
@@ -29,7 +32,37 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Login/ForgotPassword.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvTG9naW4vRm9yZ290UGFzc3dvcmQucG5nIiwiaWF0IjoxNzcyNjI2MzA2LCJleHAiOjE4MDQxNjIzMDZ9.h2oWLRKqI4Wx0vxZKnLJ9H01JMY4otDXRIyC8VIkF9c';
 
   @override
+  void initState() {
+    super.initState();
+    // Listen for auth state changes (when user clicks reset link)
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final session = data.session;
+      debugPrint('Auth state changed: ${data.event}, has session: ${session != null}');
+      if (session != null && mounted) {
+        // User has been authenticated via reset link, proceed to password step
+        if (_step == 1) {
+          _goToStep(2);
+        } else if (_step == 0) {
+          // If we're still on email step, jump to password step
+          _goToStep(2);
+        }
+      }
+    });
+
+    // Check if user already has a valid session (from reset link)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentSession = Supabase.instance.client.auth.currentSession;
+      debugPrint('Initial session check: ${currentSession != null}');
+      if (currentSession != null && mounted) {
+        // User already has session, go directly to password step
+        _goToStep(2);
+      }
+    });
+  }
+
+  @override
   void dispose() {
+    _authSubscription?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -41,8 +74,32 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   void _onEmailLinkClicked() {
-    // User clicked the email link, proceed to password reset
-    _goToStep(2);
+    // Check current session
+    final currentSession = Supabase.instance.client.auth.currentSession;
+    if (currentSession != null) {
+      // User has been authenticated via reset link, proceed to password step
+      _goToStep(2);
+    } else {
+      _showSnack('Please click the reset link in your email first, or try refreshing the page');
+    }
+  }
+
+  void _refreshSession() async {
+    _setLoading(true);
+    try {
+      // Force refresh session
+      final currentSession = Supabase.instance.client.auth.currentSession;
+      if (currentSession != null) {
+        _goToStep(2);
+        _showSnack('Session verified! You can now set your new password.');
+      } else {
+        _showSnack('No active session found. Please click the reset link in your email.');
+      }
+    } catch (e) {
+      _showSnack('Failed to verify session. Please try again.');
+    } finally {
+      _setLoading(false);
+    }
   }
 
   void _resendResetEmail() async {
@@ -52,7 +109,20 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       await AuthRepository.instance.resetPassword(email: email);
       _showSnack('Password reset email resent! Check your inbox.');
     } catch (e) {
-      _showSnack('Failed to resend email. Please try again.');
+      String errorMessage = 'Failed to resend email. Please try again.';
+      final errorStr = e.toString();
+
+      if (errorStr.contains('RATE_LIMIT:')) {
+        errorMessage = errorStr.split('RATE_LIMIT:')[1].trim();
+      } else if (errorStr.contains('INVALID_EMAIL:')) {
+        errorMessage = errorStr.split('INVALID_EMAIL:')[1].trim();
+      } else if (errorStr.contains('RESET_FAILED:')) {
+        errorMessage = errorStr.split('RESET_FAILED:')[1].trim();
+      } else if (errorStr.contains('rate limit') || errorStr.contains('Rate limit')) {
+        errorMessage = 'Too many reset emails sent. Please wait 1 hour before trying again.';
+      }
+
+      _showSnack(errorMessage);
     } finally {
       _setLoading(false);
     }
@@ -78,13 +148,33 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       _showSnack('Password reset email sent! Check your inbox.');
       _goToStep(1);
     } catch (e) {
-      _showSnack('Failed to send reset email. Please try again.');
+      String errorMessage = 'Failed to send reset email. Please try again.';
+      final errorStr = e.toString();
+
+      if (errorStr.contains('RATE_LIMIT:')) {
+        errorMessage = errorStr.split('RATE_LIMIT:')[1].trim();
+      } else if (errorStr.contains('INVALID_EMAIL:')) {
+        errorMessage = errorStr.split('INVALID_EMAIL:')[1].trim();
+      } else if (errorStr.contains('RESET_FAILED:')) {
+        errorMessage = errorStr.split('RESET_FAILED:')[1].trim();
+      } else if (errorStr.contains('rate limit') || errorStr.contains('Rate limit')) {
+        errorMessage = 'Too many reset emails sent. Please wait 1 hour before trying again.';
+      }
+
+      _showSnack(errorMessage);
     } finally {
       _setLoading(false);
     }
   }
 
   void _onConfirmNewPassword() async {
+    // Check if user has a valid session (from reset link)
+    final currentSession = Supabase.instance.client.auth.currentSession;
+    if (currentSession == null) {
+      _showSnack('Please click the reset link in your email first');
+      return;
+    }
+
     final pw = _passwordController.text;
     final cpw = _confirmPasswordController.text;
 
@@ -292,7 +382,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const TextSpan(text: '\n\nClick the link to reset your password.'),
+              const TextSpan(text: '\n\n1. Click the link in your email\n2. You\'ll be redirected back here\n3. Click "I\'ve clicked the link" or "Refresh/Verify Session"'),
             ],
           ),
         ),
@@ -307,6 +397,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
         const SizedBox(height: 32),
         _buildMainButton('I\'ve clicked the link', _onEmailLinkClicked),
+        const SizedBox(height: 16),
+        _buildMainButton('Refresh/Verify Session', _refreshSession, isLoading: _isLoading),
         const SizedBox(height: 20),
 
         // Resend

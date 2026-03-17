@@ -26,6 +26,7 @@ import '../features/get_started/presentation/get_started_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
+import '../main.dart'; // Import to access shouldNavigateToForgotPassword
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -64,6 +65,13 @@ GoRouter buildRouter() {
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: true,
     initialLocation: AppRoutes.getStarted,
+    redirect: (context, state) {
+      // Check if we should navigate to forgot password page (from deep link)
+      if (shouldNavigateToForgotPassword()) {
+        return AppRoutes.forgotPassword;
+      }
+      return null; // No redirect
+    },
     routes: [
       // Routes outside of bottom navigation.
       GoRoute(

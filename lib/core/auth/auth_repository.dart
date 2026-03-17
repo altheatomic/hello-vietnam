@@ -66,7 +66,15 @@ class AuthRepository extends ChangeNotifier {
       );
     } on AuthException catch (e) {
       debugPrint('Reset password error: ${e.message}');
-      rethrow;
+
+      // Create more specific error messages
+      if (e.message.contains('rate limit') || e.message.contains('Rate limit')) {
+        throw Exception('RATE_LIMIT: Too many reset emails sent. Please wait 1 hour before trying again.');
+      } else if (e.message.contains('Invalid email')) {
+        throw Exception('INVALID_EMAIL: Please enter a valid email address.');
+      } else {
+        throw Exception('RESET_FAILED: ${e.message}');
+      }
     }
   }
 

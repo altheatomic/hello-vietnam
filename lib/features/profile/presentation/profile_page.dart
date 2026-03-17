@@ -24,8 +24,9 @@ class _ProfilePageState extends State<ProfilePage> {
   String _email = 'thangtoi@gmail.com';
   int _avatarIndex = 0;
 
-  void _onLogout() {
-    AuthState.instance.logout();
+  Future<void> _onLogout() async {
+    await AuthRepository.instance.signOut();
+    if (!mounted) return;
     context.go(AppRoutes.login);
   }
 
