@@ -1075,9 +1075,9 @@ class _TypeChip extends StatelessWidget {
         curve: Curves.easeOut,
         height: 46,
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF2EB9F8) : Colors.white,
+          color: selected ? const Color(0xFF81D4FA) : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF2EB9F8)),
+          border: Border.all(color: const Color(0xFF81D4FA)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Row(
@@ -1086,7 +1086,7 @@ class _TypeChip extends StatelessWidget {
             Icon(
               icon,
               size: 18,
-              color: selected ? Colors.white : const Color(0xFF2EB9F8),
+              color: selected ? Colors.white : const Color(0xFF81D4FA),
             ),
             const SizedBox(width: 6),
             Text(
@@ -1094,7 +1094,7 @@ class _TypeChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : const Color(0xFF2EB9F8),
+                color: selected ? Colors.white : const Color(0xFF81D4FA),
               ),
             ),
           ],

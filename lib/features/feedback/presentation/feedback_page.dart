@@ -10,23 +10,10 @@ class FeedbackPage extends StatefulWidget {
 }
 
 class _FeedbackPageState extends State<FeedbackPage> {
-  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-
-  static const List<String> _issueTypes = <String>[
-    'Incorrect data',
-    'Missing information',
-    'Inappropriate image/video',
-    'Map/address issue',
-    'Other',
-  ];
-
-  String? _selectedIssue;
-  bool _isIssueDropdownOpen = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -87,31 +74,6 @@ class _FeedbackPageState extends State<FeedbackPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    const _FieldLabel('Email'),
-                    _BorderTextField(
-                      controller: _emailController,
-                      hint: 'Enter email',
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 18),
-                    const _FieldLabel('Issue Type'),
-                    _IssueDropdown(
-                      value: _selectedIssue,
-                      options: _issueTypes,
-                      isOpen: _isIssueDropdownOpen,
-                      onToggle: () {
-                        setState(() {
-                          _isIssueDropdownOpen = !_isIssueDropdownOpen;
-                        });
-                      },
-                      onSelected: (String value) {
-                        setState(() {
-                          _selectedIssue = value;
-                          _isIssueDropdownOpen = false;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 18),
                     const _FieldLabel('Short Description'),
                     _BorderTextField(
                       controller: _descriptionController,
@@ -126,7 +88,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: primary,
+                          backgroundColor: const Color(0xFF81D4FA),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -210,106 +172,6 @@ class _BorderTextField extends StatelessWidget {
           borderSide: BorderSide(color: Color(0xFF2CA8E8), width: 1.3),
         ),
       ),
-    );
-  }
-}
-
-class _IssueDropdown extends StatelessWidget {
-  const _IssueDropdown({
-    required this.value,
-    required this.options,
-    required this.isOpen,
-    required this.onToggle,
-    required this.onSelected,
-  });
-
-  final String? value;
-  final List<String> options;
-  final bool isOpen;
-  final VoidCallback onToggle;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final BorderRadius dropdownRadius = BorderRadius.circular(10);
-    const Color borderColor = Color(0xFF757575);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        InkWell(
-          borderRadius: dropdownRadius,
-          onTap: onToggle,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: dropdownRadius,
-              border: Border.all(color: borderColor),
-            ),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    value ?? 'Select issue type',
-                    style: TextStyle(
-                      color: value == null ? Colors.grey.shade500 : const Color(0xFF262626),
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                Icon(
-                  isOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down_rounded,
-                  color: const Color(0xFF4A4A4A),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (isOpen) ...<Widget>[
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F1F6),
-              borderRadius: dropdownRadius,
-              border: Border.all(color: borderColor),
-            ),
-            child: Column(
-              children: options.map((String option) {
-                final bool selected = option == value;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () => onSelected(option),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                      decoration: selected
-                          ? BoxDecoration(
-                              color: const Color(0xFFD2D2D9),
-                              borderRadius: BorderRadius.circular(10),
-                            )
-                          : null,
-                      child: Text(
-                        option,
-                        style: const TextStyle(
-                          color: Color(0xFF222222),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ],
     );
   }
 }
@@ -416,8 +278,8 @@ class _SuccessDialog extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  'Thank you for helping improve the Hello Vietnam'
-                  'community. Our team will review your report and'
+                  'Thank you for helping improve the Hello Vietnam '
+                  'community. Our team will review your report and '
                   'take appropriate action within 48 hours.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 14, color: Color(0xFF4D4D4D), height: 1.35),

@@ -11,6 +11,7 @@ import '../features/profile/presentation/change_password_page.dart';
 import '../features/profile/presentation/language_page.dart';
 import '../features/profile/presentation/currency_page.dart';
 import '../features/profile/presentation/wishlist_page.dart';
+import '../features/profile/presentation/delete_user_data_page.dart';
 
 import '../features/forum/presentation/forum_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
@@ -57,6 +58,7 @@ class AppRoutes {
   static const changePassword = '/change-password';
   static const language = '/language';
   static const currency = '/currency';
+  static const deleteUserData = '$profile/delete-user-data';
 }
 
 GoRouter buildRouter() {
@@ -217,6 +219,12 @@ GoRouter buildRouter() {
               GoRoute(
                 path: AppRoutes.profile,
                 builder: (context, state) => const ProfilePage(),
+                routes: [
+                  GoRoute(
+                    path: 'delete-user-data',
+                    builder: (context, state) => const DeleteUserDataPage(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -370,11 +378,11 @@ class _CustomBottomNav extends StatelessWidget {
         width: 52,
         height: 52,
         decoration: BoxDecoration(
-          color: const Color(0xFFB3E5FC),
+          color: const Color(0xFF81D4FA),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF4DB8E8).withValues(alpha: 0.2),
+              color: const Color(0xFF81D4FA).withValues(alpha: 0.25),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

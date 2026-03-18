@@ -487,8 +487,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFB3E5FC),
-          foregroundColor: const Color(0xFF1A1A2E),
+          backgroundColor: const Color(0xFF81D4FA),
+          foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -499,7 +499,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A1A2E)),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
             : Text(label),

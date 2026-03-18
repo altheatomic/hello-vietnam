@@ -233,8 +233,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     child: ElevatedButton(
                       onPressed: _onSave,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFAEDDF4),
-                        foregroundColor: const Color(0xFF1A1A1A),
+                        backgroundColor: const Color(0xFF81D4FA),
+                        foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
