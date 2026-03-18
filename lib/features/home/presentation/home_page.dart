@@ -46,7 +46,7 @@ class HomePage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFFFFF176),
+                          color: AppColors.accentGold,
                         ),
                       ),
                       Container(
