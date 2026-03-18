@@ -24,6 +24,13 @@ import '../features/explore/presentation/explore_category_page.dart';
 import '../features/explore/presentation/explore_detail_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
+import '../features/recommend/domain/recommend_destination.dart';
+import '../features/recommend/presentation/recommend_page.dart';
+import '../features/recommend/presentation/where/recommend_where_search_page.dart';
+import '../features/recommend/presentation/where/recommend_where_detail_page.dart';
+import '../features/recommend/presentation/when/recommend_when_calendar_page.dart';
+import '../features/recommend/presentation/when/recommend_when_results_page.dart';
+import '../features/recommend/presentation/when/recommend_when_detail_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
@@ -43,6 +50,11 @@ class AppRoutes {
   static const phrases = '/popular-phrases';
   static const feedback = '/send-feedback';
   static const recommend = '/recommend';
+  static const recommendWhereSearch = '/recommend/where-search';
+  static const recommendWhereDetail = '/recommend/where-detail';
+  static const recommendWhenCalendar = '/recommend/when-calendar';
+  static const recommendWhenResults = '/recommend/when-results';
+  static const recommendWhenDetail = '/recommend/when-detail';
   static const explore = '/explore';
   static const exploreSearch = '/explore-search';
   static const exploreSearchResult = '/explore-search-result';
@@ -183,6 +195,46 @@ GoRouter buildRouter() {
         path: AppRoutes.wishlist,
         builder: (c, s) => const WishlistPage(),
       ),
+      // ── Recommend flow ──────────────────────────────────────
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommend,
+        builder: (c, s) => const RecommendPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommendWhereSearch,
+        builder: (c, s) => RecommendWhereSearchPage(
+          initialQuery: (s.extra as String?) ?? '',
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommendWhereDetail,
+        builder: (c, s) => RecommendWhereDetailPage(
+          destination: s.extra as RecommendDestination,
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommendWhenCalendar,
+        builder: (c, s) => const RecommendWhenCalendarPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommendWhenResults,
+        builder: (c, s) => RecommendWhenResultsPage(
+          dateRange: s.extra as DateTimeRange,
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommendWhenDetail,
+        builder: (c, s) => RecommendWhenDetailPage(
+          destination: s.extra as RecommendDestination,
+        ),
+      ),
+
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: '${AppRoutes.popularApps}/:id',

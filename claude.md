@@ -6,13 +6,22 @@ When building new screens, prioritize consistency with the existing Home UI over
 
 ## Source of truth
 
-UI source of truth, in order:
+UI source of truth:
 
 1. lib/app/theme.dart
-2. lib/core/widgets/\*
-3. lib/features/home/presentation/home_page.dart
-4. lib/features/home/presentation/widgets/\*
-5. Figma screenshots only for layout/content, not visual styling
+2. lib/core/config/app_constants.dart
+3. lib/core/widgets/glass_card.dart
+4. lib/core/widgets/search_bar_widget.dart
+5. lib/features/home/presentation/home_page.dart
+6. lib/features/home/presentation/widgets/\*
+
+Reuse these before creating new UI:
+
+- SearchBarWidget
+- GlassCard
+- RecommendationCard
+- RecommendationSection
+- FeatureGrid
 
 ## UI rules
 
