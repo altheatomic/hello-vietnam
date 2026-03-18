@@ -59,7 +59,7 @@ class GetStartedPage extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Wanderly',
+                      'HelloVietnam',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.smooch(
                         color: const Color(0xFFF3DF6B),
@@ -72,7 +72,7 @@ class GetStartedPage extends StatelessWidget {
                     const Text(
                       'Explore local culture, traditional food, and '
                       'meaningful travel experiences across Vietnam.\n'
-                      'Let Wanderly guide you through every journey.',
+                      'Let us guide you through every journey.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Color(0xFFF2F2F2),
