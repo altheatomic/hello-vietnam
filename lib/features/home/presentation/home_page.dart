@@ -24,7 +24,7 @@ class HomePage extends StatelessWidget {
             // ── Blue header section ────────────────────
             Container(
               decoration: const BoxDecoration(
-                color: Color(0xFF87CEEB), // sky blue
+                color: AppColors.primaryLight,
                 borderRadius: BorderRadius.vertical(
                   bottom: Radius.circular(20),
                 ),

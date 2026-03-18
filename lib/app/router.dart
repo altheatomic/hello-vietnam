@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/auth/auth_repository.dart';
+import 'theme.dart';
 
 import '../features/home/presentation/home_page.dart';
 import '../features/planner/presentation/trip_planner_page.dart';
@@ -339,8 +340,8 @@ class _CustomBottomNav extends StatelessWidget {
 
   Widget _buildNavItem(_NavItem item, bool isSelected, VoidCallback onTap) {
     final color = isSelected
-        ? const Color(0xFF4DB8E8)
-        : const Color(0xFF9E9E9E);
+        ? AppColors.primary
+        : AppColors.textSecondary;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -378,11 +379,11 @@ class _CustomBottomNav extends StatelessWidget {
         width: 52,
         height: 52,
         decoration: BoxDecoration(
-          color: const Color(0xFFB3E5FC),
+          color: AppColors.primaryLight,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF4DB8E8).withValues(alpha: 0.2),
+              color: AppColors.primary.withValues(alpha: 0.2),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
