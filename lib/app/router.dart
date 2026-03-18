@@ -24,6 +24,8 @@ import '../features/explore/presentation/explore_category_page.dart';
 import '../features/explore/presentation/explore_detail_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
+import '../features/profile/presentation/upgrade_account_page.dart';
+import '../features/profile/presentation/upgrade_payment_page.dart';
 import '../features/recommend/domain/recommend_destination.dart';
 import '../features/recommend/presentation/recommend_page.dart';
 import '../features/recommend/presentation/where/recommend_where_search_page.dart';
@@ -67,6 +69,8 @@ class AppRoutes {
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
   static const notification = '/notification';
+  static const upgradeAccount = '/upgrade-account';
+  static const upgradePayment = '/upgrade-payment';
   static const editProfile = '/edit-profile';
   static const changePassword = '/change-password';
   static const language = '/language';
@@ -195,6 +199,20 @@ GoRouter buildRouter() {
         path: AppRoutes.wishlist,
         builder: (c, s) => const WishlistPage(),
       ),
+      // ── Upgrade account flow ────────────────────────────────
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.upgradeAccount,
+        builder: (c, s) => const UpgradeAccountPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.upgradePayment,
+        builder: (c, s) => UpgradePaymentPage(
+          planId: (s.extra as String?) ?? '1m',
+        ),
+      ),
+
       // ── Recommend flow ──────────────────────────────────────
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,

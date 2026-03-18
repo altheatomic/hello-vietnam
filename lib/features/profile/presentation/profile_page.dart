@@ -173,6 +173,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       _SectionCard(
                         children: <Widget>[
                           _SettingRow(
+                            icon: Icons.workspace_premium_rounded,
+                            title: 'Upgrade Account',
+                            onTap: () => context.push(AppRoutes.upgradeAccount),
+                          ),
+                          _SettingRow(
                             icon: Icons.lock_outline_rounded,
                             title: 'Change Password',
                             onTap: () => context.push(AppRoutes.changePassword),
