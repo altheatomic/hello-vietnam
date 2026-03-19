@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/auth/auth_repository.dart';
+import 'theme.dart';
+import '../features/item_detail/domain/detail_category.dart';
+import '../features/item_detail/domain/item_detail_models.dart';
 
 import '../features/home/presentation/home_page.dart';
 import '../features/planner/presentation/trip_planner_page.dart';
-import '../features/messages/presentation/messages_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/profile/presentation/edit_profile_page.dart';
 import '../features/profile/presentation/change_password_page.dart';
@@ -16,13 +18,25 @@ import '../features/forum/presentation/forum_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
 import '../features/popular_apps/presentation/popular_apps_detail.dart';
 import '../features/feedback/presentation/feedback_page.dart';
+import '../features/item_detail/presentation/activity_detail_page.dart';
+import '../features/item_detail/presentation/culture_detail_page.dart';
+import '../features/item_detail/presentation/food_detail_page.dart';
+import '../features/item_detail/presentation/local_products_detail_page.dart';
 import '../features/explore/presentation/explore_page.dart';
 import '../features/explore/presentation/explore_search_page.dart';
 import '../features/explore/presentation/explore_search_result_page.dart';
 import '../features/explore/presentation/explore_category_page.dart';
-import '../features/explore/presentation/explore_detail_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
+import '../features/profile/presentation/upgrade_account_page.dart';
+import '../features/profile/presentation/upgrade_payment_page.dart';
+import '../features/recommend/domain/recommend_destination.dart';
+import '../features/recommend/presentation/recommend_page.dart';
+import '../features/recommend/presentation/where/recommend_where_search_page.dart';
+import '../features/recommend/presentation/where/recommend_where_detail_page.dart';
+import '../features/recommend/presentation/when/recommend_when_calendar_page.dart';
+import '../features/recommend/presentation/when/recommend_when_results_page.dart';
+import '../features/recommend/presentation/when/recommend_when_detail_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
@@ -42,11 +56,19 @@ class AppRoutes {
   static const phrases = '/popular-phrases';
   static const feedback = '/send-feedback';
   static const recommend = '/recommend';
+  static const recommendWhereSearch = '/recommend/where-search';
+  static const recommendWhereDetail = '/recommend/where-detail';
+  static const recommendWhenCalendar = '/recommend/when-calendar';
+  static const recommendWhenResults = '/recommend/when-results';
+  static const recommendWhenDetail = '/recommend/when-detail';
   static const explore = '/explore';
   static const exploreSearch = '/explore-search';
   static const exploreSearchResult = '/explore-search-result';
   static const exploreCategory = '/explore-category';
-  static const exploreDetail = '/explore-detail';
+  static const activityDetail = '/details/activities';
+  static const cultureDetail = '/details/culture';
+  static const foodDetail = '/details/food';
+  static const localProductsDetail = '/details/local-products';
   static const popularApps = '/popular-apps';
   static const aiSearch = '/ai-search';
   static const wishlist = '/wishlist';
@@ -54,10 +76,25 @@ class AppRoutes {
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
   static const notification = '/notification';
+  static const upgradeAccount = '/upgrade-account';
+  static const upgradePayment = '/upgrade-payment';
   static const editProfile = '/edit-profile';
   static const changePassword = '/change-password';
   static const language = '/language';
   static const currency = '/currency';
+
+  static String detailPathForCategory(DetailCategory category) {
+    switch (category) {
+      case DetailCategory.activities:
+        return activityDetail;
+      case DetailCategory.culture:
+        return cultureDetail;
+      case DetailCategory.food:
+        return foodDetail;
+      case DetailCategory.localProducts:
+        return localProductsDetail;
+    }
+  }
 }
 
 GoRouter buildRouter() {
@@ -106,28 +143,44 @@ GoRouter buildRouter() {
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.aiSearch,
+        builder: (c, s) => const ExploreSearchPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.exploreSearchResult,
-        builder: (c, s) => ExploreSearchResultPage(
-          destination: s.extra as String? ?? '',
-        ),
+        builder: (c, s) =>
+            ExploreSearchResultPage(destination: s.extra as String? ?? ''),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.exploreCategory,
-        builder: (c, s) => ExploreCategoryPage(
-          initialTab: s.extra as int? ?? 0,
-        ),
+        builder: (c, s) =>
+            ExploreCategoryPage(initialTab: s.extra as int? ?? 0),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
-        path: AppRoutes.exploreDetail,
-        builder: (c, s) {
-          final args = (s.extra as Map<String, String>?) ?? const <String, String>{};
-          return ExploreDetailPage(
-            itemId: args['id'] ?? '',
-            itemName: args['name'] ?? '',
-          );
-        },
+        path: AppRoutes.activityDetail,
+        builder: (c, s) =>
+            ActivityDetailPage(request: s.extra as ItemDetailRequest),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.cultureDetail,
+        builder: (c, s) =>
+            CultureDetailPage(request: s.extra as ItemDetailRequest),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.foodDetail,
+        builder: (c, s) =>
+            FoodDetailPage(request: s.extra as ItemDetailRequest),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.localProductsDetail,
+        builder: (c, s) =>
+            LocalProductsDetailPage(request: s.extra as ItemDetailRequest),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
@@ -182,6 +235,57 @@ GoRouter buildRouter() {
         path: AppRoutes.wishlist,
         builder: (c, s) => const WishlistPage(),
       ),
+      // ── Upgrade account flow ────────────────────────────────
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.upgradeAccount,
+        builder: (c, s) => const UpgradeAccountPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.upgradePayment,
+        builder: (c, s) =>
+            UpgradePaymentPage(planId: (s.extra as String?) ?? '1m'),
+      ),
+
+      // ── Recommend flow ──────────────────────────────────────
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommend,
+        builder: (c, s) => const RecommendPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommendWhereSearch,
+        builder: (c, s) =>
+            RecommendWhereSearchPage(initialQuery: (s.extra as String?) ?? ''),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommendWhereDetail,
+        builder: (c, s) => RecommendWhereDetailPage(
+          destination: s.extra as RecommendDestination,
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommendWhenCalendar,
+        builder: (c, s) => const RecommendWhenCalendarPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommendWhenResults,
+        builder: (c, s) =>
+            RecommendWhenResultsPage(dateRange: s.extra as DateTimeRange),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommendWhenDetail,
+        builder: (c, s) => RecommendWhenDetailPage(
+          destination: s.extra as RecommendDestination,
+        ),
+      ),
+
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: '${AppRoutes.popularApps}/:id',
@@ -216,7 +320,7 @@ GoRouter buildRouter() {
             routes: [
               GoRoute(
                 path: AppRoutes.messages,
-                builder: (context, state) => const MessagesPage(),
+                builder: (context, state) => const ForumPage(),
               ),
             ],
           ),
@@ -290,9 +394,9 @@ class _CustomBottomNav extends StatelessWidget {
       label: '',
     ), // center
     _NavItem(
-      icon: Icons.chat_bubble_outline,
-      selectedIcon: Icons.chat_bubble_rounded,
-      label: 'Messages',
+      icon: Icons.forum_outlined,
+      selectedIcon: Icons.forum_rounded,
+      label: 'Forum',
     ),
     _NavItem(
       icon: Icons.person_outline_rounded,
@@ -322,7 +426,7 @@ class _CustomBottomNav extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: List.generate(_items.length, (i) {
-              if (i == 2) return _buildCenterButton();
+              if (i == 2) return _buildCenterButton(context);
               final branchIndex = i < 2 ? i : i - 1;
               final isSelected = branchIndex == currentIndex;
               return _buildNavItem(
@@ -338,9 +442,7 @@ class _CustomBottomNav extends StatelessWidget {
   }
 
   Widget _buildNavItem(_NavItem item, bool isSelected, VoidCallback onTap) {
-    final color = isSelected
-        ? const Color(0xFF4DB8E8)
-        : const Color(0xFF9E9E9E);
+    final color = isSelected ? AppColors.primary : AppColors.textSecondary;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -369,20 +471,20 @@ class _CustomBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildCenterButton() {
+  Widget _buildCenterButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // TODO: navigate to search or any center action
+        context.push(AppRoutes.exploreSearch);
       },
       child: Container(
         width: 52,
         height: 52,
         decoration: BoxDecoration(
-          color: const Color(0xFFB3E5FC),
+          color: AppColors.primaryLight,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF4DB8E8).withValues(alpha: 0.2),
+              color: AppColors.primary.withValues(alpha: 0.2),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

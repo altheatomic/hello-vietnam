@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
+import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import '../data/explore_mock_data.dart';
 import '../domain/explore_item.dart';
 import 'widgets/explore_floating_back_button.dart';
@@ -108,56 +110,11 @@ class _ExplorePageState extends State<ExplorePage> {
 
                           const SizedBox(height: 16),
 
-                          // Search bar (tap to open search page)
-                          GestureDetector(
+                          SearchBarWidget(
+                            hintText: 'Search for destinations',
+                            readOnly: true,
+                            showFilterButton: false,
                             onTap: () => context.push(AppRoutes.exploreSearch),
-                            child: Container(
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(45),
-                                border: Border.all(
-                                  color: AppColors.primaryLight.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  const SizedBox(width: 14),
-                                  Icon(
-                                    Icons.search_rounded,
-                                    color: AppColors.primary,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Search for destinations',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade400,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.only(right: 6),
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primaryLight.withValues(
-                                        alpha: 0.15,
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      Icons.camera_alt_outlined,
-                                      color: AppColors.primary,
-                                      size: 18,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                           ),
                         ],
                       ),
@@ -354,8 +311,14 @@ class _FeaturedCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         context.push(
-          AppRoutes.exploreDetail,
-          extra: {'id': item.id, 'name': item.name},
+          AppRoutes.detailPathForCategory(item.category),
+          extra: ItemDetailRequest(
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            fallbackImages: <String>[item.imagePath],
+            fallbackImagePath: item.imagePath,
+          ),
         );
       },
       child: Container(
@@ -502,8 +465,14 @@ class _ExploreItemCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         context.push(
-          AppRoutes.exploreDetail,
-          extra: {'id': item.id, 'name': item.name},
+          AppRoutes.detailPathForCategory(item.category),
+          extra: ItemDetailRequest(
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            fallbackImages: <String>[item.imagePath],
+            fallbackImagePath: item.imagePath,
+          ),
         );
       },
       child: ClipRRect(
