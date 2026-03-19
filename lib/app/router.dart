@@ -13,6 +13,7 @@ import '../features/profile/presentation/change_password_page.dart';
 import '../features/profile/presentation/language_page.dart';
 import '../features/profile/presentation/currency_page.dart';
 import '../features/profile/presentation/wishlist_page.dart';
+import '../features/profile/presentation/delete_user_data_page.dart';
 
 import '../features/forum/presentation/forum_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
@@ -107,6 +108,7 @@ class AppRoutes {
   static const adminCannedReplies = '/admin/canned-replies';
   static const adminReports       = '/admin/reports';
   static const adminFeedback      = '/admin/feedback';
+  static const deleteUserData = '$profile/delete-user-data';
 }
 
 GoRouter buildRouter() {
@@ -374,6 +376,12 @@ GoRouter buildRouter() {
               GoRoute(
                 path: AppRoutes.profile,
                 builder: (context, state) => const ProfilePage(),
+                routes: [
+                  GoRoute(
+                    path: 'delete-user-data',
+                    builder: (context, state) => const DeleteUserDataPage(),
+                  ),
+                ],
               ),
             ],
           ),

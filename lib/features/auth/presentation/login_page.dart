@@ -43,7 +43,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await AuthRepository.instance.signIn(email: email, password: password);
       if (!mounted) return;
-      context.go(AppRoutes.profile);
+      context.go(AppRoutes.home);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -367,8 +367,8 @@ class _LoginPageState extends State<LoginPage> {
       child: ElevatedButton(
         onPressed: _isLoading ? null : _onContinue,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFB3E5FC),
-          foregroundColor: const Color(0xFF1A1A2E),
+          backgroundColor: const Color(0xFF81D4FA),
+          foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -378,7 +378,11 @@ class _LoginPageState extends State<LoginPage> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        child: _isLoading ? const CircularProgressIndicator() : const Text('Continue'),
+        child: _isLoading
+            ? const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              )
+            : const Text('Continue'),
       ),
     );
   }

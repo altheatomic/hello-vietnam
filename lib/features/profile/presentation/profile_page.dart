@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -19,10 +20,36 @@ class _ProfilePageState extends State<ProfilePage> {
   ];
 
   bool _notificationEnabled = false;
-  bool _deleteUserDataEnabled = false;
+  bool _autoDeleteUserDataEnabled = false;
+  static const String _autoDeleteUserDataKey = 'auto_delete_user_data_enabled';
   String _username = 'AnhLaThangToi';
   String _email = 'thangtoi@gmail.com';
   int _avatarIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAutoDeleteSetting();
+  }
+
+  Future<void> _loadAutoDeleteSetting() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final bool enabled = prefs.getBool(_autoDeleteUserDataKey) ?? false;
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _autoDeleteUserDataEnabled = enabled;
+    });
+  }
+
+  Future<void> _setAutoDeleteSetting(bool value) async {
+    setState(() {
+      _autoDeleteUserDataEnabled = value;
+    });
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_autoDeleteUserDataKey, value);
+  }
 
   Future<void> _onLogout() async {
     await AuthRepository.instance.signOut();
@@ -215,12 +242,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           _SettingSwitchRow(
                             icon: Icons.shield_outlined,
                             title: 'Delete user data',
-                            value: _deleteUserDataEnabled,
-                            onChanged: (bool value) {
-                              setState(() {
-                                _deleteUserDataEnabled = value;
-                              });
-                            },
+                            value: _autoDeleteUserDataEnabled,
+                            onChanged: _setAutoDeleteSetting,
                           ),
                           _SettingRow(
                             icon: Icons.logout_rounded,

@@ -318,8 +318,8 @@ class _RegisterPageState extends State<RegisterPage> {
       child: ElevatedButton(
         onPressed: _isLoading ? null : _onSignUp,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFB3E5FC),
-          foregroundColor: const Color(0xFF1A1A2E),
+          backgroundColor: const Color(0xFF81D4FA),
+          foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -329,7 +329,11 @@ class _RegisterPageState extends State<RegisterPage> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        child: _isLoading ? const CircularProgressIndicator() : const Text('Sign up'),
+        child: _isLoading
+            ? const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              )
+            : const Text('Sign up'),
       ),
     );
   }
