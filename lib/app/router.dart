@@ -7,7 +7,6 @@ import '../features/item_detail/domain/item_detail_models.dart';
 
 import '../features/home/presentation/home_page.dart';
 import '../features/planner/presentation/trip_planner_page.dart';
-import '../features/messages/presentation/messages_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/profile/presentation/edit_profile_page.dart';
 import '../features/profile/presentation/change_password_page.dart';
@@ -321,7 +320,7 @@ GoRouter buildRouter() {
             routes: [
               GoRoute(
                 path: AppRoutes.messages,
-                builder: (context, state) => const MessagesPage(),
+                builder: (context, state) => const ForumPage(),
               ),
             ],
           ),
@@ -395,9 +394,9 @@ class _CustomBottomNav extends StatelessWidget {
       label: '',
     ), // center
     _NavItem(
-      icon: Icons.chat_bubble_outline,
-      selectedIcon: Icons.chat_bubble_rounded,
-      label: 'Messages',
+      icon: Icons.forum_outlined,
+      selectedIcon: Icons.forum_rounded,
+      label: 'Forum',
     ),
     _NavItem(
       icon: Icons.person_outline_rounded,
