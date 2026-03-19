@@ -9,7 +9,7 @@ class WishlistPage extends StatefulWidget {
 
 class _WishlistPageState extends State<WishlistPage> {
   WishlistType _selectedType = WishlistType.city;
-  final Set<String> _favoriteIds = <String>{'dalat'};
+  final Set<String> _favoriteIds = <String>{};
 
   static const List<WishlistItem> _items = <WishlistItem>[
     WishlistItem(
@@ -308,6 +308,12 @@ class _WishlistPageState extends State<WishlistPage> {
     ),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _favoriteIds.addAll(_items.map((WishlistItem item) => item.id));
+  }
+
   List<WishlistItem> get _filteredItems {
     return _items.where((WishlistItem item) => item.type == _selectedType).toList();
   }
@@ -350,19 +356,38 @@ class _WishlistPageState extends State<WishlistPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const SizedBox(height: 12),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Wishlist',
-                style: TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF2EB9F8),
-                ),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 52,
+              child: Stack(
+                children: <Widget>[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 20,
+                        color: Color(0xFF2EB9F8),
+                      ),
+                    ),
+                  ),
+                  const Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Wishlist',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF2EB9F8),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
@@ -1075,9 +1100,9 @@ class _TypeChip extends StatelessWidget {
         curve: Curves.easeOut,
         height: 46,
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF2EB9F8) : Colors.white,
+          color: selected ? const Color(0xFF81D4FA) : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF2EB9F8)),
+          border: Border.all(color: const Color(0xFF81D4FA)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Row(
@@ -1086,7 +1111,7 @@ class _TypeChip extends StatelessWidget {
             Icon(
               icon,
               size: 18,
-              color: selected ? Colors.white : const Color(0xFF2EB9F8),
+              color: selected ? Colors.white : const Color(0xFF81D4FA),
             ),
             const SizedBox(width: 6),
             Text(
@@ -1094,7 +1119,7 @@ class _TypeChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : const Color(0xFF2EB9F8),
+                color: selected ? Colors.white : const Color(0xFF81D4FA),
               ),
             ),
           ],

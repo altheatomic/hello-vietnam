@@ -59,7 +59,7 @@ class RecommendationCard extends StatelessWidget {
                       child: Image.asset(
                         imagePath,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        errorBuilder: (_, _, _) => Container(
                           color: AppColors.primaryLight.withValues(alpha: 0.2),
                           child: const Center(
                             child: Icon(
@@ -95,7 +95,9 @@ class RecommendationCard extends StatelessWidget {
                         child: Icon(
                           isFavorite ? Icons.favorite : Icons.favorite_border,
                           size: 18,
-                          color: isFavorite ? Colors.redAccent : AppColors.textSecondary,
+                          color: isFavorite
+                              ? Colors.redAccent
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -126,7 +128,11 @@ class RecommendationCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(Icons.star_rounded, size: 16, color: AppColors.starColor),
+                      Icon(
+                        Icons.star_rounded,
+                        size: 16,
+                        color: AppColors.starColor,
+                      ),
                       const SizedBox(width: 2),
                       Text(
                         rating.toStringAsFixed(2),

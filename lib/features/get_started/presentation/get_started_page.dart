@@ -86,7 +86,7 @@ class GetStartedPage extends StatelessWidget {
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF92D5F8),
+                          backgroundColor: const Color(0xFF81D4FA),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -101,6 +101,11 @@ class GetStartedPage extends StatelessWidget {
                         onPressed: () => context.go(AppRoutes.login),
                         child: const Text('Get Started'),
                       ),
+                    ),
+                    // For testing purposes only - navigate directly to admin dashboard
+                    ElevatedButton(
+                      onPressed: () => context.go(AppRoutes.adminDashboard),
+                      child: const Text('Go to Admin'),
                     ),
                   ],
                 ),

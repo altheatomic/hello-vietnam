@@ -190,7 +190,7 @@ class _NotificationPageState extends State<NotificationPage> {
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF72C3EA),
+                          backgroundColor: const Color(0xFF81D4FA),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -230,7 +230,7 @@ class _NotificationPageState extends State<NotificationPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF72C3EA) : const Color(0xFFF0F0F0),
+          color: selected ? const Color(0xFF81D4FA) : const Color(0xFFF0F0F0),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
