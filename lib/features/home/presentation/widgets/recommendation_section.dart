@@ -30,17 +30,13 @@ class RecommendationSection extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
             // ── Background image with gradient opacity ────────
-            Positioned.fill(
-              child: _buildBackground(),
-            ),
+            Positioned.fill(child: _buildBackground()),
 
             // ── Content ──────────────────────────────────────
             Padding(
@@ -72,7 +68,7 @@ class RecommendationSection extends StatelessWidget {
                         horizontal: AppConstants.pagePadding,
                       ),
                       itemCount: children.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 14),
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
                       itemBuilder: (_, i) => children[i],
                     ),
                   ),
@@ -94,8 +90,8 @@ class RecommendationSection extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.white,                                // 100 %
-            Colors.white.withValues(alpha: 0.5),         // 50 %
+            Colors.white, // 100 %
+            Colors.white.withValues(alpha: 0.5), // 50 %
           ],
         ).createShader(bounds);
       },
@@ -110,14 +106,14 @@ class RecommendationSection extends StatelessWidget {
                 if (loadingProgress == null) return child;
                 return _fallbackGradient();
               },
-              errorBuilder: (_, __, ___) => _fallbackGradient(),
+              errorBuilder: (_, _, _) => _fallbackGradient(),
             )
           : Image.asset(
               backgroundImage,
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
-              errorBuilder: (_, __, ___) => _fallbackGradient(),
+              errorBuilder: (_, _, _) => _fallbackGradient(),
             ),
     );
   }

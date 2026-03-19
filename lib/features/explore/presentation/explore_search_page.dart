@@ -127,6 +127,7 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
               padding: EdgeInsets.zero,
               itemCount: _suggestions.length,
               separatorBuilder: (context, index) => Divider(
+              separatorBuilder: (context, index) => Divider(
                 height: 1,
                 color: Colors.grey.shade200,
                 indent: AppConstants.pagePadding,
