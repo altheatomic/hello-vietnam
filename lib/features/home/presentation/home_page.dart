@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
+import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
+import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import '../data/home_mock_data.dart';
 import 'widgets/home_banner.dart';
 import 'widgets/feature_grid.dart';
@@ -73,7 +77,12 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: 18),
 
                   // Search bar
-                  const SearchBarWidget(),
+                  SearchBarWidget(
+                    hintText: 'Search for destinations',
+                    readOnly: true,
+                    showFilterButton: false,
+                    onTap: () => context.push(AppRoutes.exploreSearch),
+                  ),
                 ],
               ),
             ),
@@ -114,7 +123,16 @@ class HomePage extends StatelessWidget {
                     imagePath: d.imagePath,
                     isFavorite: d.isFavorite,
                     onTap: () {
-                      // TODO: navigate to destination detail
+                      context.push(
+                        AppRoutes.detailPathForCategory(DetailCategory.culture),
+                        extra: ItemDetailRequest(
+                          id: d.id,
+                          name: d.name,
+                          category: DetailCategory.culture,
+                          fallbackImages: <String>[d.imagePath],
+                          fallbackImagePath: d.imagePath,
+                        ),
+                      );
                     },
                   );
                 }).toList(),
@@ -137,7 +155,16 @@ class HomePage extends StatelessWidget {
                     imagePath: d.imagePath,
                     isFavorite: d.isFavorite,
                     onTap: () {
-                      // TODO: navigate to dish detail
+                      context.push(
+                        AppRoutes.detailPathForCategory(DetailCategory.food),
+                        extra: ItemDetailRequest(
+                          id: d.id,
+                          name: d.name,
+                          category: DetailCategory.food,
+                          fallbackImages: <String>[d.imagePath],
+                          fallbackImagePath: d.imagePath,
+                        ),
+                      );
                     },
                   );
                 }).toList(),

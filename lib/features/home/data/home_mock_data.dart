@@ -9,14 +9,46 @@ import '../domain/feature_item.dart';
 /// ---------------------------------------------------------------
 
 const List<FeatureItem> homeFeatures = [
-  FeatureItem(title:  'Trip Planner',     icon: Icons.luggage_outlined,           route: AppRoutes.tripPlanner),
-  FeatureItem(title:  'Forum',            icon: Icons.forum_outlined,             route: AppRoutes.forum),
-  FeatureItem(title:  'Popular\nPhrases', icon: Icons.translate_outlined,         route: AppRoutes.phrases),
-  FeatureItem(title:  'Send\nFeedback',   icon: Icons.feedback_outlined,          route: AppRoutes.feedback),
-  FeatureItem(title:  'Recommend',        icon: Icons.recommend_outlined,         route: AppRoutes.recommend),
-  FeatureItem(title:  'Explore',          icon: Icons.explore_outlined,           route: AppRoutes.explore),
-  FeatureItem(title:  'Popular\nApps',    icon: Icons.apps_outlined,              route: AppRoutes.popularApps),
-  FeatureItem(title:  'AI Search',        icon: Icons.auto_awesome_outlined,      route: AppRoutes.aiSearch),
+  FeatureItem(
+    title: 'Trip Planner',
+    icon: Icons.luggage_outlined,
+    route: AppRoutes.tripPlanner,
+  ),
+  FeatureItem(
+    title: 'Forum',
+    icon: Icons.forum_outlined,
+    route: AppRoutes.forum,
+  ),
+  FeatureItem(
+    title: 'Popular\nPhrases',
+    icon: Icons.translate_outlined,
+    route: AppRoutes.phrases,
+  ),
+  FeatureItem(
+    title: 'Send\nFeedback',
+    icon: Icons.feedback_outlined,
+    route: AppRoutes.feedback,
+  ),
+  FeatureItem(
+    title: 'Recommend',
+    icon: Icons.recommend_outlined,
+    route: AppRoutes.recommend,
+  ),
+  FeatureItem(
+    title: 'Explore',
+    icon: Icons.explore_outlined,
+    route: AppRoutes.explore,
+  ),
+  FeatureItem(
+    title: 'Popular\nApps',
+    icon: Icons.apps_outlined,
+    route: AppRoutes.popularApps,
+  ),
+  FeatureItem(
+    title: 'AI Search',
+    icon: Icons.auto_awesome_outlined,
+    route: AppRoutes.exploreSearch,
+  ),
 ];
 
 const List<Destination> mockDestinations = [

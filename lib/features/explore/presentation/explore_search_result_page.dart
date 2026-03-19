@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
+import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import '../data/explore_search_results_data.dart';
 import 'widgets/explore_floating_back_button.dart';
 import 'widgets/explore_preview_widgets.dart';
@@ -132,7 +134,10 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
                 ),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) => _ResultCard(item: items[index]),
+                    (context, index) => _ResultCard(
+                      item: items[index],
+                      category: _categoryForIndex(_selectedFilter),
+                    ),
                     childCount: items.length,
                   ),
                 ),
@@ -143,6 +148,20 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
         ],
       ),
     );
+  }
+}
+
+DetailCategory _categoryForIndex(int index) {
+  switch (index) {
+    case 1:
+      return DetailCategory.culture;
+    case 2:
+      return DetailCategory.food;
+    case 3:
+      return DetailCategory.localProducts;
+    case 0:
+    default:
+      return DetailCategory.activities;
   }
 }
 
@@ -215,8 +234,10 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
 // ─── Result card with carousel ───────────────────────────────────────
 
 class _ResultCard extends StatefulWidget {
-  const _ResultCard({required this.item});
+  const _ResultCard({required this.item, required this.category});
+
   final SearchResultItem item;
+  final DetailCategory category;
 
   @override
   State<_ResultCard> createState() => _ResultCardState();
@@ -244,8 +265,16 @@ class _ResultCardState extends State<_ResultCard> {
     return GestureDetector(
       onTap: () {
         context.push(
-          AppRoutes.exploreDetail,
-          extra: {'id': widget.item.id, 'name': widget.item.name},
+          AppRoutes.detailPathForCategory(widget.category),
+          extra: ItemDetailRequest(
+            id: widget.item.id,
+            name: widget.item.name,
+            category: widget.category,
+            fallbackImages: widget.item.images,
+            fallbackImagePath: widget.item.images.isEmpty
+                ? null
+                : widget.item.images.first,
+          ),
         );
       },
       child: Padding(

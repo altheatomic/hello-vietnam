@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
 
 /// Mock list of searchable destinations — swap with API later.
 const List<String> _allDestinations = [
@@ -84,7 +85,10 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
           // ── Top bar: back + search ─────────────────────
           Padding(
             padding: EdgeInsets.fromLTRB(
-              12, statusBarH + 8, AppConstants.pagePadding, 12,
+              12,
+              statusBarH + 8,
+              AppConstants.pagePadding,
+              12,
             ),
             child: Row(
               children: [
@@ -93,47 +97,24 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
                   onTap: () => context.pop(),
                   child: const Padding(
                     padding: EdgeInsets.all(4),
-                    child: Icon(Icons.chevron_left, size: 28, color: AppColors.primary),
+                    child: Icon(
+                      Icons.chevron_left,
+                      size: 28,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 4),
 
-                // Search field
                 Expanded(
-                  child: Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(45),
-                      border: Border.all(
-                        color: AppColors.primaryLight.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: TextField(
-                      controller: _controller,
-                      focusNode: _focusNode,
-                      onChanged: _onChanged,
-                      onSubmitted: _onSubmit,
-                      textInputAction: TextInputAction.search,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.primary,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Search for destinations',
-                        hintStyle: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 14,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search_rounded,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
+                  child: SearchBarWidget(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    autofocus: true,
+                    showFilterButton: false,
+                    hintText: 'Search for destinations',
+                    onChanged: _onChanged,
+                    onSearch: _onSubmit,
                   ),
                 ),
               ],
@@ -145,7 +126,7 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
             child: ListView.separated(
               padding: EdgeInsets.zero,
               itemCount: _suggestions.length,
-              separatorBuilder: (_, __) => Divider(
+              separatorBuilder: (context, index) => Divider(
                 height: 1,
                 color: Colors.grey.shade200,
                 indent: AppConstants.pagePadding,

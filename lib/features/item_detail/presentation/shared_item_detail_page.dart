@@ -5,25 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/features/explore/presentation/widgets/explore_floating_back_button.dart';
+import 'package:hellovietnam/features/item_detail/data/item_detail_mock_data.dart';
+import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 
-import '../data/explore_detail_data.dart';
-import 'widgets/explore_floating_back_button.dart';
+class SharedItemDetailPage extends StatefulWidget {
+  const SharedItemDetailPage({super.key, required this.request});
 
-class ExploreDetailPage extends StatefulWidget {
-  final String itemId;
-  final String itemName;
-
-  const ExploreDetailPage({
-    super.key,
-    required this.itemId,
-    required this.itemName,
-  });
+  final ItemDetailRequest request;
 
   @override
-  State<ExploreDetailPage> createState() => _ExploreDetailPageState();
+  State<SharedItemDetailPage> createState() => _SharedItemDetailPageState();
 }
 
-class _ExploreDetailPageState extends State<ExploreDetailPage> {
+class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
   late final ItemDetail _detail;
   late bool _isFavorite;
   late final PageController _reviewPageController;
@@ -33,7 +28,7 @@ class _ExploreDetailPageState extends State<ExploreDetailPage> {
   @override
   void initState() {
     super.initState();
-    _detail = getItemDetail(widget.itemId, widget.itemName);
+    _detail = resolveItemDetail(widget.request);
     _isFavorite = _detail.isFavorite;
     _reviewPageController = PageController(viewportFraction: 0.9);
   }
@@ -49,7 +44,7 @@ class _ExploreDetailPageState extends State<ExploreDetailPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
-        children: [
+        children: <Widget>[
           SafeArea(
             bottom: false,
             child: SingleChildScrollView(
@@ -61,7 +56,7 @@ class _ExploreDetailPageState extends State<ExploreDetailPage> {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   _DetailHeader(title: _detail.name),
                   const SizedBox(height: 20),
                   _HeroImageCarousel(
@@ -72,7 +67,7 @@ class _ExploreDetailPageState extends State<ExploreDetailPage> {
                     onFavoriteTap: () {
                       setState(() => _isFavorite = !_isFavorite);
                     },
-                    onPageChanged: (index) {
+                    onPageChanged: (int index) {
                       setState(() => _currentPage = index);
                     },
                   ),
@@ -85,7 +80,7 @@ class _ExploreDetailPageState extends State<ExploreDetailPage> {
                     },
                   ),
                   const SizedBox(height: 28),
-                  _SectionTitle(title: 'Reviews'),
+                  const _SectionTitle(title: 'Reviews'),
                   const SizedBox(height: 14),
                   _ReviewSummary(
                     rating: _detail.rating,
@@ -98,7 +93,7 @@ class _ExploreDetailPageState extends State<ExploreDetailPage> {
                     controller: _reviewPageController,
                   ),
                   const SizedBox(height: 18),
-                  _SectionTitle(title: 'What to expect'),
+                  const _SectionTitle(title: 'What to expect'),
                   const SizedBox(height: 10),
                   Text(
                     _detail.whatToExpect,
@@ -113,7 +108,7 @@ class _ExploreDetailPageState extends State<ExploreDetailPage> {
                   ..._detail.images
                       .take(4)
                       .map(
-                        (image) => Padding(
+                        (String image) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _GalleryImageCard(imagePath: image),
                         ),
@@ -130,9 +125,9 @@ class _ExploreDetailPageState extends State<ExploreDetailPage> {
 }
 
 class _DetailHeader extends StatelessWidget {
-  final String title;
-
   const _DetailHeader({required this.title});
+
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +142,7 @@ class _DetailHeader extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
-          children: [
+          children: <TextSpan>[
             const TextSpan(text: 'Discover, '),
             TextSpan(
               text: '$title!',
@@ -164,13 +159,6 @@ class _DetailHeader extends StatelessWidget {
 }
 
 class _HeroImageCarousel extends StatelessWidget {
-  final List<String> images;
-  final double rating;
-  final bool isFavorite;
-  final int currentPage;
-  final ValueChanged<int> onPageChanged;
-  final VoidCallback onFavoriteTap;
-
   const _HeroImageCarousel({
     required this.images,
     required this.rating,
@@ -180,14 +168,21 @@ class _HeroImageCarousel extends StatelessWidget {
     required this.onFavoriteTap,
   });
 
+  final List<String> images;
+  final double rating;
+  final bool isFavorite;
+  final int currentPage;
+  final ValueChanged<int> onPageChanged;
+  final VoidCallback onFavoriteTap;
+
   @override
   Widget build(BuildContext context) {
-    final displayImages = images.isEmpty ? const [''] : images;
+    final displayImages = images.isEmpty ? const <String>[''] : images;
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.12),
             blurRadius: 24,
@@ -201,11 +196,11 @@ class _HeroImageCarousel extends StatelessWidget {
           aspectRatio: 16 / 11,
           child: Stack(
             fit: StackFit.expand,
-            children: [
+            children: <Widget>[
               PageView.builder(
                 itemCount: displayImages.length,
                 onPageChanged: onPageChanged,
-                itemBuilder: (context, index) {
+                itemBuilder: (BuildContext context, int index) {
                   return _NetworkOrAssetImage(
                     imagePath: displayImages[index],
                     borderRadius: 0,
@@ -247,15 +242,15 @@ class _HeroImageCarousel extends StatelessWidget {
 }
 
 class _QuickInfoCard extends StatelessWidget {
-  final String description;
-  final bool isExpanded;
-  final VoidCallback onToggleExpanded;
-
   const _QuickInfoCard({
     required this.description,
     required this.isExpanded,
     required this.onToggleExpanded,
   });
+
+  final String description;
+  final bool isExpanded;
+  final VoidCallback onToggleExpanded;
 
   @override
   Widget build(BuildContext context) {
@@ -265,7 +260,7 @@ class _QuickInfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primaryLight.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.08),
             blurRadius: 18,
@@ -275,11 +270,11 @@ class _QuickInfoCard extends StatelessWidget {
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 Text(
                   description,
                   maxLines: isExpanded ? null : 3,
@@ -327,14 +322,14 @@ class _QuickInfoCard extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  final String title;
-
   const _SectionTitle({required this.title});
+
+  final String title;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: [
+      children: <Widget>[
         Container(
           width: 4,
           height: 20,
@@ -358,15 +353,15 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _ReviewSummary extends StatelessWidget {
-  final double rating;
-  final String ratingLabel;
-  final int reviewCount;
-
   const _ReviewSummary({
     required this.rating,
     required this.ratingLabel,
     required this.reviewCount,
   });
+
+  final double rating;
+  final String ratingLabel;
+  final int reviewCount;
 
   @override
   Widget build(BuildContext context) {
@@ -374,10 +369,10 @@ class _ReviewSummary extends StatelessWidget {
       spacing: 14,
       runSpacing: 10,
       crossAxisAlignment: WrapCrossAlignment.end,
-      children: [
+      children: <Widget>[
         RichText(
           text: TextSpan(
-            children: [
+            children: <TextSpan>[
               TextSpan(
                 text: rating.toStringAsFixed(1),
                 style: const TextStyle(
@@ -401,7 +396,7 @@ class _ReviewSummary extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               Text(
                 ratingLabel,
                 style: const TextStyle(
@@ -426,17 +421,19 @@ class _ReviewSummary extends StatelessWidget {
 }
 
 class _ReviewCarousel extends StatelessWidget {
+  const _ReviewCarousel({required this.reviews, required this.controller});
+
   final List<ItemReview> reviews;
   final PageController controller;
 
-  const _ReviewCarousel({required this.reviews, required this.controller});
-
   @override
   Widget build(BuildContext context) {
-    if (reviews.isEmpty) return const SizedBox.shrink();
+    if (reviews.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
-      children: [
+      children: <Widget>[
         SizedBox(
           height: 280,
           child: PageView.builder(
@@ -445,10 +442,10 @@ class _ReviewCarousel extends StatelessWidget {
               parent: AlwaysScrollableScrollPhysics(),
             ),
             itemCount: reviews.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (BuildContext context, int index) {
               return AnimatedBuilder(
                 animation: controller,
-                builder: (context, child) {
+                builder: (BuildContext context, Widget? child) {
                   final page = controller.hasClients
                       ? (controller.page ?? controller.initialPage.toDouble())
                       : controller.initialPage.toDouble();
@@ -483,7 +480,7 @@ class _ReviewCarousel extends StatelessWidget {
             },
           ),
         ),
-        if (reviews.length > 1) ...[
+        if (reviews.length > 1) ...<Widget>[
           const SizedBox(height: 14),
           _LiquidPaginationDots(
             controller: controller,
@@ -496,10 +493,10 @@ class _ReviewCarousel extends StatelessWidget {
 }
 
 class _ReviewCard extends StatelessWidget {
+  const _ReviewCard({required this.review, this.emphasis = 1});
+
   final ItemReview review;
   final double emphasis;
-
-  const _ReviewCard({required this.review, this.emphasis = 1});
 
   @override
   Widget build(BuildContext context) {
@@ -538,11 +535,11 @@ class _ReviewCard extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [surfaceTop, surfaceBottom],
+              colors: <Color>[surfaceTop, surfaceBottom],
             ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: borderColor, width: 1.2 + emphasis),
-            boxShadow: [
+            boxShadow: <BoxShadow>[
               BoxShadow(
                 color: shadowColor,
                 blurRadius: 18 + (emphasis * 16),
@@ -551,7 +548,7 @@ class _ReviewCard extends StatelessWidget {
             ],
           ),
           child: Stack(
-            children: [
+            children: <Widget>[
               Positioned(
                 top: -24,
                 right: -10,
@@ -561,7 +558,7 @@ class _ReviewCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
-                      colors: [
+                      colors: <Color>[
                         Colors.white.withValues(alpha: 0.4 + (emphasis * 0.18)),
                         Colors.white.withValues(alpha: 0.02),
                       ],
@@ -578,7 +575,7 @@ class _ReviewCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
-                      colors: [
+                      colors: <Color>[
                         AppColors.primaryLight.withValues(
                           alpha: 0.20 + (emphasis * 0.12),
                         ),
@@ -590,22 +587,22 @@ class _ReviewCard extends StatelessWidget {
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       Container(
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
-                            colors: [
+                            colors: <Color>[
                               Colors.white.withValues(alpha: 0.9),
                               AppColors.primaryLight.withValues(alpha: 0.34),
                             ],
                           ),
-                          boxShadow: [
+                          boxShadow: <BoxShadow>[
                             BoxShadow(
                               color: AppColors.primary.withValues(
                                 alpha: 0.10 + (emphasis * 0.10),
@@ -624,7 +621,7 @@ class _ReviewCard extends StatelessWidget {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          children: <Widget>[
                             Text(
                               review.userName,
                               style: const TextStyle(
@@ -656,16 +653,16 @@ class _ReviewCard extends StatelessWidget {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  if (review.thumbnails.isNotEmpty) ...[
+                  if (review.thumbnails.isNotEmpty) ...<Widget>[
                     const SizedBox(height: 14),
                     SizedBox(
                       height: 70,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: review.thumbnails.length,
-                        separatorBuilder: (context, index) =>
+                        separatorBuilder: (BuildContext context, int index) =>
                             const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
+                        itemBuilder: (BuildContext context, int index) {
                           return _ThumbnailImage(
                             imagePath: review.thumbnails[index],
                           );
@@ -684,10 +681,10 @@ class _ReviewCard extends StatelessWidget {
 }
 
 class _UserRatingBadge extends StatelessWidget {
+  const _UserRatingBadge({required this.review, this.emphasis = 1});
+
   final ItemReview review;
   final double emphasis;
-
-  const _UserRatingBadge({required this.review, this.emphasis = 1});
 
   @override
   Widget build(BuildContext context) {
@@ -695,7 +692,7 @@ class _UserRatingBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
+          colors: <Color>[
             Colors.white.withValues(alpha: 0.75),
             AppColors.primaryLight.withValues(alpha: 0.16 + (emphasis * 0.12)),
           ],
@@ -709,7 +706,7 @@ class _UserRatingBadge extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
+        children: <Widget>[
           Text(
             review.ratingLabel,
             style: const TextStyle(
@@ -721,7 +718,7 @@ class _UserRatingBadge extends StatelessWidget {
           const SizedBox(height: 2),
           Row(
             mainAxisSize: MainAxisSize.min,
-            children: [
+            children: <Widget>[
               const Icon(
                 Icons.star_rounded,
                 size: 14,
@@ -745,13 +742,13 @@ class _UserRatingBadge extends StatelessWidget {
 }
 
 class _LiquidPaginationDots extends StatelessWidget {
-  final PageController controller;
-  final int itemCount;
-
   const _LiquidPaginationDots({
     required this.controller,
     required this.itemCount,
   });
+
+  final PageController controller;
+  final int itemCount;
 
   @override
   Widget build(BuildContext context) {
@@ -763,7 +760,7 @@ class _LiquidPaginationDots extends StatelessWidget {
       height: 10,
       child: AnimatedBuilder(
         animation: controller,
-        builder: (context, child) {
+        builder: (BuildContext context, Widget? child) {
           final page = controller.hasClients
               ? (controller.page ?? controller.initialPage.toDouble())
               : controller.initialPage.toDouble();
@@ -776,12 +773,12 @@ class _LiquidPaginationDots extends StatelessWidget {
 
           return Stack(
             alignment: Alignment.centerLeft,
-            children: [
+            children: <Widget>[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(
+                children: List<Widget>.generate(
                   itemCount,
-                  (index) => Container(
+                  (int index) => Container(
                     width: dotSize,
                     height: dotSize,
                     decoration: BoxDecoration(
@@ -798,10 +795,13 @@ class _LiquidPaginationDots extends StatelessWidget {
                   height: dotSize,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [AppColors.primaryLight, AppColors.primary],
+                      colors: <Color>[
+                        AppColors.primaryLight,
+                        AppColors.primary,
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(999),
-                    boxShadow: [
+                    boxShadow: <BoxShadow>[
                       BoxShadow(
                         color: AppColors.primary.withValues(alpha: 0.22),
                         blurRadius: 10,
@@ -820,16 +820,16 @@ class _LiquidPaginationDots extends StatelessWidget {
 }
 
 class _GalleryImageCard extends StatelessWidget {
-  final String imagePath;
-
   const _GalleryImageCard({required this.imagePath});
+
+  final String imagePath;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 18,
@@ -853,9 +853,9 @@ class _GalleryImageCard extends StatelessWidget {
 }
 
 class _ThumbnailImage extends StatelessWidget {
-  final String imagePath;
-
   const _ThumbnailImage({required this.imagePath});
+
+  final String imagePath;
 
   @override
   Widget build(BuildContext context) {
@@ -875,15 +875,15 @@ class _ThumbnailImage extends StatelessWidget {
 }
 
 class _NetworkOrAssetImage extends StatelessWidget {
-  final String imagePath;
-  final double borderRadius;
-  final bool showOverlay;
-
   const _NetworkOrAssetImage({
     required this.imagePath,
     required this.borderRadius,
     required this.showOverlay,
   });
+
+  final String imagePath;
+  final double borderRadius;
+  final bool showOverlay;
 
   bool get _isNetworkImage =>
       imagePath.startsWith('http://') || imagePath.startsWith('https://');
@@ -897,21 +897,25 @@ class _NetworkOrAssetImage extends StatelessWidget {
       child = Image.network(
         imagePath,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            _ImageFallback(showOverlay: showOverlay),
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) =>
+                _ImageFallback(showOverlay: showOverlay),
       );
     } else if (_isAssetImage) {
       child = Image.asset(
         imagePath,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            _ImageFallback(showOverlay: showOverlay),
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) =>
+                _ImageFallback(showOverlay: showOverlay),
       );
     } else {
       child = _ImageFallback(showOverlay: showOverlay);
     }
 
-    if (borderRadius == 0) return child;
+    if (borderRadius == 0) {
+      return child;
+    }
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: child,
@@ -920,9 +924,9 @@ class _NetworkOrAssetImage extends StatelessWidget {
 }
 
 class _ImageFallback extends StatelessWidget {
-  final bool showOverlay;
-
   const _ImageFallback({required this.showOverlay});
+
+  final bool showOverlay;
 
   @override
   Widget build(BuildContext context) {
@@ -931,7 +935,7 @@ class _ImageFallback extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
+          colors: <Color>[
             const Color(0xFF82D0F4),
             const Color(0xFF2B7DB8),
             if (showOverlay) const Color(0xFF1F4F78),
@@ -940,7 +944,7 @@ class _ImageFallback extends StatelessWidget {
       ),
       child: Stack(
         fit: StackFit.expand,
-        children: [
+        children: <Widget>[
           Positioned(
             top: -20,
             right: -10,
@@ -979,17 +983,17 @@ class _ImageFallback extends StatelessWidget {
 }
 
 class _PaginationDots extends StatelessWidget {
+  const _PaginationDots({required this.itemCount, required this.currentIndex});
+
   final int itemCount;
   final int currentIndex;
-
-  const _PaginationDots({required this.itemCount, required this.currentIndex});
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: List.generate(
+      children: List<Widget>.generate(
         itemCount,
-        (index) => AnimatedContainer(
+        (int index) => AnimatedContainer(
           duration: AppConstants.defaultAnimation,
           width: index == currentIndex ? 18 : 7,
           height: 7,
@@ -1007,9 +1011,9 @@ class _PaginationDots extends StatelessWidget {
 }
 
 class _RatingBadge extends StatelessWidget {
-  final double rating;
-
   const _RatingBadge({required this.rating});
+
+  final double rating;
 
   @override
   Widget build(BuildContext context) {
@@ -1021,7 +1025,7 @@ class _RatingBadge extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
+        children: <Widget>[
           const Icon(Icons.star_rounded, color: AppColors.starColor, size: 16),
           const SizedBox(width: 5),
           Text(
@@ -1039,17 +1043,17 @@ class _RatingBadge extends StatelessWidget {
 }
 
 class _CircleIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color iconColor;
-  final Color backgroundColor;
-
   const _CircleIconButton({
     required this.icon,
     required this.onTap,
     this.iconColor = AppColors.primary,
     this.backgroundColor = Colors.white,
   });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color iconColor;
+  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
