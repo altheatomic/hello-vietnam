@@ -39,69 +39,14 @@ class AdminTopBar extends StatelessWidget {
           // Page title — titleLarge from app TextTheme
           const Spacer(),
 
-          // Search pill (SearchBarWidget visual rules, desktop width)
-          const _SearchField(),
-
-          const SizedBox(width: 16),
-
           // Notification — mirrors home_page.dart notification button
           const _NotificationButton(),
-
-          const SizedBox(width: 12),
-
-          // Language selector
-          const _LanguageSelector(),
 
           const SizedBox(width: 12),
 
           // User avatar + name
           const _UserProfile(),
         ],
-      ),
-    );
-  }
-}
-
-// ── Search pill ──────────────────────────────────────────────────────────────
-
-/// Adapts SearchBarWidget's pill treatment for a fixed-width desktop context.
-/// Visual rules preserved: radius 45, white fill, shadow, primary search icon,
-/// textSecondary hint at 50% opacity, fontSize 14.
-class _SearchField extends StatelessWidget {
-  const _SearchField();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 320,
-      height: 40,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(45),
-        border: Border.all(color: AppColors.divider),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Search...',
-          hintStyle: TextStyle(
-            color: AppColors.textSecondary.withValues(alpha: 0.5),
-            fontSize: 14,
-          ),
-          prefixIcon: const Icon(
-            Icons.search_rounded,
-            color: AppColors.primary,
-            size: 20,
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
-        ),
       ),
     );
   }
@@ -129,45 +74,6 @@ class _NotificationButton extends StatelessWidget {
         Icons.notifications_outlined,
         size: 22,
         color: AppColors.primary,
-      ),
-    );
-  }
-}
-
-// ── Language selector ────────────────────────────────────────────────────────
-
-class _LanguageSelector extends StatelessWidget {
-  const _LanguageSelector();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primaryLight.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('🇺🇸', style: TextStyle(fontSize: 15)),
-          const SizedBox(width: 6),
-          const Text(
-            'Eng (US)',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(width: 4),
-          const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 18,
-            color: AppColors.textSecondary,
-          ),
-        ],
       ),
     );
   }
