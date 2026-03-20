@@ -5,17 +5,18 @@ import '../../domain/admin_user.dart';
 
 /// Search + status-filter row for admin list pages.
 ///
-/// Layout:  [Search pill ────────────────] [All] [Active] [Banned]
+/// Layout:  [Search pill — fixed 300 px]  ·····Spacer·····  [All] [Active] [Banned]
 ///
-/// Search pill visual rules are inherited from SearchBarWidget:
-///   radius 45 · white fill · shadow (black 6 %, blur 8) · primary search icon
-///   · textSecondary hint at 50 % · clear button when text is present.
+/// The search field sits on the left at a fixed desktop width; filter chips
+/// are pushed to the right via Spacer. This matches the target layout where
+/// search and filters are visually separated rather than tightly grouped.
 ///
-/// Status chips use AppConstants.buttonRadius (12 px) and transition smoothly
-/// via AppConstants.defaultAnimation — same as the sidebar nav items.
+/// Search pill rules inherited from SearchBarWidget:
+///   radius 45 · white fill · divider border · shadow · primary icon.
 ///
-/// All state (query text + selected filter) lives in the parent page so that
-/// filtering logic stays in one place and the bar remains stateless.
+/// Filter chips: flat pill — solid primary when selected, white with divider
+/// border when unselected. No BoxShadow so the bar feels lighter than the
+/// table card below it.
 class AdminSearchFilterBar extends StatelessWidget {
   const AdminSearchFilterBar({
     super.key,
@@ -26,30 +27,25 @@ class AdminSearchFilterBar extends StatelessWidget {
   });
 
   final TextEditingController controller;
-
-  /// Currently active status filter. Null means "show all".
   final AdminUserStatus? filterStatus;
-
   final ValueChanged<AdminUserStatus?> onFilterStatusChanged;
-
-  /// Called on every keystroke so the parent can call setState.
   final ValueChanged<String>? onSearchChanged;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // ── Search pill ─────────────────────────────────────────
-        Expanded(
+        // Search — fixed width so chips are always right-aligned
+        SizedBox(
+          width: 300,
           child: _SearchPill(
             controller: controller,
             onChanged: onSearchChanged,
           ),
         ),
 
-        const SizedBox(width: 12),
+        const Spacer(),
 
-        // ── Status filter chips ──────────────────────────────────
         _FilterChip(
           label: 'All',
           isSelected: filterStatus == null,
@@ -60,9 +56,7 @@ class AdminSearchFilterBar extends StatelessWidget {
           label: 'Active',
           isSelected: filterStatus == AdminUserStatus.active,
           onTap: () => onFilterStatusChanged(
-            filterStatus == AdminUserStatus.active
-                ? null
-                : AdminUserStatus.active,
+            filterStatus == AdminUserStatus.active ? null : AdminUserStatus.active,
           ),
         ),
         const SizedBox(width: 6),
@@ -70,9 +64,7 @@ class AdminSearchFilterBar extends StatelessWidget {
           label: 'Banned',
           isSelected: filterStatus == AdminUserStatus.banned,
           onTap: () => onFilterStatusChanged(
-            filterStatus == AdminUserStatus.banned
-                ? null
-                : AdminUserStatus.banned,
+            filterStatus == AdminUserStatus.banned ? null : AdminUserStatus.banned,
           ),
         ),
       ],
@@ -95,10 +87,12 @@ class _SearchPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(45),
+        // Divider border matches the topbar search field for consistency
+        border: Border.all(color: AppColors.divider),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
@@ -117,8 +111,6 @@ class _SearchPill extends StatelessWidget {
             color: AppColors.primary,
             size: 20,
           ),
-          // Clear button — only visible when there is text.
-          // Evaluated at build time; parent setState keeps this in sync.
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
                   onPressed: controller.clear,
@@ -167,23 +159,19 @@ class _FilterChipState extends State<_FilterChip> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: AppConstants.defaultAnimation,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
           decoration: BoxDecoration(
-            // Selected: solid primary fill (same as active FeatureGrid tile
-            // icon container). Hovered-unselected: primaryLight 15% tint.
+            // Selected: solid primary — matches active FeatureGrid icon container.
+            // Unselected: flat white with divider border — no shadow, clean.
             color: widget.isSelected
                 ? AppColors.primary
                 : _hovered
-                    ? AppColors.primaryLight.withValues(alpha: 0.15)
+                    ? AppColors.primaryLight.withValues(alpha: 0.12)
                     : AppColors.surface,
             borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            border: widget.isSelected
+                ? null
+                : Border.all(color: AppColors.divider),
           ),
           child: Text(
             widget.label,
