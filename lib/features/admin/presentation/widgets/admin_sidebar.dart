@@ -63,7 +63,7 @@ class AdminSidebar extends StatelessWidget {
       width: width,
       height: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.adminSidebar,
         boxShadow: [
           BoxShadow(
             color: AppColors.shadow,
@@ -85,7 +85,10 @@ class AdminSidebar extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(
               children: _topItems
-                  .map((d) => _NavItem(destination: d, isActive: _isActive(d.route)))
+                  .map(
+                    (d) =>
+                        _NavItem(destination: d, isActive: _isActive(d.route)),
+                  )
                   .toList(),
             ),
           ),
@@ -96,7 +99,10 @@ class AdminSidebar extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(
               children: _managementItems
-                  .map((d) => _NavItem(destination: d, isActive: _isActive(d.route)))
+                  .map(
+                    (d) =>
+                        _NavItem(destination: d, isActive: _isActive(d.route)),
+                  )
                   .toList(),
             ),
           ),
@@ -122,14 +128,6 @@ class _BrandZone extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 72,
-      decoration: const BoxDecoration(
-        color: AppColors.primaryLight,
-        // Mirrors the home page header's bottom-rounded treatment,
-        // applied only to the bottom-right so the top-left stays flush.
-        borderRadius: BorderRadius.only(
-          bottomRight: Radius.circular(20),
-        ),
-      ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
@@ -139,27 +137,12 @@ class _BrandZone extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: AppColors.accentGold,
+                color: AppColors.starColor,
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'Admin',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -180,8 +163,9 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              letterSpacing: 0.8,
-            ),
+          letterSpacing: 0.8,
+          color: Colors.white70,
+        ),
       ),
     );
   }
@@ -209,7 +193,7 @@ class _NavItemState extends State<_NavItem> {
     final Color bgColor;
     if (isActive) {
       // Active tile: matches FeatureGrid tile tint (primaryLight 25%)
-      bgColor = AppColors.primaryLight.withValues(alpha: 0.25);
+      bgColor = AppColors.primary.withValues(alpha: 0.25);
     } else if (_hovered) {
       bgColor = AppColors.primaryLight.withValues(alpha: 0.10);
     } else {
@@ -239,7 +223,7 @@ class _NavItemState extends State<_NavItem> {
                     ? widget.destination.selectedIcon
                     : widget.destination.icon,
                 size: 20,
-                color: isActive ? AppColors.primary : AppColors.textSecondary,
+                color: isActive ? AppColors.surface : Color(0xFFE3F2FD),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -248,11 +232,8 @@ class _NavItemState extends State<_NavItem> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight:
-                        isActive ? FontWeight.w600 : FontWeight.w400,
-                    color: isActive
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    color: isActive ? AppColors.surface : Color(0xFFE3F2FD),
                   ),
                 ),
               ),
@@ -301,7 +282,7 @@ class _SignOutButtonState extends State<_SignOutButton> {
               Icon(
                 Icons.logout_rounded,
                 size: 20,
-                color: _hovered ? Colors.redAccent : AppColors.textSecondary,
+                color: _hovered ? Colors.redAccent : Color(0xFFE3F2FD),
               ),
               const SizedBox(width: 10),
               Text(
@@ -309,8 +290,7 @@ class _SignOutButtonState extends State<_SignOutButton> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
-                  color:
-                      _hovered ? Colors.redAccent : AppColors.textSecondary,
+                  color: _hovered ? Colors.redAccent : Color(0xFFE3F2FD),
                 ),
               ),
             ],
