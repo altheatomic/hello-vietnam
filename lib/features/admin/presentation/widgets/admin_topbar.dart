@@ -37,8 +37,6 @@ class AdminTopBar extends StatelessWidget {
       child: Row(
         children: [
           // Page title — titleLarge from app TextTheme
-          Text(title, style: Theme.of(context).textTheme.titleLarge),
-
           const Spacer(),
 
           // Search pill (SearchBarWidget visual rules, desktop width)
@@ -208,10 +206,7 @@ class _UserProfile extends StatelessWidget {
                 color: AppColors.textPrimary,
               ),
             ),
-            Text(
-              'Administrator',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Text('Administrator', style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
         const SizedBox(width: 4),
