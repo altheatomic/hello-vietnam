@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/auth/auth_repository.dart';
 import 'theme.dart';
@@ -13,6 +13,9 @@ import '../features/profile/presentation/change_password_page.dart';
 import '../features/profile/presentation/language_page.dart';
 import '../features/profile/presentation/currency_page.dart';
 import '../features/profile/presentation/wishlist_page.dart';
+import '../features/profile/presentation/voucher_page.dart';
+import '../features/profile/presentation/voucher_detail_page.dart';
+import '../features/profile/presentation/rank_benefits_page.dart';
 import '../features/profile/presentation/delete_user_data_page.dart';
 
 import '../features/forum/presentation/forum_page.dart';
@@ -79,6 +82,9 @@ class AppRoutes {
   static const popularApps = '/popular-apps';
   static const aiSearch = '/ai-search';
   static const wishlist = '/wishlist';
+  static const voucher = '/voucher';
+  static const voucherDetail = '/voucher-detail';
+  static const rankBenefits = '/rank-benefits';
   static const login = '/login';
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
@@ -102,7 +108,7 @@ class AppRoutes {
         return localProductsDetail;
     }
   }
-  // ── Admin routes ─────────────────────────────────────────────
+  // â”€â”€ Admin routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   static const adminDashboard     = '/admin/dashboard';
   static const adminUsers         = '/admin/users';
   static const adminCannedReplies = '/admin/canned-replies';
@@ -249,7 +255,42 @@ GoRouter buildRouter() {
         path: AppRoutes.wishlist,
         builder: (c, s) => const WishlistPage(),
       ),
-      // ── Upgrade account flow ────────────────────────────────
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.voucher,
+        builder: (c, s) => const VoucherPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.voucherDetail,
+        builder: (c, s) {
+          final VoucherDetailPayload payload =
+              s.extra is VoucherDetailPayload
+                  ? s.extra as VoucherDetailPayload
+                  : const VoucherDetailPayload(
+                    isOwnedVoucher: false,
+                    tag: 'Discount',
+                    title: '\$5 off on orders over \$20',
+                    pointsRequired: 5000,
+                    availablePoints: 12500,
+                    validityDays: 30,
+                    voucherCode: 'SAVE5',
+                    expiryDate: '30/04/2026',
+                    descriptionLines: <String>[
+                      'Special discount voucher for orders valued at \$20 or more',
+                    ],
+                    imageColorA: Color(0xFF5B6073),
+                    imageColorB: Color(0xFF202736),
+                  );
+          return VoucherDetailPage(payload: payload);
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.rankBenefits,
+        builder: (c, s) => const RankBenefitsPage(),
+      ),
+      // â”€â”€ Upgrade account flow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.upgradeAccount,
@@ -262,7 +303,7 @@ GoRouter buildRouter() {
             UpgradePaymentPage(planId: (s.extra as String?) ?? '1m'),
       ),
 
-      // ── Recommend flow ──────────────────────────────────────
+      // â”€â”€ Recommend flow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.recommend,
@@ -309,7 +350,7 @@ GoRouter buildRouter() {
         },
       ),
 
-      // ── Admin shell (desktop web) ──────────────────────────────
+      // â”€â”€ Admin shell (desktop web) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       // ShellRoute keeps AdminShell mounted while page content swaps.
       // currentPath is read from GoRouterState so the sidebar and topbar
       // can highlight the active route without any extra state management.
@@ -559,3 +600,4 @@ class _NavItem {
     required this.label,
   });
 }
+
