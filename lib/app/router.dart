@@ -16,6 +16,12 @@ import '../features/profile/presentation/wishlist_page.dart';
 import '../features/profile/presentation/delete_user_data_page.dart';
 
 import '../features/forum/presentation/forum_page.dart';
+import '../features/forum/presentation/forum_profile_page.dart';
+import '../features/forum/presentation/forum_notifications_page.dart';
+import '../features/forum/presentation/create_post_page.dart';
+import '../features/forum/presentation/forum_saved_posts_page.dart';
+import '../features/forum/presentation/forum_report_post_page.dart';
+import '../features/forum/presentation/thread_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
 import '../features/popular_apps/presentation/popular_apps_detail.dart';
 import '../features/feedback/presentation/feedback_page.dart';
@@ -60,6 +66,13 @@ class AppRoutes {
 
   // Pages outside of the bottom navigation
   static const forum = '/forum';
+  static const forumMe = '/forum/me';
+  static const forumProfile = '/forum/profile/:authorId';
+  static const forumNotifications = '/forum/notifications';
+  static const forumSaved = '/forum/saved';
+  static const forumCreate = '/forum/create';
+  static const forumPost = '/forum/post/:postId';
+  static const forumReport = '/forum/report/:postId';
   static const phrases = '/popular-phrases';
   static const feedback = '/send-feedback';
   static const recommend = '/recommend';
@@ -102,13 +115,18 @@ class AppRoutes {
         return localProductsDetail;
     }
   }
+
   // ── Admin routes ─────────────────────────────────────────────
-  static const adminDashboard     = '/admin/dashboard';
-  static const adminUsers         = '/admin/users';
+  static const adminDashboard = '/admin/dashboard';
+  static const adminUsers = '/admin/users';
   static const adminCannedReplies = '/admin/canned-replies';
-  static const adminReports       = '/admin/reports';
-  static const adminFeedback      = '/admin/feedback';
+  static const adminReports = '/admin/reports';
+  static const adminFeedback = '/admin/feedback';
   static const deleteUserData = '$profile/delete-user-data';
+
+  static String forumPostPath(String postId) => '/forum/post/$postId';
+  static String forumProfilePath(String authorId) => '/forum/profile/$authorId';
+  static String forumReportPath(String postId) => '/forum/report/$postId';
 }
 
 GoRouter buildRouter() {
@@ -134,6 +152,43 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.forum,
         builder: (c, s) => const ForumPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.forumMe,
+        builder: (c, s) => const ForumProfilePage(authorId: 'cortstllylo'),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.forumProfile,
+        builder: (c, s) =>
+            ForumProfilePage(authorId: s.pathParameters['authorId'] ?? ''),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.forumNotifications,
+        builder: (c, s) => const ForumNotificationsPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.forumSaved,
+        builder: (c, s) => const ForumSavedPostsPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.forumCreate,
+        builder: (c, s) => const CreatePostPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.forumPost,
+        builder: (c, s) => ThreadPage(postId: s.pathParameters['postId'] ?? ''),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.forumReport,
+        builder: (c, s) =>
+            ForumReportPostPage(postId: s.pathParameters['postId'] ?? ''),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
@@ -314,10 +369,8 @@ GoRouter buildRouter() {
       // currentPath is read from GoRouterState so the sidebar and topbar
       // can highlight the active route without any extra state management.
       ShellRoute(
-        builder: (context, state, child) => AdminShell(
-          currentPath: state.uri.path,
-          child: child,
-        ),
+        builder: (context, state, child) =>
+            AdminShell(currentPath: state.uri.path, child: child),
         routes: [
           GoRoute(
             path: AppRoutes.adminDashboard,
