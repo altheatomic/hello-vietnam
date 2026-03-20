@@ -233,6 +233,11 @@ class _ProfilePageState extends State<ProfilePage> {
                             onTap: () => context.push(AppRoutes.currency),
                           ),
                           _SettingRow(
+                            icon: Icons.confirmation_number_outlined,
+                            title: 'Voucher',
+                            onTap: () => context.push(AppRoutes.voucher),
+                          ),
+                          _SettingRow(
                             icon: Icons.favorite_border_rounded,
                             title: 'Wishlist',
                             onTap: () => context.push(AppRoutes.wishlist),
@@ -262,6 +267,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             title: 'Delete user data',
                             value: _autoDeleteUserDataEnabled,
                             onChanged: _setAutoDeleteSetting,
+                            onTap: () => context.push(AppRoutes.deleteUserData),
                           ),
                           _SettingRow(
                             icon: Icons.logout_rounded,
@@ -358,12 +364,14 @@ class _SettingSwitchRow extends StatelessWidget {
     required this.title,
     required this.value,
     required this.onChanged,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final bool value;
   final ValueChanged<bool> onChanged;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -371,18 +379,32 @@ class _SettingSwitchRow extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 8, 10, 8),
       child: Row(
         children: <Widget>[
-          Icon(icon, size: 20, color: const Color(0xFFB3B3B3)),
-          const SizedBox(width: 14),
           Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF1E1E1E),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: <Widget>[
+                    Icon(icon, size: 20, color: const Color(0xFFB3B3B3)),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF1E1E1E),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
+          const SizedBox(width: 8),
           Transform.scale(
             scale: 0.86,
             child: Switch(
