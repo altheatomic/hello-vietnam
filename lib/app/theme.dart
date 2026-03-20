@@ -27,6 +27,9 @@ class AppColors {
   static const Color divider = Color(0xFFE5E7EB);
   static const Color shadow = Color(0x1A000000);
   static const Color starColor = Color(0xFFFFC107);
+
+  // Admin dashboard specific
+  static const Color adminSidebar = Color(0xFF1A2332);
 }
 
 ThemeData buildTheme() {

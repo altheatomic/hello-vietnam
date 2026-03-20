@@ -84,7 +84,10 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
           // ── Top bar: back + search ─────────────────────
           Padding(
             padding: EdgeInsets.fromLTRB(
-              12, statusBarH + 8, AppConstants.pagePadding, 12,
+              12,
+              statusBarH + 8,
+              AppConstants.pagePadding,
+              12,
             ),
             child: Row(
               children: [
@@ -93,7 +96,11 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
                   onTap: () => context.pop(),
                   child: const Padding(
                     padding: EdgeInsets.all(4),
-                    child: Icon(Icons.chevron_left, size: 28, color: AppColors.primary),
+                    child: Icon(
+                      Icons.chevron_left,
+                      size: 28,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -131,7 +138,9 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
                           size: 20,
                         ),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -145,7 +154,7 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
             child: ListView.separated(
               padding: EdgeInsets.zero,
               itemCount: _suggestions.length,
-              separatorBuilder: (_, __) => Divider(
+              separatorBuilder: (_, _) => Divider(
                 height: 1,
                 color: Colors.grey.shade200,
                 indent: AppConstants.pagePadding,
