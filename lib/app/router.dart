@@ -38,6 +38,7 @@ import '../features/explore/presentation/explore_search_result_page.dart';
 import '../features/explore/presentation/explore_category_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
+import '../features/translate/presentation/translate_page.dart';
 import '../features/profile/presentation/upgrade_account_page.dart';
 import '../features/profile/presentation/upgrade_payment_page.dart';
 import '../features/recommend/domain/recommend_destination.dart';
@@ -76,7 +77,7 @@ class AppRoutes {
   static const forumCreate = '/forum/create';
   static const forumPost = '/forum/post/:postId';
   static const forumReport = '/forum/report/:postId';
-  static const phrases = '/popular-phrases';
+  static const translate = '/translate';
   static const feedback = '/send-feedback';
   static const recommend = '/recommend';
   static const recommendWhereSearch = '/recommend/where-search';
@@ -204,6 +205,11 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.feedback,
         builder: (c, s) => const FeedbackPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.translate,
+        builder: (c, s) => const TranslatePage(),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,

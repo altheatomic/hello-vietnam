@@ -20,9 +20,9 @@ const List<FeatureItem> homeFeatures = [
     route: AppRoutes.forum,
   ),
   FeatureItem(
-    title: 'Popular\nPhrases',
+    title: 'Translate',
     icon: Icons.translate_outlined,
-    route: AppRoutes.phrases,
+    route: AppRoutes.translate,
   ),
   FeatureItem(
     title: 'Send\nFeedback',
