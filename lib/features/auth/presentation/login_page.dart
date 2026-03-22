@@ -382,7 +382,7 @@ class _LoginPageState extends State<LoginPage> {
             ? const CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               )
-            : const Text('Continue'),
+            : const Text('Login'),
       ),
     );
   }
