@@ -2,8 +2,8 @@ import '../domain/admin_user.dart';
 
 /// Mock user records for the admin user management table.
 ///
-/// Covers a representative spread of roles and statuses so the table
-/// renders both badge variants and both action states during development.
+/// 12 entries so the 10-per-page limit produces two pages and exercises
+/// the pagination footer ("Showing 1 to 10 of 12 users" on page 1).
 final List<AdminUser> mockAdminUsers = [
   const AdminUser(
     id: '111111',
@@ -68,5 +68,37 @@ final List<AdminUser> mockAdminUsers = [
     phone: '097654321',
     role: AdminUserRole.guest,
     status: AdminUserStatus.banned,
+  ),
+  const AdminUser(
+    id: '113005',
+    username: 'ElvinBond',
+    email: 'elvin.b@gmail.com',
+    phone: '096112233',
+    role: AdminUserRole.both,
+    status: AdminUserStatus.active,
+  ),
+  const AdminUser(
+    id: '113006',
+    username: 'HuzaifaAnas',
+    email: 'huzaifa.a@gmail.com',
+    phone: '092345678',
+    role: AdminUserRole.guest,
+    status: AdminUserStatus.active,
+  ),
+  const AdminUser(
+    id: '113007',
+    username: 'TrishaNorton',
+    email: 'trisha.n@gmail.com',
+    phone: '095566778',
+    role: AdminUserRole.host,
+    status: AdminUserStatus.banned,
+  ),
+  const AdminUser(
+    id: '113008',
+    username: 'SophiaLane',
+    email: 'sophia.l@gmail.com',
+    phone: '093344556',
+    role: AdminUserRole.both,
+    status: AdminUserStatus.active,
   ),
 ];

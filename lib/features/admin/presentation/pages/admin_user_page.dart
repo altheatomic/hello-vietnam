@@ -1,3 +1,5 @@
+import 'dart:math' show min;
+
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
@@ -8,19 +10,6 @@ import '../widgets/admin_search_filter_bar.dart';
 import '../widgets/admin_section_header.dart';
 import '../widgets/admin_status_badge.dart';
 
-/// Admin User Management page.
-///
-/// Rendered inside [AdminShell] via the go_router ShellRoute — the sidebar,
-/// topbar, and scrollable container are all provided by the shell.
-///
-/// State managed here:
-///   [_users]         — mutable copy of mock data; ban/unban toggles in-place.
-///   [_searchController] — drives the search pill; page rebuilds on every
-///                         keystroke via [_onSearchChanged].
-///   [_filterStatus]  — currently selected status chip (null = all).
-///
-/// Filtering is a pure synchronous getter [_filteredUsers]; no async needed
-/// for mock data.
 class AdminUserPage extends StatefulWidget {
   const AdminUserPage({super.key});
 
@@ -29,12 +18,13 @@ class AdminUserPage extends StatefulWidget {
 }
 
 class _AdminUserPageState extends State<AdminUserPage> {
-  // Mutable copy so ban/unban can update in-place without touching mock source.
-  late final List<AdminUser> _users =
-      mockAdminUsers.map((u) => u).toList();
+  late final List<AdminUser> _users = mockAdminUsers.map((u) => u).toList();
 
   final TextEditingController _searchController = TextEditingController();
   AdminUserStatus? _filterStatus;
+  int _currentPage = 1;
+
+  static const int _pageSize = 10;
 
   @override
   void dispose() {
@@ -42,12 +32,15 @@ class _AdminUserPageState extends State<AdminUserPage> {
     super.dispose();
   }
 
-  void _onSearchChanged(String _) => setState(() {});
+  void _onSearchChanged(String _) => setState(() => _currentPage = 1);
 
   void _onFilterStatusChanged(AdminUserStatus? status) =>
-      setState(() => _filterStatus = status);
+      setState(() {
+        _filterStatus = status;
+        _currentPage = 1;
+      });
 
-  /// Applies both search query and status filter to [_users].
+  /// All users matching current search + status filter.
   List<AdminUser> get _filteredUsers {
     final query = _searchController.text.toLowerCase().trim();
     return _users.where((u) {
@@ -61,6 +54,18 @@ class _AdminUserPageState extends State<AdminUserPage> {
     }).toList();
   }
 
+  /// Slice of [_filteredUsers] for the current page.
+  List<AdminUser> get _pagedUsers {
+    final all = _filteredUsers;
+    final start = (_currentPage - 1) * _pageSize;
+    final end = min(start + _pageSize, all.length);
+    if (start >= all.length) return [];
+    return all.sublist(start, end);
+  }
+
+  int get _totalPages =>
+      (_filteredUsers.length / _pageSize).ceil().clamp(1, double.maxFinite).toInt();
+
   void _toggleBan(AdminUser user) {
     setState(() {
       final idx = _users.indexWhere((u) => u.id == user.id);
@@ -71,24 +76,19 @@ class _AdminUserPageState extends State<AdminUserPage> {
             : AdminUserStatus.active,
       );
     });
-
-    final updated =
-        _users.firstWhere((u) => u.id == user.id);
-    final action =
-        updated.status == AdminUserStatus.banned ? 'banned' : 'unbanned';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${user.username} has been $action.'),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    final updated = _users.firstWhere((u) => u.id == user.id);
+    final verb = updated.status == AdminUserStatus.banned ? 'banned' : 'unbanned';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('${user.username} has been $verb.'),
+      duration: const Duration(seconds: 2),
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredUsers;
-    final total = _users.length;
+    final paged = _pagedUsers;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,7 +97,7 @@ class _AdminUserPageState extends State<AdminUserPage> {
         AdminSectionHeader(
           title: 'User Manager',
           subtitle: 'View, search, and manage registered users',
-          trailing: _UserCountBadge(total: total),
+          trailing: _HeaderActions(),
         ),
 
         // ── Search + filter bar ──────────────────────────────────
@@ -108,69 +108,102 @@ class _AdminUserPageState extends State<AdminUserPage> {
           onSearchChanged: _onSearchChanged,
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
 
-        // ── User table ───────────────────────────────────────────
-        filtered.isEmpty
-            ? EmptyState(
-                icon: Icons.people_outline_rounded,
-                message: 'No users match your search.',
-              )
-            : _UserTable(
-                users: filtered,
-                onToggleBan: _toggleBan,
-              ),
+        // ── Table or empty state ─────────────────────────────────
+        if (filtered.isEmpty)
+          EmptyState(
+            icon: Icons.people_outline_rounded,
+            message: 'No users match your search.',
+          )
+        else ...[
+          _UserTable(users: paged, onToggleBan: _toggleBan),
+
+          const SizedBox(height: 16),
+
+          // ── Footer: count + pagination ───────────────────────
+          _TableFooter(
+            currentPage: _currentPage,
+            totalPages: _totalPages,
+            totalUsers: filtered.length,
+            pageSize: _pageSize,
+            onPageChanged: (p) => setState(() => _currentPage = p),
+          ),
+        ],
       ],
     );
   }
 }
 
-// ── User count badge ─────────────────────────────────────────────────────────
+// ── Header action buttons ─────────────────────────────────────────────────────
 
-class _UserCountBadge extends StatelessWidget {
-  const _UserCountBadge({required this.total});
-
-  final int total;
-
+class _HeaderActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primaryLight.withValues(alpha: 0.20),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        '$total users',
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: AppColors.primary,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Export — outlined, UI-only placeholder
+        OutlinedButton.icon(
+          onPressed: () {},
+          icon: const Icon(Icons.file_download_outlined, size: 17),
+          label: const Text('Export'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.textPrimary,
+            side: BorderSide(color: AppColors.divider, width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            textStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
-      ),
+
+        const SizedBox(width: 10),
+
+        // Add User — primary filled
+        FilledButton.icon(
+          onPressed: () {},
+          icon: const Icon(Icons.person_add_outlined, size: 17),
+          label: const Text('Add User'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.textOnPrimary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            textStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-// ── User table ───────────────────────────────────────────────────────────────
+// ── User table ────────────────────────────────────────────────────────────────
 
-/// White card container with a themed header row and one [_UserRow] per user.
-///
-/// Card shadow reuses the same treatment as RecommendationCard:
-///   BoxShadow(black 8 %, blurRadius 16, offset (0, 4)).
 class _UserTable extends StatelessWidget {
   const _UserTable({required this.users, required this.onToggleBan});
 
   final List<AdminUser> users;
   final ValueChanged<AdminUser> onToggleBan;
 
-  // Fixed column widths (px). The username column is Expanded.
+  // Column widths — username column is Expanded.
+  // Status and Action are sized to their content after the Align fix;
+  // keeping them smaller prevents dead whitespace inside those cells.
   static const double _colId     = 90;
-  static const double _colEmail  = 196;
-  static const double _colPhone  = 136;
-  static const double _colRole   = 72;
-  static const double _colStatus = 110;
-  static const double _colAction = 88;
+  static const double _colEmail  = 210;
+  static const double _colPhone  = 130;
+  static const double _colRole   = 76;
+  static const double _colStatus = 100; // badge shrink-wraps; col just reserves space
+  static const double _colAction = 90;  // button shrink-wraps; col just reserves space
 
   @override
   Widget build(BuildContext context) {
@@ -180,11 +213,10 @@ class _UserTable extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),
         boxShadow: [
-          // RecommendationCard shadow — keeps card treatment consistent
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -192,7 +224,6 @@ class _UserTable extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),
         child: Column(
           children: [
-            // Header
             _TableHeader(
               colId: _colId,
               colEmail: _colEmail,
@@ -201,20 +232,17 @@ class _UserTable extends StatelessWidget {
               colStatus: _colStatus,
               colAction: _colAction,
             ),
-            // Rows
-            ...List.generate(users.length, (i) {
-              return _UserRow(
-                user: users[i],
-                isLast: i == users.length - 1,
-                onToggleBan: () => onToggleBan(users[i]),
-                colId: _colId,
-                colEmail: _colEmail,
-                colPhone: _colPhone,
-                colRole: _colRole,
-                colStatus: _colStatus,
-                colAction: _colAction,
-              );
-            }),
+            ...List.generate(users.length, (i) => _UserRow(
+              user: users[i],
+              isLast: i == users.length - 1,
+              onToggleBan: () => onToggleBan(users[i]),
+              colId: _colId,
+              colEmail: _colEmail,
+              colPhone: _colPhone,
+              colRole: _colRole,
+              colStatus: _colStatus,
+              colAction: _colAction,
+            )),
           ],
         ),
       ),
@@ -222,7 +250,7 @@ class _UserTable extends StatelessWidget {
   }
 }
 
-// ── Table header row ─────────────────────────────────────────────────────────
+// ── Table header ──────────────────────────────────────────────────────────────
 
 class _TableHeader extends StatelessWidget {
   const _TableHeader({
@@ -234,72 +262,31 @@ class _TableHeader extends StatelessWidget {
     required this.colAction,
   });
 
-  final double colId;
-  final double colEmail;
-  final double colPhone;
-  final double colRole;
-  final double colStatus;
-  final double colAction;
+  final double colId, colEmail, colPhone, colRole, colStatus, colAction;
 
   @override
   Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.labelMedium;
     return Container(
-      height: 48,
-      // primaryLight 15 % tint — same alpha as FeatureGrid tile bg
-      color: AppColors.primaryLight.withValues(alpha: 0.15),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: 46,
+      color: AppColors.primaryLight.withValues(alpha: 0.13),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          _HeaderCell(label: 'User ID',      width: colId),
-          const _HeaderCellExpanded(label: 'User Name'),
-          _HeaderCell(label: 'Email',        width: colEmail),
-          _HeaderCell(label: 'Phone',        width: colPhone),
-          _HeaderCell(label: 'Role',         width: colRole),
-          _HeaderCell(label: 'Status',       width: colStatus),
-          _HeaderCell(label: 'Action',       width: colAction),
+          _Cell(width: colId,     child: Text('User ID',    style: style, overflow: TextOverflow.ellipsis)),
+          _ExpandedCell(          child: Text('User Name',  style: style, overflow: TextOverflow.ellipsis)),
+          _Cell(width: colEmail,  child: Text('Email',      style: style, overflow: TextOverflow.ellipsis)),
+          _Cell(width: colPhone,  child: Text('Phone',      style: style, overflow: TextOverflow.ellipsis)),
+          _Cell(width: colRole,   child: Text('Role',       style: style, overflow: TextOverflow.ellipsis)),
+          _Cell(width: colStatus, child: Text('Status',     style: style, overflow: TextOverflow.ellipsis)),
+          _Cell(width: colAction, child: Text('Action',     style: style, overflow: TextOverflow.ellipsis)),
         ],
       ),
     );
   }
 }
 
-class _HeaderCell extends StatelessWidget {
-  const _HeaderCell({required this.label, required this.width});
-
-  final String label;
-  final double width;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelMedium,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-}
-
-class _HeaderCellExpanded extends StatelessWidget {
-  const _HeaderCellExpanded({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelMedium,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-}
-
-// ── Data row ─────────────────────────────────────────────────────────────────
+// ── Data row ──────────────────────────────────────────────────────────────────
 
 class _UserRow extends StatefulWidget {
   const _UserRow({
@@ -317,12 +304,7 @@ class _UserRow extends StatefulWidget {
   final AdminUser user;
   final bool isLast;
   final VoidCallback onToggleBan;
-  final double colId;
-  final double colEmail;
-  final double colPhone;
-  final double colRole;
-  final double colStatus;
-  final double colAction;
+  final double colId, colEmail, colPhone, colRole, colStatus, colAction;
 
   @override
   State<_UserRow> createState() => _UserRowState();
@@ -334,38 +316,32 @@ class _UserRowState extends State<_UserRow> {
   @override
   Widget build(BuildContext context) {
     final user = widget.user;
+    final bodyStyle = Theme.of(context).textTheme.bodyMedium;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: AppConstants.defaultAnimation,
+        height: 68,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          // Subtle hover tint — same primaryLight alpha used in nav hover
           color: _hovered
               ? AppColors.primaryLight.withValues(alpha: 0.06)
               : AppColors.surface,
           border: widget.isLast
               ? null
-              : Border(
-                  bottom: BorderSide(color: AppColors.divider),
-                ),
+              : Border(bottom: BorderSide(color: AppColors.divider)),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        height: 62,
         child: Row(
           children: [
             // User ID
-            SizedBox(
+            _Cell(
               width: widget.colId,
-              child: Text(
-                user.id,
-                style: Theme.of(context).textTheme.bodyMedium,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(user.id, style: bodyStyle, overflow: TextOverflow.ellipsis),
             ),
 
-            // User Name (avatar + name)
+            // User Name — avatar + name
             Expanded(
               child: Row(
                 children: [
@@ -387,47 +363,44 @@ class _UserRowState extends State<_UserRow> {
             ),
 
             // Email
-            SizedBox(
+            _Cell(
               width: widget.colEmail,
-              child: Text(
-                user.email,
-                style: Theme.of(context).textTheme.bodyMedium,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(user.email, style: bodyStyle, overflow: TextOverflow.ellipsis),
             ),
 
             // Phone
-            SizedBox(
+            _Cell(
               width: widget.colPhone,
-              child: Text(
-                user.phone,
-                style: Theme.of(context).textTheme.bodyMedium,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(user.phone, style: bodyStyle, overflow: TextOverflow.ellipsis),
             ),
 
             // Role
-            SizedBox(
+            _Cell(
               width: widget.colRole,
-              child: Text(
-                user.role.label,
-                style: Theme.of(context).textTheme.bodyMedium,
-                overflow: TextOverflow.ellipsis,
+              child: Text(user.role.label, style: bodyStyle, overflow: TextOverflow.ellipsis),
+            ),
+
+            // Status badge — Align breaks the tight SizedBox constraint so the
+            // Container inside AdminStatusBadge sizes to its content, not the
+            // full column width.
+            _Cell(
+              width: widget.colStatus,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: AdminStatusBadge(status: user.status),
               ),
             ),
 
-            // Status badge
-            SizedBox(
-              width: widget.colStatus,
-              child: AdminStatusBadge(status: user.status),
-            ),
-
-            // Ban / Unban action
-            SizedBox(
+            // Ban / Unban — same Align trick: AnimatedContainer sizes to its
+            // padding + text, not to the full colAction SizedBox width.
+            _Cell(
               width: widget.colAction,
-              child: _ActionButton(
-                isBanned: user.status == AdminUserStatus.banned,
-                onTap: widget.onToggleBan,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _ActionButton(
+                  isBanned: user.status == AdminUserStatus.banned,
+                  onTap: widget.onToggleBan,
+                ),
               ),
             ),
           ],
@@ -437,40 +410,66 @@ class _UserRowState extends State<_UserRow> {
   }
 }
 
+// ── Layout helpers ────────────────────────────────────────────────────────────
+
+/// Fixed-width table cell — aligns content identically in header and data rows.
+class _Cell extends StatelessWidget {
+  const _Cell({required this.width, required this.child});
+  final double width;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) =>
+      SizedBox(width: width, child: child);
+}
+
+/// Flexible table cell for the username column.
+class _ExpandedCell extends StatelessWidget {
+  const _ExpandedCell({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) =>
+      Expanded(child: child);
+}
+
 // ── User avatar ───────────────────────────────────────────────────────────────
 
-/// Circular avatar showing the first letter of [username].
+/// 36 px circle avatar with a colour deterministically picked from a vivid
+/// 8-colour palette, cycling by username length.
 ///
-/// Uses a deterministic tint from the app's primary palette so different
-/// users are visually distinguishable without needing real images.
+/// Colours span the full hue range so different users are easy to distinguish
+/// at a glance. All are chosen to contrast well with white text.
 class _UserAvatar extends StatelessWidget {
   const _UserAvatar({required this.username});
 
   final String username;
 
-  // Four tints from the primary palette — cycled by username length
-  static const List<Color> _tints = [
-    AppColors.primary,
-    AppColors.primaryDark,
-    AppColors.accent,
-    AppColors.primaryLight,
+  static const List<Color> _palette = [
+    AppColors.primary,           // sky blue
+    Color(0xFF22C55E),           // green
+    AppColors.primaryDark,       // dark blue
+    Color(0xFFF59E0B),           // amber
+    Color(0xFF8B5CF6),           // violet
+    Color(0xFFF97316),           // orange
+    AppColors.accent,            // light blue
+    Color(0xFF06B6D4),           // cyan
   ];
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = _tints[username.length % _tints.length];
-    final String initial =
-        username.isNotEmpty ? username[0].toUpperCase() : '?';
+    final Color bg = _palette[username.length % _palette.length];
+    final String initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
 
     return Container(
-      width: 34,
-      height: 34,
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
       child: Center(
         child: Text(
           initial,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
@@ -482,13 +481,8 @@ class _UserAvatar extends StatelessWidget {
 
 // ── Action button ─────────────────────────────────────────────────────────────
 
-/// Small outlined pill button for Ban / Unban actions.
-///
-/// Ban:   red border + red label — signals a destructive action.
-/// Unban: primary blue border + primary label — signals a restoring action.
-///
-/// Radius uses AppConstants.buttonRadius (12 px) to stay consistent with
-/// all other button-like elements in the admin shell.
+/// Outlined pill: Ban (red) or Unban (primary blue).
+/// Border at full opacity so the outline is clearly visible — matches target.
 class _ActionButton extends StatefulWidget {
   const _ActionButton({required this.isBanned, required this.onTap});
 
@@ -516,18 +510,194 @@ class _ActionButtonState extends State<_ActionButton> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: AppConstants.defaultAnimation,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
           decoration: BoxDecoration(
             color: _hovered ? base.withValues(alpha: 0.08) : Colors.transparent,
             borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
-            border: Border.all(color: base.withValues(alpha: 0.6)),
+            // Full-opacity border for a clearly visible outlined treatment
+            border: Border.all(color: base.withValues(alpha: 0.85), width: 1.2),
           ),
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
               color: base,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Table footer ──────────────────────────────────────────────────────────────
+
+/// Pagination footer row:
+///   [Showing X to Y of Z users]  ·····  [<]  [1]  [2]  [>]
+class _TableFooter extends StatelessWidget {
+  const _TableFooter({
+    required this.currentPage,
+    required this.totalPages,
+    required this.totalUsers,
+    required this.pageSize,
+    required this.onPageChanged,
+  });
+
+  final int currentPage;
+  final int totalPages;
+  final int totalUsers;
+  final int pageSize;
+  final ValueChanged<int> onPageChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final start = (currentPage - 1) * pageSize + 1;
+    final end = min(currentPage * pageSize, totalUsers);
+
+    return Row(
+      children: [
+        // Count label
+        Text(
+          'Showing $start to $end of $totalUsers users',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+
+        const Spacer(),
+
+        // Previous
+        _PageNavButton(
+          icon: Icons.chevron_left_rounded,
+          enabled: currentPage > 1,
+          onTap: () => onPageChanged(currentPage - 1),
+        ),
+
+        const SizedBox(width: 4),
+
+        // Page number buttons
+        ...List.generate(totalPages, (i) {
+          final page = i + 1;
+          return Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: _PageNumberButton(
+              page: page,
+              isActive: page == currentPage,
+              onTap: () => onPageChanged(page),
+            ),
+          );
+        }),
+
+        // Next
+        _PageNavButton(
+          icon: Icons.chevron_right_rounded,
+          enabled: currentPage < totalPages,
+          onTap: () => onPageChanged(currentPage + 1),
+        ),
+      ],
+    );
+  }
+}
+
+class _PageNavButton extends StatefulWidget {
+  const _PageNavButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  State<_PageNavButton> createState() => _PageNavButtonState();
+}
+
+class _PageNavButtonState extends State<_PageNavButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: widget.enabled
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.enabled ? widget.onTap : null,
+        child: AnimatedContainer(
+          duration: AppConstants.defaultAnimation,
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: _hovered && widget.enabled
+                ? AppColors.primaryLight.withValues(alpha: 0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            widget.icon,
+            size: 20,
+            color: widget.enabled
+                ? AppColors.textPrimary
+                : AppColors.textSecondary.withValues(alpha: 0.4),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PageNumberButton extends StatefulWidget {
+  const _PageNumberButton({
+    required this.page,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  final int page;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  State<_PageNumberButton> createState() => _PageNumberButtonState();
+}
+
+class _PageNumberButtonState extends State<_PageNumberButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: AppConstants.defaultAnimation,
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            // Active: solid primary — same treatment as selected filter chip
+            color: widget.isActive
+                ? AppColors.primary
+                : _hovered
+                    ? AppColors.primaryLight.withValues(alpha: 0.15)
+                    : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              '${widget.page}',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: widget.isActive
+                    ? AppColors.textOnPrimary
+                    : AppColors.textSecondary,
+              ),
             ),
           ),
         ),

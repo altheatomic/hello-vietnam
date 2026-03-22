@@ -18,29 +18,71 @@ class RecommendWhenCalendarPage extends StatefulWidget {
       _RecommendWhenCalendarPageState();
 }
 
-class _RecommendWhenCalendarPageState
-    extends State<RecommendWhenCalendarPage> {
+class _RecommendWhenCalendarPageState extends State<RecommendWhenCalendarPage> {
   int _year = DateTime.now().year;
   DateTime? _start;
   DateTime? _end;
 
   bool get _hasRange => _start != null && _end != null;
 
+  bool _isSameDate(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
   void _onDayTap(DateTime day) {
     setState(() {
-      // First tap or reset: set start only
-      if (_start == null || _hasRange) {
+      // No date selected yet -> set start
+      if (_start == null) {
         _start = day;
         _end = null;
-      } else {
-        // Second tap: set end (swap if needed)
+        return;
+      }
+
+      // 1 date (start) selected -> determine end
+      if (_end == null) {
+        // Tap on the same start date -> clear selection
+        if (_isSameDate(day, _start!)) {
+          _start = null;
+          return;
+        }
+
+        // Tap another date -> set end, ensure start <= end
         if (day.isBefore(_start!)) {
           _end = _start;
           _start = day;
         } else {
           _end = day;
         }
+        return;
       }
+
+      // 2 dates (start and end) selected
+      final isTappedStart = _isSameDate(day, _start!);
+      final isTappedEnd = _isSameDate(day, _end!);
+
+      // If the range only has 1 day (start == end) and tap the same day -> clear everything
+      if (isTappedStart && isTappedEnd) {
+        _start = null;
+        _end = null;
+        return;
+      }
+
+      // Tap start -> make end the new start, clear end to select new end
+      if (isTappedStart) {
+        _start = _end;
+        _end = null;
+        return;
+      }
+
+      // Tap end -> clear end
+      if (isTappedEnd) {
+        _end = null;
+        return;
+      }
+
+      // Tap another day when a range is already selected -> start selecting a new range
+      _start = day;
+      _end = null;
     });
   }
 
@@ -109,12 +151,10 @@ class _RecommendWhenCalendarPageState
             margin: const EdgeInsets.symmetric(
               horizontal: AppConstants.pagePadding,
             ),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.divider),
-              borderRadius:
-                  BorderRadius.circular(AppConstants.cardRadius),
+              borderRadius: BorderRadius.circular(AppConstants.cardRadius),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -184,17 +224,15 @@ class _RecommendWhenCalendarPageState
                 child: ElevatedButton(
                   onPressed: _hasRange
                       ? () => context.push(
-                            AppRoutes.recommendWhenResults,
-                            extra: DateTimeRange(
-                              start: _start!,
-                              end: _end!,
-                            ),
-                          )
+                          AppRoutes.recommendWhenResults,
+                          extra: DateTimeRange(start: _start!, end: _end!),
+                        )
                       : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    disabledBackgroundColor:
-                        AppColors.primary.withValues(alpha: 0.35),
+                    disabledBackgroundColor: AppColors.primary.withValues(
+                      alpha: 0.35,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(
                         AppConstants.cardRadius,
@@ -241,9 +279,18 @@ class _MonthGrid extends StatelessWidget {
 
   static const _weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
   static const _monthNames = [
-    'January', 'February', 'March', 'April',
-    'May', 'June', 'July', 'August',
-    'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   @override
@@ -269,8 +316,7 @@ class _MonthGrid extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.divider),
-              borderRadius:
-                  BorderRadius.circular(AppConstants.cardRadius),
+              borderRadius: BorderRadius.circular(AppConstants.cardRadius),
             ),
             padding: const EdgeInsets.all(8),
             child: Column(
@@ -300,8 +346,7 @@ class _MonthGrid extends StatelessWidget {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 7,
                     mainAxisExtent: 36,
                   ),
