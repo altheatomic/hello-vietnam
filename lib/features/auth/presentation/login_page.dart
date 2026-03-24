@@ -20,10 +20,22 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    AuthRepository.instance.addListener(_handleAuthChanged);
+  }
+
+  @override
   void dispose() {
+    AuthRepository.instance.removeListener(_handleAuthChanged);
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _handleAuthChanged() {
+    if (!mounted || !AuthRepository.instance.isLoggedIn) return;
+    context.go(AppRoutes.home);
   }
 
   void _onContinue() async {
@@ -59,8 +71,26 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _onGoogleSignIn() {
-    // TODO: Implement Google Sign-In
+  Future<void> _onGoogleSignIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      await AuthRepository.instance.signInWithGoogle();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google sign in failed: ${e.toString()}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _onForgotPassword() {
