@@ -11,6 +11,9 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  static const String _loginImageAsset = 'assets/images/Auth_Image/Login.png';
+  static const String _googleLogoAsset = 'assets/images/Auth_Image/LogoGG.png';
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _rememberMe = true;
@@ -171,16 +174,10 @@ class _LoginPageState extends State<LoginPage> {
           width: double.infinity,
           height: 350 + statusBarHeight,
           color: const Color(0xFFB3E5FC),
-          child: Image.network(
-            'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Login/Login.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvTG9naW4vTG9naW4ucG5nIiwiaWF0IjoxNzcyNjA5MTE1LCJleHAiOjE4MDQxNDUxMTV9.EDIZqwz4akn6G4rj1uiRA5mQhDQOH8e17QNTWeh6Jco',
+          child: Image.asset(
+            _loginImageAsset,
             fit: BoxFit.contain,
             width: double.infinity,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              );
-            },
             errorBuilder: (context, error, stackTrace) {
               return const Center(
                 child: Icon(Icons.flight_takeoff, size: 80, color: Colors.white),
@@ -419,8 +416,8 @@ class _LoginPageState extends State<LoginPage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        icon: Image.network(
-          'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Login/Google_Logo.svg.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvTG9naW4vR29vZ2xlX0xvZ28uc3ZnLnBuZyIsImlhdCI6MTc3MjYwOTQ3MywiZXhwIjoxODA0MTQ1NDczfQ.chqQWTwgf4ZxTx6pJdUNjkLPiUCE7kqSfT51prRYg_g',
+        icon: Image.asset(
+          _googleLogoAsset,
           width: 24,
           height: 24,
           errorBuilder: (context, error, stackTrace) {

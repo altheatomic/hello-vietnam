@@ -11,6 +11,9 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  static const String _signUpImageAsset = 'assets/images/Auth_Image/SignUp.png';
+  static const String _googleLogoAsset = 'assets/images/Auth_Image/LogoGG.png';
+
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -178,18 +181,12 @@ class _RegisterPageState extends State<RegisterPage> {
               ).createShader(bounds);
             },
             blendMode: BlendMode.dstIn,
-            child: Image.network(
-              'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Login/Signup1.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvTG9naW4vU2lnbnVwMS5wbmciLCJpYXQiOjE3NzI2MjEyMzUsImV4cCI6MTgwNDE1NzIzNX0.az5cNFaAS8s0pQ-1U629rf5WSaL2AvqqV01kAsbEXcU',
+            child: Image.asset(
+              _signUpImageAsset,
               fit: BoxFit.contain,
               width: double.infinity,
               errorBuilder: (context, error, stackTrace) {
                 return const SizedBox.shrink();
-              },
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return const Center(
-                  child: CircularProgressIndicator(color: Color(0xFFB3E5FC)),
-                );
               },
             ),
           ),
@@ -370,8 +367,8 @@ class _RegisterPageState extends State<RegisterPage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        icon: Image.network(
-          'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Login/Google_Logo.svg.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvTG9naW4vR29vZ2xlX0xvZ28uc3ZnLnBuZyIsImlhdCI6MTc3MjYwOTQ3MywiZXhwIjoxODA0MTQ1NDczfQ.chqQWTwgf4ZxTx6pJdUNjkLPiUCE7kqSfT51prRYg_g',
+        icon: Image.asset(
+          _googleLogoAsset,
           width: 24,
           height: 24,
           errorBuilder: (context, error, stackTrace) {
