@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class CurrencyPage extends StatefulWidget {
@@ -9,164 +9,219 @@ class CurrencyPage extends StatefulWidget {
 }
 
 class _CurrencyPageState extends State<CurrencyPage> {
-  static const List<_CurrencyOption> _options = <_CurrencyOption>[
-    _CurrencyOption(label: 'US Dollar', symbol: r'$'),
-    _CurrencyOption(label: 'CNY', symbol: '\u00A5'),
-    _CurrencyOption(label: 'Euro', symbol: '\u20AC'),
-    _CurrencyOption(label: 'British Pound', symbol: '\u00A3'),
+  static const List<_CurrencyOption> _currencies = <_CurrencyOption>[
+    _CurrencyOption(code: 'USD', title: 'USD - \$', subtitle: 'US Dollar', flagCode: 'gb'),
+    _CurrencyOption(code: 'VND', title: 'VND - ₫', subtitle: 'Vietnamese Dong', flagCode: 'vn'),
+    _CurrencyOption(code: 'EUR', title: 'EUR - €', subtitle: 'Euro', flagCode: 'eu'),
+    _CurrencyOption(code: 'GBP', title: 'GBP - £', subtitle: 'British Pound', flagCode: 'gb'),
+    _CurrencyOption(code: 'JPY', title: 'JPY - ¥', subtitle: 'Japanese Yen', flagCode: 'jp'),
+    _CurrencyOption(code: 'CNY', title: 'CNY - ¥', subtitle: 'Chinese Yuan', flagCode: 'cn'),
+    _CurrencyOption(code: 'KRW', title: 'KRW - ₩', subtitle: 'South Korean Won', flagCode: 'kr'),
+    _CurrencyOption(code: 'AUD', title: 'AUD - A\$', subtitle: 'Australian Dollar', flagCode: 'au'),
+    _CurrencyOption(code: 'CAD', title: 'CAD - C\$', subtitle: 'Canadian Dollar', flagCode: 'ca'),
+    _CurrencyOption(code: 'CHF', title: 'CHF - Fr', subtitle: 'Swiss Franc', flagCode: 'ch'),
+    _CurrencyOption(code: 'SGD', title: 'SGD - S\$', subtitle: 'Singapore Dollar', flagCode: 'sg'),
+    _CurrencyOption(code: 'HKD', title: 'HKD - HK\$', subtitle: 'Hong Kong Dollar', flagCode: 'hk'),
+    _CurrencyOption(code: 'INR', title: 'INR - ₹', subtitle: 'Indian Rupee', flagCode: 'in'),
+    _CurrencyOption(code: 'THB', title: 'THB - ฿', subtitle: 'Thai Baht', flagCode: 'th'),
+    _CurrencyOption(code: 'MYR', title: 'MYR - RM', subtitle: 'Malaysian Ringgit', flagCode: 'my'),
+    _CurrencyOption(code: 'IDR', title: 'IDR - Rp', subtitle: 'Indonesian Rupiah', flagCode: 'id'),
+    _CurrencyOption(code: 'PHP', title: 'PHP - ₱', subtitle: 'Philippine Peso', flagCode: 'ph'),
+    _CurrencyOption(code: 'RUB', title: 'RUB - ₽', subtitle: 'Russian Ruble', flagCode: 'ru'),
+    _CurrencyOption(code: 'BRL', title: 'BRL - R\$', subtitle: 'Brazilian Real', flagCode: 'br'),
+    _CurrencyOption(code: 'MXN', title: 'MXN - Mex\$', subtitle: 'Mexican Peso', flagCode: 'mx'),
   ];
 
-  String _selectedCurrency = 'US Dollar';
-  String? _highlightedCurrency;
-  int _selectionTick = 0;
-  static const Color _tapHighlightColor = Color(0xFFEAF7FF);
-  static const Duration _tapHighlightHold = Duration(milliseconds: 80);
-  static const Duration _tapHighlightFade = Duration(milliseconds: 800);
+  String _selectedCode = 'USD';
 
-  void _onSelectCurrency(String currency) {
-    _selectionTick++;
-    final int currentTick = _selectionTick;
+  void _onSelectCurrency(String code) {
     setState(() {
-      _selectedCurrency = currency;
-      _highlightedCurrency = currency;
+      _selectedCode = code;
     });
-
-    Future<void>.delayed(_tapHighlightHold, () {
-      if (!mounted || _selectionTick != currentTick) {
-        return;
-      }
-      setState(() {
-        _highlightedCurrency = null;
-      });
-    });
-  }
-
-  List<Widget> _buildCurrencyRows() {
-    final List<Widget> rows = <Widget>[];
-
-    for (int i = 0; i < _options.length; i++) {
-      final _CurrencyOption option = _options[i];
-      final bool isSelected = _selectedCurrency == option.label;
-
-      rows.add(
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: GestureDetector(
-            onTap: () => _onSelectCurrency(option.label),
-            behavior: HitTestBehavior.opaque,
-            child: AnimatedContainer(
-              duration: _tapHighlightFade,
-              curve: Curves.easeOut,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-              decoration: BoxDecoration(
-                color: _highlightedCurrency == option.label
-                    ? _tapHighlightColor
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOut,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: const Color(0xFF7A7A7A),
-                        fontWeight:
-                            isSelected ? FontWeight.w500 : FontWeight.w400,
-                      ),
-                      child: Text('${option.label}  ${option.symbol}'),
-                    ),
-                  ),
-                  _SelectCircle(isSelected: isSelected),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-
-      if (i != _options.length - 1) {
-        rows.add(
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Divider(height: 1, color: Color(0xFFE7E7E7)),
-          ),
-        );
-      }
-    }
-
-    return rows;
   }
 
   @override
   Widget build(BuildContext context) {
-    final double topInset = MediaQuery.of(context).padding.top;
-
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: <Widget>[
-          Container(
-            color: Colors.white,
-            padding: EdgeInsets.fromLTRB(10, topInset + 8, 10, 10),
-            child: SizedBox(
-              height: 48,
-              child: Row(
-                children: <Widget>[
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(
-                      Icons.chevron_left,
-                      size: 26,
-                      color: Color(0xFF1C1C1C),
-                    ),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Currency',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF121212),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          child: Column(
+            children: <Widget>[
+              SizedBox(
+                height: 76,
+                child: Stack(
+                  children: <Widget>[
+                    Align(
+                      alignment: Alignment.topLeft,
+                      child: IconButton(
+                        onPressed: () => context.pop(),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 18,
+                          color: Color(0xFF81D4FA),
+                        ),
+                        splashRadius: 20,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+                    const Align(
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            'Currency',
+                            style: TextStyle(
+                              fontSize: 29,
+                              height: 1.15,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF101828),
+                            ),
+                          ),
+                          SizedBox(height: 7),
+                          Text(
+                            'Select your preferred currency',
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.2,
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xFF4A5565),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.only(bottom: 28),
+                  itemCount: _currencies.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (BuildContext context, int index) {
+                    final _CurrencyOption item = _currencies[index];
+                    final bool selected = item.code == _selectedCode;
+                    return _CurrencyTile(
+                      item: item,
+                      selected: selected,
+                      onTap: () => _onSelectCurrency(item.code),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CurrencyTile extends StatelessWidget {
+  const _CurrencyTile({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _CurrencyOption item;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          height: 66,
+          padding: const EdgeInsets.fromLTRB(13, 13, 13, 13),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFE1F5FE) : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? const Color(0xFF81D4FA) : const Color(0xFFE5E7EB),
+              width: 1.1,
             ),
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(22, 20, 22, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  const Text(
-                    'Select currency',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFDDDDDD)),
-                    ),
-                    child: Column(children: _buildCurrencyRows()),
-                  ),
-                ],
+          child: Row(
+            children: <Widget>[
+              SizedBox(
+                width: 36,
+                height: 36,
+                child: _RoundFlag(flagCode: item.flagCode, radius: 18),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        height: 1.2,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF101828),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.1,
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF6A7282),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                switchInCurve: Curves.easeOutBack,
+                switchOutCurve: Curves.easeOut,
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return ScaleTransition(scale: animation, child: child);
+                },
+                child: selected
+                    ? Container(
+                        key: const ValueKey<String>('selected'),
+                        width: 20,
+                        height: 20,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF81D4FA),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                      )
+                    : const SizedBox(key: ValueKey<String>('unselected')),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -174,54 +229,63 @@ class _CurrencyPageState extends State<CurrencyPage> {
 
 class _CurrencyOption {
   const _CurrencyOption({
-    required this.label,
-    required this.symbol,
+    required this.code,
+    required this.title,
+    required this.subtitle,
+    required this.flagCode,
   });
 
-  final String label;
-  final String symbol;
+  final String code;
+  final String title;
+  final String subtitle;
+  final String flagCode;
 }
 
-class _SelectCircle extends StatelessWidget {
-  const _SelectCircle({required this.isSelected});
+class _RoundFlag extends StatelessWidget {
+  const _RoundFlag({required this.flagCode, this.radius = 9});
 
-  final bool isSelected;
+  final String? flagCode;
+  final double radius;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-      width: 30,
-      height: 30,
-      padding: const EdgeInsets.all(3),
+    return Container(
+      width: radius * 2,
+      height: radius * 2,
       decoration: BoxDecoration(
-        color: Colors.white,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFFD7D7D7),
-          width: 1.4,
-        ),
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFD6DEE9)),
       ),
-      child: Center(
-        child: AnimatedScale(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutBack,
-          scale: isSelected ? 1 : 0,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 180),
-            opacity: isSelected ? 1 : 0,
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: const BoxDecoration(
-                color: Color(0xFF2EB9F8),
-                shape: BoxShape.circle,
+      alignment: Alignment.center,
+      child: flagCode == null
+          ? Icon(
+              Icons.public_rounded,
+              size: radius + 2,
+              color: const Color(0xFF6AA9CC),
+            )
+          : ClipOval(
+              child: Image.network(
+                'https://flagcdn.com/w40/${flagCode!.toLowerCase()}.png',
+                width: radius * 2 - 2,
+                height: radius * 2 - 2,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: const Color(0xFFEAF0F8),
+                  alignment: Alignment.center,
+                  child: Text(
+                    flagCode!.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF6F7D90),
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }
+
+

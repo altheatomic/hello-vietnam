@@ -28,8 +28,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     setState(() => _isLoading = loading);
   }
 
-  static const _illustrationUrl =
-      'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Login/ForgotPassword.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvTG9naW4vRm9yZ290UGFzc3dvcmQucG5nIiwiaWF0IjoxNzcyNjI2MzA2LCJleHAiOjE4MDQxNjIzMDZ9.h2oWLRKqI4Wx0vxZKnLJ9H01JMY4otDXRIyC8VIkF9c';
+  static const _illustrationAsset = 'assets/images/Auth_Image/Password.png';
 
   @override
   void initState() {
@@ -248,19 +247,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ).createShader(bounds);
                   },
                   blendMode: BlendMode.dstIn,
-                  child: Image.network(
-                    _illustrationUrl,
+                  child: Image.asset(
+                    _illustrationAsset,
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: totalHeight,
                     alignment: Alignment.topCenter,
                     errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                    loadingBuilder: (_, child, progress) {
-                      if (progress == null) return child;
-                      return const Center(
-                        child: CircularProgressIndicator(color: Color(0xFFB3E5FC)),
-                      );
-                    },
                   ),
                 ),
               ),

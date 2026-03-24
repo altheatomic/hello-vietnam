@@ -6,8 +6,8 @@ import 'package:hellovietnam/app/router.dart';
 class GetStartedPage extends StatelessWidget {
   const GetStartedPage({super.key});
 
-  static const String _backgroundImageUrl =
-      'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/GetStarted/Vietnam.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvR2V0U3RhcnRlZC9WaWV0bmFtLmpwZyIsImlhdCI6MTc3Mjg2ODcxOSwiZXhwIjoxODA0NDA0NzE5fQ.jB0W5diFtiHeYSrGAmNV051orO5sRER1gnqfIEm9LaI';
+  static const String _backgroundImageAsset =
+      'assets/images/Auth_Image/Vietnam.jpg';
 
   @override
   Widget build(BuildContext context) {
@@ -15,8 +15,8 @@ class GetStartedPage extends StatelessWidget {
       body: Stack(
         children: <Widget>[
           Positioned.fill(
-            child: Image.network(
-              _backgroundImageUrl,
+            child: Image.asset(
+              _backgroundImageAsset,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 return Container(color: const Color(0xFF1E6A88));

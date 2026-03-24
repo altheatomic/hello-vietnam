@@ -266,25 +266,35 @@ class _ProfilePageState extends State<ProfilePage> {
                             onTap: () => context.push(AppRoutes.changePassword),
                           ),
                           _SettingRow(
-                            icon: Icons.monetization_on_outlined,
-                            title: 'Currency',
-                            onTap: () => context.push(AppRoutes.currency),
+                            icon: Icons.favorite_border_rounded,
+                            title: 'Wishlist',
+                            onTap: () => context.push(AppRoutes.wishlist),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      _SectionCard(
+                        children: <Widget>[
                           _SettingRow(
                             icon: Icons.confirmation_number_outlined,
                             title: 'Voucher',
                             onTap: () => context.push(AppRoutes.voucher),
                           ),
                           _SettingRow(
-                            icon: Icons.favorite_border_rounded,
-                            title: 'Wishlist',
-                            onTap: () => context.push(AppRoutes.wishlist),
-                          ),
-                          _SettingRow(
                             icon: Icons.translate_rounded,
                             title: 'Language',
                             onTap: () => context.push(AppRoutes.language),
                           ),
+                          _SettingRow(
+                            icon: Icons.monetization_on_outlined,
+                            title: 'Currency',
+                            onTap: () => context.push(AppRoutes.currency),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      _SectionCard(
+                        children: <Widget>[
                           _SettingSwitchRow(
                             icon: Icons.notifications_none_rounded,
                             title: 'Notification',
@@ -295,11 +305,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               });
                             },
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      _SectionCard(
-                        children: <Widget>[
                           _SettingSwitchRow(
                             icon: Icons.shield_outlined,
                             title: 'Delete user data',
