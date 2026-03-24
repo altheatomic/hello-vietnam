@@ -12,6 +12,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  static const String _defaultAvatarAsset = 'images/avatar/avatar.jpg';
   static const List<_AvatarPreset> _avatarPresets = <_AvatarPreset>[
     _AvatarPreset(
       icon: Icons.person,
@@ -38,14 +39,15 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _notificationEnabled = false;
   bool _autoDeleteUserDataEnabled = false;
   static const String _autoDeleteUserDataKey = 'auto_delete_user_data_enabled';
-  String _username = 'AnhLaThangToi';
-  String _email = 'thangtoi@gmail.com';
+  String _username = 'abc';
+  String _email = 'abc@gmail.com';
   int _avatarIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _loadAutoDeleteSetting();
+    _loadCurrentUserProfile();
   }
 
   Future<void> _loadAutoDeleteSetting() async {
@@ -66,6 +68,24 @@ class _ProfilePageState extends State<ProfilePage> {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_autoDeleteUserDataKey, value);
   }
+
+  Future<void> _loadCurrentUserProfile() async {
+    final auth = AuthRepository.instance;
+    final fullName = await auth.getCurrentUserFullName();
+    final email = auth.currentUserEmail;
+
+    if (!mounted) return;
+
+    setState(() {
+      if (fullName != null && fullName.isNotEmpty) {
+        _username = fullName;
+      }
+      if (email != null && email.isNotEmpty) {
+        _email = email;
+      }
+    });
+  }
+
   Future<void> _onLogout() async {
     await AuthRepository.instance.signOut();
     if (!mounted) return;
@@ -174,10 +194,28 @@ class _ProfilePageState extends State<ProfilePage> {
                                     color: _avatarPresets[_avatarIndex].color,
                                     borderRadius: BorderRadius.circular(999),
                                   ),
-                                  child: Icon(
-                                    _avatarPresets[_avatarIndex].icon,
-                                    color:
-                                        _avatarPresets[_avatarIndex].iconColor,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(999),
+                                    child: _avatarIndex == 0
+                                        ? Image.asset(
+                                            _defaultAvatarAsset,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) =>
+                                                    Icon(
+                                                      _avatarPresets[_avatarIndex]
+                                                          .icon,
+                                                      color:
+                                                          _avatarPresets[_avatarIndex]
+                                                              .iconColor,
+                                                    ),
+                                          )
+                                        : Icon(
+                                            _avatarPresets[_avatarIndex].icon,
+                                            color:
+                                                _avatarPresets[_avatarIndex]
+                                                    .iconColor,
+                                          ),
                                   ),
                                 ),
                                 const SizedBox(width: 10),

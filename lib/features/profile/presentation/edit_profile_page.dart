@@ -17,6 +17,7 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
+  static const String _defaultAvatarAsset = 'images/avatar/avatar.jpg';
   static const List<_AvatarPreset> _avatarPresets = <_AvatarPreset>[
     _AvatarPreset(icon: Icons.person, color: Color(0xFFE7F3FF), iconColor: Color(0xFF8AA4C1)),
     _AvatarPreset(icon: Icons.directions_car_filled_rounded, color: Color(0xFFFFE8DA), iconColor: Color(0xFF5F6E7A)),
@@ -88,10 +89,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           width: 2,
                         ),
                       ),
-                      child: Icon(
-                        _avatarPresets[index].icon,
-                        size: 28,
-                        color: _avatarPresets[index].iconColor,
+                      child: ClipOval(
+                        child: index == 0
+                            ? Image.asset(
+                                _defaultAvatarAsset,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Icon(
+                                  _avatarPresets[index].icon,
+                                  size: 28,
+                                  color: _avatarPresets[index].iconColor,
+                                ),
+                              )
+                            : Icon(
+                                _avatarPresets[index].icon,
+                                size: 28,
+                                color: _avatarPresets[index].iconColor,
+                              ),
                       ),
                     ),
                   );
@@ -170,10 +183,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               color: avatar.color,
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              avatar.icon,
-                              size: 58,
-                              color: avatar.iconColor,
+                            child: ClipOval(
+                              child: _avatarIndex == 0
+                                  ? Image.asset(
+                                      _defaultAvatarAsset,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => Icon(
+                                        avatar.icon,
+                                        size: 58,
+                                        color: avatar.iconColor,
+                                      ),
+                                    )
+                                  : Icon(
+                                      avatar.icon,
+                                      size: 58,
+                                      color: avatar.iconColor,
+                                    ),
                             ),
                           ),
                         ),
