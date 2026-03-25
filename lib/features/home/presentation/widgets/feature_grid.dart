@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import '../../domain/feature_item.dart';
 
@@ -39,7 +40,13 @@ class _FeatureButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push(item.route),
+      onTap: () {
+        if (item.route == AppRoutes.tripPlanner) {
+          context.go(item.route);
+          return;
+        }
+        context.push(item.route);
+      },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.primaryLight.withValues(alpha: 0.25),

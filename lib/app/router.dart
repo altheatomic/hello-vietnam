@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/auth/auth_repository.dart';
 import 'theme.dart';
@@ -6,7 +6,15 @@ import '../features/item_detail/domain/detail_category.dart';
 import '../features/item_detail/domain/item_detail_models.dart';
 
 import '../features/home/presentation/home_page.dart';
+import '../features/planner/presentation/business_location_page.dart';
+import '../features/planner/presentation/trip_budget_page.dart';
+import '../features/planner/presentation/trip_day_detail_page.dart';
+import '../features/planner/presentation/trip_duration_page.dart';
+import '../features/planner/presentation/trip_interest_page.dart';
+import '../features/planner/presentation/trip_map_page.dart';
 import '../features/planner/presentation/trip_planner_page.dart';
+import '../features/planner/presentation/trip_result_page.dart';
+import '../features/planner/presentation/trip_location_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/profile/presentation/edit_profile_page.dart';
 import '../features/profile/presentation/change_password_page.dart';
@@ -66,6 +74,15 @@ class AppRoutes {
   static const getStarted = '/get-started';
   static const home = '/home';
   static const tripPlanner = '/trip-planner';
+  static const tripPlannerLocation = '/trip-planner/location';
+  static const tripPlannerBusinessLocation = '/trip-planner/business-location';
+  static const tripPlannerDuration = '/trip-planner/duration';
+  static const tripPlannerInterest = '/trip-planner/interest';
+  static const tripPlannerBudget = '/trip-planner/budget';
+  static const tripPlannerResult = '/trip-planner/result';
+  static const tripPlannerDayDetail = '/trip-planner/result/day/:dayIndex';
+  static const tripPlannerMap =
+      '/trip-planner/result/day/:dayIndex/map/:activityIndex';
   static const messages = '/messages';
   static const profile = '/profile';
 
@@ -123,6 +140,7 @@ class AppRoutes {
         return localProductsDetail;
     }
   }
+
   // ── Admin routes ─────────────────────────────────────────────
   static const adminDashboard = '/admin/dashboard';
   static const adminUsers = '/admin/users';
@@ -134,6 +152,10 @@ class AppRoutes {
   static String forumPostPath(String postId) => '/forum/post/$postId';
   static String forumProfilePath(String authorId) => '/forum/profile/$authorId';
   static String forumReportPath(String postId) => '/forum/report/$postId';
+  static String tripPlannerDayDetailPath(int dayIndex) =>
+      '/trip-planner/result/day/$dayIndex';
+  static String tripPlannerMapPath(int dayIndex, int activityIndex) =>
+      '/trip-planner/result/day/$dayIndex/map/$activityIndex';
 }
 
 GoRouter buildRouter() {
@@ -325,24 +347,23 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.voucherDetail,
         builder: (c, s) {
-          final VoucherDetailPayload payload =
-              s.extra is VoucherDetailPayload
-                  ? s.extra as VoucherDetailPayload
-                  : const VoucherDetailPayload(
-                    isOwnedVoucher: false,
-                    tag: 'Discount',
-                    title: '\$5 off on orders over \$20',
-                    pointsRequired: 5000,
-                    availablePoints: 12500,
-                    validityDays: 30,
-                    voucherCode: 'SAVE5',
-                    expiryDate: '30/04/2026',
-                    descriptionLines: <String>[
-                      'Special discount voucher for orders valued at \$20 or more',
-                    ],
-                    imageColorA: Color(0xFF5B6073),
-                    imageColorB: Color(0xFF202736),
-                  );
+          final VoucherDetailPayload payload = s.extra is VoucherDetailPayload
+              ? s.extra as VoucherDetailPayload
+              : const VoucherDetailPayload(
+                  isOwnedVoucher: false,
+                  tag: 'Discount',
+                  title: '\$5 off on orders over \$20',
+                  pointsRequired: 5000,
+                  availablePoints: 12500,
+                  validityDays: 30,
+                  voucherCode: 'SAVE5',
+                  expiryDate: '30/04/2026',
+                  descriptionLines: <String>[
+                    'Special discount voucher for orders valued at \$20 or more',
+                  ],
+                  imageColorA: Color(0xFF5B6073),
+                  imageColorB: Color(0xFF202736),
+                );
           return VoucherDetailPage(payload: payload);
         },
       ),
@@ -460,6 +481,61 @@ GoRouter buildRouter() {
               GoRoute(
                 path: AppRoutes.tripPlanner,
                 builder: (context, state) => const TripPlannerPage(),
+                routes: [
+                  GoRoute(
+                    path: 'location',
+                    builder: (context, state) => const TripLocationPage(),
+                  ),
+                  GoRoute(
+                    path: 'business-location',
+                    builder: (context, state) => const BusinessLocationPage(),
+                  ),
+                  GoRoute(
+                    path: 'duration',
+                    builder: (context, state) => const TripDurationPage(),
+                  ),
+                  GoRoute(
+                    path: 'interest',
+                    builder: (context, state) => const TripInterestPage(),
+                  ),
+                  GoRoute(
+                    path: 'budget',
+                    builder: (context, state) => const TripBudgetPage(),
+                  ),
+                  GoRoute(
+                    path: 'result',
+                    builder: (context, state) => const TripResultPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'day/:dayIndex',
+                        builder: (context, state) => TripDayDetailPage(
+                          dayIndex:
+                              int.tryParse(
+                                state.pathParameters['dayIndex'] ?? '',
+                              ) ??
+                              0,
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'map/:activityIndex',
+                            builder: (context, state) => TripMapPage(
+                              dayIndex:
+                                  int.tryParse(
+                                    state.pathParameters['dayIndex'] ?? '',
+                                  ) ??
+                                  0,
+                              activityIndex:
+                                  int.tryParse(
+                                    state.pathParameters['activityIndex'] ?? '',
+                                  ) ??
+                                  0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
@@ -520,9 +596,7 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
           ? Container(
               width: 56,
               height: 56,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-              ),
+              decoration: const BoxDecoration(shape: BoxShape.circle),
               child: FloatingActionButton(
                 heroTag: 'home_report_fab',
                 elevation: 0,
@@ -683,4 +757,3 @@ class _NavItem {
     required this.label,
   });
 }
-
