@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hellovietnam/features/report/presentation/report_issue_popup.dart';
 
 class WishlistPage extends StatefulWidget {
   const WishlistPage({super.key});
@@ -533,26 +534,34 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                     ),
                     Positioned(
                       top: topInset + 6,
-                      right: 10,
-                      child: (isPlace || isFood)
-                          ? IconButton(
-                              onPressed: _toggleFavorite,
-                              splashRadius: 20,
-                              icon: Icon(
-                                _isFavorite
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                color: const Color(0xFFFF4D79),
-                                size: 22,
-                              ),
-                            )
-                          : _CircleIconButton(
-                              icon: _isFavorite
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              iconColor: const Color(0xFFFF4D79),
-                              onTap: _toggleFavorite,
-                            ),
+                      right: 8,
+                      child: Column(
+                        children: <Widget>[
+                          (isPlace || isFood)
+                              ? IconButton(
+                                  onPressed: _toggleFavorite,
+                                  splashRadius: 20,
+                                  icon: Icon(
+                                    _isFavorite
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: const Color(0xFFFF4D79),
+                                    size: 22,
+                                  ),
+                                )
+                              : _CircleIconButton(
+                                  icon: _isFavorite
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  iconColor: const Color(0xFFFF4D79),
+                                  onTap: _toggleFavorite,
+                                ),
+                          const SizedBox(height: 2),
+                          _ReportAssetIconButton(
+                            onTap: () => showReportIssueFlow(context),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1152,6 +1161,36 @@ class _CircleIconButton extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         child: Icon(icon, size: 20, color: iconColor),
+      ),
+    );
+  }
+}
+
+class _ReportAssetIconButton extends StatelessWidget {
+  const _ReportAssetIconButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: Center(
+          child: Image.asset(
+            'assets/images/Auth_Image/problem.png',
+            width: 28,
+            height: 28,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => const Icon(
+              Icons.bug_report_outlined,
+              size: 28,
+              color: Color(0xFF2C2C2C),
+            ),
+          ),
+        ),
       ),
     );
   }

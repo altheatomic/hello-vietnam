@@ -6,6 +6,7 @@ import 'package:hellovietnam/features/popular_apps/data/popular_apps_mock_data.d
 import 'package:hellovietnam/features/popular_apps/domain/popular_apps_item.dart';
 import 'package:hellovietnam/features/popular_apps/presentation/widgets/popular_apps_cart.dart';
 import 'package:hellovietnam/features/popular_apps/presentation/widgets/popular_apps_category_tabs.dart';
+import 'package:hellovietnam/features/report/presentation/report_issue_popup.dart';
 
 class PopularAppsPage extends StatefulWidget {
   const PopularAppsPage({super.key});
@@ -71,7 +72,10 @@ class _PopularAppsPageState extends State<PopularAppsPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 40),
+                      _RoundAssetButton(
+                        assetPath: 'assets/images/Auth_Image/problem.png',
+                        onTap: () => showReportIssueFlow(context),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -125,6 +129,37 @@ class _RoundIconButton extends StatelessWidget {
           color: Colors.white.withValues(alpha: 0.7),
         ),
         child: Icon(icon, size: 18, color: AppColors.textPrimary),
+      ),
+    );
+  }
+}
+
+class _RoundAssetButton extends StatelessWidget {
+  const _RoundAssetButton({required this.assetPath, required this.onTap});
+
+  final String assetPath;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: Center(
+          child: Image.asset(
+            assetPath,
+            width: 28,
+            height: 28,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => const Icon(
+              Icons.bug_report_outlined,
+              size: 28,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
       ),
     );
   }

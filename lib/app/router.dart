@@ -36,6 +36,7 @@ import '../features/explore/presentation/explore_page.dart';
 import '../features/explore/presentation/explore_search_page.dart';
 import '../features/explore/presentation/explore_search_result_page.dart';
 import '../features/explore/presentation/explore_category_page.dart';
+import '../features/ai_search/presentation/ai_search_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
 import '../features/translate/presentation/translate_page.dart';
@@ -48,7 +49,6 @@ import '../features/recommend/presentation/where/recommend_where_detail_page.dar
 import '../features/recommend/presentation/when/recommend_when_calendar_page.dart';
 import '../features/recommend/presentation/when/recommend_when_results_page.dart';
 import '../features/recommend/presentation/when/recommend_when_detail_page.dart';
-import '../features/report/presentation/report_issue_popup.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
@@ -225,7 +225,7 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.aiSearch,
-        builder: (c, s) => const ExploreSearchPage(),
+        builder: (c, s) => const AiSearchPage(),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
@@ -511,33 +511,9 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool showReportFab = navigationShell.currentIndex == 0;
-
     return Scaffold(
       body: navigationShell,
       extendBody: true,
-      floatingActionButton: showReportFab
-          ? Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-              ),
-              child: FloatingActionButton(
-                heroTag: 'home_report_fab',
-                elevation: 0,
-                highlightElevation: 0,
-                backgroundColor: const Color(0xFFFB2C36),
-                onPressed: () => showReportIssueFlow(context),
-                child: const Icon(
-                  Icons.bug_report_rounded,
-                  size: 24,
-                  color: Colors.white,
-                ),
-              ),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: _CustomBottomNav(
         currentIndex: navigationShell.currentIndex,
         onTap: (index) => _onTap(context, index),
