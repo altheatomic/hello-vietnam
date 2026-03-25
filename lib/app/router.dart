@@ -57,6 +57,7 @@ import '../features/admin/presentation/pages/admin_user_page.dart';
 import '../features/admin/presentation/pages/admin_canned_replies_page.dart';
 import '../features/admin/presentation/pages/admin_report_page.dart';
 import '../features/admin/presentation/pages/admin_feedback_page.dart';
+import '../features/admin/presentation/pages/admin_popular_app_page.dart';
 import '../main.dart'; // Import to access shouldNavigateToForgotPassword
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -128,6 +129,7 @@ class AppRoutes {
   static const adminCannedReplies = '/admin/canned-replies';
   static const adminReports = '/admin/reports';
   static const adminFeedback = '/admin/feedback';
+  static const adminPopularApps = '/admin/popular-apps';
   static const deleteUserData = '$profile/delete-user-data';
 
   static String forumPostPath(String postId) => '/forum/post/$postId';
@@ -437,6 +439,10 @@ GoRouter buildRouter() {
           GoRoute(
             path: AppRoutes.adminFeedback,
             builder: (c, s) => const AdminFeedbackPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.adminPopularApps,
+            builder: (c, s) => const AdminPopularAppPage(),
           ),
         ],
       ),
