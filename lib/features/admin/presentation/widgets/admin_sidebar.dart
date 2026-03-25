@@ -52,6 +52,12 @@ class AdminSidebar extends StatelessWidget {
       selectedIcon: Icons.feedback_rounded,
       route: '/admin/feedback',
     ),
+    _NavDestination(
+      label: 'Popular Apps',
+      icon: Icons.apps_outlined,
+      selectedIcon: Icons.apps_rounded,
+      route: '/admin/popular-apps',
+    ),
   ];
 
   bool _isActive(String route) =>
