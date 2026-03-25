@@ -44,6 +44,7 @@ import '../features/explore/presentation/explore_page.dart';
 import '../features/explore/presentation/explore_search_page.dart';
 import '../features/explore/presentation/explore_search_result_page.dart';
 import '../features/explore/presentation/explore_category_page.dart';
+import '../features/ai_search/presentation/ai_search_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
 import '../features/translate/presentation/translate_page.dart';
@@ -247,7 +248,7 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.aiSearch,
-        builder: (c, s) => const ExploreSearchPage(),
+        builder: (c, s) => const AiSearchPage(),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,

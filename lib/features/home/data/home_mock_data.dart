@@ -47,7 +47,7 @@ const List<FeatureItem> homeFeatures = [
   FeatureItem(
     title: 'AI Search',
     icon: Icons.auto_awesome_outlined,
-    route: AppRoutes.exploreSearch,
+    route: AppRoutes.aiSearch,
   ),
 ];
 
