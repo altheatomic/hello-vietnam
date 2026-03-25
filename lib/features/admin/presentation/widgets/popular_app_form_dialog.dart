@@ -7,14 +7,19 @@ import '../../domain/popular_app_guide.dart';
 
 /// Create / Edit dialog for a [PopularAppGuide].
 ///
-/// Pass [initial] to pre-populate the form (edit mode).
-/// Leave [initial] null for create mode.
+/// [initial]    — pre-populates the form (edit mode); null = create mode.
+/// [categories] — the runtime category list, used to build the dropdown.
 ///
 /// Returns a [PopularAppGuide] via `Navigator.pop` on save, or null on cancel.
 class PopularAppFormDialog extends StatefulWidget {
-  const PopularAppFormDialog({super.key, this.initial});
+  const PopularAppFormDialog({
+    super.key,
+    this.initial,
+    required this.categories,
+  });
 
   final PopularAppGuide? initial;
+  final List<AppCategory> categories;
 
   @override
   State<PopularAppFormDialog> createState() => _PopularAppFormDialogState();
@@ -31,7 +36,7 @@ class _PopularAppFormDialogState extends State<PopularAppFormDialog> {
   late final TextEditingController _description;
   late final TextEditingController _guide;
 
-  late PopularAppCategory _category;
+  late String _categoryId;
 
   bool get _isEdit => widget.initial != null;
 
@@ -39,6 +44,7 @@ class _PopularAppFormDialogState extends State<PopularAppFormDialog> {
   void initState() {
     super.initState();
     final g = widget.initial;
+
     _name        = TextEditingController(text: g?.name        ?? '');
     _packageName = TextEditingController(text: g?.packageName ?? '');
     _storeUrl    = TextEditingController(text: g?.storeUrl    ?? '');
@@ -46,7 +52,17 @@ class _PopularAppFormDialogState extends State<PopularAppFormDialog> {
     _urlVideo    = TextEditingController(text: g?.urlVideo    ?? '');
     _description = TextEditingController(text: g?.description ?? '');
     _guide       = TextEditingController(text: g?.guide       ?? '');
-    _category    = g?.category ?? PopularAppCategory.transport;
+
+    // Resolve initial category — fall back to first available
+    final firstId = widget.categories.isNotEmpty
+        ? widget.categories.first.id
+        : '';
+    _categoryId = g?.categoryId ?? firstId;
+
+    // Guard: if the saved categoryId no longer exists in the list, use first
+    if (!widget.categories.any((c) => c.id == _categoryId)) {
+      _categoryId = firstId;
+    }
   }
 
   @override
@@ -64,22 +80,22 @@ class _PopularAppFormDialogState extends State<PopularAppFormDialog> {
   void _onSave() {
     if (!_formKey.currentState!.validate()) return;
 
-    final result = PopularAppGuide(
-      id:          widget.initial?.id   ?? _generateId(),
+    Navigator.of(context).pop(PopularAppGuide(
+      id:          widget.initial?.id ?? _generateId(),
       name:        _name.text.trim(),
-      category:    _category,
+      categoryId:  _categoryId,
       packageName: _packageName.text.trim(),
       storeUrl:    _storeUrl.text.trim(),
-      urlImage:    _urlImage.text.trim().isEmpty ? null : _urlImage.text.trim(),
-      urlVideo:    _urlVideo.text.trim().isEmpty ? null : _urlVideo.text.trim(),
+      urlImage:
+          _urlImage.text.trim().isEmpty ? null : _urlImage.text.trim(),
+      urlVideo:
+          _urlVideo.text.trim().isEmpty ? null : _urlVideo.text.trim(),
       description: _description.text.trim().isEmpty
           ? null
           : _description.text.trim(),
-      guide:       _guide.text.trim().isEmpty ? null : _guide.text.trim(),
-      createdAt:   widget.initial?.createdAt ?? DateTime.now(),
-    );
-
-    Navigator.of(context).pop(result);
+      guide: _guide.text.trim().isEmpty ? null : _guide.text.trim(),
+      createdAt: widget.initial?.createdAt ?? DateTime.now(),
+    ));
   }
 
   String _generateId() =>
@@ -97,13 +113,13 @@ class _PopularAppFormDialogState extends State<PopularAppFormDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Dialog header ──────────────────────────────────────────
+            // ── Header ──────────────────────────────────────────────
             _DialogHeader(
               title: _isEdit ? 'Edit Guide' : 'Add Guide',
               onClose: () => Navigator.of(context).pop(),
             ),
 
-            // ── Scrollable form body ───────────────────────────────────
+            // ── Scrollable form body ─────────────────────────────────
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(28, 0, 28, 0),
@@ -114,72 +130,68 @@ class _PopularAppFormDialogState extends State<PopularAppFormDialog> {
                     children: [
                       const SizedBox(height: 20),
 
-                      // App name
                       _FieldLabel(text: 'App Name *'),
                       _FormField(
                         controller: _name,
                         hint: 'e.g. Grab',
-                        validator: _requiredValidator('App name'),
+                        validator: _required('App name'),
                       ),
 
                       const SizedBox(height: 16),
 
-                      // Category
                       _FieldLabel(text: 'Category *'),
                       _CategoryDropdown(
-                        value: _category,
-                        onChanged: (cat) => setState(() => _category = cat!),
+                        value: _categoryId,
+                        categories: widget.categories,
+                        onChanged: (id) =>
+                            setState(() => _categoryId = id ?? _categoryId),
                       ),
 
                       const SizedBox(height: 16),
 
-                      // Package name
                       _FieldLabel(text: 'Package Name *'),
                       _FormField(
                         controller: _packageName,
                         hint: 'e.g. com.grabtaxi.passenger',
                         keyboardType: TextInputType.url,
-                        validator: _packageValidator,
+                        validator: _validatePackage,
                         helperText:
                             'Find on Play Store URL: ?id=<package_name>',
                       ),
 
                       const SizedBox(height: 16),
 
-                      // Store URL
                       _FieldLabel(text: 'Store URL *'),
                       _FormField(
                         controller: _storeUrl,
-                        hint: 'https://play.google.com/store/apps/details?id=…',
+                        hint:
+                            'https://play.google.com/store/apps/details?id=…',
                         keyboardType: TextInputType.url,
-                        validator: _urlValidator('Store URL'),
+                        validator: _requiredUrl('Store URL'),
                       ),
 
                       const SizedBox(height: 16),
 
-                      // Image URL
                       _FieldLabel(text: 'Image URL'),
                       _FormField(
                         controller: _urlImage,
                         hint: 'https://…/cover.jpg',
                         keyboardType: TextInputType.url,
-                        validator: _optionalUrlValidator,
+                        validator: _optionalUrl,
                       ),
 
                       const SizedBox(height: 16),
 
-                      // Video URL (optional)
                       _FieldLabel(text: 'Video URL  (optional)'),
                       _FormField(
                         controller: _urlVideo,
                         hint: 'https://…/guide.mp4',
                         keyboardType: TextInputType.url,
-                        validator: _optionalUrlValidator,
+                        validator: _optionalUrl,
                       ),
 
                       const SizedBox(height: 16),
 
-                      // Short description
                       _FieldLabel(text: 'Description  (short teaser)'),
                       _FormField(
                         controller: _description,
@@ -189,7 +201,6 @@ class _PopularAppFormDialogState extends State<PopularAppFormDialog> {
 
                       const SizedBox(height: 16),
 
-                      // Full guide
                       _FieldLabel(text: 'Guide  (full how-to)'),
                       _FormField(
                         controller: _guide,
@@ -205,10 +216,10 @@ class _PopularAppFormDialogState extends State<PopularAppFormDialog> {
               ),
             ),
 
-            // ── Footer actions ─────────────────────────────────────────
+            // ── Footer ──────────────────────────────────────────────
             _DialogFooter(
-              onCancel: () => Navigator.of(context).pop(),
-              onSave: _onSave,
+              onCancel:  () => Navigator.of(context).pop(),
+              onSave:    _onSave,
               saveLabel: _isEdit ? 'Save Changes' : 'Add Guide',
             ),
           ],
@@ -217,36 +228,34 @@ class _PopularAppFormDialogState extends State<PopularAppFormDialog> {
     );
   }
 
-  // ── Validators ─────────────────────────────────────────────────────────────
+  // ── Validators ──────────────────────────────────────────────────────────────
 
-  FormFieldValidator<String> _requiredValidator(String fieldName) =>
-      (v) => (v == null || v.trim().isEmpty) ? '$fieldName is required.' : null;
+  FormFieldValidator<String> _required(String name) =>
+      (v) => (v == null || v.trim().isEmpty) ? '$name is required.' : null;
 
-  String? _packageValidator(String? v) {
+  String? _validatePackage(String? v) {
     if (v == null || v.trim().isEmpty) return 'Package name is required.';
-    final trimmed = v.trim();
-    if (trimmed.contains(' ')) return 'Package name must not contain spaces.';
-    if (trimmed != trimmed.toLowerCase()) {
-      return 'Package name must be lowercase (e.g. com.example.app).';
+    if (v.trim().contains(' '))        return 'No spaces allowed.';
+    if (v.trim() != v.trim().toLowerCase()) {
+      return 'Must be lowercase (e.g. com.example.app).';
     }
     return null;
   }
 
-  FormFieldValidator<String> _urlValidator(String fieldName) => (v) {
-    if (v == null || v.trim().isEmpty) return '$fieldName is required.';
-    if (!v.trim().startsWith('https://') && !v.trim().startsWith('http://')) {
-      return 'Must start with https://';
-    }
+  FormFieldValidator<String> _requiredUrl(String name) => (v) {
+    if (v == null || v.trim().isEmpty) return '$name is required.';
+    if (!_isUrl(v.trim())) return 'Must start with https://';
     return null;
   };
 
-  String? _optionalUrlValidator(String? v) {
-    if (v == null || v.trim().isEmpty) return null; // optional
-    if (!v.trim().startsWith('https://') && !v.trim().startsWith('http://')) {
-      return 'Must start with https://';
-    }
+  String? _optionalUrl(String? v) {
+    if (v == null || v.trim().isEmpty) return null;
+    if (!_isUrl(v.trim())) return 'Must start with https://';
     return null;
   }
+
+  bool _isUrl(String s) =>
+      s.startsWith('https://') || s.startsWith('http://');
 }
 
 // ── Dialog header ─────────────────────────────────────────────────────────────
@@ -310,14 +319,13 @@ class _DialogFooter extends StatelessWidget {
               foregroundColor: AppColors.textPrimary,
               side: BorderSide(color: AppColors.divider, width: 1.5),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+                borderRadius:
+                    BorderRadius.circular(AppConstants.buttonRadius),
               ),
               padding:
                   const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
               textStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+                  fontSize: 14, fontWeight: FontWeight.w500),
             ),
             child: const Text('Cancel'),
           ),
@@ -328,14 +336,13 @@ class _DialogFooter extends StatelessWidget {
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.textOnPrimary,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+                borderRadius:
+                    BorderRadius.circular(AppConstants.buttonRadius),
               ),
               padding:
                   const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
               textStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+                  fontSize: 14, fontWeight: FontWeight.w500),
             ),
             child: Text(saveLabel),
           ),
@@ -432,18 +439,43 @@ class _FormField extends StatelessWidget {
   }
 }
 
+// ── Category dropdown ─────────────────────────────────────────────────────────
+
 class _CategoryDropdown extends StatelessWidget {
   const _CategoryDropdown({
     required this.value,
+    required this.categories,
     required this.onChanged,
   });
 
-  final PopularAppCategory value;
-  final ValueChanged<PopularAppCategory?> onChanged;
+  final String value;
+  final List<AppCategory> categories;
+  final ValueChanged<String?> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<PopularAppCategory>(
+    // Guard against empty list
+    if (categories.isEmpty) {
+      return Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+          border: Border.all(color: AppColors.divider),
+        ),
+        alignment: Alignment.centerLeft,
+        child: const Text(
+          'No categories — add one via Manage Categories',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      );
+    }
+
+    return DropdownButtonFormField<String>(
       initialValue: value,
       onChanged: onChanged,
       style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
@@ -465,11 +497,24 @@ class _CategoryDropdown extends StatelessWidget {
           borderSide: BorderSide(color: AppColors.primary, width: 1.5),
         ),
       ),
-      items: PopularAppCategory.values
+      items: categories
           .map(
             (cat) => DropdownMenuItem(
-              value: cat,
-              child: Text(cat.label),
+              value: cat.id,
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: cat.color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(cat.label),
+                ],
+              ),
             ),
           )
           .toList(),

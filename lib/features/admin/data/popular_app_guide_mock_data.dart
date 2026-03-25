@@ -1,12 +1,12 @@
 import '../domain/popular_app_guide.dart';
 
-/// Mock guide posts covering the most-used apps in Vietnam.
-/// Replace with a real Supabase/API call when the backend is wired.
+/// Mock guide posts. Replace with a Supabase/API call when backend is wired.
+/// [categoryId] strings match the IDs in [defaultAppCategories].
 final List<PopularAppGuide> mockPopularAppGuides = [
   PopularAppGuide(
     id: 'guide-001',
     name: 'Grab',
-    category: PopularAppCategory.transport,
+    categoryId: 'transport',
     packageName: 'com.grabtaxi.passenger',
     storeUrl:
         'https://play.google.com/store/apps/details?id=com.grabtaxi.passenger',
@@ -25,7 +25,7 @@ final List<PopularAppGuide> mockPopularAppGuides = [
   PopularAppGuide(
     id: 'guide-002',
     name: 'Be',
-    category: PopularAppCategory.transport,
+    categoryId: 'transport',
     packageName: 'com.be.driver',
     storeUrl: 'https://play.google.com/store/apps/details?id=com.be.driver',
     urlImage: 'https://picsum.photos/seed/be-app/80/80',
@@ -43,13 +43,13 @@ final List<PopularAppGuide> mockPopularAppGuides = [
   PopularAppGuide(
     id: 'guide-003',
     name: 'Zalo',
-    category: PopularAppCategory.chat,
+    categoryId: 'chat',
     packageName: 'com.zing.zalo',
     storeUrl: 'https://play.google.com/store/apps/details?id=com.zing.zalo',
     urlImage: 'https://picsum.photos/seed/zalo/80/80',
     urlVideo: 'https://www.example.com/zalo-guide.mp4',
     description:
-        'Vietnam\'s most popular messaging app — chat, voice/video calls, and news feed.',
+        "Vietnam's most popular messaging app — chat, voice/video calls, and news feed.",
     guide:
         '1. Download Zalo and enter your phone number.\n'
         '2. Verify with the OTP sent via SMS.\n'
@@ -61,7 +61,7 @@ final List<PopularAppGuide> mockPopularAppGuides = [
   PopularAppGuide(
     id: 'guide-004',
     name: 'Viber',
-    category: PopularAppCategory.chat,
+    categoryId: 'chat',
     packageName: 'com.viber.voip',
     storeUrl: 'https://play.google.com/store/apps/details?id=com.viber.voip',
     urlImage: 'https://picsum.photos/seed/viber/80/80',
@@ -78,14 +78,14 @@ final List<PopularAppGuide> mockPopularAppGuides = [
   PopularAppGuide(
     id: 'guide-005',
     name: 'MoMo',
-    category: PopularAppCategory.payment,
+    categoryId: 'payment',
     packageName: 'vn.momo.standalone',
     storeUrl:
         'https://play.google.com/store/apps/details?id=vn.momo.standalone',
     urlImage: 'https://picsum.photos/seed/momo/80/80',
     urlVideo: 'https://www.example.com/momo-guide.mp4',
     description:
-        'Vietnam\'s leading e-wallet — pay bills, top up phones, and transfer money instantly.',
+        "Vietnam's leading e-wallet — pay bills, top up phones, and transfer money instantly.",
     guide:
         '1. Download MoMo and register with your phone number.\n'
         '2. Link your bank account or top up via ATM.\n'
@@ -97,25 +97,25 @@ final List<PopularAppGuide> mockPopularAppGuides = [
   PopularAppGuide(
     id: 'guide-006',
     name: 'ViettelPay',
-    category: PopularAppCategory.payment,
+    categoryId: 'payment',
     packageName: 'com.viettelmoney.android',
     storeUrl:
         'https://play.google.com/store/apps/details?id=com.viettelmoney.android',
     urlImage: 'https://picsum.photos/seed/viettel/80/80',
     urlVideo: null,
     description:
-        'Viettel\'s digital wallet — transfers, bill payments, and top-ups with high transaction limits.',
+        "Viettel's digital wallet — transfers, bill payments, and top-ups with high transaction limits.",
     guide:
         '1. Install ViettelPay and register with a Viettel number.\n'
         '2. Complete eKYC verification to unlock full features.\n'
         '3. Top up via bank transfer or Viettel store.\n'
-        '4. Pay by QR code or enter the recipient\'s phone number.',
+        "4. Pay by QR code or enter the recipient's phone number.",
     createdAt: DateTime(2024, 3, 18),
   ),
   PopularAppGuide(
     id: 'guide-007',
     name: 'ShopeeFood',
-    category: PopularAppCategory.delivery,
+    categoryId: 'delivery',
     packageName: 'com.shopee.food.vn',
     storeUrl:
         'https://play.google.com/store/apps/details?id=com.shopee.food.vn',
@@ -134,7 +134,7 @@ final List<PopularAppGuide> mockPopularAppGuides = [
   PopularAppGuide(
     id: 'guide-008',
     name: 'GrabFood',
-    category: PopularAppCategory.delivery,
+    categoryId: 'delivery',
     packageName: 'com.grabtaxi.passenger',
     storeUrl:
         'https://play.google.com/store/apps/details?id=com.grabtaxi.passenger',

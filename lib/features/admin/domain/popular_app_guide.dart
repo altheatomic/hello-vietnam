@@ -1,32 +1,70 @@
-// Domain model for the Popular App Guide admin feature.
-//
-// Reflects the approved schema from the data-model review:
-//   id, name, description, guide, category,
-//   url_image, url_video, package_name, store_url, created_at
+import 'package:flutter/material.dart';
+import 'package:hellovietnam/app/theme.dart';
 
-enum PopularAppCategory {
-  transport,
-  chat,
-  payment,
-  delivery,
-  other;
+// ── Colour palette ────────────────────────────────────────────────────────────
 
-  String get label {
-    switch (this) {
-      case PopularAppCategory.transport: return 'Transport';
-      case PopularAppCategory.chat:      return 'Chat';
-      case PopularAppCategory.payment:   return 'Payment';
-      case PopularAppCategory.delivery:  return 'Delivery';
-      case PopularAppCategory.other:     return 'Other';
-    }
-  }
+/// Fixed 8-colour palette indexed by [AppCategory.colorIndex].
+/// Admin picks a colour when creating / editing a category.
+const List<Color> categoryColorPalette = [
+  AppColors.primary,          // 0  sky blue   — default for Transport
+  Color(0xFF22C55E),          // 1  green       — Chat
+  Color(0xFFF59E0B),          // 2  amber       — Payment
+  Color(0xFFF97316),          // 3  orange      — Delivery
+  Color(0xFF9CA3AF),          // 4  slate grey  — Other / unknown
+  Color(0xFF8B5CF6),          // 5  violet
+  Color(0xFF06B6D4),          // 6  cyan
+  Color(0xFFEC4899),          // 7  pink
+];
+
+// ── AppCategory ───────────────────────────────────────────────────────────────
+
+/// A runtime-mutable category, replacing the old compile-time enum.
+///
+/// [id] is used as the stable foreign key stored on [PopularAppGuide].
+/// [colorIndex] indexes into [categoryColorPalette].
+class AppCategory {
+  const AppCategory({
+    required this.id,
+    required this.label,
+    this.colorIndex = 0,
+  });
+
+  final String id;
+  final String label;
+  final int colorIndex;
+
+  Color get color =>
+      categoryColorPalette[colorIndex % categoryColorPalette.length];
+
+  AppCategory copyWith({String? id, String? label, int? colorIndex}) =>
+      AppCategory(
+        id:         id         ?? this.id,
+        label:      label      ?? this.label,
+        colorIndex: colorIndex ?? this.colorIndex,
+      );
 }
 
+/// Default category list — mirrors the five values the old enum had.
+/// The page state initialises from this list so the data survives
+/// hot-reload; swap for a Supabase fetch when the backend is wired.
+final List<AppCategory> defaultAppCategories = [
+  const AppCategory(id: 'transport', label: 'Transport', colorIndex: 0),
+  const AppCategory(id: 'chat',      label: 'Chat',      colorIndex: 1),
+  const AppCategory(id: 'payment',   label: 'Payment',   colorIndex: 2),
+  const AppCategory(id: 'delivery',  label: 'Delivery',  colorIndex: 3),
+  const AppCategory(id: 'other',     label: 'Other',     colorIndex: 4),
+];
+
+// ── PopularAppGuide ───────────────────────────────────────────────────────────
+
+/// Guide post domain model.
+///
+/// [categoryId] is a string foreign key that references [AppCategory.id].
 class PopularAppGuide {
   const PopularAppGuide({
     required this.id,
     required this.name,
-    required this.category,
+    required this.categoryId,
     required this.packageName,
     required this.storeUrl,
     required this.createdAt,
@@ -37,31 +75,21 @@ class PopularAppGuide {
   });
 
   final String id;
-
-  /// Display name shown to end users.
   final String name;
 
-  /// Short teaser shown on list/card views (1–3 sentences).
+  /// Short teaser shown on list / card views (1–3 sentences).
   final String? description;
 
   /// Full how-to body shown on the guide detail screen.
   final String? guide;
 
-  final PopularAppCategory category;
+  /// References [AppCategory.id].
+  final String categoryId;
 
-  /// Cover image URL.
   final String? urlImage;
-
-  /// Optional video URL.
   final String? urlVideo;
-
-  /// Android package name used to check if app is installed.
-  /// e.g. "com.grabtaxi.passenger"
   final String packageName;
-
-  /// Direct Play Store / App Store link for the "Download App" button.
   final String storeUrl;
-
   final DateTime createdAt;
 
   bool get hasImage => urlImage != null && urlImage!.isNotEmpty;
@@ -72,7 +100,7 @@ class PopularAppGuide {
     String? name,
     String? description,
     String? guide,
-    PopularAppCategory? category,
+    String? categoryId,
     String? urlImage,
     String? urlVideo,
     String? packageName,
@@ -84,7 +112,7 @@ class PopularAppGuide {
       name:        name        ?? this.name,
       description: description ?? this.description,
       guide:       guide       ?? this.guide,
-      category:    category    ?? this.category,
+      categoryId:  categoryId  ?? this.categoryId,
       urlImage:    urlImage    ?? this.urlImage,
       urlVideo:    urlVideo    ?? this.urlVideo,
       packageName: packageName ?? this.packageName,

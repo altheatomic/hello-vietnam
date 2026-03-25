@@ -7,6 +7,7 @@ import 'package:hellovietnam/core/widgets/empty_state.dart';
 import '../../data/popular_app_guide_mock_data.dart';
 import '../../domain/popular_app_guide.dart';
 import '../widgets/admin_section_header.dart';
+import '../widgets/category_manager_dialog.dart';
 import '../widgets/popular_app_form_dialog.dart';
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -22,8 +23,14 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
   late final List<PopularAppGuide> _guides =
       mockPopularAppGuides.map((g) => g).toList();
 
+  /// Runtime category list — starts from defaults; mutated by CategoryManagerDialog.
+  late final List<AppCategory> _categories =
+      defaultAppCategories.map((c) => c).toList();
+
   final TextEditingController _searchController = TextEditingController();
-  PopularAppCategory? _filterCategory;
+
+  /// Active filter: null = All, non-null = a category ID string.
+  String? _filterCategoryId;
   int _currentPage = 1;
   static const int _pageSize = 8;
 
@@ -33,45 +40,66 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
     super.dispose();
   }
 
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  /// Resolves a category by ID; returns an "Unknown" placeholder if not found.
+  AppCategory _resolveCategory(String categoryId) =>
+      _categories.firstWhere(
+        (c) => c.id == categoryId,
+        orElse: () =>
+            AppCategory(id: categoryId, label: categoryId, colorIndex: 4),
+      );
+
+  /// Maps categoryId → guide count (used by the delete confirmation).
+  Map<String, int> get _guideCounts {
+    final counts = <String, int>{};
+    for (final g in _guides) {
+      counts[g.categoryId] = (counts[g.categoryId] ?? 0) + 1;
+    }
+    return counts;
+  }
+
   // ── Filtering & pagination ─────────────────────────────────────────────────
 
   List<PopularAppGuide> get _filtered {
     final q = _searchController.text.toLowerCase().trim();
     return _guides.where((g) {
-      final matchesSearch =
-          q.isEmpty || g.name.toLowerCase().contains(q);
+      final matchesSearch = q.isEmpty || g.name.toLowerCase().contains(q);
       final matchesCat =
-          _filterCategory == null || g.category == _filterCategory;
+          _filterCategoryId == null || g.categoryId == _filterCategoryId;
       return matchesSearch && matchesCat;
     }).toList();
   }
 
   List<PopularAppGuide> get _paged {
-    final all = _filtered;
+    final all   = _filtered;
     final start = (_currentPage - 1) * _pageSize;
-    final end = min(start + _pageSize, all.length);
+    final end   = min(start + _pageSize, all.length);
     if (start >= all.length) return [];
     return all.sublist(start, end);
   }
 
   int get _totalPages =>
-      (_filtered.length / _pageSize).ceil().clamp(1, double.maxFinite).toInt();
+      (_filtered.length / _pageSize)
+          .ceil()
+          .clamp(1, double.maxFinite)
+          .toInt();
 
   void _onSearchChanged(String _) => setState(() => _currentPage = 1);
 
-  void _onCategoryChanged(PopularAppCategory? cat) =>
+  void _onCategoryFilterChanged(String? id) =>
       setState(() {
-        _filterCategory = cat;
+        _filterCategoryId = id;
         _currentPage = 1;
       });
 
-  // ── CRUD actions ───────────────────────────────────────────────────────────
+  // ── Guide CRUD ─────────────────────────────────────────────────────────────
 
   Future<void> _openCreate() async {
     final result = await showDialog<PopularAppGuide>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const PopularAppFormDialog(),
+      builder: (_) => PopularAppFormDialog(categories: _categories),
     );
     if (result == null) return;
     setState(() => _guides.insert(0, result));
@@ -82,7 +110,8 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
     final result = await showDialog<PopularAppGuide>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => PopularAppFormDialog(initial: guide),
+      builder: (_) =>
+          PopularAppFormDialog(initial: guide, categories: _categories),
     );
     if (result == null) return;
     setState(() {
@@ -95,7 +124,10 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
   Future<void> _openView(PopularAppGuide guide) async {
     await showDialog<void>(
       context: context,
-      builder: (_) => _ViewDialog(guide: guide),
+      builder: (_) => _ViewDialog(
+        guide: guide,
+        category: _resolveCategory(guide.categoryId),
+      ),
     );
   }
 
@@ -107,6 +139,52 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
     if (confirmed != true) return;
     setState(() => _guides.removeWhere((g) => g.id == guide.id));
     _showSnack('Guide "${guide.name}" deleted.');
+  }
+
+  // ── Category management ────────────────────────────────────────────────────
+
+  Future<void> _openManageCategories() async {
+    final result = await showDialog<List<AppCategory>>(
+      context: context,
+      builder: (_) => CategoryManagerDialog(
+        initialCategories:     _categories,
+        guideCountForCategory: _guideCounts,
+      ),
+    );
+
+    // null = user pressed ×; non-null = user pressed Done
+    if (result == null) return;
+
+    setState(() {
+      // Find which IDs were removed
+      final oldIds     = _categories.map((c) => c.id).toSet();
+      final newIds     = result.map((c) => c.id).toSet();
+      final deletedIds = oldIds.difference(newIds);
+
+      if (deletedIds.isNotEmpty) {
+        // Reassign guides whose category was deleted to the first remaining
+        final fallbackId =
+            result.isNotEmpty ? result.first.id : 'other';
+        for (int i = 0; i < _guides.length; i++) {
+          if (deletedIds.contains(_guides[i].categoryId)) {
+            _guides[i] = _guides[i].copyWith(categoryId: fallbackId);
+          }
+        }
+
+        // Clear active filter if its category was deleted
+        if (_filterCategoryId != null &&
+            deletedIds.contains(_filterCategoryId)) {
+          _filterCategoryId = null;
+        }
+      }
+
+      // Apply updated category list
+      _categories
+        ..clear()
+        ..addAll(result);
+    });
+
+    _showSnack('Categories updated.');
   }
 
   void _showSnack(String message) {
@@ -122,7 +200,7 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filtered;
-    final paged = _paged;
+    final paged    = _paged;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,33 +208,59 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
         // ── Header ──────────────────────────────────────────────────────────
         AdminSectionHeader(
           title: 'Popular App Guides',
-          subtitle: 'Create and manage in-app guides for popular Vietnam apps',
-          trailing: FilledButton.icon(
-            onPressed: _openCreate,
-            icon: const Icon(Icons.add_rounded, size: 17),
-            label: const Text('Add Guide'),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textOnPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppConstants.buttonRadius),
+          subtitle:
+              'Create and manage in-app guides for popular Vietnam apps',
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Manage Categories — outlined secondary action
+              OutlinedButton.icon(
+                onPressed: _openManageCategories,
+                icon: const Icon(Icons.category_outlined, size: 16),
+                label: const Text('Manage Categories'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textPrimary,
+                  side: BorderSide(color: AppColors.divider, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(AppConstants.buttonRadius),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 11),
+                  textStyle: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w500),
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-              textStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+              const SizedBox(width: 10),
+              // Add Guide — primary filled action
+              FilledButton.icon(
+                onPressed: _openCreate,
+                icon: const Icon(Icons.add_rounded, size: 17),
+                label: const Text('Add Guide'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.textOnPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(AppConstants.buttonRadius),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 11),
+                  textStyle: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w500),
+                ),
               ),
-            ),
+            ],
           ),
         ),
 
-        // ── Search + category filter bar ─────────────────────────────────────
+        // ── Search + category filter ─────────────────────────────────────────
         _CategoryFilterBar(
-          controller: _searchController,
-          selected: _filterCategory,
-          onChanged: _onCategoryChanged,
-          onSearchChanged: _onSearchChanged,
+          controller:        _searchController,
+          categories:        _categories,
+          selectedId:        _filterCategoryId,
+          onCategoryChanged: _onCategoryFilterChanged,
+          onSearchChanged:   _onSearchChanged,
         ),
 
         const SizedBox(height: 16),
@@ -165,23 +269,25 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
         if (filtered.isEmpty)
           EmptyState(
             icon: Icons.apps_outlined,
-            message: 'No guides match your search.\nTry a different name or category.',
+            message:
+                'No guides match your search.\nTry a different name or category.',
           )
         else ...[
           _GuideTable(
-            guides: paged,
-            onView: _openView,
-            onEdit: _openEdit,
-            onDelete: _confirmDelete,
+            guides:         paged,
+            resolveCategory: _resolveCategory,
+            onView:          _openView,
+            onEdit:          _openEdit,
+            onDelete:        _confirmDelete,
           ),
 
           const SizedBox(height: 16),
 
           _TableFooter(
             currentPage: _currentPage,
-            totalPages: _totalPages,
-            totalItems: filtered.length,
-            pageSize: _pageSize,
+            totalPages:  _totalPages,
+            totalItems:  filtered.length,
+            pageSize:    _pageSize,
             onPageChanged: (p) => setState(() => _currentPage = p),
           ),
         ],
@@ -195,21 +301,23 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
 class _CategoryFilterBar extends StatelessWidget {
   const _CategoryFilterBar({
     required this.controller,
-    required this.selected,
-    required this.onChanged,
+    required this.categories,
+    required this.selectedId,
+    required this.onCategoryChanged,
     required this.onSearchChanged,
   });
 
   final TextEditingController controller;
-  final PopularAppCategory? selected;
-  final ValueChanged<PopularAppCategory?> onChanged;
+  final List<AppCategory> categories;
+  final String? selectedId;
+  final ValueChanged<String?> onCategoryChanged;
   final ValueChanged<String> onSearchChanged;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Search pill — mirrors AdminSearchFilterBar pill style
+        // Search pill
         Container(
           width: 300,
           height: 44,
@@ -241,30 +349,36 @@ class _CategoryFilterBar extends StatelessWidget {
                 color: AppColors.textSecondary,
               ),
               border: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 13),
             ),
           ),
         ),
 
         const Spacer(),
 
-        // Category filter chips
+        // "All" chip
         _FilterChip(
-          label: 'All',
-          isSelected: selected == null,
-          onTap: () => onChanged(null),
+          label:      'All',
+          isSelected: selectedId == null,
+          onTap:      () => onCategoryChanged(null),
         ),
         const SizedBox(width: 6),
-        ...PopularAppCategory.values.map((cat) => Padding(
-          padding: const EdgeInsets.only(left: 6),
-          child: _FilterChip(
-            label: cat.label,
-            isSelected: selected == cat,
-            onTap: () => onChanged(selected == cat ? null : cat),
-            color: _categoryColor(cat),
+
+        // One chip per category — driven by the runtime list
+        ...categories.map(
+          (cat) => Padding(
+            padding: const EdgeInsets.only(left: 6),
+            child: _FilterChip(
+              label:      cat.label,
+              isSelected: selectedId == cat.id,
+              color:      cat.color,
+              onTap: () => onCategoryChanged(
+                selectedId == cat.id ? null : cat.id,
+              ),
+            ),
           ),
-        )),
+        ),
       ],
     );
   }
@@ -318,17 +432,16 @@ class _FilterChip extends StatelessWidget {
 class _GuideTable extends StatelessWidget {
   const _GuideTable({
     required this.guides,
+    required this.resolveCategory,
     required this.onView,
     required this.onEdit,
     required this.onDelete,
   });
 
   final List<PopularAppGuide> guides;
-  final ValueChanged<PopularAppGuide> onView;
-  final ValueChanged<PopularAppGuide> onEdit;
-  final ValueChanged<PopularAppGuide> onDelete;
+  final AppCategory Function(String) resolveCategory;
+  final ValueChanged<PopularAppGuide> onView, onEdit, onDelete;
 
-  // Fixed column widths. Description column is Expanded.
   static const double _colName    = 200;
   static const double _colCat     = 116;
   static const double _colMedia   = 80;
@@ -354,21 +467,25 @@ class _GuideTable extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),
         child: Column(
           children: [
-            // Header row
             _TableHeader(
-              colName: _colName, colCat: _colCat,
-              colMedia: _colMedia, colPkg: _colPkg, colActions: _colActions,
+              colName:    _colName, colCat: _colCat,
+              colMedia:   _colMedia, colPkg: _colPkg,
+              colActions: _colActions,
             ),
-            // Data rows
-            ...List.generate(guides.length, (i) => _GuideRow(
-              guide: guides[i],
-              isLast: i == guides.length - 1,
-              onView: () => onView(guides[i]),
-              onEdit: () => onEdit(guides[i]),
-              onDelete: () => onDelete(guides[i]),
-              colName: _colName, colCat: _colCat,
-              colMedia: _colMedia, colPkg: _colPkg, colActions: _colActions,
-            )),
+            ...List.generate(
+              guides.length,
+              (i) => _GuideRow(
+                guide:           guides[i],
+                category:        resolveCategory(guides[i].categoryId),
+                isLast:          i == guides.length - 1,
+                onView:          () => onView(guides[i]),
+                onEdit:          () => onEdit(guides[i]),
+                onDelete:        () => onDelete(guides[i]),
+                colName:         _colName, colCat: _colCat,
+                colMedia:        _colMedia, colPkg: _colPkg,
+                colActions:      _colActions,
+              ),
+            ),
           ],
         ),
       ),
@@ -381,7 +498,7 @@ class _GuideTable extends StatelessWidget {
 class _TableHeader extends StatelessWidget {
   const _TableHeader({
     required this.colName, required this.colCat, required this.colMedia,
-    required this.colPkg, required this.colActions,
+    required this.colPkg,  required this.colActions,
   });
 
   final double colName, colCat, colMedia, colPkg, colActions;
@@ -395,12 +512,19 @@ class _TableHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          _Cell(width: colName,    child: Text('App Name',    style: style)),
-          const _ExpandedCell(     child: Text('Description', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
-          _Cell(width: colCat,     child: Text('Category',    style: style)),
-          _Cell(width: colMedia,   child: Text('Media',       style: style)),
-          _Cell(width: colPkg,     child: Text('Package',     style: style)),
-          _Cell(width: colActions, child: Text('Actions',     style: style)),
+          _Cell(width: colName,
+              child: Text('App Name',    style: style)),
+          const _ExpandedCell(
+              child: Text('Description',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
+          _Cell(width: colCat,
+              child: Text('Category',   style: style)),
+          _Cell(width: colMedia,
+              child: Text('Media',      style: style)),
+          _Cell(width: colPkg,
+              child: Text('Package',    style: style)),
+          _Cell(width: colActions,
+              child: Text('Actions',    style: style)),
         ],
       ),
     );
@@ -411,13 +535,14 @@ class _TableHeader extends StatelessWidget {
 
 class _GuideRow extends StatefulWidget {
   const _GuideRow({
-    required this.guide, required this.isLast,
+    required this.guide, required this.category, required this.isLast,
     required this.onView, required this.onEdit, required this.onDelete,
     required this.colName, required this.colCat, required this.colMedia,
-    required this.colPkg, required this.colActions,
+    required this.colPkg,  required this.colActions,
   });
 
   final PopularAppGuide guide;
+  final AppCategory category;
   final bool isLast;
   final VoidCallback onView, onEdit, onDelete;
   final double colName, colCat, colMedia, colPkg, colActions;
@@ -431,7 +556,8 @@ class _GuideRowState extends State<_GuideRow> {
 
   @override
   Widget build(BuildContext context) {
-    final g = widget.guide;
+    final g         = widget.guide;
+    final cat       = widget.category;
     final bodyStyle = Theme.of(context).textTheme.bodyMedium;
 
     return MouseRegion(
@@ -451,12 +577,12 @@ class _GuideRowState extends State<_GuideRow> {
         ),
         child: Row(
           children: [
-            // App name + initial avatar
+            // App name + avatar
             _Cell(
               width: widget.colName,
               child: Row(
                 children: [
-                  _AppAvatar(name: g.name, category: g.category),
+                  _AppAvatar(name: g.name, color: cat.color),
                   const SizedBox(width: 10),
                   Flexible(
                     child: Text(
@@ -483,12 +609,12 @@ class _GuideRowState extends State<_GuideRow> {
               ),
             ),
 
-            // Category badge
+            // Category badge — label + color from resolved AppCategory
             _Cell(
               width: widget.colCat,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: _CategoryBadge(category: g.category),
+                child: _CategoryBadge(category: cat),
               ),
             ),
 
@@ -526,7 +652,7 @@ class _GuideRowState extends State<_GuideRow> {
               ),
             ),
 
-            // Actions: view / edit / delete
+            // Actions
             _Cell(
               width: widget.colActions,
               child: Row(
@@ -581,21 +707,20 @@ class _ExpandedCell extends StatelessWidget {
 // ── Sub-widgets ────────────────────────────────────────────────────────────────
 
 class _AppAvatar extends StatelessWidget {
-  const _AppAvatar({required this.name, required this.category});
+  const _AppAvatar({required this.name, required this.color});
   final String name;
-  final PopularAppCategory category;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final bg = _categoryColor(category);
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     return Container(
       width: 34,
       height: 34,
       decoration: BoxDecoration(
-        color: bg.withValues(alpha: 0.18),
+        color: color.withValues(alpha: 0.18),
         shape: BoxShape.circle,
-        border: Border.all(color: bg.withValues(alpha: 0.4), width: 1.2),
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 1.2),
       ),
       child: Center(
         child: Text(
@@ -603,7 +728,7 @@ class _AppAvatar extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: bg,
+            color: color,
           ),
         ),
       ),
@@ -613,15 +738,14 @@ class _AppAvatar extends StatelessWidget {
 
 class _CategoryBadge extends StatelessWidget {
   const _CategoryBadge({required this.category});
-  final PopularAppCategory category;
+  final AppCategory category;
 
   @override
   Widget build(BuildContext context) {
-    final color = _categoryColor(category);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: category.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -629,7 +753,7 @@ class _CategoryBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: color,
+          color: category.color,
         ),
       ),
     );
@@ -725,7 +849,7 @@ class _TableFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final start = (currentPage - 1) * pageSize + 1;
-    final end = min(currentPage * pageSize, totalItems);
+    final end   = min(currentPage * pageSize, totalItems);
 
     return Row(
       children: [
@@ -737,14 +861,12 @@ class _TableFooter extends StatelessWidget {
               ?.copyWith(color: AppColors.textSecondary),
         ),
         const Spacer(),
-        // Prev
         _PageButton(
           icon: Icons.chevron_left_rounded,
           enabled: currentPage > 1,
           onTap: () => onPageChanged(currentPage - 1),
         ),
         const SizedBox(width: 4),
-        // Page numbers
         ...List.generate(totalPages, (i) {
           final page = i + 1;
           return Padding(
@@ -756,7 +878,6 @@ class _TableFooter extends StatelessWidget {
             ),
           );
         }),
-        // Next
         _PageButton(
           icon: Icons.chevron_right_rounded,
           enabled: currentPage < totalPages,
@@ -769,10 +890,8 @@ class _TableFooter extends StatelessWidget {
 
 class _PageButton extends StatelessWidget {
   const _PageButton({
-    this.label,
-    this.icon,
-    this.isActive = false,
-    this.enabled = true,
+    this.label, this.icon,
+    this.isActive = false, this.enabled = true,
     required this.onTap,
   });
   final String? label;
@@ -786,8 +905,7 @@ class _PageButton extends StatelessWidget {
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: AppConstants.defaultAnimation,
-        width: 34,
-        height: 34,
+        width: 34, height: 34,
         decoration: BoxDecoration(
           color: isActive ? AppColors.primary : AppColors.surface,
           borderRadius: BorderRadius.circular(6),
@@ -798,8 +916,7 @@ class _PageButton extends StatelessWidget {
         child: Center(
           child: icon != null
               ? Icon(
-                  icon,
-                  size: 18,
+                  icon, size: 18,
                   color: enabled
                       ? AppColors.textSecondary
                       : AppColors.textSecondary.withValues(alpha: 0.3),
@@ -807,8 +924,7 @@ class _PageButton extends StatelessWidget {
               : Text(
                   label ?? '',
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 13, fontWeight: FontWeight.w500,
                     color: isActive ? Colors.white : AppColors.textPrimary,
                   ),
                 ),
@@ -821,8 +937,9 @@ class _PageButton extends StatelessWidget {
 // ── View dialog ───────────────────────────────────────────────────────────────
 
 class _ViewDialog extends StatelessWidget {
-  const _ViewDialog({required this.guide});
+  const _ViewDialog({required this.guide, required this.category});
   final PopularAppGuide guide;
+  final AppCategory category;
 
   @override
   Widget build(BuildContext context) {
@@ -839,21 +956,19 @@ class _ViewDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Row(
                 children: [
-                  _AppAvatar(name: guide.name, category: guide.category),
+                  _AppAvatar(name: guide.name, color: category.color),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          guide.name,
-                          style: Theme.of(context).textTheme.headlineMedium,
-                        ),
+                        Text(guide.name,
+                            style:
+                                Theme.of(context).textTheme.headlineMedium),
                         const SizedBox(height: 4),
-                        _CategoryBadge(category: guide.category),
+                        _CategoryBadge(category: category),
                       ],
                     ),
                   ),
@@ -864,20 +979,16 @@ class _ViewDialog extends StatelessWidget {
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
               const Divider(),
               const SizedBox(height: 16),
-
               _ViewRow(label: 'Package',     value: guide.packageName),
               _ViewRow(label: 'Store URL',   value: guide.storeUrl),
               _ViewRow(label: 'Image URL',   value: guide.urlImage   ?? '—'),
               _ViewRow(label: 'Video URL',   value: guide.urlVideo   ?? '—'),
               _ViewRow(label: 'Description', value: guide.description ?? '—'),
               _ViewRow(label: 'Guide',       value: guide.guide       ?? '—'),
-
               const SizedBox(height: 20),
-
               Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton(
@@ -924,10 +1035,8 @@ class _ViewRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            child: Text(value,
+                style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),
@@ -935,7 +1044,7 @@ class _ViewRow extends StatelessWidget {
   }
 }
 
-// ── Delete confirmation dialog ────────────────────────────────────────────────
+// ── Delete confirmation ───────────────────────────────────────────────────────
 
 class _DeleteConfirmDialog extends StatelessWidget {
   const _DeleteConfirmDialog({required this.name});
@@ -963,24 +1072,13 @@ class _DeleteConfirmDialog extends StatelessWidget {
             backgroundColor: const Color(0xFFEF4444),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+              borderRadius:
+                  BorderRadius.circular(AppConstants.buttonRadius),
             ),
           ),
           child: const Text('Delete'),
         ),
       ],
     );
-  }
-}
-
-// ── Shared colour helper ──────────────────────────────────────────────────────
-
-Color _categoryColor(PopularAppCategory cat) {
-  switch (cat) {
-    case PopularAppCategory.transport: return AppColors.primary;
-    case PopularAppCategory.chat:      return const Color(0xFF22C55E);
-    case PopularAppCategory.payment:   return const Color(0xFFF59E0B);
-    case PopularAppCategory.delivery:  return const Color(0xFFF97316);
-    case PopularAppCategory.other:     return AppColors.textSecondary;
   }
 }
