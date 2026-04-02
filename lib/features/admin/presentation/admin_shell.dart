@@ -37,6 +37,7 @@ class AdminShell extends StatelessWidget {
     '/admin/canned-replies': 'Canned Replies',
     '/admin/reports': 'Reports',
     '/admin/feedback': 'Feedback',
+    '/admin/food': 'Food Management',
   };
 
   String get _title {
