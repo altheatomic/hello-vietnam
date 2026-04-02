@@ -1,46 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
-import 'package:video_player/video_player.dart';
 
-/// Travel-themed banner that plays a looping video from a network URL.
-///
-/// Falls back to a static gradient with an icon if the video fails to load.
-class HomeBanner extends StatefulWidget {
+/// Travel-themed banner that displays a looping GIF from local assets.
+class HomeBanner extends StatelessWidget {
   const HomeBanner({super.key});
-
-  @override
-  State<HomeBanner> createState() => _HomeBannerState();
-}
-
-class _HomeBannerState extends State<HomeBanner> {
-  late VideoPlayerController _controller;
-  bool _isInitialized = false;
-  bool _hasError = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse(AppConstants.bannerVideoUrl),
-    )
-      ..setLooping(true)
-      ..setVolume(0) // muted ambient banner
-      ..initialize().then((_) {
-        if (mounted) {
-          setState(() => _isInitialized = true);
-          _controller.play();
-        }
-      }).catchError((_) {
-        if (mounted) setState(() => _hasError = true);
-      });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,25 +30,12 @@ class _HomeBannerState extends State<HomeBanner> {
   }
 
   Widget _buildContent() {
-    if (_hasError) return _fallbackWidget();
-
-    if (!_isInitialized) {
-      return Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: AppColors.primary.withValues(alpha: 0.5),
-        ),
-      );
-    }
-
-    // Scale video to cover the banner, keeping aspect ratio
-    return FittedBox(
+    return Image.asset(
+      AppConstants.bannerGifAsset,
       fit: BoxFit.cover,
-      child: SizedBox(
-        width: _controller.value.size.width,
-        height: _controller.value.size.height,
-        child: VideoPlayer(_controller),
-      ),
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (_, _, _) => _fallbackWidget(),
     );
   }
 

@@ -2,16 +2,9 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Flutter Web (Edge :3000)",
+      "name": "Flutter App",
       "request": "launch",
-      "type": "dart",
-      "deviceId": "edge",
-      "args": [
-        "--web-hostname",
-        "localhost",
-        "--web-port",
-        "3000"
-      ]
+      "type": "dart"
     },
     {
       "name": "Flutter Web (Chrome :3000)",

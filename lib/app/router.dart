@@ -50,13 +50,10 @@ import '../features/get_started/presentation/get_started_page.dart';
 import '../features/translate/presentation/translate_page.dart';
 import '../features/profile/presentation/upgrade_account_page.dart';
 import '../features/profile/presentation/upgrade_payment_page.dart';
-import '../features/recommend/domain/recommend_destination.dart';
 import '../features/recommend/presentation/recommend_page.dart';
 import '../features/recommend/presentation/where/recommend_where_search_page.dart';
-import '../features/recommend/presentation/where/recommend_where_detail_page.dart';
 import '../features/recommend/presentation/when/recommend_when_calendar_page.dart';
 import '../features/recommend/presentation/when/recommend_when_results_page.dart';
-import '../features/recommend/presentation/when/recommend_when_detail_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
@@ -100,10 +97,8 @@ class AppRoutes {
   static const feedback = '/send-feedback';
   static const recommend = '/recommend';
   static const recommendWhereSearch = '/recommend/where-search';
-  static const recommendWhereDetail = '/recommend/where-detail';
   static const recommendWhenCalendar = '/recommend/when-calendar';
   static const recommendWhenResults = '/recommend/when-results';
-  static const recommendWhenDetail = '/recommend/when-detail';
   static const explore = '/explore';
   static const exploreSearch = '/explore-search';
   static const exploreSearchResult = '/explore-search-result';
@@ -401,13 +396,6 @@ GoRouter buildRouter() {
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
-        path: AppRoutes.recommendWhereDetail,
-        builder: (c, s) => RecommendWhereDetailPage(
-          destination: s.extra as RecommendDestination,
-        ),
-      ),
-      GoRoute(
-        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.recommendWhenCalendar,
         builder: (c, s) => const RecommendWhenCalendarPage(),
       ),
@@ -416,13 +404,6 @@ GoRouter buildRouter() {
         path: AppRoutes.recommendWhenResults,
         builder: (c, s) =>
             RecommendWhenResultsPage(dateRange: s.extra as DateTimeRange),
-      ),
-      GoRoute(
-        parentNavigatorKey: rootNavigatorKey,
-        path: AppRoutes.recommendWhenDetail,
-        builder: (c, s) => RecommendWhenDetailPage(
-          destination: s.extra as RecommendDestination,
-        ),
       ),
 
       GoRoute(

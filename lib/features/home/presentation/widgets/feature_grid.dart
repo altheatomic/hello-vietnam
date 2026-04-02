@@ -21,9 +21,9 @@ class FeatureGrid extends StatelessWidget {
       itemCount: items.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
-        mainAxisSpacing: 10,
+        mainAxisSpacing: 8,
         crossAxisSpacing: 10,
-        childAspectRatio: 0.95,
+        mainAxisExtent: 84,
       ),
       itemBuilder: (context, index) {
         final item = items[index];

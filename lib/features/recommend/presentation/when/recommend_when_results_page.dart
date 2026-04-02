@@ -1,205 +1,408 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
-import 'package:hellovietnam/app/theme.dart';
-import 'package:hellovietnam/core/config/app_constants.dart';
-import 'package:hellovietnam/core/widgets/app_scaffold.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
 import '../../data/recommend_mock_data.dart';
 import '../../domain/recommend_destination.dart';
 
-/// Recommendation 2.3 — list of destinations filtered by the chosen
-/// travel date range (matching on [RecommendDestination.bestMonths]).
 class RecommendWhenResultsPage extends StatelessWidget {
   const RecommendWhenResultsPage({super.key, required this.dateRange});
 
   final DateTimeRange dateRange;
 
   List<RecommendDestination> get _filtered {
-    final month = dateRange.start.month;
-    return mockRecommendDestinations
-        .where((d) => d.bestMonths.isEmpty || d.bestMonths.contains(month))
-        .toList();
+    final int month = dateRange.start.month;
+    return mockRecommendDestinations.where((RecommendDestination d) {
+      return d.bestMonths.isEmpty || d.bestMonths.contains(month);
+    }).toList();
+  }
+
+  String _monthShort(int month) {
+    const List<String> months = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return months[month - 1];
+  }
+
+  String get _rangeLabel {
+    return '${_monthShort(dateRange.start.month)} ${dateRange.start.day} - ${_monthShort(dateRange.end.month)} ${dateRange.end.day}';
+  }
+
+  String get _durationLabel {
+    final int days = dateRange.duration.inDays + 1;
+    return '$days ${days == 1 ? 'day' : 'days'} trip';
   }
 
   @override
   Widget build(BuildContext context) {
-    final results = _filtered;
+    final List<RecommendDestination> results = _filtered;
+    final double topInset = MediaQuery.of(context).padding.top;
 
-    return AppScaffold(
-      title: 'Best for You',
-      showBack: true,
-      body: results.isEmpty
-          ? const EmptyState(
-              icon: Icons.calendar_today_rounded,
-              message:
-                  'No destinations found for your travel dates.\nTry a different period.',
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(
-                AppConstants.pagePadding,
-                20,
-                AppConstants.pagePadding,
-                32,
-              ),
-              itemCount: results.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 20),
-              itemBuilder: (context, i) => _WhenDestCard(
-                destination: results[i],
-                onTap: () => context.push(
-                  AppRoutes.recommendWhenDetail,
-                  extra: results[i],
+    return Scaffold(
+      backgroundColor: const Color(0xFFEAFBFF),
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: <Color>[
+              const Color(0xFFE9FBFF),
+              const Color(0xFFF5FDFF),
+              Colors.white.withValues(alpha: 0.98),
+            ],
+          ),
+        ),
+        child: results.isEmpty
+            ? SafeArea(
+                child: const EmptyState(
+                  icon: Icons.calendar_today_rounded,
+                  message:
+                      'No destinations found for your travel dates.\nTry a different period.',
                 ),
+              )
+            : CustomScrollView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                slivers: <Widget>[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(6, topInset + 6, 6, 0),
+                      child: Row(
+                        children: <Widget>[
+                          _TopCircleButton(
+                            icon: Icons.arrow_back_ios_new_rounded,
+                            onTap: () => Navigator.of(context).pop(),
+                          ),
+                          const Expanded(
+                            child: Text(
+                              'Recommendation',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2EA7F8),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 34),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _DateCardHeaderDelegate(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 10, 8, 12),
+                        child: _EditableDateCard(
+                          rangeLabel: _rangeLabel,
+                          durationLabel: _durationLabel,
+                          onTap: () =>
+                              context.push(AppRoutes.recommendWhenCalendar),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(8, 2, 8, 20),
+                    sliver: SliverList.separated(
+                      itemCount: results.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return _SuggestionCard(destination: results[index]);
+                      },
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    ),
+                  ),
+                ],
               ),
-            ),
+      ),
     );
   }
 }
 
-// ── Vertical destination card (When flow) ────────────────────────────
+class _TopCircleButton extends StatelessWidget {
+  const _TopCircleButton({required this.icon, required this.onTap});
 
-class _WhenDestCard extends StatefulWidget {
-  const _WhenDestCard({required this.destination, required this.onTap});
-
-  final RecommendDestination destination;
+  final IconData icon;
   final VoidCallback onTap;
 
   @override
-  State<_WhenDestCard> createState() => _WhenDestCardState();
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.96),
+      shape: const CircleBorder(),
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: Icon(icon, size: 13, color: const Color(0xFF64748B)),
+        ),
+      ),
+    );
+  }
 }
 
-class _WhenDestCardState extends State<_WhenDestCard> {
+class _EditableDateCard extends StatelessWidget {
+  const _EditableDateCard({
+    required this.rangeLabel,
+    required this.durationLabel,
+    required this.onTap,
+  });
+
+  final String rangeLabel;
+  final String durationLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.96),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFCDEDF9)),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE7F8FE),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.calendar_month_rounded,
+                  size: 16,
+                  color: Color(0xFF2EA7F8),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      rangeLabel,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF374151),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      durationLabel,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF8FE),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.edit_outlined,
+                  size: 16,
+                  color: Color(0xFF2EA7F8),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DateCardHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _DateCardHeaderDelegate({required this.child});
+
+  final Widget child;
+
+  @override
+  double get minExtent => 86;
+
+  @override
+  double get maxExtent => 86;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: const Color(0xFFEAFBFF).withValues(alpha: 0.98),
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _DateCardHeaderDelegate oldDelegate) {
+    return oldDelegate.child != child;
+  }
+}
+
+class _SuggestionCard extends StatefulWidget {
+  const _SuggestionCard({required this.destination});
+
+  final RecommendDestination destination;
+
+  @override
+  State<_SuggestionCard> createState() => _SuggestionCardState();
+}
+
+class _SuggestionCardState extends State<_SuggestionCard> {
   bool _isFavorite = false;
 
   @override
   Widget build(BuildContext context) {
-    final dest = widget.destination;
+    final RecommendDestination dest = widget.destination;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Image with favourite overlay ──────────────────
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(AppConstants.cardRadius),
-                child: Image.network(
-                  dest.imagePath,
-                  width: double.infinity,
-                  height: 220,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    height: 220,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withValues(alpha: 0.25),
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.cardRadius),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.landscape_rounded,
-                        size: 64,
-                        color: AppColors.primary,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () =>
+            context.push(AppRoutes.exploreSearchResult, extra: dest.name),
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.98),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 7),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Stack(
+                  children: <Widget>[
+                    Image.network(
+                      dest.imagePath,
+                      width: double.infinity,
+                      height: 162,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        height: 162,
+                        color: const Color(0xFFD8F2FD),
+                        child: const Center(
+                          child: Icon(
+                            Icons.landscape_rounded,
+                            size: 42,
+                            color: Color(0xFF2EA7F8),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ),
-              // Favourite heart — matches RecommendationCard treatment
-              Positioned(
-                top: 10,
-                right: 10,
-                child: GestureDetector(
-                  onTap: () =>
-                      setState(() => _isFavorite = !_isFavorite),
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.88),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _isFavorite = !_isFavorite),
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.95),
+                            shape: BoxShape.circle,
+                            boxShadow: <BoxShadow>[
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            _isFavorite
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            size: 16,
+                            color: _isFavorite
+                                ? const Color(0xFFEF4444)
+                                : const Color(0xFF94A3B8),
+                          ),
                         ),
-                      ],
+                      ),
                     ),
-                    child: Icon(
-                      _isFavorite
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      size: 18,
-                      color: _isFavorite
-                          ? Colors.redAccent
-                          : AppColors.textSecondary,
-                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        dest.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF2EA7F8),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        dest.shortDescription,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          height: 1.5,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // ── Name + star rating ────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  dest.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.star_rounded,
-                size: 16,
-                color: AppColors.starColor,
-              ),
-              const SizedBox(width: 3),
-              Text(
-                dest.rating.toStringAsFixed(2),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 4),
-
-          // ── Tag line ──────────────────────────────────────
-          Text(
-            dest.tags.join(' • '),
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary.withValues(alpha: 0.9),
+              ],
             ),
           ),
-
-          const SizedBox(height: 4),
-
-          // ── Short description ─────────────────────────────
-          Text(
-            dest.shortDescription,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 13,
-              height: 1.5,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

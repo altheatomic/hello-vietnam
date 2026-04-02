@@ -22,8 +22,7 @@ class RecommendWhereSearchPage extends StatefulWidget {
       _RecommendWhereSearchPageState();
 }
 
-class _RecommendWhereSearchPageState
-    extends State<RecommendWhereSearchPage> {
+class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
   late final TextEditingController _controller;
   late List<RecommendDestination> _results;
 
@@ -48,12 +47,16 @@ class _RecommendWhereSearchPageState
         .toList();
   }
 
-  void _onChanged(String value) =>
-      setState(() => _results = _filter(value));
+  void _onChanged(String value) => setState(() => _results = _filter(value));
 
   void _clearQuery() {
     _controller.clear();
     _onChanged('');
+  }
+
+  void _openDestination(String destination) {
+    if (destination.trim().isEmpty) return;
+    context.push(AppRoutes.exploreSearchResult, extra: destination.trim());
   }
 
   @override
@@ -98,6 +101,7 @@ class _RecommendWhereSearchPageState
                       autofocus: true,
                       onChanged: _onChanged,
                       textInputAction: TextInputAction.search,
+                      onSubmitted: _openDestination,
                       decoration: InputDecoration(
                         hintText: 'Search destination',
                         hintStyle: TextStyle(
@@ -115,14 +119,16 @@ class _RecommendWhereSearchPageState
                                 child: Icon(
                                   Icons.close_rounded,
                                   size: 18,
-                                  color: AppColors.textSecondary
-                                      .withValues(alpha: 0.7),
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.7,
+                                  ),
                                 ),
                               )
                             : null,
                         border: InputBorder.none,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -161,8 +167,9 @@ class _RecommendWhereSearchPageState
                           width: 38,
                           height: 38,
                           decoration: BoxDecoration(
-                            color: AppColors.primaryLight
-                                .withValues(alpha: 0.2),
+                            color: AppColors.primaryLight.withValues(
+                              alpha: 0.2,
+                            ),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
@@ -183,14 +190,12 @@ class _RecommendWhereSearchPageState
                           dest.tags.join(' · '),
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondary
-                                .withValues(alpha: 0.8),
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.8,
+                            ),
                           ),
                         ),
-                        onTap: () => context.push(
-                          AppRoutes.recommendWhereDetail,
-                          extra: dest,
-                        ),
+                        onTap: () => _openDestination(dest.name),
                       );
                     },
                   ),

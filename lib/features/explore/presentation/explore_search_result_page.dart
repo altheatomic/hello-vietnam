@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
@@ -199,24 +200,70 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
           horizontal: AppConstants.pagePadding,
         ),
         itemCount: _filterLabels.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        separatorBuilder: (context, index) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
           final isSelected = index == selectedIndex;
-          return GestureDetector(
-            onTap: () => onTap(index),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                _filterLabels[index],
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => onTap(index),
+                  borderRadius: BorderRadius.circular(15),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    constraints: const BoxConstraints(minHeight: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: isSelected
+                          ? const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF7FD3F9), Color(0xFF52B8F4)],
+                            )
+                          : LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.white.withValues(alpha: 0.78),
+                                const Color(0xFFEAF7FD).withValues(alpha: 0.9),
+                              ],
+                            ),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: isSelected
+                            ? Colors.white.withValues(alpha: 0.35)
+                            : const Color(0xFFD9EDF8),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isSelected
+                              ? const Color(0xFF52B8F4).withValues(alpha: 0.22)
+                              : Colors.black.withValues(alpha: 0.04),
+                          blurRadius: isSelected ? 14 : 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      _filterLabels[index],
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                        color: isSelected
+                            ? Colors.white
+                            : const Color(0xFF6B7280),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -389,7 +436,7 @@ class _ResultCardState extends State<_ResultCard> {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               widget.item.name,
               style: const TextStyle(
