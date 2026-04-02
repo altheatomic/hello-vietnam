@@ -38,22 +38,21 @@ class _AdminUserPageState extends State<AdminUserPage> {
 
   void _onSearchChanged(String _) => setState(() => _currentPage = 1);
 
-  void _onFilterStatusChanged(AdminUserStatus? status) =>
-      setState(() {
-        _filterStatus = status;
-        _currentPage = 1;
-      });
+  void _onFilterStatusChanged(AdminUserStatus? status) => setState(() {
+    _filterStatus = status;
+    _currentPage = 1;
+  });
 
   /// All users matching current search + status filter.
   List<AdminUser> get _filteredUsers {
     final query = _searchController.text.toLowerCase().trim();
     return _users.where((u) {
-      final matchesSearch = query.isEmpty ||
-          u.username.toLowerCase().contains(query) ||
+      final matchesSearch =
+          query.isEmpty ||
+          (u.fullName ?? u.username).toLowerCase().contains(query) ||
           u.email.toLowerCase().contains(query) ||
           u.id.contains(query);
-      final matchesStatus =
-          _filterStatus == null || u.status == _filterStatus;
+      final matchesStatus = _filterStatus == null || u.status == _filterStatus;
       return matchesSearch && matchesStatus;
     }).toList();
   }
@@ -67,8 +66,10 @@ class _AdminUserPageState extends State<AdminUserPage> {
     return all.sublist(start, end);
   }
 
-  int get _totalPages =>
-      (_filteredUsers.length / _pageSize).ceil().clamp(1, double.maxFinite).toInt();
+  int get _totalPages => (_filteredUsers.length / _pageSize)
+      .ceil()
+      .clamp(1, double.maxFinite)
+      .toInt();
 
   /// Downloads the full (unfiltered) user list as a CSV file.
   /// Columns: id_user, Full name, Phone, Email.
@@ -77,12 +78,14 @@ class _AdminUserPageState extends State<AdminUserPage> {
     String esc(String s) =>
         s.contains(',') || s.contains('"') ? '"${s.replaceAll('"', '""')}"' : s;
     for (final u in _users) {
-      rows.add([
-        esc(u.id),
-        esc(u.fullName ?? u.username),
-        esc(u.phone),
-        esc(u.email),
-      ].join(','));
+      rows.add(
+        [
+          esc(u.id),
+          esc(u.fullName ?? u.username),
+          esc(u.phone),
+          esc(u.email),
+        ].join(','),
+      );
     }
     final csv = rows.join('\r\n');
     final bytes = html.Blob([csv], 'text/csv;charset=utf-8');
@@ -92,11 +95,13 @@ class _AdminUserPageState extends State<AdminUserPage> {
       ..click();
     html.Url.revokeObjectUrl(url);
 
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Export started — check your Downloads folder.'),
-      duration: Duration(seconds: 2),
-      behavior: SnackBarBehavior.floating,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Export started — check your Downloads folder.'),
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   /// Opens the Add User dialog; on confirm, inserts the new user at the top.
@@ -110,11 +115,13 @@ class _AdminUserPageState extends State<AdminUserPage> {
       _users.insert(0, newUser);
       _currentPage = 1;
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('${newUser.username} has been added.'),
-      duration: const Duration(seconds: 2),
-      behavior: SnackBarBehavior.floating,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${newUser.username} has been added.'),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _toggleBan(AdminUser user) {
@@ -128,12 +135,16 @@ class _AdminUserPageState extends State<AdminUserPage> {
       );
     });
     final updated = _users.firstWhere((u) => u.id == user.id);
-    final verb = updated.status == AdminUserStatus.banned ? 'banned' : 'unbanned';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('${user.username} has been $verb.'),
-      duration: const Duration(seconds: 2),
-      behavior: SnackBarBehavior.floating,
-    ));
+    final verb = updated.status == AdminUserStatus.banned
+        ? 'banned'
+        : 'unbanned';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${user.username} has been $verb.'),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -259,12 +270,14 @@ class _UserTable extends StatelessWidget {
   // Column widths — username column is Expanded.
   // Status and Action are sized to their content after the Align fix;
   // keeping them smaller prevents dead whitespace inside those cells.
-  static const double _colId     = 90;
-  static const double _colEmail  = 210;
-  static const double _colPhone  = 130;
-  static const double _colRole   = 76;
-  static const double _colStatus = 100; // badge shrink-wraps; col just reserves space
-  static const double _colAction = 90;  // button shrink-wraps; col just reserves space
+  static const double _colId = 90;
+  static const double _colEmail = 210;
+  static const double _colPhone = 130;
+  static const double _colRole = 76;
+  static const double _colStatus =
+      100; // badge shrink-wraps; col just reserves space
+  static const double _colAction =
+      90; // button shrink-wraps; col just reserves space
 
   @override
   Widget build(BuildContext context) {
@@ -293,17 +306,20 @@ class _UserTable extends StatelessWidget {
               colStatus: _colStatus,
               colAction: _colAction,
             ),
-            ...List.generate(users.length, (i) => _UserRow(
-              user: users[i],
-              isLast: i == users.length - 1,
-              onToggleBan: () => onToggleBan(users[i]),
-              colId: _colId,
-              colEmail: _colEmail,
-              colPhone: _colPhone,
-              colRole: _colRole,
-              colStatus: _colStatus,
-              colAction: _colAction,
-            )),
+            ...List.generate(
+              users.length,
+              (i) => _UserRow(
+                user: users[i],
+                isLast: i == users.length - 1,
+                onToggleBan: () => onToggleBan(users[i]),
+                colId: _colId,
+                colEmail: _colEmail,
+                colPhone: _colPhone,
+                colRole: _colRole,
+                colStatus: _colStatus,
+                colAction: _colAction,
+              ),
+            ),
           ],
         ),
       ),
@@ -334,13 +350,49 @@ class _TableHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          _Cell(width: colId,     child: Text('User ID',    style: style, overflow: TextOverflow.ellipsis)),
-          _ExpandedCell(          child: Text('User Name',  style: style, overflow: TextOverflow.ellipsis)),
-          _Cell(width: colEmail,  child: Text('Email',      style: style, overflow: TextOverflow.ellipsis)),
-          _Cell(width: colPhone,  child: Text('Phone',      style: style, overflow: TextOverflow.ellipsis)),
-          _Cell(width: colRole,   child: Text('Role',       style: style, overflow: TextOverflow.ellipsis)),
-          _Cell(width: colStatus, child: Text('Status',     style: style, overflow: TextOverflow.ellipsis)),
-          _Cell(width: colAction, child: Text('Action',     style: style, overflow: TextOverflow.ellipsis)),
+          _Cell(
+            width: colId,
+            child: Text(
+              'User ID',
+              style: style,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          _ExpandedCell(
+            child: Text(
+              'Full Name',
+              style: style,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          _Cell(
+            width: colEmail,
+            child: Text('Email', style: style, overflow: TextOverflow.ellipsis),
+          ),
+          _Cell(
+            width: colPhone,
+            child: Text('Phone', style: style, overflow: TextOverflow.ellipsis),
+          ),
+          _Cell(
+            width: colRole,
+            child: Text('Role', style: style, overflow: TextOverflow.ellipsis),
+          ),
+          _Cell(
+            width: colStatus,
+            child: Text(
+              'Status',
+              style: style,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          _Cell(
+            width: colAction,
+            child: Text(
+              'Action',
+              style: style,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );
@@ -399,18 +451,22 @@ class _UserRowState extends State<_UserRow> {
             // User ID
             _Cell(
               width: widget.colId,
-              child: Text(user.id, style: bodyStyle, overflow: TextOverflow.ellipsis),
+              child: Text(
+                user.id,
+                style: bodyStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
 
-            // User Name — avatar + name
+            // Full Name — avatar + name
             Expanded(
               child: Row(
                 children: [
-                  _UserAvatar(username: user.username),
+                  _UserAvatar(username: user.fullName ?? user.username),
                   const SizedBox(width: 10),
                   Flexible(
                     child: Text(
-                      user.username,
+                      user.fullName ?? user.username,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -426,19 +482,31 @@ class _UserRowState extends State<_UserRow> {
             // Email
             _Cell(
               width: widget.colEmail,
-              child: Text(user.email, style: bodyStyle, overflow: TextOverflow.ellipsis),
+              child: Text(
+                user.email,
+                style: bodyStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
 
             // Phone
             _Cell(
               width: widget.colPhone,
-              child: Text(user.phone, style: bodyStyle, overflow: TextOverflow.ellipsis),
+              child: Text(
+                user.phone,
+                style: bodyStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
 
             // Role
             _Cell(
               width: widget.colRole,
-              child: Text(user.role.label, style: bodyStyle, overflow: TextOverflow.ellipsis),
+              child: Text(
+                user.role.label,
+                style: bodyStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
 
             // Status badge — Align breaks the tight SizedBox constraint so the
@@ -480,8 +548,7 @@ class _Cell extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) =>
-      SizedBox(width: width, child: child);
+  Widget build(BuildContext context) => SizedBox(width: width, child: child);
 }
 
 /// Flexible table cell for the username column.
@@ -490,8 +557,7 @@ class _ExpandedCell extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) =>
-      Expanded(child: child);
+  Widget build(BuildContext context) => Expanded(child: child);
 }
 
 // ── User avatar ───────────────────────────────────────────────────────────────
@@ -507,20 +573,22 @@ class _UserAvatar extends StatelessWidget {
   final String username;
 
   static const List<Color> _palette = [
-    AppColors.primary,           // sky blue
-    Color(0xFF22C55E),           // green
-    AppColors.primaryDark,       // dark blue
-    Color(0xFFF59E0B),           // amber
-    Color(0xFF8B5CF6),           // violet
-    Color(0xFFF97316),           // orange
-    AppColors.accent,            // light blue
-    Color(0xFF06B6D4),           // cyan
+    AppColors.primary, // sky blue
+    Color(0xFF22C55E), // green
+    AppColors.primaryDark, // dark blue
+    Color(0xFFF59E0B), // amber
+    Color(0xFF8B5CF6), // violet
+    Color(0xFFF97316), // orange
+    AppColors.accent, // light blue
+    Color(0xFF06B6D4), // cyan
   ];
 
   @override
   Widget build(BuildContext context) {
     final Color bg = _palette[username.length % _palette.length];
-    final String initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
+    final String initial = username.isNotEmpty
+        ? username[0].toUpperCase()
+        : '?';
 
     return Container(
       width: 36,
@@ -559,8 +627,9 @@ class _ActionButtonState extends State<_ActionButton> {
 
   @override
   Widget build(BuildContext context) {
-    final Color base =
-        widget.isBanned ? AppColors.primary : const Color(0xFFEF4444);
+    final Color base = widget.isBanned
+        ? AppColors.primary
+        : const Color(0xFFEF4444);
     final String label = widget.isBanned ? 'Unban' : 'Ban';
 
     return MouseRegion(
@@ -745,8 +814,8 @@ class _PageNumberButtonState extends State<_PageNumberButton> {
             color: widget.isActive
                 ? AppColors.primary
                 : _hovered
-                    ? AppColors.primaryLight.withValues(alpha: 0.15)
-                    : Colors.transparent,
+                ? AppColors.primaryLight.withValues(alpha: 0.15)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Center(

@@ -7,7 +7,8 @@ import '../domain/admin_user.dart';
 final List<AdminUser> mockAdminUsers = [
   const AdminUser(
     id: '111111',
-    username: 'BalajiNant',
+    username: 'balaji',
+    fullName: 'BalajiNant',
     email: 'aaaa@gmail.com',
     phone: '091122334',
     role: AdminUserRole.user,
@@ -15,7 +16,8 @@ final List<AdminUser> mockAdminUsers = [
   ),
   const AdminUser(
     id: '222222',
-    username: 'NithyaMenon',
+    username: 'nithya',
+    fullName: 'NithyaMenon',
     email: 'bbb@gmail.com',
     phone: '022334444',
     role: AdminUserRole.user,
@@ -23,7 +25,8 @@ final List<AdminUser> mockAdminUsers = [
   ),
   const AdminUser(
     id: '111223',
-    username: 'MeeraGonzalez',
+    username: 'meera',
+    fullName: 'MeeraGonzalez',
     email: 'ccc@gmail.com',
     phone: '093378445',
     role: AdminUserRole.user,
@@ -31,7 +34,8 @@ final List<AdminUser> mockAdminUsers = [
   ),
   const AdminUser(
     id: '112223',
-    username: 'KarthikSubramanian',
+    username: 'karthik',
+    fullName: 'KarthikSubramanian',
     email: 'ddd@gmail.com',
     phone: '093745566',
     role: AdminUserRole.user,
@@ -39,7 +43,8 @@ final List<AdminUser> mockAdminUsers = [
   ),
   const AdminUser(
     id: '113001',
-    username: 'AmiraHassan',
+    username: 'amirah',
+    fullName: 'AmiraHassan',
     email: 'amira.h@gmail.com',
     phone: '098123456',
     role: AdminUserRole.user,
@@ -47,7 +52,8 @@ final List<AdminUser> mockAdminUsers = [
   ),
   const AdminUser(
     id: '113002',
-    username: 'RudraPratap',
+    username: 'rudra',
+    fullName: 'RudraPratap',
     email: 'rudra.p@gmail.com',
     phone: '091234567',
     role: AdminUserRole.user,
@@ -55,7 +61,8 @@ final List<AdminUser> mockAdminUsers = [
   ),
   const AdminUser(
     id: '113003',
-    username: 'JoleneOrr',
+    username: 'jolene',
+    fullName: 'JoleneOrr',
     email: 'jolene.o@gmail.com',
     phone: '094567890',
     role: AdminUserRole.user,
@@ -63,7 +70,8 @@ final List<AdminUser> mockAdminUsers = [
   ),
   const AdminUser(
     id: '113004',
-    username: 'AryanRoy',
+    username: 'aryan',
+    fullName: 'AryanRoy',
     email: 'aryan.r@gmail.com',
     phone: '097654321',
     role: AdminUserRole.user,
@@ -71,7 +79,8 @@ final List<AdminUser> mockAdminUsers = [
   ),
   const AdminUser(
     id: '113005',
-    username: 'ElvinBond',
+    username: 'elvin',
+    fullName: 'ElvinBond',
     email: 'elvin.b@gmail.com',
     phone: '096112233',
     role: AdminUserRole.user,
@@ -79,7 +88,8 @@ final List<AdminUser> mockAdminUsers = [
   ),
   const AdminUser(
     id: '113006',
-    username: 'HuzaifaAnas',
+    username: 'huzaifa',
+    fullName: 'HuzaifaAnas',
     email: 'huzaifa.a@gmail.com',
     phone: '092345678',
     role: AdminUserRole.user,
@@ -87,7 +97,8 @@ final List<AdminUser> mockAdminUsers = [
   ),
   const AdminUser(
     id: '113007',
-    username: 'TrishaNorton',
+    username: 'trisha',
+    fullName: 'TrishaNorton',
     email: 'trisha.n@gmail.com',
     phone: '095566778',
     role: AdminUserRole.user,
@@ -95,7 +106,8 @@ final List<AdminUser> mockAdminUsers = [
   ),
   const AdminUser(
     id: '113008',
-    username: 'SophiaLane',
+    username: 'sophia',
+    fullName: 'SophiaLane',
     email: 'sophia.l@gmail.com',
     phone: '093344556',
     role: AdminUserRole.admin,
