@@ -10,7 +10,7 @@ final List<AdminUser> mockAdminUsers = [
     username: 'BalajiNant',
     email: 'aaaa@gmail.com',
     phone: '091122334',
-    role: AdminUserRole.guest,
+    role: AdminUserRole.user,
     status: AdminUserStatus.active,
   ),
   const AdminUser(
@@ -18,7 +18,7 @@ final List<AdminUser> mockAdminUsers = [
     username: 'NithyaMenon',
     email: 'bbb@gmail.com',
     phone: '022334444',
-    role: AdminUserRole.host,
+    role: AdminUserRole.user,
     status: AdminUserStatus.banned,
   ),
   const AdminUser(
@@ -26,7 +26,7 @@ final List<AdminUser> mockAdminUsers = [
     username: 'MeeraGonzalez',
     email: 'ccc@gmail.com',
     phone: '093378445',
-    role: AdminUserRole.both,
+    role: AdminUserRole.user,
     status: AdminUserStatus.active,
   ),
   const AdminUser(
@@ -34,7 +34,7 @@ final List<AdminUser> mockAdminUsers = [
     username: 'KarthikSubramanian',
     email: 'ddd@gmail.com',
     phone: '093745566',
-    role: AdminUserRole.host,
+    role: AdminUserRole.user,
     status: AdminUserStatus.banned,
   ),
   const AdminUser(
@@ -42,7 +42,7 @@ final List<AdminUser> mockAdminUsers = [
     username: 'AmiraHassan',
     email: 'amira.h@gmail.com',
     phone: '098123456',
-    role: AdminUserRole.guest,
+    role: AdminUserRole.user,
     status: AdminUserStatus.active,
   ),
   const AdminUser(
@@ -50,7 +50,7 @@ final List<AdminUser> mockAdminUsers = [
     username: 'RudraPratap',
     email: 'rudra.p@gmail.com',
     phone: '091234567',
-    role: AdminUserRole.both,
+    role: AdminUserRole.user,
     status: AdminUserStatus.active,
   ),
   const AdminUser(
@@ -58,7 +58,7 @@ final List<AdminUser> mockAdminUsers = [
     username: 'JoleneOrr',
     email: 'jolene.o@gmail.com',
     phone: '094567890',
-    role: AdminUserRole.host,
+    role: AdminUserRole.user,
     status: AdminUserStatus.active,
   ),
   const AdminUser(
@@ -66,7 +66,7 @@ final List<AdminUser> mockAdminUsers = [
     username: 'AryanRoy',
     email: 'aryan.r@gmail.com',
     phone: '097654321',
-    role: AdminUserRole.guest,
+    role: AdminUserRole.user,
     status: AdminUserStatus.banned,
   ),
   const AdminUser(
@@ -74,7 +74,7 @@ final List<AdminUser> mockAdminUsers = [
     username: 'ElvinBond',
     email: 'elvin.b@gmail.com',
     phone: '096112233',
-    role: AdminUserRole.both,
+    role: AdminUserRole.user,
     status: AdminUserStatus.active,
   ),
   const AdminUser(
@@ -82,7 +82,7 @@ final List<AdminUser> mockAdminUsers = [
     username: 'HuzaifaAnas',
     email: 'huzaifa.a@gmail.com',
     phone: '092345678',
-    role: AdminUserRole.guest,
+    role: AdminUserRole.user,
     status: AdminUserStatus.active,
   ),
   const AdminUser(
@@ -90,7 +90,7 @@ final List<AdminUser> mockAdminUsers = [
     username: 'TrishaNorton',
     email: 'trisha.n@gmail.com',
     phone: '095566778',
-    role: AdminUserRole.host,
+    role: AdminUserRole.user,
     status: AdminUserStatus.banned,
   ),
   const AdminUser(
@@ -98,7 +98,7 @@ final List<AdminUser> mockAdminUsers = [
     username: 'SophiaLane',
     email: 'sophia.l@gmail.com',
     phone: '093344556',
-    role: AdminUserRole.both,
+    role: AdminUserRole.admin,
     status: AdminUserStatus.active,
   ),
 ];

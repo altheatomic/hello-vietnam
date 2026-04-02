@@ -202,9 +202,11 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
     final filtered = _filtered;
     final paged    = _paged;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
         // ── Header ──────────────────────────────────────────────────────────
         AdminSectionHeader(
           title: 'Popular App Guides',
@@ -292,6 +294,7 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
           ),
         ],
       ],
+      ),
     );
   }
 }

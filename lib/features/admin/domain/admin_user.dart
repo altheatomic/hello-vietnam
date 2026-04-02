@@ -4,22 +4,20 @@ enum AdminUserStatus {
   banned;
 
   String get label => switch (this) {
-        AdminUserStatus.active => 'Active',
-        AdminUserStatus.banned => 'Banned',
-      };
+    AdminUserStatus.active => 'Active',
+    AdminUserStatus.banned => 'Banned',
+  };
 }
 
 /// Platform role for a registered user.
 enum AdminUserRole {
-  guest,
-  host,
-  both;
+  admin,
+  user;
 
   String get label => switch (this) {
-        AdminUserRole.guest  => 'Guest',
-        AdminUserRole.host   => 'Host',
-        AdminUserRole.both   => 'Both',
-      };
+    AdminUserRole.admin => 'Admin',
+    AdminUserRole.user => 'User',
+  };
 }
 
 /// Lightweight domain model for the admin user management table.
@@ -34,9 +32,14 @@ class AdminUser {
     required this.phone,
     required this.role,
     required this.status,
+    this.fullName,
   });
 
   final String id;
+
+  /// Display name — populated when a user is created via the admin form.
+  /// Existing mock records leave this null; the export falls back to [username].
+  final String? fullName;
   final String username;
   final String email;
   final String phone;
@@ -45,6 +48,7 @@ class AdminUser {
 
   AdminUser copyWith({
     String? id,
+    String? fullName,
     String? username,
     String? email,
     String? phone,
@@ -52,12 +56,13 @@ class AdminUser {
     AdminUserStatus? status,
   }) {
     return AdminUser(
-      id:       id       ?? this.id,
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
       username: username ?? this.username,
-      email:    email    ?? this.email,
-      phone:    phone    ?? this.phone,
-      role:     role     ?? this.role,
-      status:   status   ?? this.status,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      role: role ?? this.role,
+      status: status ?? this.status,
     );
   }
 }

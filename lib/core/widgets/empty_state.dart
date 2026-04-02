@@ -20,6 +20,7 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
+      heightFactor: 1.0,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(

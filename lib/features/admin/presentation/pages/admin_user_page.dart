@@ -1,5 +1,8 @@
 import 'dart:math' show min;
 
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
@@ -9,6 +12,7 @@ import '../../domain/admin_user.dart';
 import '../widgets/admin_search_filter_bar.dart';
 import '../widgets/admin_section_header.dart';
 import '../widgets/admin_status_badge.dart';
+import '../widgets/admin_user_form_dialog.dart';
 
 class AdminUserPage extends StatefulWidget {
   const AdminUserPage({super.key});
@@ -66,6 +70,53 @@ class _AdminUserPageState extends State<AdminUserPage> {
   int get _totalPages =>
       (_filteredUsers.length / _pageSize).ceil().clamp(1, double.maxFinite).toInt();
 
+  /// Downloads the full (unfiltered) user list as a CSV file.
+  /// Columns: id_user, Full name, Phone, Email.
+  void _exportUsers() {
+    final rows = <String>['id_user,Full name,Phone,Email'];
+    String esc(String s) =>
+        s.contains(',') || s.contains('"') ? '"${s.replaceAll('"', '""')}"' : s;
+    for (final u in _users) {
+      rows.add([
+        esc(u.id),
+        esc(u.fullName ?? u.username),
+        esc(u.phone),
+        esc(u.email),
+      ].join(','));
+    }
+    final csv = rows.join('\r\n');
+    final bytes = html.Blob([csv], 'text/csv;charset=utf-8');
+    final url = html.Url.createObjectUrlFromBlob(bytes);
+    html.AnchorElement(href: url)
+      ..setAttribute('download', 'users_export.csv')
+      ..click();
+    html.Url.revokeObjectUrl(url);
+
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Export started — check your Downloads folder.'),
+      duration: Duration(seconds: 2),
+      behavior: SnackBarBehavior.floating,
+    ));
+  }
+
+  /// Opens the Add User dialog; on confirm, inserts the new user at the top.
+  Future<void> _openAddUser() async {
+    final newUser = await showDialog<AdminUser>(
+      context: context,
+      builder: (_) => const AdminUserFormDialog(),
+    );
+    if (newUser == null || !mounted) return;
+    setState(() {
+      _users.insert(0, newUser);
+      _currentPage = 1;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('${newUser.username} has been added.'),
+      duration: const Duration(seconds: 2),
+      behavior: SnackBarBehavior.floating,
+    ));
+  }
+
   void _toggleBan(AdminUser user) {
     setState(() {
       final idx = _users.indexWhere((u) => u.id == user.id);
@@ -90,47 +141,53 @@ class _AdminUserPageState extends State<AdminUserPage> {
     final filtered = _filteredUsers;
     final paged = _pagedUsers;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Page header ──────────────────────────────────────────
-        AdminSectionHeader(
-          title: 'User Manager',
-          subtitle: 'View, search, and manage registered users',
-          trailing: _HeaderActions(),
-        ),
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Page header ──────────────────────────────────────────
+          AdminSectionHeader(
+            title: 'User Manager',
+            subtitle: 'View, search, and manage registered users',
+            trailing: _HeaderActions(
+              onExport: _exportUsers,
+              onAddUser: _openAddUser,
+            ),
+          ),
 
-        // ── Search + filter bar ──────────────────────────────────
-        AdminSearchFilterBar(
-          controller: _searchController,
-          filterStatus: _filterStatus,
-          onFilterStatusChanged: _onFilterStatusChanged,
-          onSearchChanged: _onSearchChanged,
-        ),
-
-        const SizedBox(height: 16),
-
-        // ── Table or empty state ─────────────────────────────────
-        if (filtered.isEmpty)
-          EmptyState(
-            icon: Icons.people_outline_rounded,
-            message: 'No users match your search.',
-          )
-        else ...[
-          _UserTable(users: paged, onToggleBan: _toggleBan),
+          // ── Search + filter bar ──────────────────────────────────
+          AdminSearchFilterBar(
+            controller: _searchController,
+            filterStatus: _filterStatus,
+            onFilterStatusChanged: _onFilterStatusChanged,
+            onSearchChanged: _onSearchChanged,
+          ),
 
           const SizedBox(height: 16),
 
-          // ── Footer: count + pagination ───────────────────────
-          _TableFooter(
-            currentPage: _currentPage,
-            totalPages: _totalPages,
-            totalUsers: filtered.length,
-            pageSize: _pageSize,
-            onPageChanged: (p) => setState(() => _currentPage = p),
-          ),
+          // ── Table or empty state ─────────────────────────────────
+          if (filtered.isEmpty)
+            EmptyState(
+              icon: Icons.people_outline_rounded,
+              message: 'No users match your search.',
+            )
+          else ...[
+            _UserTable(users: paged, onToggleBan: _toggleBan),
+
+            const SizedBox(height: 16),
+
+            // ── Footer: count + pagination ───────────────────────
+            _TableFooter(
+              currentPage: _currentPage,
+              totalPages: _totalPages,
+              totalUsers: filtered.length,
+              pageSize: _pageSize,
+              onPageChanged: (p) => setState(() => _currentPage = p),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -138,14 +195,18 @@ class _AdminUserPageState extends State<AdminUserPage> {
 // ── Header action buttons ─────────────────────────────────────────────────────
 
 class _HeaderActions extends StatelessWidget {
+  const _HeaderActions({required this.onExport, required this.onAddUser});
+
+  final VoidCallback onExport;
+  final VoidCallback onAddUser;
+
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Export — outlined, UI-only placeholder
         OutlinedButton.icon(
-          onPressed: () {},
+          onPressed: onExport,
           icon: const Icon(Icons.file_download_outlined, size: 17),
           label: const Text('Export'),
           style: OutlinedButton.styleFrom(
@@ -166,7 +227,7 @@ class _HeaderActions extends StatelessWidget {
 
         // Add User — primary filled
         FilledButton.icon(
-          onPressed: () {},
+          onPressed: onAddUser,
           icon: const Icon(Icons.person_add_outlined, size: 17),
           label: const Text('Add User'),
           style: FilledButton.styleFrom(
