@@ -10,10 +10,6 @@ import '../domain/explore_item.dart';
 import 'widgets/explore_floating_back_button.dart';
 import 'widgets/explore_preview_widgets.dart';
 
-/// Background image URL for the header area.
-const _headerBgUrl =
-    'https://clzyqllrxiuelegukanu.supabase.co/storage/v1/object/sign/Image%20for%20FE/Explore/Explore.jpeg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hNDM4ZmU1My04MzcwLTQxMDAtOTlkOC1jMDhkMjI3NDQ1NmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJJbWFnZSBmb3IgRkUvRXhwbG9yZS9FeHBsb3JlLmpwZWciLCJpYXQiOjE3NzMxMjc3MzMsImV4cCI6MTgwNDY2MzczM30.ceAzAGzuWrdwtwjN5dpqtzIQkpaKsabDGrNq9FdmEt8';
-
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
 
@@ -73,8 +69,8 @@ class _ExplorePageState extends State<ExplorePage> {
                     Positioned.fill(
                       child: Opacity(
                         opacity: 0.15,
-                        child: Image.network(
-                          _headerBgUrl,
+                        child: Image.asset(
+                          AppConstants.exploreHeaderBgAsset,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Container(
