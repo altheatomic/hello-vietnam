@@ -6,6 +6,7 @@ import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
+import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import '../data/home_mock_data.dart';
@@ -174,15 +175,13 @@ class HomePage extends StatelessWidget {
                         isFavorite: d.isFavorite,
                         onTap: () {
                           context.push(
-                            AppRoutes.detailPathForCategory(
-                              DetailCategory.culture,
-                            ),
-                            extra: ItemDetailRequest(
+                            AppRoutes.cityDetail,
+                            extra: CityDetailRequest(
                               id: d.id,
                               name: d.name,
-                              category: DetailCategory.culture,
                               fallbackImages: <String>[d.imagePath],
                               fallbackImagePath: d.imagePath,
+                              fallbackRating: d.rating,
                             ),
                           );
                         },

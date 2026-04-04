@@ -4,9 +4,57 @@ import '../domain/recommend_destination.dart';
 // Swap these URLs for real Supabase assets when available.
 const List<RecommendDestination> mockRecommendDestinations = [
   RecommendDestination(
+    id: 'nhatrang',
+    name: 'Nha Trang',
+    shortDescription:
+        'Sunny coastal city known for beaches, seafood, and island escapes.',
+    description:
+        'Nha Trang is one of Vietnam\'s most popular seaside cities, loved for its long sandy beach, fresh seafood, offshore islands, and relaxed coastal energy.',
+    imagePath: 'https://picsum.photos/seed/nhatrang/800/600',
+    rating: 4.6,
+    tags: ['Beach', 'Seafood', 'Relaxation'],
+    bestTimeTitle: 'February to August',
+    bestTimeDetails: [
+      'Sunny skies and calmer seas make beach days more enjoyable',
+      'Great conditions for island hopping, snorkeling, and boat trips',
+      'Early summer is ideal for both seaside relaxation and city sightseeing',
+    ],
+    activities: [
+      'Relax along Tran Phu Beach',
+      'Take a boat trip to nearby islands',
+      'Visit Po Nagar Cham Towers',
+      'Enjoy seafood by the coast at sunset',
+    ],
+    cuisine: [
+      RecommendFood(
+        name: 'Grilled Lobster',
+        imagePath: 'https://picsum.photos/seed/lobster/600/400',
+      ),
+      RecommendFood(
+        name: 'Jellyfish Noodle Soup',
+        imagePath: 'https://picsum.photos/seed/jellyfish-noodle/600/400',
+      ),
+    ],
+    tips: [
+      'Bring sun protection because the midday sun can be strong.',
+      'Check boat tour weather conditions before booking island trips.',
+      'Seafood restaurants near the beach are busiest around sunset.',
+    ],
+    gallery: [
+      'https://picsum.photos/seed/nhatrang1/300/200',
+      'https://picsum.photos/seed/nhatrang2/300/200',
+      'https://picsum.photos/seed/nhatrang3/300/200',
+    ],
+    highlights:
+        'Nha Trang blends beach relaxation with lively local dining, island adventures, and a sunny atmosphere that works well for both short breaks and longer stays.',
+    bestMonths: [2, 3, 4, 5, 6, 7, 8],
+  ),
+
+  RecommendDestination(
     id: 'hanoi',
     name: 'Ha Noi',
-    shortDescription: 'Vibrant capital blending ancient heritage with modern city life.',
+    shortDescription:
+        'Vibrant capital blending ancient heritage with modern city life.',
     description:
         'Hanoi is the capital of Vietnam, known for its historic Old Quarter, peaceful lakes, and rich cultural heritage. The city blends traditional architecture with a lively modern atmosphere, offering a unique and memorable travel experience.',
     imagePath: 'https://picsum.photos/seed/hanoi/800/600',
@@ -59,7 +107,8 @@ const List<RecommendDestination> mockRecommendDestinations = [
   RecommendDestination(
     id: 'dalat',
     name: 'Da Lat',
-    shortDescription: 'Misty highland city of pine forests, flower gardens and cool air.',
+    shortDescription:
+        'Misty highland city of pine forests, flower gardens and cool air.',
     description:
         'Da Lat is a misty highland city known for its cool climate, pine forests, flower gardens, and peaceful lakes. It is one of the most popular destinations in Vietnam for relaxation and sightseeing.',
     imagePath: 'https://picsum.photos/seed/dalat/800/600',
@@ -105,7 +154,8 @@ const List<RecommendDestination> mockRecommendDestinations = [
   RecommendDestination(
     id: 'hochiminh',
     name: 'Ho Chi Minh City',
-    shortDescription: "Vietnam's dynamic metropolis of culture, food and nightlife.",
+    shortDescription:
+        "Vietnam's dynamic metropolis of culture, food and nightlife.",
     description:
         "Ho Chi Minh City (Saigon) is Vietnam's largest city, offering a rich mix of history, culture, street food, and modern urban life. The city never sleeps and rewards every type of traveller.",
     imagePath: 'https://picsum.photos/seed/hcmc/800/600',
@@ -155,7 +205,8 @@ const List<RecommendDestination> mockRecommendDestinations = [
   RecommendDestination(
     id: 'sapa',
     name: 'Sa Pa',
-    shortDescription: 'Dramatic terraced rice fields and ethnic hill-tribe villages.',
+    shortDescription:
+        'Dramatic terraced rice fields and ethnic hill-tribe villages.',
     description:
         'Sa Pa is a misty mountain town in northern Vietnam, famous for its spectacular rice terraces, diverse ethnic minority cultures, and outstanding trekking routes.',
     imagePath: 'https://picsum.photos/seed/sapa/800/600',
@@ -201,7 +252,8 @@ const List<RecommendDestination> mockRecommendDestinations = [
   RecommendDestination(
     id: 'hagiang',
     name: 'Ha Giang',
-    shortDescription: 'Remote northern highlands with jaw-dropping mountain passes.',
+    shortDescription:
+        'Remote northern highlands with jaw-dropping mountain passes.',
     description:
         "Ha Giang is Vietnam's northernmost province, home to rugged karst landscapes, dramatic mountain passes, and the colorful cultures of ethnic minorities.",
     imagePath: 'https://picsum.photos/seed/hagiang/800/600',
@@ -292,7 +344,8 @@ const List<RecommendDestination> mockRecommendDestinations = [
   RecommendDestination(
     id: 'hatinh',
     name: 'Ha Tinh',
-    shortDescription: 'Quiet coastal province with beautiful beaches and authentic local life.',
+    shortDescription:
+        'Quiet coastal province with beautiful beaches and authentic local life.',
     description:
         'Ha Tinh is a central Vietnam coastal province with beautiful beaches, historic sites, and warm hospitality, offering an authentic off-the-tourist-trail experience.',
     imagePath: 'https://picsum.photos/seed/hatinh/800/600',

@@ -35,6 +35,8 @@ import '../features/forum/presentation/forum_report_post_page.dart';
 import '../features/forum/presentation/thread_page.dart';
 import '../features/popular_apps/presentation/popular_apps_page.dart';
 import '../features/popular_apps/presentation/popular_apps_detail.dart';
+import '../features/city_detail/domain/city_detail_models.dart';
+import '../features/city_detail/presentation/city_detail_page.dart';
 import '../features/feedback/presentation/feedback_page.dart';
 import '../features/item_detail/presentation/activity_detail_page.dart';
 import '../features/item_detail/presentation/culture_detail_page.dart';
@@ -103,6 +105,7 @@ class AppRoutes {
   static const exploreSearch = '/explore-search';
   static const exploreSearchResult = '/explore-search-result';
   static const exploreCategory = '/explore-category';
+  static const cityDetail = '/details/city';
   static const activityDetail = '/details/activities';
   static const cultureDetail = '/details/culture';
   static const foodDetail = '/details/food';
@@ -257,6 +260,12 @@ GoRouter buildRouter() {
         path: AppRoutes.exploreCategory,
         builder: (c, s) =>
             ExploreCategoryPage(initialTab: s.extra as int? ?? 0),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.cityDetail,
+        builder: (c, s) =>
+            CityDetailPage(request: s.extra as CityDetailRequest),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,

@@ -10,9 +10,20 @@ import 'package:hellovietnam/features/item_detail/data/item_detail_mock_data.dar
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 
 class SharedItemDetailPage extends StatefulWidget {
-  const SharedItemDetailPage({super.key, required this.request});
+  const SharedItemDetailPage({
+    super.key,
+    this.request,
+    this.detail,
+    this.insertedSectionsBuilder,
+  }) : assert(
+         request != null || detail != null,
+         'Either request or detail must be provided.',
+       );
 
-  final ItemDetailRequest request;
+  final ItemDetailRequest? request;
+  final ItemDetail? detail;
+  final List<Widget> Function(BuildContext context, ItemDetail detail)?
+  insertedSectionsBuilder;
 
   @override
   State<SharedItemDetailPage> createState() => _SharedItemDetailPageState();
@@ -28,7 +39,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
   @override
   void initState() {
     super.initState();
-    _detail = resolveItemDetail(widget.request);
+    _detail = widget.detail ?? resolveItemDetail(widget.request!);
     _isFavorite = _detail.isFavorite;
     _reviewPageController = PageController(viewportFraction: 0.9);
   }
@@ -41,6 +52,10 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final insertedSections =
+        widget.insertedSectionsBuilder?.call(context, _detail) ??
+        const <Widget>[];
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -79,7 +94,12 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                       setState(() => _descExpanded = !_descExpanded);
                     },
                   ),
-                  const SizedBox(height: 28),
+                  if (insertedSections.isNotEmpty) ...[
+                    const SizedBox(height: 28),
+                    ...insertedSections,
+                    const SizedBox(height: 28),
+                  ] else
+                    const SizedBox(height: 28),
                   const _SectionTitle(title: 'Reviews'),
                   const SizedBox(height: 14),
                   _ReviewSummary(

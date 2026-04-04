@@ -4,6 +4,7 @@ import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
+import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart';
 import '../../data/recommend_mock_data.dart';
 import '../../domain/recommend_destination.dart';
 
@@ -56,7 +57,27 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
 
   void _openDestination(String destination) {
     if (destination.trim().isEmpty) return;
-    context.push(AppRoutes.exploreSearchResult, extra: destination.trim());
+    RecommendDestination? match;
+    for (final candidate in mockRecommendDestinations) {
+      if (candidate.name.toLowerCase() == destination.trim().toLowerCase()) {
+        match = candidate;
+        break;
+      }
+    }
+
+    context.push(
+      AppRoutes.cityDetail,
+      extra: CityDetailRequest(
+        id: match?.id ?? destination.trim().toLowerCase().replaceAll(' ', '-'),
+        name: match?.name ?? destination.trim(),
+        fallbackImages: <String>[
+          if (match != null) match.imagePath,
+          if (match != null) ...match.gallery,
+        ],
+        fallbackImagePath: match?.imagePath,
+        fallbackRating: match?.rating,
+      ),
+    );
   }
 
   @override
