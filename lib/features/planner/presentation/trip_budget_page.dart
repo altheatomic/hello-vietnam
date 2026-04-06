@@ -22,8 +22,8 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
   String? _selectedRange;
   bool _isFormatting = false;
 
-  bool get _canGenerate =>
-      _budgetController.text.trim().isNotEmpty || _selectedRange != null;
+  bool get _hasTypedBudget => _budgetController.text.trim().isNotEmpty;
+  bool get _canGenerate => _hasTypedBudget || _selectedRange != null;
 
   @override
   void initState() {
@@ -92,8 +92,8 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
     return PlannerStepScaffold(
       currentStep: 5,
       badgeIcon: Icons.account_balance_wallet_outlined,
-      title: 'What is your daily budget?',
-      subtitle: 'Enter the amount you would like to spend',
+      title: 'Choose your budget',
+      subtitle: 'Pick one option below to continue',
       onBack: () => context.pop(),
       nextEnabled: _canGenerate,
       nextLabel: 'Generate',
@@ -104,10 +104,8 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _BudgetInputField(controller: _budgetController),
-            const SizedBox(height: 28),
             const Text(
-              'Which price range you would prefer?',
+              'Option 1: Enter daily budget',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
@@ -116,7 +114,40 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
             ),
             const SizedBox(height: 10),
             const Text(
-              'We will choose the destinations satisfy your price range',
+              'Use an exact amount per day if you already know your spending limit.',
+              style: TextStyle(
+                fontSize: 14.5,
+                fontStyle: FontStyle.italic,
+                color: Color(0xFF6F7B8A),
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _BudgetInputField(
+              controller: _budgetController,
+              selected: _hasTypedBudget,
+            ),
+            if (_hasTypedBudget) ...<Widget>[
+              const SizedBox(height: 10),
+              const _SelectedBudgetHint(
+                label: 'Using exact daily budget. Price range will be ignored.',
+              ),
+            ],
+            const SizedBox(height: 24),
+            const _OptionDivider(),
+            const SizedBox(height: 24),
+            const Text(
+              'Option 2: Choose price range',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF162235),
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Use a quick preset instead of typing an exact amount.',
               style: TextStyle(
                 fontSize: 14.5,
                 fontStyle: FontStyle.italic,
@@ -137,6 +168,10 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
                 ),
               );
             }),
+            if (_selectedRange != null)
+              const _SelectedBudgetHint(
+                label: 'Using price range. Typed daily budget will be ignored.',
+              ),
           ],
         ),
       ),
@@ -145,9 +180,10 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
 }
 
 class _BudgetInputField extends StatelessWidget {
-  const _BudgetInputField({required this.controller});
+  const _BudgetInputField({required this.controller, required this.selected});
 
   final TextEditingController controller;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -155,11 +191,14 @@ class _BudgetInputField extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFC4F4FF), width: 1.6),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(
+          color: selected ? const Color(0xFF22B7F1) : const Color(0xFFC4F4FF),
+          width: selected ? 2 : 1.6,
+        ),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x260F2C4F),
-            blurRadius: 28,
+            color: selected ? const Color(0x2222B7F1) : const Color(0x260F2C4F),
+            blurRadius: selected ? 24 : 28,
             offset: Offset(0, 14),
           ),
         ],
@@ -175,16 +214,100 @@ class _BudgetInputField extends StatelessWidget {
           fontWeight: FontWeight.w500,
           color: Color(0xFF162235),
         ),
-        decoration: const InputDecoration(
-          hintText: 'e.g. 10,000,000 VND',
-          hintStyle: TextStyle(
+        decoration: InputDecoration(
+          prefixIcon: const Icon(
+            Icons.payments_outlined,
+            color: Color(0xFF9AA3B2),
+            size: 22,
+          ),
+          hintText: 'e.g. 800,000 VND per day',
+          hintStyle: const TextStyle(
             fontSize: 15.5,
             color: Color(0xFF9AA3B2),
             fontWeight: FontWeight.w500,
           ),
+          suffixIcon: controller.text.isEmpty
+              ? null
+              : IconButton(
+                  onPressed: controller.clear,
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Color(0xFF9AA3B2),
+                    size: 20,
+                  ),
+                ),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 18,
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _OptionDivider extends StatelessWidget {
+  const _OptionDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: const <Widget>[
+        Expanded(child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2)),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14),
+          child: Text(
+            'OR',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF8A95A5),
+              letterSpacing: 1.1,
+            ),
+          ),
+        ),
+        Expanded(child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2)),
+      ],
+    );
+  }
+}
+
+class _SelectedBudgetHint extends StatelessWidget {
+  const _SelectedBudgetHint({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2FBFF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFCBEFFF)),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(
+            Icons.check_circle_outline_rounded,
+            size: 18,
+            color: Color(0xFF22B7F1),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF4F6072),
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

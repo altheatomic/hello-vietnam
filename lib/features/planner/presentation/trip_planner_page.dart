@@ -47,6 +47,10 @@ class _TripPlannerPageState extends State<TripPlannerPage>
     context.push(AppRoutes.tripPlannerBusinessLocation);
   }
 
+  void _handleSavedTripsTap() {
+    context.push(AppRoutes.tripPlannerSaved);
+  }
+
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
@@ -124,9 +128,14 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                             controller: _controller,
                             begin: 0.0,
                             end: 0.28,
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: _BackArrowButton(onTap: _handleBack),
+                            child: Row(
+                              children: <Widget>[
+                                _BackArrowButton(onTap: _handleBack),
+                                const Spacer(),
+                                _SavedTripsShortcutButton(
+                                  onTap: _handleSavedTripsTap,
+                                ),
+                              ],
                             ),
                           ),
                           SizedBox(height: tight ? 8 : 12),
@@ -593,6 +602,57 @@ class _FrostedIconCircle extends StatelessWidget {
             ],
           ),
           child: Icon(icon, size: iconSize, color: const Color(0xFF2CB6EE)),
+        ),
+      ),
+    );
+  }
+}
+
+class _SavedTripsShortcutButton extends StatelessWidget {
+  const _SavedTripsShortcutButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: const Color(0xFFD6EEF8), width: 1.2),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x120F2C4F),
+                blurRadius: 16,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                Icons.bookmark_added_rounded,
+                size: 18,
+                color: Color(0xFF21B4EB),
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Saved Trips',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF405166),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

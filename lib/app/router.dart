@@ -14,6 +14,7 @@ import '../features/planner/presentation/trip_interest_page.dart';
 import '../features/planner/presentation/trip_map_page.dart';
 import '../features/planner/presentation/trip_planner_page.dart';
 import '../features/planner/presentation/trip_result_page.dart';
+import '../features/planner/presentation/saved_trips_page.dart';
 import '../features/planner/presentation/trip_location_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/profile/presentation/edit_profile_page.dart';
@@ -80,6 +81,7 @@ class AppRoutes {
   static const tripPlannerDuration = '/trip-planner/duration';
   static const tripPlannerInterest = '/trip-planner/interest';
   static const tripPlannerBudget = '/trip-planner/budget';
+  static const tripPlannerSaved = '/trip-planner/saved';
   static const tripPlannerResult = '/trip-planner/result';
   static const tripPlannerDayDetail = '/trip-planner/result/day/:dayIndex';
   static const tripPlannerMap =
@@ -436,31 +438,52 @@ GoRouter buildRouter() {
         routes: [
           GoRoute(
             path: AppRoutes.adminDashboard,
-            builder: (c, s) => const AdminDashboardPage(),
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminDashboardPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.adminUsers,
-            builder: (c, s) => const AdminUserPage(),
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminUserPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.adminCannedReplies,
-            builder: (c, s) => const AdminCannedRepliesPage(),
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminCannedRepliesPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.adminReports,
-            builder: (c, s) => const AdminReportPage(),
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminReportPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.adminFeedback,
-            builder: (c, s) => const AdminFeedbackPage(),
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminFeedbackPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.adminFood,
-            builder: (c, s) => const AdminFoodPage(),
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminFoodPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.adminPopularApps,
-            builder: (c, s) => const AdminPopularAppPage(),
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminPopularAppPage(),
+            ),
           ),
         ],
       ),
@@ -503,6 +526,10 @@ GoRouter buildRouter() {
                   GoRoute(
                     path: 'budget',
                     builder: (context, state) => const TripBudgetPage(),
+                  ),
+                  GoRoute(
+                    path: 'saved',
+                    builder: (context, state) => const SavedTripsPage(),
                   ),
                   GoRoute(
                     path: 'result',
@@ -601,7 +628,7 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
 }
 
 /// Custom bottom navigation bar with rounded top corners and a center
-/// search button inline with other items.
+/// saved-trips shortcut inline with other items.
 class _CustomBottomNav extends StatelessWidget {
   const _CustomBottomNav({required this.currentIndex, required this.onTap});
 
@@ -620,8 +647,8 @@ class _CustomBottomNav extends StatelessWidget {
       label: 'Trip Planner',
     ),
     _NavItem(
-      icon: Icons.search_rounded,
-      selectedIcon: Icons.search_rounded,
+      icon: Icons.bookmark_outline_rounded,
+      selectedIcon: Icons.bookmark_rounded,
       label: '',
     ), // center
     _NavItem(
@@ -705,7 +732,7 @@ class _CustomBottomNav extends StatelessWidget {
   Widget _buildCenterButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        context.push(AppRoutes.exploreSearch);
+        context.push(AppRoutes.tripPlannerSaved);
       },
       child: Container(
         width: 52,
@@ -721,7 +748,11 @@ class _CustomBottomNav extends StatelessWidget {
             ),
           ],
         ),
-        child: const Icon(Icons.search_rounded, size: 26, color: Colors.white),
+        child: const Icon(
+          Icons.bookmark_added_rounded,
+          size: 26,
+          color: Colors.white,
+        ),
       ),
     );
   }
