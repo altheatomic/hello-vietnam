@@ -872,7 +872,11 @@ class _RoundFlag extends StatelessWidget {
                 width: radius * 2 - 2,
                 height: radius * 2 - 2,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (
+                  BuildContext context,
+                  Object error,
+                  StackTrace? stackTrace,
+                ) => Container(
                   color: const Color(0xFFEAF0F8),
                   alignment: Alignment.center,
                   child: Text(

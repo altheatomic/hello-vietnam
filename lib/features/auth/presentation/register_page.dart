@@ -83,7 +83,9 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _onGoogleSignIn() {
-    // TODO: Implement Google Sign-In
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Google Sign-In is handled in Login page')),
+    );
   }
 
   void _onLogin() {

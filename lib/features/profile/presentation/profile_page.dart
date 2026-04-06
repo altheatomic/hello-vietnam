@@ -125,10 +125,12 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final double topInset = MediaQuery.of(context).padding.top;
 
-    return WillPopScope(
-      onWillPop: () async {
-        context.go(AppRoutes.home);
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (!didPop) {
+          context.go(AppRoutes.home);
+        }
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF3F3F4),
@@ -453,7 +455,7 @@ class _SettingSwitchRow extends StatelessWidget {
             child: Switch(
               value: value,
               onChanged: onChanged,
-              activeColor: const Color(0xFF58B7E8),
+              activeThumbColor: const Color(0xFF58B7E8),
               activeTrackColor: const Color(0xFFBEE7FA),
               inactiveThumbColor: const Color(0xFFFFFFFF),
               inactiveTrackColor: const Color(0xFFE3E3E3),

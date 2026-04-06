@@ -95,7 +95,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     width: double.infinity,
                     height: totalHeight,
                     alignment: Alignment.topCenter,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    errorBuilder: (
+                      BuildContext context,
+                      Object error,
+                      StackTrace? stackTrace,
+                    ) => const SizedBox.shrink(),
                   ),
                 ),
               ),
@@ -207,7 +211,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             width: 200,
             height: 200,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Icon(
+            errorBuilder: (
+              BuildContext context,
+              Object error,
+              StackTrace? stackTrace,
+            ) => const Icon(
               Icons.check_circle_outline,
               size: 80,
               color: Color(0xFF42A5F5),

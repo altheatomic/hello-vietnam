@@ -36,7 +36,6 @@ class AdminShell extends StatelessWidget {
     '/admin/users': 'User Manager',
     '/admin/canned-replies': 'Canned Replies',
     '/admin/reports': 'Reports',
-    '/admin/feedback': 'Feedback',
     '/admin/food': 'Food Management',
   };
 

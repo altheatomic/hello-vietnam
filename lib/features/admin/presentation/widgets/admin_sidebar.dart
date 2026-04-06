@@ -47,12 +47,6 @@ class AdminSidebar extends StatelessWidget {
       route: '/admin/reports',
     ),
     _NavDestination(
-      label: 'Feedback',
-      icon: Icons.feedback_outlined,
-      selectedIcon: Icons.feedback_rounded,
-      route: '/admin/feedback',
-    ),
-    _NavDestination(
       label: 'Food',
       icon: Icons.restaurant_outlined,
       selectedIcon: Icons.restaurant_rounded,

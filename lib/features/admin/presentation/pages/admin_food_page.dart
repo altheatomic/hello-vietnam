@@ -924,56 +924,6 @@ class _FoodSortHeader extends StatelessWidget {
         : Icons.arrow_downward_rounded;
   }
 
-  Future<void> _openSortMenu(BuildContext context, ThemeData menuTheme) async {
-    final button = context.findRenderObject() as RenderBox;
-    final overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    final buttonRect = Rect.fromPoints(
-      button.localToGlobal(Offset.zero, ancestor: overlay),
-      button.localToGlobal(
-        button.size.bottomRight(Offset.zero),
-        ancestor: overlay,
-      ),
-    );
-
-    final action = await showMenu<_FoodSortMenuAction>(
-      context: context,
-      position: RelativeRect.fromRect(buttonRect, Offset.zero & overlay.size),
-      elevation: menuTheme.popupMenuTheme.elevation,
-      color: menuTheme.popupMenuTheme.color,
-      shadowColor: menuTheme.popupMenuTheme.shadowColor,
-      shape: menuTheme.popupMenuTheme.shape,
-      items: [
-        _FoodSortMenuItem(
-          value: _FoodSortMenuAction.defaultOrder,
-          label: 'Default',
-          selected: !_isActive,
-          icon: Icons.history_rounded,
-        ),
-        _FoodSortMenuItem(
-          value: _FoodSortMenuAction.ascending,
-          label: 'A -> Z',
-          selected:
-              _isActive &&
-              activeSortDirection == _FoodSortDirection.ascending,
-          icon: Icons.arrow_upward_rounded,
-        ),
-        _FoodSortMenuItem(
-          value: _FoodSortMenuAction.descending,
-          label: 'Z -> A',
-          selected:
-              _isActive &&
-              activeSortDirection == _FoodSortDirection.descending,
-          icon: Icons.arrow_downward_rounded,
-        ),
-      ],
-    );
-
-    if (action != null && context.mounted) {
-      onSortSelected(field, action);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.labelMedium;

@@ -117,9 +117,8 @@ class HomePage extends StatelessWidget {
                                 size: 22,
                               ),
                               color: Colors.white,
-                              onPressed: () {
-                                // TODO: navigate to notifications
-                              },
+                              onPressed: () =>
+                                  context.push(AppRoutes.notification),
                             ),
                           ),
                         ],

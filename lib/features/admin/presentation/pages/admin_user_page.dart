@@ -1,9 +1,7 @@
-import 'dart:math' show min;
-
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+﻿import 'dart:math' show min;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
@@ -71,9 +69,9 @@ class _AdminUserPageState extends State<AdminUserPage> {
       .clamp(1, double.maxFinite)
       .toInt();
 
-  /// Downloads the full (unfiltered) user list as a CSV file.
+  /// Exports the full (unfiltered) user list as CSV text.
   /// Columns: id_user, Full name, Phone, Email.
-  void _exportUsers() {
+  Future<void> _exportUsers() async {
     final rows = <String>['id_user,Full name,Phone,Email'];
     String esc(String s) =>
         s.contains(',') || s.contains('"') ? '"${s.replaceAll('"', '""')}"' : s;
@@ -87,17 +85,13 @@ class _AdminUserPageState extends State<AdminUserPage> {
         ].join(','),
       );
     }
-    final csv = rows.join('\r\n');
-    final bytes = html.Blob([csv], 'text/csv;charset=utf-8');
-    final url = html.Url.createObjectUrlFromBlob(bytes);
-    html.AnchorElement(href: url)
-      ..setAttribute('download', 'users_export.csv')
-      ..click();
-    html.Url.revokeObjectUrl(url);
+    final csv = rows.join('\n');
+    await Clipboard.setData(ClipboardData(text: csv));
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Export started — check your Downloads folder.'),
+        content: Text('User CSV copied to clipboard.'),
         duration: Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
       ),
@@ -157,7 +151,7 @@ class _AdminUserPageState extends State<AdminUserPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Page header ──────────────────────────────────────────
+          // â”€â”€ Page header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           AdminSectionHeader(
             title: 'User Manager',
             subtitle: 'View, search, and manage registered users',
@@ -167,7 +161,7 @@ class _AdminUserPageState extends State<AdminUserPage> {
             ),
           ),
 
-          // ── Search + filter bar ──────────────────────────────────
+          // â”€â”€ Search + filter bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           AdminSearchFilterBar(
             controller: _searchController,
             filterStatus: _filterStatus,
@@ -177,7 +171,7 @@ class _AdminUserPageState extends State<AdminUserPage> {
 
           const SizedBox(height: 16),
 
-          // ── Table or empty state ─────────────────────────────────
+          // â”€â”€ Table or empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           if (filtered.isEmpty)
             EmptyState(
               icon: Icons.people_outline_rounded,
@@ -188,7 +182,7 @@ class _AdminUserPageState extends State<AdminUserPage> {
 
             const SizedBox(height: 16),
 
-            // ── Footer: count + pagination ───────────────────────
+            // â”€â”€ Footer: count + pagination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             _TableFooter(
               currentPage: _currentPage,
               totalPages: _totalPages,
@@ -203,7 +197,7 @@ class _AdminUserPageState extends State<AdminUserPage> {
   }
 }
 
-// ── Header action buttons ─────────────────────────────────────────────────────
+// â”€â”€ Header action buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _HeaderActions extends StatelessWidget {
   const _HeaderActions({required this.onExport, required this.onAddUser});
@@ -236,7 +230,7 @@ class _HeaderActions extends StatelessWidget {
 
         const SizedBox(width: 10),
 
-        // Add User — primary filled
+        // Add User â€” primary filled
         FilledButton.icon(
           onPressed: onAddUser,
           icon: const Icon(Icons.person_add_outlined, size: 17),
@@ -259,7 +253,7 @@ class _HeaderActions extends StatelessWidget {
   }
 }
 
-// ── User table ────────────────────────────────────────────────────────────────
+// â”€â”€ User table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _UserTable extends StatelessWidget {
   const _UserTable({required this.users, required this.onToggleBan});
@@ -267,7 +261,7 @@ class _UserTable extends StatelessWidget {
   final List<AdminUser> users;
   final ValueChanged<AdminUser> onToggleBan;
 
-  // Column widths — username column is Expanded.
+  // Column widths â€” username column is Expanded.
   // Status and Action are sized to their content after the Align fix;
   // keeping them smaller prevents dead whitespace inside those cells.
   static const double _colId = 90;
@@ -327,7 +321,7 @@ class _UserTable extends StatelessWidget {
   }
 }
 
-// ── Table header ──────────────────────────────────────────────────────────────
+// â”€â”€ Table header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _TableHeader extends StatelessWidget {
   const _TableHeader({
@@ -399,7 +393,7 @@ class _TableHeader extends StatelessWidget {
   }
 }
 
-// ── Data row ──────────────────────────────────────────────────────────────────
+// â”€â”€ Data row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _UserRow extends StatefulWidget {
   const _UserRow({
@@ -458,7 +452,7 @@ class _UserRowState extends State<_UserRow> {
               ),
             ),
 
-            // Full Name — avatar + name
+            // Full Name â€” avatar + name
             Expanded(
               child: Row(
                 children: [
@@ -509,7 +503,7 @@ class _UserRowState extends State<_UserRow> {
               ),
             ),
 
-            // Status badge — Align breaks the tight SizedBox constraint so the
+            // Status badge â€” Align breaks the tight SizedBox constraint so the
             // Container inside AdminStatusBadge sizes to its content, not the
             // full column width.
             _Cell(
@@ -520,7 +514,7 @@ class _UserRowState extends State<_UserRow> {
               ),
             ),
 
-            // Ban / Unban — same Align trick: AnimatedContainer sizes to its
+            // Ban / Unban â€” same Align trick: AnimatedContainer sizes to its
             // padding + text, not to the full colAction SizedBox width.
             _Cell(
               width: widget.colAction,
@@ -539,9 +533,9 @@ class _UserRowState extends State<_UserRow> {
   }
 }
 
-// ── Layout helpers ────────────────────────────────────────────────────────────
+// â”€â”€ Layout helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-/// Fixed-width table cell — aligns content identically in header and data rows.
+/// Fixed-width table cell â€” aligns content identically in header and data rows.
 class _Cell extends StatelessWidget {
   const _Cell({required this.width, required this.child});
   final double width;
@@ -560,7 +554,7 @@ class _ExpandedCell extends StatelessWidget {
   Widget build(BuildContext context) => Expanded(child: child);
 }
 
-// ── User avatar ───────────────────────────────────────────────────────────────
+// â”€â”€ User avatar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// 36 px circle avatar with a colour deterministically picked from a vivid
 /// 8-colour palette, cycling by username length.
@@ -608,10 +602,10 @@ class _UserAvatar extends StatelessWidget {
   }
 }
 
-// ── Action button ─────────────────────────────────────────────────────────────
+// â”€â”€ Action button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Outlined pill: Ban (red) or Unban (primary blue).
-/// Border at full opacity so the outline is clearly visible — matches target.
+/// Border at full opacity so the outline is clearly visible â€” matches target.
 class _ActionButton extends StatefulWidget {
   const _ActionButton({required this.isBanned, required this.onTap});
 
@@ -661,10 +655,10 @@ class _ActionButtonState extends State<_ActionButton> {
   }
 }
 
-// ── Table footer ──────────────────────────────────────────────────────────────
+// â”€â”€ Table footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Pagination footer row:
-///   [Showing X to Y of Z users]  ·····  [<]  [1]  [2]  [>]
+///   [Showing X to Y of Z users]  Â·Â·Â·Â·Â·  [<]  [1]  [2]  [>]
 class _TableFooter extends StatelessWidget {
   const _TableFooter({
     required this.currentPage,
@@ -810,7 +804,7 @@ class _PageNumberButtonState extends State<_PageNumberButton> {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            // Active: solid primary — same treatment as selected filter chip
+            // Active: solid primary â€” same treatment as selected filter chip
             color: widget.isActive
                 ? AppColors.primary
                 : _hovered
@@ -835,3 +829,4 @@ class _PageNumberButtonState extends State<_PageNumberButton> {
     );
   }
 }
+

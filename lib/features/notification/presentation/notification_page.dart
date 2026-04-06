@@ -8,7 +8,7 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
-  List<_NotificationItem> _notifications = <_NotificationItem>[
+  final List<_NotificationItem> _notifications = <_NotificationItem>[
     const _NotificationItem(
       icon: '🎉',
       title: "Data's got new festival!",
@@ -308,7 +308,8 @@ class _NotificationPageState extends State<NotificationPage> {
                           final _NotificationItem item = items[index];
                           return _NotificationTile(item: item);
                         },
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        separatorBuilder: (BuildContext context, int index) =>
+                            const SizedBox(height: 12),
                         itemCount: items.length,
                       ),
               ),

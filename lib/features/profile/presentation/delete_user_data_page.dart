@@ -164,23 +164,24 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (_step == _DeleteDataStep.selectTrip || _step == _DeleteDataStep.success) {
-          return true;
+    return PopScope(
+      canPop:
+          _step == _DeleteDataStep.selectTrip || _step == _DeleteDataStep.success,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (didPop) {
+          return;
         }
-
         if (_step == _DeleteDataStep.reviewData) {
           setState(() {
             _step = _DeleteDataStep.selectTrip;
           });
-          return false;
+          return;
         }
-
-        setState(() {
-          _step = _DeleteDataStep.reviewData;
-        });
-        return false;
+        if (_step == _DeleteDataStep.confirmDeletion) {
+          setState(() {
+            _step = _DeleteDataStep.reviewData;
+          });
+        }
       },
       child: Scaffold(
         backgroundColor: Colors.white,

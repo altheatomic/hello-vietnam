@@ -449,7 +449,8 @@ class _WishlistPageState extends State<WishlistPage> {
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                 itemCount: _filteredItems.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (BuildContext context, int index) =>
+                    const SizedBox(height: 12),
                 itemBuilder: (BuildContext context, int index) {
                   final WishlistItem item = _filteredItems[index];
                   return _WishlistCard(
@@ -653,7 +654,10 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: widget.item.galleryImageUrls.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 10),
+                          separatorBuilder: (
+                            BuildContext context,
+                            int index,
+                          ) => const SizedBox(width: 10),
                           itemBuilder: (_, int index) {
                             return GestureDetector(
                               onTap: () => _openAllImages(context),
@@ -1184,7 +1188,11 @@ class _ReportAssetIconButton extends StatelessWidget {
             width: 28,
             height: 28,
             fit: BoxFit.contain,
-            errorBuilder: (_, _, _) => const Icon(
+            errorBuilder: (
+              BuildContext context,
+              Object error,
+              StackTrace? stackTrace,
+            ) => const Icon(
               Icons.bug_report_outlined,
               size: 28,
               color: Color(0xFF2C2C2C),

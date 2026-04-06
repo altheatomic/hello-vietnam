@@ -105,7 +105,8 @@ class _CurrencyPageState extends State<CurrencyPage> {
                 child: ListView.separated(
                   padding: const EdgeInsets.only(bottom: 28),
                   itemCount: _currencies.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  separatorBuilder: (BuildContext context, int index) =>
+                      const SizedBox(height: 10),
                   itemBuilder: (BuildContext context, int index) {
                     final _CurrencyOption item = _currencies[index];
                     final bool selected = item.code == _selectedCode;
@@ -270,7 +271,11 @@ class _RoundFlag extends StatelessWidget {
                 width: radius * 2 - 2,
                 height: radius * 2 - 2,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (
+                  BuildContext context,
+                  Object error,
+                  StackTrace? stackTrace,
+                ) => Container(
                   color: const Color(0xFFEAF0F8),
                   alignment: Alignment.center,
                   child: Text(

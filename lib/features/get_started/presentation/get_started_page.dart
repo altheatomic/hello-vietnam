@@ -102,11 +102,6 @@ class GetStartedPage extends StatelessWidget {
                         child: const Text('Get Started'),
                       ),
                     ),
-                    // For testing purposes only - navigate directly to admin dashboard
-                    ElevatedButton(
-                      onPressed: () => context.go(AppRoutes.adminDashboard),
-                      child: const Text('Go to Admin'),
-                    ),
                   ],
                 ),
               ),

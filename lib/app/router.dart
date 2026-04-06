@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/auth/auth_repository.dart';
 import 'theme.dart';
@@ -59,15 +59,7 @@ import '../features/recommend/presentation/when/recommend_when_results_page.dart
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
-import '../features/admin/presentation/admin_shell.dart';
-import '../features/admin/presentation/pages/admin_dashboard_page.dart';
-import '../features/admin/presentation/pages/admin_user_page.dart';
-import '../features/admin/presentation/pages/admin_canned_replies_page.dart';
-import '../features/admin/presentation/pages/admin_report_page.dart';
-import '../features/admin/presentation/pages/admin_feedback_page.dart';
-import '../features/admin/presentation/pages/admin_food_page.dart';
-import '../features/admin/presentation/pages/admin_popular_app_page.dart';
-import '../main.dart'; // Import to access shouldNavigateToForgotPassword
+import 'deep_link_state.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -141,7 +133,7 @@ class AppRoutes {
     }
   }
 
-  // ── Admin routes ─────────────────────────────────────────────
+  // â”€â”€ Admin routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   static const adminDashboard = '/admin/dashboard';
   static const adminUsers = '/admin/users';
   static const adminCannedReplies = '/admin/canned-replies';
@@ -380,7 +372,7 @@ GoRouter buildRouter() {
         path: AppRoutes.rankBenefits,
         builder: (c, s) => const RankBenefitsPage(),
       ),
-      // â”€â”€ Upgrade account flow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // Ã¢â€â‚¬Ã¢â€â‚¬ Upgrade account flow Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.upgradeAccount,
@@ -393,7 +385,7 @@ GoRouter buildRouter() {
             UpgradePaymentPage(planId: (s.extra as String?) ?? '1m'),
       ),
 
-      // â”€â”€ Recommend flow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // Ã¢â€â‚¬Ã¢â€â‚¬ Recommend flow Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.recommend,
@@ -426,45 +418,7 @@ GoRouter buildRouter() {
         },
       ),
 
-      // â”€â”€ Admin shell (desktop web) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      // ShellRoute keeps AdminShell mounted while page content swaps.
-      // currentPath is read from GoRouterState so the sidebar and topbar
       // can highlight the active route without any extra state management.
-      ShellRoute(
-        builder: (context, state, child) =>
-            AdminShell(currentPath: state.uri.path, child: child),
-        routes: [
-          GoRoute(
-            path: AppRoutes.adminDashboard,
-            builder: (c, s) => const AdminDashboardPage(),
-          ),
-          GoRoute(
-            path: AppRoutes.adminUsers,
-            builder: (c, s) => const AdminUserPage(),
-          ),
-          GoRoute(
-            path: AppRoutes.adminCannedReplies,
-            builder: (c, s) => const AdminCannedRepliesPage(),
-          ),
-          GoRoute(
-            path: AppRoutes.adminReports,
-            builder: (c, s) => const AdminReportPage(),
-          ),
-          GoRoute(
-            path: AppRoutes.adminFeedback,
-            builder: (c, s) => const AdminFeedbackPage(),
-          ),
-          GoRoute(
-            path: AppRoutes.adminFood,
-            builder: (c, s) => const AdminFoodPage(),
-          ),
-          GoRoute(
-            path: AppRoutes.adminPopularApps,
-            builder: (c, s) => const AdminPopularAppPage(),
-          ),
-        ],
-      ),
-
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return _ScaffoldWithBottomNav(navigationShell: navigationShell);

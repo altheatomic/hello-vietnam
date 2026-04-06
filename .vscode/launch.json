@@ -2,21 +2,46 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Flutter App",
+      "name": "Mobile App (Default)",
       "request": "launch",
-      "type": "dart"
+      "type": "dart",
+      "program": "lib/main_mobile.dart"
     },
     {
-      "name": "Flutter Web (Chrome :3000)",
+      "name": "Admin Web (Chrome :3000)",
       "request": "launch",
       "type": "dart",
       "deviceId": "chrome",
+      "program": "lib/main_admin_web.dart",
       "args": [
         "--web-hostname",
         "localhost",
         "--web-port",
         "3000"
       ]
+    },
+    {
+      "name": "Mobile Web (Chrome :3001)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "chrome",
+      "program": "lib/main_mobile.dart",
+      "args": [
+        "--web-hostname",
+        "localhost",
+        "--web-port",
+        "3001"
+      ]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run Mobile + Admin Web",
+      "configurations": [
+        "Mobile App (Default)",
+        "Admin Web (Chrome :3000)"
+      ],
+      "stopAll": true
     }
   ]
 }
