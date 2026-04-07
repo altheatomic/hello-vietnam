@@ -9,6 +9,7 @@ import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
 import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
+import 'package:hellovietnam/features/notification/data/notification_repository.dart';
 import '../data/home_mock_data.dart';
 import 'widgets/home_banner.dart';
 import 'widgets/feature_grid.dart';
@@ -104,23 +105,81 @@ class HomePage extends StatelessWidget {
                               color: AppColors.accentGold,
                             ),
                           ),
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.notifications_outlined,
-                                size: 22,
-                              ),
-                              color: Colors.white,
-                              onPressed: () {
-                                // TODO: navigate to notifications
-                              },
-                            ),
+                          ListenableBuilder(
+                            listenable: MockNotificationRepository.instance,
+                            builder: (BuildContext context, Widget? child) {
+                              final int unreadCount = MockNotificationRepository
+                                  .instance
+                                  .unreadCount;
+
+                              return Stack(
+                                clipBehavior: Clip.none,
+                                children: <Widget>[
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: IconButton(
+                                      icon: const Icon(
+                                        Icons.notifications_outlined,
+                                        size: 22,
+                                      ),
+                                      color: Colors.white,
+                                      onPressed: () =>
+                                          context.push(AppRoutes.notification),
+                                    ),
+                                  ),
+                                  if (unreadCount > 0)
+                                    Positioned(
+                                      top: -4,
+                                      right: -4,
+                                      child: Container(
+                                        constraints: const BoxConstraints(
+                                          minWidth: 18,
+                                          minHeight: 18,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 1,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFEF4444),
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.white,
+                                            width: 1.2,
+                                          ),
+                                          boxShadow: const <BoxShadow>[
+                                            BoxShadow(
+                                              color: Color(0x22000000),
+                                              blurRadius: 8,
+                                              offset: Offset(0, 3),
+                                            ),
+                                          ],
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          unreadCount > 99
+                                              ? '99+'
+                                              : '$unreadCount',
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
