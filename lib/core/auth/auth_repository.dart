@@ -9,8 +9,7 @@ class AuthRepository extends ChangeNotifier {
 
   AuthRepository._() {
     _user = _supabase.auth.currentUser;
-    _authSubscription =
-        _supabase.auth.onAuthStateChange.listen((data) {
+    _authSubscription = _supabase.auth.onAuthStateChange.listen((data) {
       _user = data.session?.user;
       notifyListeners();
     });
@@ -19,7 +18,6 @@ class AuthRepository extends ChangeNotifier {
   final _supabase = Supabase.instance.client;
   User? _user;
   late final StreamSubscription<AuthState> _authSubscription;
-
 
   User? get user => _user;
   bool get isLoggedIn => _user != null;
@@ -31,12 +29,11 @@ class AuthRepository extends ChangeNotifier {
     if (userId == null) return null;
 
     try {
-      final response =
-          await _supabase
-              .from('user_account')
-              .select('full_name')
-              .eq('id_user', userId)
-              .maybeSingle();
+      final response = await _supabase
+          .from('user_account')
+          .select('full_name')
+          .eq('id_user', userId)
+          .maybeSingle();
 
       final dbFullName = (response?['full_name'] as String?)?.trim();
       if (dbFullName != null && dbFullName.isNotEmpty) {
@@ -65,12 +62,51 @@ class AuthRepository extends ChangeNotifier {
     }
   }
 
+  Future<void> adminSignIn({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      // First, sign in with credentials
+      await _supabase.auth.signInWithPassword(email: email, password: password);
+
+      // Then verify user has admin role
+      final currentUser = _supabase.auth.currentUser;
+      if (currentUser == null) {
+        await _supabase.auth.signOut();
+        throw Exception('USER_NOT_FOUND: Failed to retrieve user information');
+      }
+
+      // Check role in user_account table
+      final response = await _supabase
+          .from('user_account')
+          .select('role')
+          .eq('id_user', currentUser.id)
+          .maybeSingle();
+
+      final role = response?['role'] as String?;
+
+      if (role != 'admin') {
+        // Sign out if not admin
+        await _supabase.auth.signOut();
+        throw Exception(
+          'NOT_ADMIN: Only administrators can access this portal',
+        );
+      }
+    } on AuthException catch (e) {
+      debugPrint('Admin sign in error: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('Admin sign in error: $e');
+      rethrow;
+    }
+  }
+
   Future<void> signInWithGoogle() async {
     try {
       await _supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo:
-            kIsWeb ? null : 'com.example.hellovietnam://login-callback',
+        redirectTo: kIsWeb ? null : 'com.example.hellovietnam://login-callback',
         authScreenLaunchMode: LaunchMode.externalApplication,
       );
     } on AuthException catch (e) {
@@ -79,10 +115,11 @@ class AuthRepository extends ChangeNotifier {
     }
   }
 
-  Future<void> signUp(
-      {required String name,
-      required String email,
-      required String password}) async {
+  Future<void> signUp({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
     try {
       final response = await _supabase.auth.signUp(
         email: email,
@@ -118,8 +155,11 @@ class AuthRepository extends ChangeNotifier {
       debugPrint('Reset password error: ${e.message}');
 
       // Create more specific error messages
-      if (e.message.contains('rate limit') || e.message.contains('Rate limit')) {
-        throw Exception('RATE_LIMIT: Too many reset emails sent. Please wait 1 hour before trying again.');
+      if (e.message.contains('rate limit') ||
+          e.message.contains('Rate limit')) {
+        throw Exception(
+          'RATE_LIMIT: Too many reset emails sent. Please wait 1 hour before trying again.',
+        );
       } else if (e.message.contains('Invalid email')) {
         throw Exception('INVALID_EMAIL: Please enter a valid email address.');
       } else {
@@ -130,9 +170,7 @@ class AuthRepository extends ChangeNotifier {
 
   Future<void> updatePassword({required String newPassword}) async {
     try {
-      await _supabase.auth.updateUser(
-        UserAttributes(password: newPassword),
-      );
+      await _supabase.auth.updateUser(UserAttributes(password: newPassword));
     } on AuthException catch (e) {
       debugPrint('Update password error: ${e.message}');
       rethrow;
