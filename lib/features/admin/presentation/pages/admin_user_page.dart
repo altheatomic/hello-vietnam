@@ -1,12 +1,11 @@
+import 'dart:js_interop';
 import 'dart:math' show min;
-
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
+import 'package:web/web.dart' as web;
 import '../../data/admin_user_mock_data.dart';
 import '../../domain/admin_user.dart';
 import '../widgets/admin_search_filter_bar.dart';
@@ -88,12 +87,16 @@ class _AdminUserPageState extends State<AdminUserPage> {
       );
     }
     final csv = rows.join('\r\n');
-    final bytes = html.Blob([csv], 'text/csv;charset=utf-8');
-    final url = html.Url.createObjectUrlFromBlob(bytes);
-    html.AnchorElement(href: url)
-      ..setAttribute('download', 'users_export.csv')
+    final blob = web.Blob(
+      [csv.toJS].toJS,
+      web.BlobPropertyBag(type: 'text/csv;charset=utf-8'),
+    );
+    final url = web.URL.createObjectURL(blob);
+    web.HTMLAnchorElement()
+      ..href = url
+      ..download = 'users_export.csv'
       ..click();
-    html.Url.revokeObjectUrl(url);
+    web.URL.revokeObjectURL(url);
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
