@@ -7,8 +7,11 @@ import 'package:hellovietnam/core/widgets/empty_state.dart';
 import '../../data/popular_app_guide_mock_data.dart';
 import '../../domain/popular_app_guide.dart';
 import '../widgets/admin_section_header.dart';
+import '../widgets/admin_table_sort_header.dart';
 import '../widgets/category_manager_dialog.dart';
 import '../widgets/popular_app_form_dialog.dart';
+
+enum _AppSortField { name }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
@@ -29,8 +32,9 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
 
   final TextEditingController _searchController = TextEditingController();
 
-  /// Active filter: null = All, non-null = a category ID string.
   String? _filterCategoryId;
+  _AppSortField? _activeSortField;
+  SortDirection? _activeSortDirection;
   int _currentPage = 1;
   static const int _pageSize = 8;
 
@@ -61,14 +65,26 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
 
   // ── Filtering & pagination ─────────────────────────────────────────────────
 
+  /// Base order: id ASC. Active sort applied on top with id as tiebreaker.
   List<PopularAppGuide> get _filtered {
     final q = _searchController.text.toLowerCase().trim();
-    return _guides.where((g) {
+    final result = _guides.where((g) {
       final matchesSearch = q.isEmpty || g.name.toLowerCase().contains(q);
       final matchesCat =
           _filterCategoryId == null || g.categoryId == _filterCategoryId;
       return matchesSearch && matchesCat;
-    }).toList();
+    }).toList()..sort((a, b) => a.id.compareTo(b.id));
+
+    if (_activeSortField == null || _activeSortDirection == null) return result;
+
+    result.sort((a, b) {
+      final cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      if (cmp != 0) {
+        return _activeSortDirection == SortDirection.ascending ? cmp : -cmp;
+      }
+      return a.id.compareTo(b.id);
+    });
+    return result;
   }
 
   List<PopularAppGuide> get _paged {
@@ -87,9 +103,22 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
 
   void _onSearchChanged(String _) => setState(() => _currentPage = 1);
 
-  void _onCategoryFilterChanged(String? id) =>
+  void _onCategoryFilterChanged(String? id) => setState(() {
+    _filterCategoryId = id;
+    _currentPage = 1;
+  });
+
+  void _onSortSelected(_AppSortField field, SortMenuAction action) =>
       setState(() {
-        _filterCategoryId = id;
+        if (action == SortMenuAction.defaultOrder) {
+          _activeSortField = null;
+          _activeSortDirection = null;
+        } else {
+          _activeSortField = field;
+          _activeSortDirection = action == SortMenuAction.ascending
+              ? SortDirection.ascending
+              : SortDirection.descending;
+        }
         _currentPage = 1;
       });
 
@@ -276,11 +305,14 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
           )
         else ...[
           _GuideTable(
-            guides:         paged,
+            guides: paged,
             resolveCategory: _resolveCategory,
-            onView:          _openView,
-            onEdit:          _openEdit,
-            onDelete:        _confirmDelete,
+            onView: _openView,
+            onEdit: _openEdit,
+            onDelete: _confirmDelete,
+            activeSortField: _activeSortField,
+            activeSortDirection: _activeSortDirection,
+            onSortSelected: _onSortSelected,
           ),
 
           const SizedBox(height: 16),
@@ -439,11 +471,17 @@ class _GuideTable extends StatelessWidget {
     required this.onView,
     required this.onEdit,
     required this.onDelete,
+    required this.activeSortField,
+    required this.activeSortDirection,
+    required this.onSortSelected,
   });
 
   final List<PopularAppGuide> guides;
   final AppCategory Function(String) resolveCategory;
   final ValueChanged<PopularAppGuide> onView, onEdit, onDelete;
+  final _AppSortField? activeSortField;
+  final SortDirection? activeSortDirection;
+  final void Function(_AppSortField, SortMenuAction) onSortSelected;
 
   static const double _colName    = 200;
   static const double _colCat     = 116;
@@ -471,9 +509,12 @@ class _GuideTable extends StatelessWidget {
         child: Column(
           children: [
             _TableHeader(
-              colName:    _colName, colCat: _colCat,
-              colMedia:   _colMedia, colPkg: _colPkg,
+              colName: _colName, colCat: _colCat,
+              colMedia: _colMedia, colPkg: _colPkg,
               colActions: _colActions,
+              activeSortField: activeSortField,
+              activeSortDirection: activeSortDirection,
+              onSortSelected: onSortSelected,
             ),
             ...List.generate(
               guides.length,
@@ -502,9 +543,15 @@ class _TableHeader extends StatelessWidget {
   const _TableHeader({
     required this.colName, required this.colCat, required this.colMedia,
     required this.colPkg,  required this.colActions,
+    required this.activeSortField,
+    required this.activeSortDirection,
+    required this.onSortSelected,
   });
 
   final double colName, colCat, colMedia, colPkg, colActions;
+  final _AppSortField? activeSortField;
+  final SortDirection? activeSortDirection;
+  final void Function(_AppSortField, SortMenuAction) onSortSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -515,8 +562,16 @@ class _TableHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          _Cell(width: colName,
-              child: Text('App Name',    style: style)),
+          _Cell(
+            width: colName,
+            child: AdminTableSortHeader<_AppSortField>(
+              label: 'App Name',
+              field: _AppSortField.name,
+              activeSortField: activeSortField,
+              activeSortDirection: activeSortDirection,
+              onSelected: onSortSelected,
+            ),
+          ),
           const _ExpandedCell(
               child: Text('Description',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),

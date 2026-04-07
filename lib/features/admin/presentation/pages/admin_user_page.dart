@@ -11,7 +11,10 @@ import '../../domain/admin_user.dart';
 import '../widgets/admin_search_filter_bar.dart';
 import '../widgets/admin_section_header.dart';
 import '../widgets/admin_status_badge.dart';
+import '../widgets/admin_table_sort_header.dart';
 import '../widgets/admin_user_form_dialog.dart';
+
+enum _UserSortField { fullName }
 
 class AdminUserPage extends StatefulWidget {
   const AdminUserPage({super.key});
@@ -25,6 +28,8 @@ class _AdminUserPageState extends State<AdminUserPage> {
 
   final TextEditingController _searchController = TextEditingController();
   AdminUserStatus? _filterStatus;
+  _UserSortField? _activeSortField;
+  SortDirection? _activeSortDirection;
   int _currentPage = 1;
 
   static const int _pageSize = 10;
@@ -42,10 +47,24 @@ class _AdminUserPageState extends State<AdminUserPage> {
     _currentPage = 1;
   });
 
-  /// All users matching current search + status filter.
+  void _onSortSelected(_UserSortField field, SortMenuAction action) =>
+      setState(() {
+        if (action == SortMenuAction.defaultOrder) {
+          _activeSortField = null;
+          _activeSortDirection = null;
+        } else {
+          _activeSortField = field;
+          _activeSortDirection = action == SortMenuAction.ascending
+              ? SortDirection.ascending
+              : SortDirection.descending;
+        }
+        _currentPage = 1;
+      });
+
+  /// Base order: id ASC. Active sort applied on top with id as tiebreaker.
   List<AdminUser> get _filteredUsers {
     final query = _searchController.text.toLowerCase().trim();
-    return _users.where((u) {
+    final result = _users.where((u) {
       final matchesSearch =
           query.isEmpty ||
           (u.fullName ?? u.username).toLowerCase().contains(query) ||
@@ -53,7 +72,20 @@ class _AdminUserPageState extends State<AdminUserPage> {
           u.id.contains(query);
       final matchesStatus = _filterStatus == null || u.status == _filterStatus;
       return matchesSearch && matchesStatus;
-    }).toList();
+    }).toList()..sort((a, b) => a.id.compareTo(b.id));
+
+    if (_activeSortField == null || _activeSortDirection == null) return result;
+
+    result.sort((a, b) {
+      final va = (a.fullName ?? a.username).toLowerCase();
+      final vb = (b.fullName ?? b.username).toLowerCase();
+      final cmp = va.compareTo(vb);
+      if (cmp != 0) {
+        return _activeSortDirection == SortDirection.ascending ? cmp : -cmp;
+      }
+      return a.id.compareTo(b.id);
+    });
+    return result;
   }
 
   /// Slice of [_filteredUsers] for the current page.
@@ -187,7 +219,13 @@ class _AdminUserPageState extends State<AdminUserPage> {
               message: 'No users match your search.',
             )
           else ...[
-            _UserTable(users: paged, onToggleBan: _toggleBan),
+            _UserTable(
+              users: paged,
+              onToggleBan: _toggleBan,
+              activeSortField: _activeSortField,
+              activeSortDirection: _activeSortDirection,
+              onSortSelected: _onSortSelected,
+            ),
 
             const SizedBox(height: 16),
 
@@ -265,22 +303,26 @@ class _HeaderActions extends StatelessWidget {
 // ── User table ────────────────────────────────────────────────────────────────
 
 class _UserTable extends StatelessWidget {
-  const _UserTable({required this.users, required this.onToggleBan});
+  const _UserTable({
+    required this.users,
+    required this.onToggleBan,
+    required this.activeSortField,
+    required this.activeSortDirection,
+    required this.onSortSelected,
+  });
 
   final List<AdminUser> users;
   final ValueChanged<AdminUser> onToggleBan;
+  final _UserSortField? activeSortField;
+  final SortDirection? activeSortDirection;
+  final void Function(_UserSortField, SortMenuAction) onSortSelected;
 
-  // Column widths — username column is Expanded.
-  // Status and Action are sized to their content after the Align fix;
-  // keeping them smaller prevents dead whitespace inside those cells.
   static const double _colId = 90;
   static const double _colEmail = 210;
   static const double _colPhone = 130;
   static const double _colRole = 76;
-  static const double _colStatus =
-      100; // badge shrink-wraps; col just reserves space
-  static const double _colAction =
-      90; // button shrink-wraps; col just reserves space
+  static const double _colStatus = 100;
+  static const double _colAction = 90;
 
   @override
   Widget build(BuildContext context) {
@@ -308,6 +350,9 @@ class _UserTable extends StatelessWidget {
               colRole: _colRole,
               colStatus: _colStatus,
               colAction: _colAction,
+              activeSortField: activeSortField,
+              activeSortDirection: activeSortDirection,
+              onSortSelected: onSortSelected,
             ),
             ...List.generate(
               users.length,
@@ -340,9 +385,15 @@ class _TableHeader extends StatelessWidget {
     required this.colRole,
     required this.colStatus,
     required this.colAction,
+    required this.activeSortField,
+    required this.activeSortDirection,
+    required this.onSortSelected,
   });
 
   final double colId, colEmail, colPhone, colRole, colStatus, colAction;
+  final _UserSortField? activeSortField;
+  final SortDirection? activeSortDirection;
+  final void Function(_UserSortField, SortMenuAction) onSortSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -362,10 +413,12 @@ class _TableHeader extends StatelessWidget {
             ),
           ),
           _ExpandedCell(
-            child: Text(
-              'Full Name',
-              style: style,
-              overflow: TextOverflow.ellipsis,
+            child: AdminTableSortHeader<_UserSortField>(
+              label: 'Full Name',
+              field: _UserSortField.fullName,
+              activeSortField: activeSortField,
+              activeSortDirection: activeSortDirection,
+              onSelected: onSortSelected,
             ),
           ),
           _Cell(

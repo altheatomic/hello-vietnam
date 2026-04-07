@@ -76,8 +76,9 @@ class AdminTableSortHeader<T extends Enum> extends StatelessWidget {
     );
 
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
+        Flexible(
           child: Text(label, style: textStyle, overflow: TextOverflow.ellipsis),
         ),
         Theme(
