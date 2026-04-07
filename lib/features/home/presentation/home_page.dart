@@ -10,6 +10,11 @@ import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/notification/data/notification_repository.dart';
+import 'package:hellovietnam/features/personalization/data/travel_preferences_repository.dart';
+import 'package:hellovietnam/features/personalization/data/travel_recommendation_service.dart';
+import 'package:hellovietnam/features/personalization/domain/travel_preferences.dart';
+import 'package:hellovietnam/features/personalization/presentation/widgets/travel_preferences_summary_card.dart';
+import 'package:hellovietnam/features/recommend/domain/recommend_destination.dart';
 import '../data/home_mock_data.dart';
 import 'widgets/home_banner.dart';
 import 'widgets/feature_grid.dart';
@@ -215,6 +220,75 @@ class HomePage extends StatelessWidget {
                     horizontal: AppConstants.pagePadding,
                   ),
                   child: FeatureGrid(items: homeFeatures),
+                ),
+
+                const SizedBox(height: 20),
+
+                ListenableBuilder(
+                  listenable: TravelPreferencesRepository.instance,
+                  builder: (BuildContext context, Widget? child) {
+                    final UserTravelPreferences? preferences =
+                        TravelPreferencesRepository.instance.currentPreferences;
+                    if (preferences == null) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final List<RecommendDestination> destinations =
+                        TravelRecommendationService.recommendedDestinations(
+                          preferences,
+                        ).take(4).toList(growable: false);
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppConstants.pagePadding,
+                      ),
+                      child: Column(
+                        children: <Widget>[
+                          TravelPreferencesSummaryCard(
+                            preferences: preferences,
+                            onRetune: () => context.push(
+                              AppRoutes.travelPreferencesOnboardingPath(
+                                returnTo: AppRoutes.home,
+                              ),
+                            ),
+                            buttonLabel: 'Retune',
+                          ),
+                          const SizedBox(height: 18),
+                          RecommendationSection(
+                            title: 'Picked For You',
+                            backgroundImage: AppConstants.destinationBgAsset,
+                            height: 290,
+                            children: destinations
+                                .map((RecommendDestination d) {
+                                  return RecommendationCard(
+                                    name: d.name,
+                                    category: d.tags.join(' · '),
+                                    rating: d.rating,
+                                    imagePath: d.imagePath,
+                                    isFavorite: false,
+                                    onTap: () {
+                                      context.push(
+                                        AppRoutes.cityDetail,
+                                        extra: CityDetailRequest(
+                                          id: d.id,
+                                          name: d.name,
+                                          fallbackImages: <String>[
+                                            d.imagePath,
+                                            ...d.gallery,
+                                          ],
+                                          fallbackImagePath: d.imagePath,
+                                          fallbackRating: d.rating,
+                                        ),
+                                      );
+                                    },
+                                  );
+                                })
+                                .toList(growable: false),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 4),

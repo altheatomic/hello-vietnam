@@ -68,6 +68,8 @@ import '../features/admin/presentation/pages/admin_report_page.dart';
 import '../features/admin/presentation/pages/admin_feedback_page.dart';
 import '../features/admin/presentation/pages/admin_food_page.dart';
 import '../features/admin/presentation/pages/admin_popular_app_page.dart';
+import '../features/personalization/data/travel_preferences_repository.dart';
+import '../features/personalization/presentation/travel_preferences_onboarding_page.dart';
 import '../main.dart'; // Import to access shouldNavigateToForgotPassword
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -129,6 +131,18 @@ class AppRoutes {
   static const changePassword = '/change-password';
   static const language = '/language';
   static const currency = '/currency';
+  static const travelPreferencesOnboarding = '/onboarding/travel-preferences';
+
+  static String travelPreferencesOnboardingPath({String? returnTo}) {
+    if (returnTo == null || returnTo.isEmpty) {
+      return travelPreferencesOnboarding;
+    }
+
+    return Uri(
+      path: travelPreferencesOnboarding,
+      queryParameters: <String, String>{'returnTo': returnTo},
+    ).toString();
+  }
 
   static String detailPathForCategory(DetailCategory category) {
     switch (category) {
@@ -167,11 +181,49 @@ GoRouter buildRouter() {
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: true,
     initialLocation: AppRoutes.getStarted,
+    refreshListenable: Listenable.merge(<Listenable>[
+      AuthRepository.instance,
+      TravelPreferencesRepository.instance,
+    ]),
     redirect: (context, state) {
+      final String location = state.matchedLocation;
+      final bool loggedIn = AuthRepository.instance.isLoggedIn;
+      final TravelPreferencesRepository preferencesRepository =
+          TravelPreferencesRepository.instance;
+      final bool isOnboardingRoute =
+          location == AppRoutes.travelPreferencesOnboarding;
+      final bool isAuthRoute =
+          location == AppRoutes.login ||
+          location == AppRoutes.register ||
+          location == AppRoutes.forgotPassword;
+
       // Check if we should navigate to forgot password page (from deep link)
       if (shouldNavigateToForgotPassword()) {
         return AppRoutes.forgotPassword;
       }
+
+      if (isOnboardingRoute && !loggedIn) {
+        return AppRoutes.login;
+      }
+
+      if (!preferencesRepository.isReady) {
+        return null;
+      }
+
+      if (loggedIn) {
+        final bool needsPreferences =
+            !preferencesRepository.hasCompletedCurrentUser;
+        if (needsPreferences &&
+            location != AppRoutes.travelPreferencesOnboarding) {
+          return AppRoutes.travelPreferencesOnboarding;
+        }
+
+        if (!needsPreferences &&
+            (location == AppRoutes.getStarted || isAuthRoute)) {
+          return AppRoutes.home;
+        }
+      }
+
       return null; // No redirect
     },
     routes: [
@@ -314,6 +366,16 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.notification,
         builder: (c, s) => const NotificationPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.travelPreferencesOnboarding,
+        builder: (c, s) => TravelPreferencesOnboardingPage(
+          returnRoute:
+              s.uri.queryParameters['returnTo']?.trim().isNotEmpty == true
+              ? s.uri.queryParameters['returnTo']!.trim()
+              : AppRoutes.home,
+        ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
