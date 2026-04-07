@@ -2,21 +2,18 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Flutter App",
-      "request": "launch",
-      "type": "dart"
-    },
-    {
-      "name": "Flutter Web (Chrome :3000)",
+      "name": "User App (Android)",
       "request": "launch",
       "type": "dart",
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "Admin App (Web)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_admin.dart",
       "deviceId": "chrome",
-      "args": [
-        "--web-hostname",
-        "localhost",
-        "--web-port",
-        "3000"
-      ]
+      "args": ["--web-hostname", "localhost", "--web-port", "3000"]
     }
   ]
 }
