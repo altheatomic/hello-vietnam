@@ -136,7 +136,7 @@ class AppRoutes {
   // ── Admin routes ─────────────────────────────────────────────
   static const adminDashboard = '/admin/dashboard';
   static const adminUsers = '/admin/users';
-  static const adminCannedReplies = '/admin/canned-replies';
+  //static const adminCannedReplies = '/admin/canned-replies';
   static const adminReports = '/admin/reports';
   static const adminFeedback = '/admin/feedback';
   static const adminFood = '/admin/food';
