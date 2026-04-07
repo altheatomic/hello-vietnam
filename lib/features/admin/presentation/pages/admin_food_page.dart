@@ -7,6 +7,7 @@ import 'package:hellovietnam/core/widgets/empty_state.dart';
 import '../../data/admin_food_mock_data.dart';
 import '../../domain/admin_food.dart';
 import '../widgets/admin_section_header.dart';
+import '../widgets/admin_table_sort_header.dart';
 import '../widgets/food_form_dialog.dart';
 import '../widgets/food_type_manager_dialog.dart';
 
@@ -21,10 +22,6 @@ class AdminFoodPage extends StatefulWidget {
 
 enum _FoodSortField { name, city }
 
-enum _FoodSortDirection { ascending, descending }
-
-enum _FoodSortMenuAction { defaultOrder, ascending, descending }
-
 class _AdminFoodPageState extends State<AdminFoodPage> {
   late final List<AdminFood> _foods = mockAdminFoods.map((f) => f).toList();
 
@@ -33,7 +30,7 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
   final TextEditingController _searchController = TextEditingController();
   String? _filterTypeId;
   _FoodSortField? _activeSortField;
-  _FoodSortDirection? _activeSortDirection;
+  SortDirection? _activeSortDirection;
   int _currentPage = 1;
   static const int _pageSize = 8;
 
@@ -112,7 +109,7 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
       };
 
       if (result != 0) {
-        return _activeSortDirection == _FoodSortDirection.ascending
+        return _activeSortDirection == SortDirection.ascending
             ? result
             : -result;
       }
@@ -141,16 +138,16 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     _currentPage = 1;
   });
 
-  void _onSortSelected(_FoodSortField field, _FoodSortMenuAction action) =>
+  void _onSortSelected(_FoodSortField field, SortMenuAction action) =>
       setState(() {
-        if (action == _FoodSortMenuAction.defaultOrder) {
+        if (action == SortMenuAction.defaultOrder) {
           _activeSortField = null;
           _activeSortDirection = null;
         } else {
           _activeSortField = field;
-          _activeSortDirection = action == _FoodSortMenuAction.ascending
-              ? _FoodSortDirection.ascending
-              : _FoodSortDirection.descending;
+          _activeSortDirection = action == SortMenuAction.ascending
+              ? SortDirection.ascending
+              : SortDirection.descending;
         }
         _currentPage = 1;
       });
@@ -553,8 +550,8 @@ class _FoodTable extends StatelessWidget {
   final List<AdminFood> foods;
   final FoodType Function(String) resolveType;
   final _FoodSortField? activeSortField;
-  final _FoodSortDirection? activeSortDirection;
-  final void Function(_FoodSortField field, _FoodSortMenuAction action)
+  final SortDirection? activeSortDirection;
+  final void Function(_FoodSortField field, SortMenuAction action)
   onSortSelected;
   final ValueChanged<AdminFood> onView, onEdit, onDelete;
 
@@ -636,8 +633,8 @@ class _FoodTableHeader extends StatelessWidget {
       colImg,
       colActions;
   final _FoodSortField? activeSortField;
-  final _FoodSortDirection? activeSortDirection;
-  final void Function(_FoodSortField field, _FoodSortMenuAction action)
+  final SortDirection? activeSortDirection;
+  final void Function(_FoodSortField field, SortMenuAction action)
   onSortSelected;
 
   @override
@@ -655,14 +652,14 @@ class _FoodTableHeader extends StatelessWidget {
           ),
           _FoodCell(
             width: colName,
-            child: _FoodSortHeader(
+            child: AdminTableSortHeader<_FoodSortField>(
               label: 'Name',
               field: _FoodSortField.name,
               activeSortField: activeSortField,
               activeSortDirection: activeSortField == _FoodSortField.name
                   ? activeSortDirection
                   : null,
-              onSortSelected: onSortSelected,
+              onSelected: onSortSelected,
             ),
           ),
           const _FoodExpandedCell(
@@ -677,14 +674,14 @@ class _FoodTableHeader extends StatelessWidget {
           ),
           _FoodCell(
             width: colCity,
-            child: _FoodSortHeader(
+            child: AdminTableSortHeader<_FoodSortField>(
               label: 'City / Province',
               field: _FoodSortField.city,
               activeSortField: activeSortField,
               activeSortDirection: activeSortField == _FoodSortField.city
                   ? activeSortDirection
                   : null,
-              onSortSelected: onSortSelected,
+              onSelected: onSortSelected,
             ),
           ),
           _FoodCell(
@@ -898,177 +895,6 @@ class _FoodExpandedCell extends StatelessWidget {
 }
 
 // ── Sub-widgets ───────────────────────────────────────────────────────────────
-
-class _FoodSortHeader extends StatelessWidget {
-  const _FoodSortHeader({
-    required this.label,
-    required this.field,
-    required this.activeSortField,
-    required this.activeSortDirection,
-    required this.onSortSelected,
-  });
-
-  final String label;
-  final _FoodSortField field;
-  final _FoodSortField? activeSortField;
-  final _FoodSortDirection? activeSortDirection;
-  final void Function(_FoodSortField field, _FoodSortMenuAction action)
-  onSortSelected;
-
-  bool get _isActive => activeSortField == field && activeSortDirection != null;
-
-  IconData get _icon {
-    if (!_isActive) return Icons.unfold_more_rounded;
-    return activeSortDirection == _FoodSortDirection.ascending
-        ? Icons.arrow_upward_rounded
-        : Icons.arrow_downward_rounded;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textStyle = Theme.of(context).textTheme.labelMedium;
-    final menuTheme = Theme.of(context).copyWith(
-      popupMenuTheme: PopupMenuThemeData(
-        color: AppColors.surface,
-        elevation: 10,
-        shadowColor: Colors.black.withValues(alpha: 0.14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: AppColors.divider),
-        ),
-        textStyle: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
-      ),
-    );
-
-    return Row(
-      children: [
-        Expanded(
-          child: Text(label, style: textStyle, overflow: TextOverflow.ellipsis),
-        ),
-        Theme(
-          data: menuTheme,
-          child: PopupMenuButton<_FoodSortMenuAction>(
-            tooltip: 'Sort $label',
-            requestFocus: false,
-            offset: const Offset(0, 12),
-            onSelected: (action) => onSortSelected(field, action),
-            itemBuilder: (context) => [
-              _FoodSortMenuItem(
-                value: _FoodSortMenuAction.defaultOrder,
-                label: 'Default',
-                selected: !_isActive,
-                icon: Icons.history_rounded,
-              ),
-              _FoodSortMenuItem(
-                value: _FoodSortMenuAction.ascending,
-                label: 'A → Z',
-                selected:
-                    _isActive &&
-                    activeSortDirection == _FoodSortDirection.ascending,
-                icon: Icons.arrow_upward_rounded,
-              ),
-              _FoodSortMenuItem(
-                value: _FoodSortMenuAction.descending,
-                label: 'Z → A',
-                selected:
-                    _isActive &&
-                    activeSortDirection == _FoodSortDirection.descending,
-                icon: Icons.arrow_downward_rounded,
-              ),
-            ],
-            padding: EdgeInsets.zero,
-            splashRadius: 18,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            icon: AnimatedContainer(
-              duration: AppConstants.defaultAnimation,
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: _isActive
-                    ? AppColors.primary.withValues(alpha: 0.12)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: _isActive
-                      ? AppColors.primary.withValues(alpha: 0.30)
-                      : AppColors.divider,
-                ),
-                boxShadow: _isActive
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.08),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                _icon,
-                size: 15,
-                color: _isActive ? AppColors.primary : AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FoodSortMenuItem extends PopupMenuItem<_FoodSortMenuAction> {
-  _FoodSortMenuItem({
-    required super.value,
-    required String label,
-    required bool selected,
-    required IconData icon,
-  }) : super(
-         height: 44,
-         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-         child: Container(
-           decoration: BoxDecoration(
-             color: selected
-                 ? AppColors.primary.withValues(alpha: 0.10)
-                 : Colors.transparent,
-             borderRadius: BorderRadius.circular(10),
-           ),
-           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-           child: Row(
-             children: [
-               Icon(
-                 icon,
-                 size: 16,
-                 color: selected ? AppColors.primary : AppColors.textSecondary,
-               ),
-               const SizedBox(width: 10),
-               Expanded(
-                 child: Text(
-                   label,
-                   style: TextStyle(
-                     fontSize: 13,
-                     fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                     color: selected
-                         ? AppColors.primaryDark
-                         : AppColors.textPrimary,
-                   ),
-                 ),
-               ),
-               AnimatedOpacity(
-                 duration: AppConstants.defaultAnimation,
-                 opacity: selected ? 1 : 0,
-                 child: const Icon(
-                   Icons.check_rounded,
-                   size: 16,
-                   color: AppColors.primary,
-                 ),
-               ),
-             ],
-           ),
-         ),
-       );
-}
 
 class _TypeBadge extends StatelessWidget {
   const _TypeBadge({required this.type});
