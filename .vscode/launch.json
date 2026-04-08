@@ -1,6 +1,7 @@
 {
   "version": "0.2.0",
   "configurations": [
+    
     {
       "name": "Mobile App (Default)",
       "request": "launch",
@@ -8,7 +9,7 @@
       "program": "lib/main_mobile.dart"
     },
     {
-      "name": "Admin Web (Chrome :3000)",
+      "name": "Admin Web (Chrome :3001)",
       "request": "launch",
       "type": "dart",
       "deviceId": "chrome",
@@ -17,11 +18,11 @@
         "--web-hostname",
         "localhost",
         "--web-port",
-        "3000"
+        "3001"
       ]
     },
     {
-      "name": "Mobile Web (Chrome :3001)",
+      "name": "Mobile Web (Chrome :3000)",
       "request": "launch",
       "type": "dart",
       "deviceId": "chrome",
@@ -30,7 +31,7 @@
         "--web-hostname",
         "localhost",
         "--web-port",
-        "3001"
+        "3000"
       ]
     }
   ],
@@ -39,7 +40,7 @@
       "name": "Run Mobile + Admin Web",
       "configurations": [
         "Mobile App (Default)",
-        "Admin Web (Chrome :3000)"
+        "Admin Web (Chrome :3001)"
       ],
       "stopAll": true
     }
