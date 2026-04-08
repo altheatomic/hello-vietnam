@@ -23,12 +23,14 @@ class AdminPopularAppPage extends StatefulWidget {
 }
 
 class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
-  late final List<PopularAppGuide> _guides =
-      mockPopularAppGuides.map((g) => g).toList();
+  late final List<PopularAppGuide> _guides = mockPopularAppGuides
+      .map((g) => g)
+      .toList();
 
   /// Runtime category list — starts from defaults; mutated by CategoryManagerDialog.
-  late final List<AppCategory> _categories =
-      defaultAppCategories.map((c) => c).toList();
+  late final List<AppCategory> _categories = defaultAppCategories
+      .map((c) => c)
+      .toList();
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -47,12 +49,10 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   /// Resolves a category by ID; returns an "Unknown" placeholder if not found.
-  AppCategory _resolveCategory(String categoryId) =>
-      _categories.firstWhere(
-        (c) => c.id == categoryId,
-        orElse: () =>
-            AppCategory(id: categoryId, label: categoryId, colorIndex: 4),
-      );
+  AppCategory _resolveCategory(String categoryId) => _categories.firstWhere(
+    (c) => c.id == categoryId,
+    orElse: () => AppCategory(id: categoryId, label: categoryId, colorIndex: 4),
+  );
 
   /// Maps categoryId → guide count (used by the delete confirmation).
   Map<String, int> get _guideCounts {
@@ -88,18 +88,15 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
   }
 
   List<PopularAppGuide> get _paged {
-    final all   = _filtered;
+    final all = _filtered;
     final start = (_currentPage - 1) * _pageSize;
-    final end   = min(start + _pageSize, all.length);
+    final end = min(start + _pageSize, all.length);
     if (start >= all.length) return [];
     return all.sublist(start, end);
   }
 
   int get _totalPages =>
-      (_filtered.length / _pageSize)
-          .ceil()
-          .clamp(1, double.maxFinite)
-          .toInt();
+      (_filtered.length / _pageSize).ceil().clamp(1, double.maxFinite).toInt();
 
   void _onSearchChanged(String _) => setState(() => _currentPage = 1);
 
@@ -176,7 +173,7 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
     final result = await showDialog<List<AppCategory>>(
       context: context,
       builder: (_) => CategoryManagerDialog(
-        initialCategories:     _categories,
+        initialCategories: _categories,
         guideCountForCategory: _guideCounts,
       ),
     );
@@ -186,14 +183,13 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
 
     setState(() {
       // Find which IDs were removed
-      final oldIds     = _categories.map((c) => c.id).toSet();
-      final newIds     = result.map((c) => c.id).toSet();
+      final oldIds = _categories.map((c) => c.id).toSet();
+      final newIds = result.map((c) => c.id).toSet();
       final deletedIds = oldIds.difference(newIds);
 
       if (deletedIds.isNotEmpty) {
         // Reassign guides whose category was deleted to the first remaining
-        final fallbackId =
-            result.isNotEmpty ? result.first.id : 'other';
+        final fallbackId = result.isNotEmpty ? result.first.id : 'other';
         for (int i = 0; i < _guides.length; i++) {
           if (deletedIds.contains(_guides[i].categoryId)) {
             _guides[i] = _guides[i].copyWith(categoryId: fallbackId);
@@ -217,11 +213,13 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      duration: const Duration(seconds: 2),
-      behavior: SnackBarBehavior.floating,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -229,103 +227,113 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filtered;
-    final paged    = _paged;
+    final paged = _paged;
 
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-        // ── Header ──────────────────────────────────────────────────────────
-        AdminSectionHeader(
-          title: 'Popular App Guides',
-          subtitle:
-              'Create and manage in-app guides for popular Vietnam apps',
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Manage Categories — outlined secondary action
-              OutlinedButton.icon(
-                onPressed: _openManageCategories,
-                icon: const Icon(Icons.category_outlined, size: 16),
-                label: const Text('Manage Categories'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textPrimary,
-                  side: BorderSide(color: AppColors.divider, width: 1.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.buttonRadius),
+          // ── Header ──────────────────────────────────────────────────────────
+          AdminSectionHeader(
+            title: 'Popular App Guides',
+            subtitle:
+                'Create and manage in-app guides for popular Vietnam apps',
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Manage Categories — outlined secondary action
+                OutlinedButton.icon(
+                  onPressed: _openManageCategories,
+                  icon: const Icon(Icons.category_outlined, size: 16),
+                  label: const Text('Manage Categories'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    side: BorderSide(color: AppColors.divider, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.buttonRadius,
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 11,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 11),
-                  textStyle: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w500),
                 ),
-              ),
-              const SizedBox(width: 10),
-              // Add Guide — primary filled action
-              FilledButton.icon(
-                onPressed: _openCreate,
-                icon: const Icon(Icons.add_rounded, size: 17),
-                label: const Text('Add Guide'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.textOnPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.buttonRadius),
+                const SizedBox(width: 10),
+                // Add Guide — primary filled action
+                FilledButton.icon(
+                  onPressed: _openCreate,
+                  icon: const Icon(Icons.add_rounded, size: 17),
+                  label: const Text('Add Guide'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.textOnPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.buttonRadius,
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 11,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 11),
-                  textStyle: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w500),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
 
-        // ── Search + category filter ─────────────────────────────────────────
-        _CategoryFilterBar(
-          controller:        _searchController,
-          categories:        _categories,
-          selectedId:        _filterCategoryId,
-          onCategoryChanged: _onCategoryFilterChanged,
-          onSearchChanged:   _onSearchChanged,
-        ),
-
-        const SizedBox(height: 16),
-
-        // ── Table or empty state ─────────────────────────────────────────────
-        if (filtered.isEmpty)
-          EmptyState(
-            icon: Icons.apps_outlined,
-            message:
-                'No guides match your search.\nTry a different name or category.',
-          )
-        else ...[
-          _GuideTable(
-            guides: paged,
-            resolveCategory: _resolveCategory,
-            onView: _openView,
-            onEdit: _openEdit,
-            onDelete: _confirmDelete,
-            activeSortField: _activeSortField,
-            activeSortDirection: _activeSortDirection,
-            onSortSelected: _onSortSelected,
+          // ── Search + category filter ─────────────────────────────────────────
+          _CategoryFilterBar(
+            controller: _searchController,
+            categories: _categories,
+            selectedId: _filterCategoryId,
+            onCategoryChanged: _onCategoryFilterChanged,
+            onSearchChanged: _onSearchChanged,
           ),
 
           const SizedBox(height: 16),
 
-          _TableFooter(
-            currentPage: _currentPage,
-            totalPages:  _totalPages,
-            totalItems:  filtered.length,
-            pageSize:    _pageSize,
-            onPageChanged: (p) => setState(() => _currentPage = p),
-          ),
+          // ── Table or empty state ─────────────────────────────────────────────
+          if (filtered.isEmpty)
+            EmptyState(
+              icon: Icons.apps_outlined,
+              message:
+                  'No guides match your search.\nTry a different name or category.',
+            )
+          else ...[
+            _GuideTable(
+              guides: paged,
+              resolveCategory: _resolveCategory,
+              onView: _openView,
+              onEdit: _openEdit,
+              onDelete: _confirmDelete,
+              activeSortField: _activeSortField,
+              activeSortDirection: _activeSortDirection,
+              onSortSelected: _onSortSelected,
+            ),
+
+            const SizedBox(height: 16),
+
+            _TableFooter(
+              currentPage: _currentPage,
+              totalPages: _totalPages,
+              totalItems: filtered.length,
+              pageSize: _pageSize,
+              onPageChanged: (p) => setState(() => _currentPage = p),
+            ),
+          ],
         ],
-      ],
       ),
     );
   }
@@ -385,7 +393,9 @@ class _CategoryFilterBar extends StatelessWidget {
               ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 13),
+                horizontal: 16,
+                vertical: 13,
+              ),
             ),
           ),
         ),
@@ -394,9 +404,9 @@ class _CategoryFilterBar extends StatelessWidget {
 
         // "All" chip
         _FilterChip(
-          label:      'All',
+          label: 'All',
           isSelected: selectedId == null,
-          onTap:      () => onCategoryChanged(null),
+          onTap: () => onCategoryChanged(null),
         ),
         const SizedBox(width: 6),
 
@@ -405,12 +415,11 @@ class _CategoryFilterBar extends StatelessWidget {
           (cat) => Padding(
             padding: const EdgeInsets.only(left: 6),
             child: _FilterChip(
-              label:      cat.label,
+              label: cat.label,
               isSelected: selectedId == cat.id,
-              color:      cat.color,
-              onTap: () => onCategoryChanged(
-                selectedId == cat.id ? null : cat.id,
-              ),
+              color: cat.color,
+              onTap: () =>
+                  onCategoryChanged(selectedId == cat.id ? null : cat.id),
             ),
           ),
         ),
@@ -483,10 +492,10 @@ class _GuideTable extends StatelessWidget {
   final SortDirection? activeSortDirection;
   final void Function(_AppSortField, SortMenuAction) onSortSelected;
 
-  static const double _colName    = 200;
-  static const double _colCat     = 116;
-  static const double _colMedia   = 80;
-  static const double _colPkg     = 200;
+  static const double _colName = 200;
+  static const double _colCat = 116;
+  static const double _colMedia = 80;
+  static const double _colPkg = 200;
   static const double _colActions = 108;
 
   @override
@@ -509,8 +518,10 @@ class _GuideTable extends StatelessWidget {
         child: Column(
           children: [
             _TableHeader(
-              colName: _colName, colCat: _colCat,
-              colMedia: _colMedia, colPkg: _colPkg,
+              colName: _colName,
+              colCat: _colCat,
+              colMedia: _colMedia,
+              colPkg: _colPkg,
               colActions: _colActions,
               activeSortField: activeSortField,
               activeSortDirection: activeSortDirection,
@@ -519,15 +530,17 @@ class _GuideTable extends StatelessWidget {
             ...List.generate(
               guides.length,
               (i) => _GuideRow(
-                guide:           guides[i],
-                category:        resolveCategory(guides[i].categoryId),
-                isLast:          i == guides.length - 1,
-                onView:          () => onView(guides[i]),
-                onEdit:          () => onEdit(guides[i]),
-                onDelete:        () => onDelete(guides[i]),
-                colName:         _colName, colCat: _colCat,
-                colMedia:        _colMedia, colPkg: _colPkg,
-                colActions:      _colActions,
+                guide: guides[i],
+                category: resolveCategory(guides[i].categoryId),
+                isLast: i == guides.length - 1,
+                onView: () => onView(guides[i]),
+                onEdit: () => onEdit(guides[i]),
+                onDelete: () => onDelete(guides[i]),
+                colName: _colName,
+                colCat: _colCat,
+                colMedia: _colMedia,
+                colPkg: _colPkg,
+                colActions: _colActions,
               ),
             ),
           ],
@@ -541,8 +554,11 @@ class _GuideTable extends StatelessWidget {
 
 class _TableHeader extends StatelessWidget {
   const _TableHeader({
-    required this.colName, required this.colCat, required this.colMedia,
-    required this.colPkg,  required this.colActions,
+    required this.colName,
+    required this.colCat,
+    required this.colMedia,
+    required this.colPkg,
+    required this.colActions,
     required this.activeSortField,
     required this.activeSortDirection,
     required this.onSortSelected,
@@ -573,16 +589,27 @@ class _TableHeader extends StatelessWidget {
             ),
           ),
           const _ExpandedCell(
-              child: Text('Description',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
-          _Cell(width: colCat,
-              child: Text('Category',   style: style)),
-          _Cell(width: colMedia,
-              child: Text('Media',      style: style)),
-          _Cell(width: colPkg,
-              child: Text('Package',    style: style)),
-          _Cell(width: colActions,
-              child: Text('Actions',    style: style)),
+            child: Text(
+              'Description',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            ),
+          ),
+          _Cell(
+            width: colCat,
+            child: Text('Category', style: style),
+          ),
+          _Cell(
+            width: colMedia,
+            child: Text('Media', style: style),
+          ),
+          _Cell(
+            width: colPkg,
+            child: Text('Package', style: style),
+          ),
+          _Cell(
+            width: colActions,
+            child: Text('Actions', style: style),
+          ),
         ],
       ),
     );
@@ -593,10 +620,17 @@ class _TableHeader extends StatelessWidget {
 
 class _GuideRow extends StatefulWidget {
   const _GuideRow({
-    required this.guide, required this.category, required this.isLast,
-    required this.onView, required this.onEdit, required this.onDelete,
-    required this.colName, required this.colCat, required this.colMedia,
-    required this.colPkg,  required this.colActions,
+    required this.guide,
+    required this.category,
+    required this.isLast,
+    required this.onView,
+    required this.onEdit,
+    required this.onDelete,
+    required this.colName,
+    required this.colCat,
+    required this.colMedia,
+    required this.colPkg,
+    required this.colActions,
   });
 
   final PopularAppGuide guide;
@@ -614,13 +648,13 @@ class _GuideRowState extends State<_GuideRow> {
 
   @override
   Widget build(BuildContext context) {
-    final g         = widget.guide;
-    final cat       = widget.category;
+    final g = widget.guide;
+    final cat = widget.category;
     final bodyStyle = Theme.of(context).textTheme.bodyMedium;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
-      onExit:  (_) => setState(() => _hovered = false),
+      onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: AppConstants.defaultAnimation,
         height: 68,
@@ -635,12 +669,11 @@ class _GuideRowState extends State<_GuideRow> {
         ),
         child: Row(
           children: [
-            // App name + avatar
+            // App name
             _Cell(
               width: widget.colName,
               child: Row(
                 children: [
-                  _AppAvatar(name: g.name, color: cat.color),
                   const SizedBox(width: 10),
                   Flexible(
                     child: Text(
@@ -764,36 +797,6 @@ class _ExpandedCell extends StatelessWidget {
 
 // ── Sub-widgets ────────────────────────────────────────────────────────────────
 
-class _AppAvatar extends StatelessWidget {
-  const _AppAvatar({required this.name, required this.color});
-  final String name;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
-    return Container(
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.18),
-        shape: BoxShape.circle,
-        border: Border.all(color: color.withValues(alpha: 0.4), width: 1.2),
-      ),
-      child: Center(
-        child: Text(
-          initial,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: color,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _CategoryBadge extends StatelessWidget {
   const _CategoryBadge({required this.category});
   final AppCategory category;
@@ -867,7 +870,7 @@ class _IconActionState extends State<_IconAction> {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
-      onExit:  (_) => setState(() => _hovered = false),
+      onExit: (_) => setState(() => _hovered = false),
       child: Tooltip(
         message: widget.tooltip,
         child: GestureDetector(
@@ -907,16 +910,15 @@ class _TableFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final start = (currentPage - 1) * pageSize + 1;
-    final end   = min(currentPage * pageSize, totalItems);
+    final end = min(currentPage * pageSize, totalItems);
 
     return Row(
       children: [
         Text(
           'Showing $start–$end of $totalItems guides',
-          style: Theme.of(context)
-              .textTheme
-              .bodyMedium
-              ?.copyWith(color: AppColors.textSecondary),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
         ),
         const Spacer(),
         _PageButton(
@@ -948,8 +950,10 @@ class _TableFooter extends StatelessWidget {
 
 class _PageButton extends StatelessWidget {
   const _PageButton({
-    this.label, this.icon,
-    this.isActive = false, this.enabled = true,
+    this.label,
+    this.icon,
+    this.isActive = false,
+    this.enabled = true,
     required this.onTap,
   });
   final String? label;
@@ -963,7 +967,8 @@ class _PageButton extends StatelessWidget {
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: AppConstants.defaultAnimation,
-        width: 34, height: 34,
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
           color: isActive ? AppColors.primary : AppColors.surface,
           borderRadius: BorderRadius.circular(6),
@@ -974,7 +979,8 @@ class _PageButton extends StatelessWidget {
         child: Center(
           child: icon != null
               ? Icon(
-                  icon, size: 18,
+                  icon,
+                  size: 18,
                   color: enabled
                       ? AppColors.textSecondary
                       : AppColors.textSecondary.withValues(alpha: 0.3),
@@ -982,7 +988,8 @@ class _PageButton extends StatelessWidget {
               : Text(
                   label ?? '',
                   style: TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                     color: isActive ? Colors.white : AppColors.textPrimary,
                   ),
                 ),
@@ -1016,15 +1023,15 @@ class _ViewDialog extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  _AppAvatar(name: guide.name, color: category.color),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(guide.name,
-                            style:
-                                Theme.of(context).textTheme.headlineMedium),
+                        Text(
+                          guide.name,
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
                         const SizedBox(height: 4),
                         _CategoryBadge(category: category),
                       ],
@@ -1040,12 +1047,12 @@ class _ViewDialog extends StatelessWidget {
               const SizedBox(height: 20),
               const Divider(),
               const SizedBox(height: 16),
-              _ViewRow(label: 'Package',     value: guide.packageName),
-              _ViewRow(label: 'Store URL',   value: guide.storeUrl),
-              _ViewRow(label: 'Image URL',   value: guide.urlImage   ?? '—'),
-              _ViewRow(label: 'Video URL',   value: guide.urlVideo   ?? '—'),
+              _ViewRow(label: 'Package', value: guide.packageName),
+              _ViewRow(label: 'Store URL', value: guide.storeUrl),
+              _ViewRow(label: 'Image URL', value: guide.urlImage ?? '—'),
+              _ViewRow(label: 'Video URL', value: guide.urlVideo ?? '—'),
               _ViewRow(label: 'Description', value: guide.description ?? '—'),
-              _ViewRow(label: 'Guide',       value: guide.guide       ?? '—'),
+              _ViewRow(label: 'Guide', value: guide.guide ?? '—'),
               const SizedBox(height: 20),
               Align(
                 alignment: Alignment.centerRight,
@@ -1055,11 +1062,14 @@ class _ViewDialog extends StatelessWidget {
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.textOnPrimary,
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.buttonRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.buttonRadius,
+                      ),
                     ),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 11),
+                      horizontal: 20,
+                      vertical: 11,
+                    ),
                   ),
                   child: const Text('Close'),
                 ),
@@ -1087,14 +1097,13 @@ class _ViewRow extends StatelessWidget {
             width: 110,
             child: Text(
               label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
             ),
           ),
           Expanded(
-            child: Text(value,
-                style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),
@@ -1130,8 +1139,7 @@ class _DeleteConfirmDialog extends StatelessWidget {
             backgroundColor: const Color(0xFFEF4444),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(AppConstants.buttonRadius),
+              borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
             ),
           ),
           child: const Text('Delete'),
