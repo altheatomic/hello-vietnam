@@ -14,6 +14,7 @@ import '../features/planner/presentation/trip_interest_page.dart';
 import '../features/planner/presentation/trip_map_page.dart';
 import '../features/planner/presentation/trip_planner_page.dart';
 import '../features/planner/presentation/trip_result_page.dart';
+import '../features/planner/presentation/saved_trips_page.dart';
 import '../features/planner/presentation/trip_location_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/profile/presentation/edit_profile_page.dart';
@@ -60,6 +61,16 @@ import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
 import 'deep_link_state.dart';
+import '../features/admin/presentation/admin_shell.dart';
+import '../features/admin/presentation/pages/admin_dashboard_page.dart';
+import '../features/admin/presentation/pages/admin_user_page.dart';
+import '../features/admin/presentation/pages/admin_canned_replies_page.dart';
+import '../features/admin/presentation/pages/admin_report_page.dart';
+import '../features/admin/presentation/pages/admin_feedback_page.dart';
+import '../features/admin/presentation/pages/admin_food_page.dart';
+import '../features/admin/presentation/pages/admin_popular_app_page.dart';
+import '../features/personalization/data/travel_preferences_repository.dart';
+import '../features/personalization/presentation/travel_preferences_onboarding_page.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -72,6 +83,7 @@ class AppRoutes {
   static const tripPlannerDuration = '/trip-planner/duration';
   static const tripPlannerInterest = '/trip-planner/interest';
   static const tripPlannerBudget = '/trip-planner/budget';
+  static const tripPlannerSaved = '/trip-planner/saved';
   static const tripPlannerResult = '/trip-planner/result';
   static const tripPlannerDayDetail = '/trip-planner/result/day/:dayIndex';
   static const tripPlannerMap =
@@ -119,6 +131,18 @@ class AppRoutes {
   static const changePassword = '/change-password';
   static const language = '/language';
   static const currency = '/currency';
+  static const travelPreferencesOnboarding = '/onboarding/travel-preferences';
+
+  static String travelPreferencesOnboardingPath({String? returnTo}) {
+    if (returnTo == null || returnTo.isEmpty) {
+      return travelPreferencesOnboarding;
+    }
+
+    return Uri(
+      path: travelPreferencesOnboarding,
+      queryParameters: <String, String>{'returnTo': returnTo},
+    ).toString();
+  }
 
   static String detailPathForCategory(DetailCategory category) {
     switch (category) {
@@ -157,11 +181,49 @@ GoRouter buildRouter() {
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: true,
     initialLocation: AppRoutes.getStarted,
+    refreshListenable: Listenable.merge(<Listenable>[
+      AuthRepository.instance,
+      TravelPreferencesRepository.instance,
+    ]),
     redirect: (context, state) {
+      final String location = state.matchedLocation;
+      final bool loggedIn = AuthRepository.instance.isLoggedIn;
+      final TravelPreferencesRepository preferencesRepository =
+          TravelPreferencesRepository.instance;
+      final bool isOnboardingRoute =
+          location == AppRoutes.travelPreferencesOnboarding;
+      final bool isAuthRoute =
+          location == AppRoutes.login ||
+          location == AppRoutes.register ||
+          location == AppRoutes.forgotPassword;
+
       // Check if we should navigate to forgot password page (from deep link)
       if (shouldNavigateToForgotPassword()) {
         return AppRoutes.forgotPassword;
       }
+
+      if (isOnboardingRoute && !loggedIn) {
+        return AppRoutes.login;
+      }
+
+      if (!preferencesRepository.isReady) {
+        return null;
+      }
+
+      if (loggedIn) {
+        final bool needsPreferences =
+            !preferencesRepository.hasCompletedCurrentUser;
+        if (needsPreferences &&
+            location != AppRoutes.travelPreferencesOnboarding) {
+          return AppRoutes.travelPreferencesOnboarding;
+        }
+
+        if (!needsPreferences &&
+            (location == AppRoutes.getStarted || isAuthRoute)) {
+          return AppRoutes.home;
+        }
+      }
+
       return null; // No redirect
     },
     routes: [
@@ -307,6 +369,16 @@ GoRouter buildRouter() {
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.travelPreferencesOnboarding,
+        builder: (c, s) => TravelPreferencesOnboardingPage(
+          returnRoute:
+              s.uri.queryParameters['returnTo']?.trim().isNotEmpty == true
+              ? s.uri.queryParameters['returnTo']!.trim()
+              : AppRoutes.home,
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.editProfile,
         builder: (c, s) {
           final Map<String, dynamic> extra =
@@ -419,6 +491,61 @@ GoRouter buildRouter() {
       ),
 
       // can highlight the active route without any extra state management.
+      ShellRoute(
+        builder: (context, state, child) =>
+            AdminShell(currentPath: state.uri.path, child: child),
+        routes: [
+          GoRoute(
+            path: AppRoutes.adminDashboard,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminDashboardPage(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.adminUsers,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminUserPage(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.adminCannedReplies,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminCannedRepliesPage(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.adminReports,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminReportPage(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.adminFeedback,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminFeedbackPage(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.adminFood,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminFoodPage(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.adminPopularApps,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminPopularAppPage(),
+            ),
+          ),
+        ],
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return _ScaffoldWithBottomNav(navigationShell: navigationShell);
@@ -457,6 +584,10 @@ GoRouter buildRouter() {
                   GoRoute(
                     path: 'budget',
                     builder: (context, state) => const TripBudgetPage(),
+                  ),
+                  GoRoute(
+                    path: 'saved',
+                    builder: (context, state) => const SavedTripsPage(),
                   ),
                   GoRoute(
                     path: 'result',
@@ -555,7 +686,7 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
 }
 
 /// Custom bottom navigation bar with rounded top corners and a center
-/// search button inline with other items.
+/// saved-trips shortcut inline with other items.
 class _CustomBottomNav extends StatelessWidget {
   const _CustomBottomNav({required this.currentIndex, required this.onTap});
 
@@ -574,8 +705,8 @@ class _CustomBottomNav extends StatelessWidget {
       label: 'Trip Planner',
     ),
     _NavItem(
-      icon: Icons.search_rounded,
-      selectedIcon: Icons.search_rounded,
+      icon: Icons.bookmark_outline_rounded,
+      selectedIcon: Icons.bookmark_rounded,
       label: '',
     ), // center
     _NavItem(
@@ -659,7 +790,7 @@ class _CustomBottomNav extends StatelessWidget {
   Widget _buildCenterButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        context.push(AppRoutes.exploreSearch);
+        context.push(AppRoutes.tripPlannerSaved);
       },
       child: Container(
         width: 52,
@@ -675,7 +806,11 @@ class _CustomBottomNav extends StatelessWidget {
             ),
           ],
         ),
-        child: const Icon(Icons.search_rounded, size: 26, color: Colors.white),
+        child: const Icon(
+          Icons.bookmark_added_rounded,
+          size: 26,
+          color: Colors.white,
+        ),
       ),
     );
   }

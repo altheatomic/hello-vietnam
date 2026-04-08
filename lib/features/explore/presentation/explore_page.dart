@@ -5,6 +5,10 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
+import 'package:hellovietnam/features/personalization/data/travel_preferences_repository.dart';
+import 'package:hellovietnam/features/personalization/data/travel_recommendation_service.dart';
+import 'package:hellovietnam/features/personalization/domain/travel_preferences.dart';
+import 'package:hellovietnam/features/personalization/presentation/widgets/travel_preferences_summary_card.dart';
 import '../data/explore_mock_data.dart';
 import '../domain/explore_item.dart';
 import 'widgets/explore_floating_back_button.dart';
@@ -51,9 +55,28 @@ class _ExplorePageState extends State<ExplorePage> {
     }
   }
 
+  void _handleBack() {
+    if (Navigator.of(context).canPop()) {
+      context.pop();
+      return;
+    }
+
+    context.go(AppRoutes.home);
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusBarH = MediaQuery.of(context).padding.top;
+    final UserTravelPreferences? preferences =
+        TravelPreferencesRepository.instance.currentPreferences;
+    final List<ExploreItem> featuredItems = preferences == null
+        ? exploreFeatured
+        : TravelRecommendationService.recommendedExploreItems(
+            preferences,
+          ).take(6).toList(growable: false);
+    final List<ExploreCategory> orderedCategories = preferences == null
+        ? exploreCategories
+        : TravelRecommendationService.orderedExploreCategories(preferences);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -121,6 +144,25 @@ class _ExplorePageState extends State<ExplorePage> {
 
               const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
+              if (preferences != null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+                    child: TravelPreferencesSummaryCard(
+                      preferences: preferences,
+                      onRetune: () => context.push(
+                        AppRoutes.travelPreferencesOnboardingPath(
+                          returnTo: AppRoutes.explore,
+                        ),
+                      ),
+                      title: 'Explore, tuned to you',
+                      description:
+                          'We moved your preferred themes closer to the top so food, culture, places, and activities feel more personal from the first scroll.',
+                      buttonLabel: 'Retune',
+                    ),
+                  ),
+                ),
+
               // ── Featured suggestions (horizontal scroll) ────
               SliverToBoxAdapter(
                 child: SizedBox(
@@ -130,9 +172,9 @@ class _ExplorePageState extends State<ExplorePage> {
                     physics: const BouncingScrollPhysics(
                       parent: PageScrollPhysics(),
                     ),
-                    itemCount: exploreFeatured.length,
+                    itemCount: featuredItems.length,
                     itemBuilder: (context, index) {
-                      final item = exploreFeatured[index];
+                      final item = featuredItems[index];
                       return AnimatedBuilder(
                         animation: _featuredController,
                         builder: (context, child) {
@@ -153,7 +195,7 @@ class _ExplorePageState extends State<ExplorePage> {
                                   left: index == 0
                                       ? AppConstants.pagePadding
                                       : 6,
-                                  right: index == exploreFeatured.length - 1
+                                  right: index == featuredItems.length - 1
                                       ? AppConstants.pagePadding
                                       : 6,
                                 ),
@@ -177,14 +219,15 @@ class _ExplorePageState extends State<ExplorePage> {
               SliverPersistentHeader(
                 pinned: true,
                 delegate: _StickyFilterDelegate(
+                  categories: orderedCategories,
                   selectedIndex: _selectedFilter,
                   onTap: _scrollToSection,
                 ),
               ),
 
               // ── All categories on one page ───────────────────
-              ...List.generate(exploreCategories.length, (i) {
-                final category = exploreCategories[i];
+              ...List.generate(orderedCategories.length, (i) {
+                final category = orderedCategories[i];
                 return SliverToBoxAdapter(
                   child: _CategorySection(
                     key: _sectionKeys[i],
@@ -197,7 +240,7 @@ class _ExplorePageState extends State<ExplorePage> {
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
           ),
-          ExploreFloatingBackButton(onTap: () => context.pop()),
+          ExploreFloatingBackButton(onTap: _handleBack),
         ],
       ),
     );
@@ -207,10 +250,15 @@ class _ExplorePageState extends State<ExplorePage> {
 // ─── Sticky filter delegate ──────────────────────────────────────────
 
 class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
+  final List<ExploreCategory> categories;
   final int selectedIndex;
   final ValueChanged<int> onTap;
 
-  _StickyFilterDelegate({required this.selectedIndex, required this.onTap});
+  _StickyFilterDelegate({
+    required this.categories,
+    required this.selectedIndex,
+    required this.onTap,
+  });
 
   @override
   double get minExtent => 126;
@@ -224,7 +272,6 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     final statusBarH = MediaQuery.of(context).padding.top;
-    final labels = ['Activities', 'Culture', 'Food', 'Local Products'];
     return Container(
       color: Colors.white,
       padding: EdgeInsets.only(top: statusBarH + 34),
@@ -238,7 +285,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
               padding: const EdgeInsets.symmetric(
                 horizontal: AppConstants.pagePadding,
               ),
-              itemCount: labels.length,
+              itemCount: categories.length,
               separatorBuilder: (context, index) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final isSelected = index == selectedIndex;
@@ -258,7 +305,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      labels[index],
+                      categories[index].title,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: isSelected
@@ -280,7 +327,8 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant _StickyFilterDelegate oldDelegate) =>
-      selectedIndex != oldDelegate.selectedIndex;
+      selectedIndex != oldDelegate.selectedIndex ||
+      categories != oldDelegate.categories;
 }
 
 // ─── Featured suggestion card ────────────────────────────────────────

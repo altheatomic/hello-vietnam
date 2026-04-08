@@ -69,7 +69,10 @@ class TripResultPage extends StatelessWidget {
                         Expanded(
                           child: _ActionButton(
                             label: 'Save',
-                            onTap: () => _showToast(context, 'Saved trip'),
+                            onTap: () {
+                              _showToast(context, 'Saved trip');
+                              context.push(AppRoutes.tripPlannerSaved);
+                            },
                           ),
                         ),
                         const SizedBox(width: 12),

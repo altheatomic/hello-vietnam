@@ -244,6 +244,7 @@ class _RecommendWhenCalendarPageState extends State<RecommendWhenCalendarPage> {
                       month: index + 1,
                       monthName: _monthNames[index],
                       weekdayLabels: _weekdayLabels,
+                      hasCompletedRange: _hasRange,
                       onDayTap: _onDayTap,
                       isStart: _isStart,
                       isEnd: _isEnd,
@@ -416,6 +417,7 @@ class _MonthCard extends StatelessWidget {
     required this.month,
     required this.monthName,
     required this.weekdayLabels,
+    required this.hasCompletedRange,
     required this.onDayTap,
     required this.isStart,
     required this.isEnd,
@@ -426,6 +428,7 @@ class _MonthCard extends StatelessWidget {
   final int month;
   final String monthName;
   final List<String> weekdayLabels;
+  final bool hasCompletedRange;
   final void Function(DateTime) onDayTap;
   final bool Function(DateTime) isStart;
   final bool Function(DateTime) isEnd;
@@ -496,20 +499,23 @@ class _MonthCard extends StatelessWidget {
               final bool start = isStart(date);
               final bool end = isEnd(date);
               final bool inRange = isInRange(date);
+              final bool isRangeDay =
+                  hasCompletedRange && (start || end || inRange);
               final bool isToday =
                   today.year == date.year &&
                   today.month == date.month &&
                   today.day == date.day;
+              final bool isFirstColumn = index % 7 == 0;
+              final bool isLastColumn = index % 7 == 6;
 
               Color textColor = const Color(0xFF64748B);
-              Color? fillColor;
+              Color? bubbleFillColor;
               Border? border;
 
               if (start || end) {
-                fillColor = const Color(0xFF2EA7F8);
+                bubbleFillColor = const Color(0xFF2EA7F8);
                 textColor = Colors.white;
               } else if (inRange) {
-                fillColor = const Color(0xFFBFEFFF);
                 textColor = const Color(0xFF2EA7F8);
               } else if (isToday) {
                 border = Border.all(
@@ -519,25 +525,50 @@ class _MonthCard extends StatelessWidget {
 
               return GestureDetector(
                 onTap: () => onDayTap(date),
-                child: Container(
-                  margin: const EdgeInsets.all(1.5),
-                  decoration: BoxDecoration(
-                    color: fillColor,
-                    shape: BoxShape.circle,
-                    border: border,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$day',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: (start || end)
-                            ? FontWeight.w700
-                            : FontWeight.w600,
-                        color: textColor,
+                child: Stack(
+                  children: <Widget>[
+                    if (isRangeDay)
+                      Positioned.fill(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFBFEFFF),
+                            borderRadius: BorderRadius.horizontal(
+                              left: start || isFirstColumn
+                                  ? const Radius.circular(999)
+                                  : Radius.zero,
+                              right: end || isLastColumn
+                                  ? const Radius.circular(999)
+                                  : Radius.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                    Center(
+                      child: Container(
+                        width: 31,
+                        height: 31,
+                        margin: const EdgeInsets.all(1.5),
+                        decoration: BoxDecoration(
+                          color: bubbleFillColor,
+                          shape: BoxShape.circle,
+                          border: border,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$day',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: (start || end)
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              color: textColor,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               );
             },

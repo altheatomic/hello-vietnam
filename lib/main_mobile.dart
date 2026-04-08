@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app_mobile.dart';
 import 'app/deep_link_state.dart';
 import 'core/config/env.dart';
+import 'features/personalization/data/travel_preferences_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +14,7 @@ Future<void> main() async {
     anonKey: Env.supabaseAnonKey,
   );
 
+  await TravelPreferencesRepository.instance.initialize();
   await initDeepLinks();
 
   runApp(const MobileApp());

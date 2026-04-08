@@ -26,9 +26,23 @@ class AdminPageContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return ColoredBox(
       color: AppColors.background,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(contentPadding),
-        child: child,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Scrollbar(
+            thumbVisibility: true,
+            child: SingleChildScrollView(
+              primary: true,
+              padding: const EdgeInsets.all(contentPadding),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: constraints.maxWidth - (contentPadding * 2),
+                  minHeight: constraints.maxHeight - (contentPadding * 2),
+                ),
+                child: Align(alignment: Alignment.topLeft, child: child),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

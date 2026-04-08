@@ -11,7 +11,7 @@ import 'package:hellovietnam/core/config/app_constants.dart';
 ///                     the Home / AppScaffold header treatment.
 ///   2. Nav items    — top-level Dashboard + Management group.
 ///   3. Sign-out     — pinned to the bottom.
-class AdminSidebar extends StatelessWidget {
+class AdminSidebar extends StatefulWidget {
   const AdminSidebar({super.key, required this.currentPath});
 
   final String currentPath;
@@ -60,13 +60,49 @@ class AdminSidebar extends StatelessWidget {
     ),
   ];
 
-  bool _isActive(String route) =>
+  @override
+  State<AdminSidebar> createState() => _AdminSidebarState();
+}
+
+class _AdminSidebarState extends State<AdminSidebar> {
+  String? _pendingRoute;
+
+  @override
+  void didUpdateWidget(covariant AdminSidebar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final pendingRoute = _pendingRoute;
+    if (pendingRoute == null) {
+      return;
+    }
+    if (_matches(widget.currentPath, pendingRoute)) {
+      _pendingRoute = null;
+      return;
+    }
+    if (widget.currentPath != oldWidget.currentPath) {
+      _pendingRoute = null;
+    }
+  }
+
+  bool _matches(String currentPath, String route) =>
       currentPath == route || currentPath.startsWith('$route/');
+
+  bool _isActive(String route) {
+    final activePath = _pendingRoute ?? widget.currentPath;
+    return _matches(activePath, route);
+  }
+
+  void _navigate(String route) {
+    if (_matches(widget.currentPath, route)) {
+      return;
+    }
+    setState(() => _pendingRoute = route);
+    context.go(route);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: width,
+      width: AdminSidebar.width,
       height: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.adminSidebar,
@@ -90,10 +126,14 @@ class AdminSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(
-              children: _topItems
+              children: AdminSidebar._topItems
                   .map(
-                    (d) =>
-                        _NavItem(destination: d, isActive: _isActive(d.route)),
+                    (d) => _NavItem(
+                      key: ValueKey<String>(d.route),
+                      destination: d,
+                      isActive: _isActive(d.route),
+                      onTap: () => _navigate(d.route),
+                    ),
                   )
                   .toList(),
             ),
@@ -104,10 +144,14 @@ class AdminSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(
-              children: _managementItems
+              children: AdminSidebar._managementItems
                   .map(
-                    (d) =>
-                        _NavItem(destination: d, isActive: _isActive(d.route)),
+                    (d) => _NavItem(
+                      key: ValueKey<String>(d.route),
+                      destination: d,
+                      isActive: _isActive(d.route),
+                      onTap: () => _navigate(d.route),
+                    ),
                   )
                   .toList(),
             ),
@@ -180,10 +224,16 @@ class _SectionLabel extends StatelessWidget {
 // ── Nav item ─────────────────────────────────────────────────────────────────
 
 class _NavItem extends StatefulWidget {
-  const _NavItem({required this.destination, required this.isActive});
+  const _NavItem({
+    super.key,
+    required this.destination,
+    required this.isActive,
+    required this.onTap,
+  });
 
   final _NavDestination destination;
   final bool isActive;
+  final VoidCallback onTap;
 
   @override
   State<_NavItem> createState() => _NavItemState();
@@ -211,10 +261,8 @@ class _NavItemState extends State<_NavItem> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
-        onTap: () => context.go(widget.destination.route),
-        child: AnimatedContainer(
-          // Reuses AppConstants.defaultAnimation for smooth bg transition
-          duration: AppConstants.defaultAnimation,
+        onTap: widget.onTap,
+        child: Container(
           height: 44,
           margin: const EdgeInsets.symmetric(vertical: 2),
           decoration: BoxDecoration(
@@ -224,12 +272,15 @@ class _NavItemState extends State<_NavItem> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             children: [
-              Icon(
-                isActive
-                    ? widget.destination.selectedIcon
-                    : widget.destination.icon,
-                size: 20,
-                color: isActive ? AppColors.surface : Color(0xFFE3F2FD),
+              SizedBox(
+                width: 20,
+                child: Center(
+                  child: Icon(
+                    widget.destination.icon,
+                    size: 20,
+                    color: isActive ? AppColors.surface : Color(0xFFE3F2FD),
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -238,7 +289,7 @@ class _NavItemState extends State<_NavItem> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: FontWeight.w600,
                     color: isActive ? AppColors.surface : Color(0xFFE3F2FD),
                   ),
                 ),
