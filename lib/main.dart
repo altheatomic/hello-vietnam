@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
 import 'app/app.dart';
 import 'core/config/env.dart';
+import 'features/planner/data/trip_store.dart';
 
 // Global flag to track if we should navigate to forgot password page
 bool _shouldNavigateToForgotPassword = false;
@@ -17,6 +18,7 @@ void main() async {
 
   // Handle deep links
   _initDeepLinks();
+  await TripStore.instance.init();
 
   runApp(const App());
 }
