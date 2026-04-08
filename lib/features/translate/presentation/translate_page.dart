@@ -1,6 +1,8 @@
 ﻿import 'dart:math' as math;
+import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hellovietnam/features/translate/data/openai_translation_service.dart';
 import 'package:go_router/go_router.dart';
 
 class TranslatePage extends StatefulWidget {
@@ -85,10 +87,15 @@ class _TranslatePageState extends State<TranslatePage>
   ];
 
   final TextEditingController _inputController = TextEditingController();
+  final OpenAITranslationService _translationService = OpenAITranslationService();
   _LanguageOption _source = _allLanguages[2];
   _LanguageOption _target = _allLanguages[1];
   bool _isListening = false;
+  bool _isTranslating = false;
   String _translatedText = '';
+  String? _translationError;
+  Timer? _translateDebounce;
+  int _translationRequestId = 0;
   late final AnimationController _swapButtonController;
   late final Animation<double> _swapIconTurn;
 
@@ -106,22 +113,88 @@ class _TranslatePageState extends State<TranslatePage>
 
   @override
   void dispose() {
+    _translateDebounce?.cancel();
     _swapButtonController.dispose();
     _inputController.dispose();
     super.dispose();
   }
 
-  String _mockTranslate(String text) {
-    const Map<String, String> enToVi = <String, String>{
-      'Hello, how are you?': 'Xin chào, bạn có khỏe không?',
-      'Thank you very much': 'Cảm ơn bạn rất nhiều',
-    };
+  void _scheduleTranslate({String? text, bool immediate = false}) {
+    _translateDebounce?.cancel();
 
-    if (text.trim().isEmpty) return '';
-    if (_source.code == 'en' && _target.code == 'vi') {
-      return enToVi[text] ?? 'Bản dịch tạm thời: $text';
+    final String value = (text ?? _inputController.text).trim();
+    if (value.isEmpty) {
+      setState(() {
+        _isTranslating = false;
+        _translatedText = '';
+        _translationError = null;
+      });
+      return;
     }
-    return 'Temporary translation for: $text';
+
+    if (_source.code != 'auto' && _source.code == _target.code) {
+      setState(() {
+        _isTranslating = false;
+        _translatedText = value;
+        _translationError = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _isTranslating = true;
+      _translationError = null;
+    });
+
+    if (immediate) {
+      unawaited(_translate(value));
+      return;
+    }
+
+    _translateDebounce = Timer(const Duration(milliseconds: 550), () {
+      unawaited(_translate(value));
+    });
+  }
+
+  Future<void> _translate(String text) async {
+    final int requestId = ++_translationRequestId;
+
+    try {
+      final TranslationResult result = await _translationService.translate(
+        text: text,
+        sourceLanguageCode: _source.code,
+        targetLanguageCode: _target.code,
+        targetLanguageName: _target.name,
+      );
+
+      if (!mounted || requestId != _translationRequestId) {
+        return;
+      }
+
+      setState(() {
+        _translatedText = result.translatedText;
+        _translationError = null;
+        _isTranslating = false;
+      });
+    } on TranslationException catch (error) {
+      if (!mounted || requestId != _translationRequestId) {
+        return;
+      }
+
+      setState(() {
+        _translationError = error.message;
+        _isTranslating = false;
+      });
+    } catch (_) {
+      if (!mounted || requestId != _translationRequestId) {
+        return;
+      }
+
+      setState(() {
+        _translationError = 'Khong the dich luc nay. Vui long thu lai.';
+        _isTranslating = false;
+      });
+    }
   }
 
   Future<void> _openLanguageSheet({required bool selectingSource}) async {
@@ -146,8 +219,9 @@ class _TranslatePageState extends State<TranslatePage>
       } else {
         _target = selected;
       }
-      _translatedText = _mockTranslate(_inputController.text);
     });
+
+    _scheduleTranslate(immediate: true);
   }
 
   void _swapLanguages() {
@@ -156,8 +230,8 @@ class _TranslatePageState extends State<TranslatePage>
       setState(() {
         _source = _allLanguages[2];
         _target = _allLanguages[1];
-        _translatedText = _mockTranslate(_inputController.text);
       });
+      _scheduleTranslate(immediate: true);
       return;
     }
 
@@ -165,8 +239,8 @@ class _TranslatePageState extends State<TranslatePage>
       final _LanguageOption temp = _source;
       _source = _target;
       _target = temp;
-      _translatedText = _mockTranslate(_inputController.text);
     });
+    _scheduleTranslate(immediate: true);
   }
 
   void _toggleListening() {
@@ -179,8 +253,8 @@ class _TranslatePageState extends State<TranslatePage>
     _inputController.text = value;
     setState(() {
       _isListening = false;
-      _translatedText = _mockTranslate(value);
     });
+    _scheduleTranslate(text: value, immediate: true);
   }
 
   @override
@@ -292,15 +366,15 @@ class _TranslatePageState extends State<TranslatePage>
                       isListening: _isListening,
                       onToggleListening: _toggleListening,
                       onChanged: (String value) {
-                        setState(() {
-                          _translatedText = _mockTranslate(value);
-                        });
+                        _scheduleTranslate(text: value);
                       },
                       onClear: () {
                         _inputController.clear();
                         setState(() {
                           _translatedText = '';
                           _isListening = false;
+                          _isTranslating = false;
+                          _translationError = null;
                         });
                       },
                     ),
@@ -308,6 +382,8 @@ class _TranslatePageState extends State<TranslatePage>
                     _OutputCard(
                       target: _target,
                       translatedText: _translatedText,
+                      isLoading: _isTranslating,
+                      errorText: _translationError,
                     ),
                     const SizedBox(height: 12),
                     const Align(
@@ -589,15 +665,31 @@ class _ListeningWaveIndicatorState extends State<_ListeningWaveIndicator>
     );
   }
 }
+
 class _OutputCard extends StatelessWidget {
-  const _OutputCard({required this.target, required this.translatedText});
+  const _OutputCard({
+    required this.target,
+    required this.translatedText,
+    required this.isLoading,
+    this.errorText,
+  });
 
   final _LanguageOption target;
   final String translatedText;
+  final bool isLoading;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
+    final bool hasError = errorText != null && errorText!.trim().isNotEmpty;
     final bool hasTranslation = translatedText.trim().isNotEmpty;
+    final String bodyText = hasError
+        ? errorText!
+        : isLoading
+            ? 'Translating...'
+            : hasTranslation
+                ? translatedText
+                : 'Translation appears here';
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 154),
@@ -621,7 +713,18 @@ class _OutputCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              if (hasTranslation) ...<Widget>[
+              if (isLoading) ...<Widget>[
+                const SizedBox(width: 8),
+                Container(
+                  width: 14,
+                  height: 14,
+                  margin: const EdgeInsets.only(top: 1),
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              ] else if (hasTranslation && !hasError) ...<Widget>[
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -646,14 +749,21 @@ class _OutputCard extends StatelessWidget {
                 const Icon(Icons.copy_rounded, size: 16, color: Colors.white),
               ],
             ],
-          ),
+            ),
           const SizedBox(height: 12),
           Text(
-            hasTranslation ? translatedText : 'Translation appears here',
+            bodyText,
             style: TextStyle(
               fontSize: 22,
-              color: hasTranslation ? Colors.white : const Color(0xA0EAF7FF),
-              fontWeight: hasTranslation ? FontWeight.w600 : FontWeight.w500,
+              color: hasError
+                  ? const Color(0xFFFDF2F2)
+                  : hasTranslation || isLoading
+                      ? Colors.white
+                      : const Color(0xA0EAF7FF),
+              fontWeight:
+                  hasTranslation || isLoading || hasError
+                      ? FontWeight.w600
+                      : FontWeight.w500,
             ),
           ),
         ],

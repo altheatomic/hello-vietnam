@@ -96,6 +96,10 @@ class AuthRepository extends ChangeNotifier {
           'full_name': name,
           'username': email,
         });
+        await _supabase.from('user_contact').upsert({
+          'id_user': user.id,
+          'email': email,
+        });
       }
     } on AuthException catch (e) {
       // Handle error

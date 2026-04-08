@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
-import '../../data/admin_user_mock_data.dart';
+import '../../data/admin_user_repository.dart';
 import '../../domain/admin_user.dart';
 import '../widgets/admin_search_filter_bar.dart';
 import '../widgets/admin_section_header.dart';
@@ -13,20 +13,33 @@ import '../widgets/admin_status_badge.dart';
 import '../widgets/admin_user_form_dialog.dart';
 
 class AdminUserPage extends StatefulWidget {
-  const AdminUserPage({super.key});
+  const AdminUserPage({super.key, this.repository});
+
+  final AdminUserRepository? repository;
 
   @override
   State<AdminUserPage> createState() => _AdminUserPageState();
 }
 
 class _AdminUserPageState extends State<AdminUserPage> {
-  late final List<AdminUser> _users = mockAdminUsers.map((u) => u).toList();
+  late final AdminUserRepository _repository =
+      widget.repository ?? AdminUserRepository();
+  final List<AdminUser> _users = <AdminUser>[];
 
   final TextEditingController _searchController = TextEditingController();
   AdminUserStatus? _filterStatus;
   int _currentPage = 1;
+  bool _isLoading = true;
+  bool _isMutating = false;
+  String? _loadError;
 
   static const int _pageSize = 10;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
 
   @override
   void dispose() {
@@ -40,6 +53,30 @@ class _AdminUserPageState extends State<AdminUserPage> {
     _filterStatus = status;
     _currentPage = 1;
   });
+
+  Future<void> _loadUsers() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+
+    try {
+      final List<AdminUser> users = await _repository.fetchUsers();
+      if (!mounted) return;
+      setState(() {
+        _users
+          ..clear()
+          ..addAll(users);
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _loadError = 'Khong the tai danh sach user. $error';
+      });
+    }
+  }
 
   /// All users matching current search + status filter.
   List<AdminUser> get _filteredUsers {
@@ -105,40 +142,79 @@ class _AdminUserPageState extends State<AdminUserPage> {
       builder: (_) => const AdminUserFormDialog(),
     );
     if (newUser == null || !mounted) return;
-    setState(() {
-      _users.insert(0, newUser);
-      _currentPage = 1;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${newUser.username} has been added.'),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+
+    setState(() => _isMutating = true);
+    try {
+      final AdminUser createdUser = await _repository.createUser(
+        fullName: newUser.fullName ?? newUser.username,
+        username: newUser.username,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+      );
+      if (!mounted) return;
+      setState(() {
+        _users.insert(0, createdUser);
+        _currentPage = 1;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${createdUser.username} has been added.'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Add user failed: $error'),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isMutating = false);
+      }
+    }
   }
 
-  void _toggleBan(AdminUser user) {
-    setState(() {
-      final idx = _users.indexWhere((u) => u.id == user.id);
-      if (idx == -1) return;
-      _users[idx] = _users[idx].copyWith(
-        status: _users[idx].status == AdminUserStatus.active
-            ? AdminUserStatus.banned
-            : AdminUserStatus.active,
+  Future<void> _toggleBan(AdminUser user) async {
+    setState(() => _isMutating = true);
+    try {
+      final AdminUserStatus nextStatus = await _repository.toggleStatus(user);
+      if (!mounted) return;
+
+      setState(() {
+        final int idx = _users.indexWhere((AdminUser u) => u.id == user.id);
+        if (idx == -1) return;
+        _users[idx] = _users[idx].copyWith(status: nextStatus);
+      });
+
+      final String verb =
+          nextStatus == AdminUserStatus.banned ? 'banned' : 'unbanned';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${user.username} has been $verb.'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
-    });
-    final updated = _users.firstWhere((u) => u.id == user.id);
-    final verb = updated.status == AdminUserStatus.banned
-        ? 'banned'
-        : 'unbanned';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${user.username} has been $verb.'),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Update status failed: $error'),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isMutating = false);
+      }
+    }
   }
 
   @override
@@ -157,7 +233,7 @@ class _AdminUserPageState extends State<AdminUserPage> {
             subtitle: 'View, search, and manage registered users',
             trailing: _HeaderActions(
               onExport: _exportUsers,
-              onAddUser: _openAddUser,
+              onAddUser: _isMutating ? null : _openAddUser,
             ),
           ),
 
@@ -172,13 +248,26 @@ class _AdminUserPageState extends State<AdminUserPage> {
           const SizedBox(height: 16),
 
           // â”€â”€ Table or empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-          if (filtered.isEmpty)
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 36),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_loadError != null)
+            EmptyState(
+              icon: Icons.cloud_off_rounded,
+              message: _loadError!,
+            )
+          else if (filtered.isEmpty)
             EmptyState(
               icon: Icons.people_outline_rounded,
               message: 'No users match your search.',
             )
           else ...[
-            _UserTable(users: paged, onToggleBan: _toggleBan),
+            _UserTable(
+              users: paged,
+              onToggleBan: _isMutating ? null : _toggleBan,
+            ),
 
             const SizedBox(height: 16),
 
@@ -203,7 +292,7 @@ class _HeaderActions extends StatelessWidget {
   const _HeaderActions({required this.onExport, required this.onAddUser});
 
   final VoidCallback onExport;
-  final VoidCallback onAddUser;
+  final VoidCallback? onAddUser;
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +348,7 @@ class _UserTable extends StatelessWidget {
   const _UserTable({required this.users, required this.onToggleBan});
 
   final List<AdminUser> users;
-  final ValueChanged<AdminUser> onToggleBan;
+  final ValueChanged<AdminUser>? onToggleBan;
 
   // Column widths â€” username column is Expanded.
   // Status and Action are sized to their content after the Align fix;
@@ -305,7 +394,7 @@ class _UserTable extends StatelessWidget {
               (i) => _UserRow(
                 user: users[i],
                 isLast: i == users.length - 1,
-                onToggleBan: () => onToggleBan(users[i]),
+                onToggleBan: onToggleBan == null ? null : () => onToggleBan!(users[i]),
                 colId: _colId,
                 colEmail: _colEmail,
                 colPhone: _colPhone,
@@ -410,7 +499,7 @@ class _UserRow extends StatefulWidget {
 
   final AdminUser user;
   final bool isLast;
-  final VoidCallback onToggleBan;
+  final VoidCallback? onToggleBan;
   final double colId, colEmail, colPhone, colRole, colStatus, colAction;
 
   @override
@@ -610,7 +699,7 @@ class _ActionButton extends StatefulWidget {
   const _ActionButton({required this.isBanned, required this.onTap});
 
   final bool isBanned;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   State<_ActionButton> createState() => _ActionButtonState();
@@ -627,7 +716,9 @@ class _ActionButtonState extends State<_ActionButton> {
     final String label = widget.isBanned ? 'Unban' : 'Ban';
 
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
+      cursor: widget.onTap == null
+          ? SystemMouseCursors.basic
+          : SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
@@ -636,17 +727,22 @@ class _ActionButtonState extends State<_ActionButton> {
           duration: AppConstants.defaultAnimation,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
           decoration: BoxDecoration(
-            color: _hovered ? base.withValues(alpha: 0.08) : Colors.transparent,
+            color: _hovered && widget.onTap != null
+                ? base.withValues(alpha: 0.08)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
             // Full-opacity border for a clearly visible outlined treatment
-            border: Border.all(color: base.withValues(alpha: 0.85), width: 1.2),
+            border: Border.all(
+              color: base.withValues(alpha: widget.onTap == null ? 0.35 : 0.85),
+              width: 1.2,
+            ),
           ),
           child: Text(
             label,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: base,
+              color: widget.onTap == null ? base.withValues(alpha: 0.45) : base,
             ),
           ),
         ),
