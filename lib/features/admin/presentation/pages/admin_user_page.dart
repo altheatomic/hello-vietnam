@@ -1,16 +1,20 @@
-﻿import 'dart:math' show min;
+import 'dart:math' show min;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
+
 import '../../data/admin_user_repository.dart';
 import '../../domain/admin_user.dart';
 import '../widgets/admin_search_filter_bar.dart';
 import '../widgets/admin_section_header.dart';
 import '../widgets/admin_status_badge.dart';
+import '../widgets/admin_table_sort_header.dart';
 import '../widgets/admin_user_form_dialog.dart';
+
+enum _UserSortField { fullName }
 
 class AdminUserPage extends StatefulWidget {
   const AdminUserPage({super.key, this.repository});
@@ -28,6 +32,8 @@ class _AdminUserPageState extends State<AdminUserPage> {
 
   final TextEditingController _searchController = TextEditingController();
   AdminUserStatus? _filterStatus;
+  _UserSortField? _activeSortField;
+  SortDirection? _activeSortDirection;
   int _currentPage = 1;
   bool _isLoading = true;
   bool _isMutating = false;
@@ -54,6 +60,20 @@ class _AdminUserPageState extends State<AdminUserPage> {
     _currentPage = 1;
   });
 
+  void _onSortSelected(_UserSortField field, SortMenuAction action) =>
+      setState(() {
+        if (action == SortMenuAction.defaultOrder) {
+          _activeSortField = null;
+          _activeSortDirection = null;
+        } else {
+          _activeSortField = field;
+          _activeSortDirection = action == SortMenuAction.ascending
+              ? SortDirection.ascending
+              : SortDirection.descending;
+        }
+        _currentPage = 1;
+      });
+
   Future<void> _loadUsers() async {
     setState(() {
       _isLoading = true;
@@ -78,26 +98,40 @@ class _AdminUserPageState extends State<AdminUserPage> {
     }
   }
 
-  /// All users matching current search + status filter.
   List<AdminUser> get _filteredUsers {
-    final query = _searchController.text.toLowerCase().trim();
-    return _users.where((u) {
-      final matchesSearch =
+    final String query = _searchController.text.toLowerCase().trim();
+    final List<AdminUser> result = _users.where((AdminUser user) {
+      final bool matchesSearch =
           query.isEmpty ||
-          (u.fullName ?? u.username).toLowerCase().contains(query) ||
-          u.email.toLowerCase().contains(query) ||
-          u.id.contains(query);
-      final matchesStatus = _filterStatus == null || u.status == _filterStatus;
+          (user.fullName ?? user.username).toLowerCase().contains(query) ||
+          user.email.toLowerCase().contains(query) ||
+          user.id.contains(query);
+      final bool matchesStatus =
+          _filterStatus == null || user.status == _filterStatus;
       return matchesSearch && matchesStatus;
-    }).toList();
+    }).toList()..sort((AdminUser a, AdminUser b) => a.id.compareTo(b.id));
+
+    if (_activeSortField == null || _activeSortDirection == null) {
+      return result;
+    }
+
+    result.sort((AdminUser a, AdminUser b) {
+      final String va = (a.fullName ?? a.username).toLowerCase();
+      final String vb = (b.fullName ?? b.username).toLowerCase();
+      final int cmp = va.compareTo(vb);
+      if (cmp != 0) {
+        return _activeSortDirection == SortDirection.ascending ? cmp : -cmp;
+      }
+      return a.id.compareTo(b.id);
+    });
+    return result;
   }
 
-  /// Slice of [_filteredUsers] for the current page.
   List<AdminUser> get _pagedUsers {
-    final all = _filteredUsers;
-    final start = (_currentPage - 1) * _pageSize;
-    final end = min(start + _pageSize, all.length);
-    if (start >= all.length) return [];
+    final List<AdminUser> all = _filteredUsers;
+    final int start = (_currentPage - 1) * _pageSize;
+    final int end = min(start + _pageSize, all.length);
+    if (start >= all.length) return <AdminUser>[];
     return all.sublist(start, end);
   }
 
@@ -106,24 +140,24 @@ class _AdminUserPageState extends State<AdminUserPage> {
       .clamp(1, double.maxFinite)
       .toInt();
 
-  /// Exports the full (unfiltered) user list as CSV text.
-  /// Columns: id_user, Full name, Phone, Email.
   Future<void> _exportUsers() async {
-    final rows = <String>['id_user,Full name,Phone,Email'];
-    String esc(String s) =>
-        s.contains(',') || s.contains('"') ? '"${s.replaceAll('"', '""')}"' : s;
-    for (final u in _users) {
+    final List<String> rows = <String>['id_user,Full name,Phone,Email'];
+    String esc(String value) => value.contains(',') || value.contains('"')
+        ? '"${value.replaceAll('"', '""')}"'
+        : value;
+
+    for (final AdminUser user in _users) {
       rows.add(
-        [
-          esc(u.id),
-          esc(u.fullName ?? u.username),
-          esc(u.phone),
-          esc(u.email),
+        <String>[
+          esc(user.id),
+          esc(user.fullName ?? user.username),
+          esc(user.phone),
+          esc(user.email),
         ].join(','),
       );
     }
-    final csv = rows.join('\n');
-    await Clipboard.setData(ClipboardData(text: csv));
+
+    await Clipboard.setData(ClipboardData(text: rows.join('\n')));
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -135,9 +169,8 @@ class _AdminUserPageState extends State<AdminUserPage> {
     );
   }
 
-  /// Opens the Add User dialog; on confirm, inserts the new user at the top.
   Future<void> _openAddUser() async {
-    final newUser = await showDialog<AdminUser>(
+    final AdminUser? newUser = await showDialog<AdminUser>(
       context: context,
       builder: (_) => const AdminUserFormDialog(),
     );
@@ -187,9 +220,9 @@ class _AdminUserPageState extends State<AdminUserPage> {
       if (!mounted) return;
 
       setState(() {
-        final int idx = _users.indexWhere((AdminUser u) => u.id == user.id);
-        if (idx == -1) return;
-        _users[idx] = _users[idx].copyWith(status: nextStatus);
+        final int index = _users.indexWhere((AdminUser item) => item.id == user.id);
+        if (index == -1) return;
+        _users[index] = _users[index].copyWith(status: nextStatus);
       });
 
       final String verb =
@@ -219,15 +252,14 @@ class _AdminUserPageState extends State<AdminUserPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filteredUsers;
-    final paged = _pagedUsers;
+    final List<AdminUser> filtered = _filteredUsers;
+    final List<AdminUser> paged = _pagedUsers;
 
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // â”€â”€ Page header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        children: <Widget>[
           AdminSectionHeader(
             title: 'User Manager',
             subtitle: 'View, search, and manage registered users',
@@ -236,48 +268,40 @@ class _AdminUserPageState extends State<AdminUserPage> {
               onAddUser: _isMutating ? null : _openAddUser,
             ),
           ),
-
-          // â”€â”€ Search + filter bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           AdminSearchFilterBar(
             controller: _searchController,
             filterStatus: _filterStatus,
             onFilterStatusChanged: _onFilterStatusChanged,
             onSearchChanged: _onSearchChanged,
           ),
-
           const SizedBox(height: 16),
-
-          // â”€â”€ Table or empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           if (_isLoading)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 36),
               child: Center(child: CircularProgressIndicator()),
             )
           else if (_loadError != null)
-            EmptyState(
-              icon: Icons.cloud_off_rounded,
-              message: _loadError!,
-            )
+            EmptyState(icon: Icons.cloud_off_rounded, message: _loadError!)
           else if (filtered.isEmpty)
-            EmptyState(
+            const EmptyState(
               icon: Icons.people_outline_rounded,
               message: 'No users match your search.',
             )
-          else ...[
+          else ...<Widget>[
             _UserTable(
               users: paged,
               onToggleBan: _isMutating ? null : _toggleBan,
+              activeSortField: _activeSortField,
+              activeSortDirection: _activeSortDirection,
+              onSortSelected: _onSortSelected,
             ),
-
             const SizedBox(height: 16),
-
-            // â”€â”€ Footer: count + pagination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             _TableFooter(
               currentPage: _currentPage,
               totalPages: _totalPages,
               totalUsers: filtered.length,
               pageSize: _pageSize,
-              onPageChanged: (p) => setState(() => _currentPage = p),
+              onPageChanged: (int page) => setState(() => _currentPage = page),
             ),
           ],
         ],
@@ -285,8 +309,6 @@ class _AdminUserPageState extends State<AdminUserPage> {
     );
   }
 }
-
-// â”€â”€ Header action buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _HeaderActions extends StatelessWidget {
   const _HeaderActions({required this.onExport, required this.onAddUser});
@@ -298,7 +320,7 @@ class _HeaderActions extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [
+      children: <Widget>[
         OutlinedButton.icon(
           onPressed: onExport,
           icon: const Icon(Icons.file_download_outlined, size: 17),
@@ -316,10 +338,7 @@ class _HeaderActions extends StatelessWidget {
             ),
           ),
         ),
-
         const SizedBox(width: 10),
-
-        // Add User â€” primary filled
         FilledButton.icon(
           onPressed: onAddUser,
           icon: const Icon(Icons.person_add_outlined, size: 17),
@@ -342,25 +361,27 @@ class _HeaderActions extends StatelessWidget {
   }
 }
 
-// â”€â”€ User table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 class _UserTable extends StatelessWidget {
-  const _UserTable({required this.users, required this.onToggleBan});
+  const _UserTable({
+    required this.users,
+    required this.onToggleBan,
+    required this.activeSortField,
+    required this.activeSortDirection,
+    required this.onSortSelected,
+  });
 
   final List<AdminUser> users;
   final ValueChanged<AdminUser>? onToggleBan;
+  final _UserSortField? activeSortField;
+  final SortDirection? activeSortDirection;
+  final void Function(_UserSortField, SortMenuAction) onSortSelected;
 
-  // Column widths â€” username column is Expanded.
-  // Status and Action are sized to their content after the Align fix;
-  // keeping them smaller prevents dead whitespace inside those cells.
   static const double _colId = 90;
   static const double _colEmail = 210;
   static const double _colPhone = 130;
   static const double _colRole = 76;
-  static const double _colStatus =
-      100; // badge shrink-wraps; col just reserves space
-  static const double _colAction =
-      90; // button shrink-wraps; col just reserves space
+  static const double _colStatus = 100;
+  static const double _colAction = 90;
 
   @override
   Widget build(BuildContext context) {
@@ -369,7 +390,7 @@ class _UserTable extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),
-        boxShadow: [
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.07),
             blurRadius: 14,
@@ -380,7 +401,7 @@ class _UserTable extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),
         child: Column(
-          children: [
+          children: <Widget>[
             _TableHeader(
               colId: _colId,
               colEmail: _colEmail,
@@ -388,13 +409,18 @@ class _UserTable extends StatelessWidget {
               colRole: _colRole,
               colStatus: _colStatus,
               colAction: _colAction,
+              activeSortField: activeSortField,
+              activeSortDirection: activeSortDirection,
+              onSortSelected: onSortSelected,
             ),
-            ...List.generate(
+            ...List<Widget>.generate(
               users.length,
-              (i) => _UserRow(
-                user: users[i],
-                isLast: i == users.length - 1,
-                onToggleBan: onToggleBan == null ? null : () => onToggleBan!(users[i]),
+              (int index) => _UserRow(
+                user: users[index],
+                isLast: index == users.length - 1,
+                onToggleBan: onToggleBan == null
+                    ? null
+                    : () => onToggleBan!(users[index]),
                 colId: _colId,
                 colEmail: _colEmail,
                 colPhone: _colPhone,
@@ -410,8 +436,6 @@ class _UserTable extends StatelessWidget {
   }
 }
 
-// â”€â”€ Table header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 class _TableHeader extends StatelessWidget {
   const _TableHeader({
     required this.colId,
@@ -420,32 +444,41 @@ class _TableHeader extends StatelessWidget {
     required this.colRole,
     required this.colStatus,
     required this.colAction,
+    required this.activeSortField,
+    required this.activeSortDirection,
+    required this.onSortSelected,
   });
 
-  final double colId, colEmail, colPhone, colRole, colStatus, colAction;
+  final double colId;
+  final double colEmail;
+  final double colPhone;
+  final double colRole;
+  final double colStatus;
+  final double colAction;
+  final _UserSortField? activeSortField;
+  final SortDirection? activeSortDirection;
+  final void Function(_UserSortField, SortMenuAction) onSortSelected;
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.labelMedium;
+    final TextStyle? style = Theme.of(context).textTheme.labelMedium;
     return Container(
       height: 46,
       color: AppColors.primaryLight.withValues(alpha: 0.13),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
-        children: [
+        children: <Widget>[
           _Cell(
             width: colId,
-            child: Text(
-              'User ID',
-              style: style,
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text('User ID', style: style, overflow: TextOverflow.ellipsis),
           ),
           _ExpandedCell(
-            child: Text(
-              'Full Name',
-              style: style,
-              overflow: TextOverflow.ellipsis,
+            child: AdminTableSortHeader<_UserSortField>(
+              label: 'Full Name',
+              field: _UserSortField.fullName,
+              activeSortField: activeSortField,
+              activeSortDirection: activeSortDirection,
+              onSelected: onSortSelected,
             ),
           ),
           _Cell(
@@ -462,27 +495,17 @@ class _TableHeader extends StatelessWidget {
           ),
           _Cell(
             width: colStatus,
-            child: Text(
-              'Status',
-              style: style,
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text('Status', style: style, overflow: TextOverflow.ellipsis),
           ),
           _Cell(
             width: colAction,
-            child: Text(
-              'Action',
-              style: style,
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text('Action', style: style, overflow: TextOverflow.ellipsis),
           ),
         ],
       ),
     );
   }
 }
-
-// â”€â”€ Data row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _UserRow extends StatefulWidget {
   const _UserRow({
@@ -500,7 +523,12 @@ class _UserRow extends StatefulWidget {
   final AdminUser user;
   final bool isLast;
   final VoidCallback? onToggleBan;
-  final double colId, colEmail, colPhone, colRole, colStatus, colAction;
+  final double colId;
+  final double colEmail;
+  final double colPhone;
+  final double colRole;
+  final double colStatus;
+  final double colAction;
 
   @override
   State<_UserRow> createState() => _UserRowState();
@@ -511,8 +539,8 @@ class _UserRowState extends State<_UserRow> {
 
   @override
   Widget build(BuildContext context) {
-    final user = widget.user;
-    final bodyStyle = Theme.of(context).textTheme.bodyMedium;
+    final AdminUser user = widget.user;
+    final TextStyle? bodyStyle = Theme.of(context).textTheme.bodyMedium;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -530,21 +558,14 @@ class _UserRowState extends State<_UserRow> {
               : Border(bottom: BorderSide(color: AppColors.divider)),
         ),
         child: Row(
-          children: [
-            // User ID
+          children: <Widget>[
             _Cell(
               width: widget.colId,
-              child: Text(
-                user.id,
-                style: bodyStyle,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(user.id, style: bodyStyle, overflow: TextOverflow.ellipsis),
             ),
-
-            // Full Name â€” avatar + name
             Expanded(
               child: Row(
-                children: [
+                children: <Widget>[
                   _UserAvatar(username: user.fullName ?? user.username),
                   const SizedBox(width: 10),
                   Flexible(
@@ -561,8 +582,6 @@ class _UserRowState extends State<_UserRow> {
                 ],
               ),
             ),
-
-            // Email
             _Cell(
               width: widget.colEmail,
               child: Text(
@@ -571,8 +590,6 @@ class _UserRowState extends State<_UserRow> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-
-            // Phone
             _Cell(
               width: widget.colPhone,
               child: Text(
@@ -581,8 +598,6 @@ class _UserRowState extends State<_UserRow> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-
-            // Role
             _Cell(
               width: widget.colRole,
               child: Text(
@@ -591,10 +606,6 @@ class _UserRowState extends State<_UserRow> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-
-            // Status badge â€” Align breaks the tight SizedBox constraint so the
-            // Container inside AdminStatusBadge sizes to its content, not the
-            // full column width.
             _Cell(
               width: widget.colStatus,
               child: Align(
@@ -602,9 +613,6 @@ class _UserRowState extends State<_UserRow> {
                 child: AdminStatusBadge(status: user.status),
               ),
             ),
-
-            // Ban / Unban â€” same Align trick: AnimatedContainer sizes to its
-            // padding + text, not to the full colAction SizedBox width.
             _Cell(
               width: widget.colAction,
               child: Align(
@@ -622,11 +630,9 @@ class _UserRowState extends State<_UserRow> {
   }
 }
 
-// â”€â”€ Layout helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-/// Fixed-width table cell â€” aligns content identically in header and data rows.
 class _Cell extends StatelessWidget {
   const _Cell({required this.width, required this.child});
+
   final double width;
   final Widget child;
 
@@ -634,49 +640,40 @@ class _Cell extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(width: width, child: child);
 }
 
-/// Flexible table cell for the username column.
 class _ExpandedCell extends StatelessWidget {
   const _ExpandedCell({required this.child});
+
   final Widget child;
 
   @override
   Widget build(BuildContext context) => Expanded(child: child);
 }
 
-// â”€â”€ User avatar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-/// 36 px circle avatar with a colour deterministically picked from a vivid
-/// 8-colour palette, cycling by username length.
-///
-/// Colours span the full hue range so different users are easy to distinguish
-/// at a glance. All are chosen to contrast well with white text.
 class _UserAvatar extends StatelessWidget {
   const _UserAvatar({required this.username});
 
   final String username;
 
-  static const List<Color> _palette = [
-    AppColors.primary, // sky blue
-    Color(0xFF22C55E), // green
-    AppColors.primaryDark, // dark blue
-    Color(0xFFF59E0B), // amber
-    Color(0xFF8B5CF6), // violet
-    Color(0xFFF97316), // orange
-    AppColors.accent, // light blue
-    Color(0xFF06B6D4), // cyan
+  static const List<Color> _palette = <Color>[
+    AppColors.primary,
+    Color(0xFF22C55E),
+    AppColors.primaryDark,
+    Color(0xFFF59E0B),
+    Color(0xFF8B5CF6),
+    Color(0xFFF97316),
+    AppColors.accent,
+    Color(0xFF06B6D4),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = _palette[username.length % _palette.length];
-    final String initial = username.isNotEmpty
-        ? username[0].toUpperCase()
-        : '?';
+    final Color background = _palette[username.length % _palette.length];
+    final String initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
 
     return Container(
       width: 36,
       height: 36,
-      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
       child: Center(
         child: Text(
           initial,
@@ -691,10 +688,6 @@ class _UserAvatar extends StatelessWidget {
   }
 }
 
-// â”€â”€ Action button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-/// Outlined pill: Ban (red) or Unban (primary blue).
-/// Border at full opacity so the outline is clearly visible â€” matches target.
 class _ActionButton extends StatefulWidget {
   const _ActionButton({required this.isBanned, required this.onTap});
 
@@ -710,7 +703,7 @@ class _ActionButtonState extends State<_ActionButton> {
 
   @override
   Widget build(BuildContext context) {
-    final Color base = widget.isBanned
+    final Color baseColor = widget.isBanned
         ? AppColors.primary
         : const Color(0xFFEF4444);
     final String label = widget.isBanned ? 'Unban' : 'Ban';
@@ -728,12 +721,13 @@ class _ActionButtonState extends State<_ActionButton> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
           decoration: BoxDecoration(
             color: _hovered && widget.onTap != null
-                ? base.withValues(alpha: 0.08)
+                ? baseColor.withValues(alpha: 0.08)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
-            // Full-opacity border for a clearly visible outlined treatment
             border: Border.all(
-              color: base.withValues(alpha: widget.onTap == null ? 0.35 : 0.85),
+              color: baseColor.withValues(
+                alpha: widget.onTap == null ? 0.35 : 0.85,
+              ),
               width: 1.2,
             ),
           ),
@@ -742,7 +736,9 @@ class _ActionButtonState extends State<_ActionButton> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: widget.onTap == null ? base.withValues(alpha: 0.45) : base,
+              color: widget.onTap == null
+                  ? baseColor.withValues(alpha: 0.45)
+                  : baseColor,
             ),
           ),
         ),
@@ -751,10 +747,6 @@ class _ActionButtonState extends State<_ActionButton> {
   }
 }
 
-// â”€â”€ Table footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-/// Pagination footer row:
-///   [Showing X to Y of Z users]  Â·Â·Â·Â·Â·  [<]  [1]  [2]  [>]
 class _TableFooter extends StatelessWidget {
   const _TableFooter({
     required this.currentPage,
@@ -772,31 +764,24 @@ class _TableFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final start = (currentPage - 1) * pageSize + 1;
-    final end = min(currentPage * pageSize, totalUsers);
+    final int start = (currentPage - 1) * pageSize + 1;
+    final int end = min(currentPage * pageSize, totalUsers);
 
     return Row(
-      children: [
-        // Count label
+      children: <Widget>[
         Text(
           'Showing $start to $end of $totalUsers users',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
-
         const Spacer(),
-
-        // Previous
         _PageNavButton(
           icon: Icons.chevron_left_rounded,
           enabled: currentPage > 1,
           onTap: () => onPageChanged(currentPage - 1),
         ),
-
         const SizedBox(width: 4),
-
-        // Page number buttons
-        ...List.generate(totalPages, (i) {
-          final page = i + 1;
+        ...List<Widget>.generate(totalPages, (int index) {
+          final int page = index + 1;
           return Padding(
             padding: const EdgeInsets.only(right: 4),
             child: _PageNumberButton(
@@ -806,8 +791,6 @@ class _TableFooter extends StatelessWidget {
             ),
           );
         }),
-
-        // Next
         _PageNavButton(
           icon: Icons.chevron_right_rounded,
           enabled: currentPage < totalPages,
@@ -900,7 +883,6 @@ class _PageNumberButtonState extends State<_PageNumberButton> {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            // Active: solid primary â€” same treatment as selected filter chip
             color: widget.isActive
                 ? AppColors.primary
                 : _hovered
@@ -925,4 +907,3 @@ class _PageNumberButtonState extends State<_PageNumberButton> {
     );
   }
 }
-

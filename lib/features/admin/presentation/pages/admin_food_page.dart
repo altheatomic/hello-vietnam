@@ -7,6 +7,7 @@ import 'package:hellovietnam/core/widgets/empty_state.dart';
 import '../../data/admin_food_mock_data.dart';
 import '../../domain/admin_food.dart';
 import '../widgets/admin_section_header.dart';
+import '../widgets/admin_table_sort_header.dart';
 import '../widgets/food_form_dialog.dart';
 import '../widgets/food_type_manager_dialog.dart';
 
@@ -21,10 +22,6 @@ class AdminFoodPage extends StatefulWidget {
 
 enum _FoodSortField { name, city }
 
-enum _FoodSortDirection { ascending, descending }
-
-enum _FoodSortMenuAction { defaultOrder, ascending, descending }
-
 class _AdminFoodPageState extends State<AdminFoodPage> {
   late final List<AdminFood> _foods = mockAdminFoods.map((f) => f).toList();
 
@@ -33,7 +30,7 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
   final TextEditingController _searchController = TextEditingController();
   String? _filterTypeId;
   _FoodSortField? _activeSortField;
-  _FoodSortDirection? _activeSortDirection;
+  SortDirection? _activeSortDirection;
   int _currentPage = 1;
   static const int _pageSize = 8;
 
@@ -112,7 +109,7 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
       };
 
       if (result != 0) {
-        return _activeSortDirection == _FoodSortDirection.ascending
+        return _activeSortDirection == SortDirection.ascending
             ? result
             : -result;
       }
@@ -141,16 +138,16 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     _currentPage = 1;
   });
 
-  void _onSortSelected(_FoodSortField field, _FoodSortMenuAction action) =>
+  void _onSortSelected(_FoodSortField field, SortMenuAction action) =>
       setState(() {
-        if (action == _FoodSortMenuAction.defaultOrder) {
+        if (action == SortMenuAction.defaultOrder) {
           _activeSortField = null;
           _activeSortDirection = null;
         } else {
           _activeSortField = field;
-          _activeSortDirection = action == _FoodSortMenuAction.ascending
-              ? _FoodSortDirection.ascending
-              : _FoodSortDirection.descending;
+          _activeSortDirection = action == SortMenuAction.ascending
+              ? SortDirection.ascending
+              : SortDirection.descending;
         }
         _currentPage = 1;
       });
@@ -553,8 +550,8 @@ class _FoodTable extends StatelessWidget {
   final List<AdminFood> foods;
   final FoodType Function(String) resolveType;
   final _FoodSortField? activeSortField;
-  final _FoodSortDirection? activeSortDirection;
-  final void Function(_FoodSortField field, _FoodSortMenuAction action)
+  final SortDirection? activeSortDirection;
+  final void Function(_FoodSortField field, SortMenuAction action)
   onSortSelected;
   final ValueChanged<AdminFood> onView, onEdit, onDelete;
 
@@ -636,8 +633,8 @@ class _FoodTableHeader extends StatelessWidget {
       colImg,
       colActions;
   final _FoodSortField? activeSortField;
-  final _FoodSortDirection? activeSortDirection;
-  final void Function(_FoodSortField field, _FoodSortMenuAction action)
+  final SortDirection? activeSortDirection;
+  final void Function(_FoodSortField field, SortMenuAction action)
   onSortSelected;
 
   @override
@@ -655,14 +652,14 @@ class _FoodTableHeader extends StatelessWidget {
           ),
           _FoodCell(
             width: colName,
-            child: _FoodSortHeader(
+            child: AdminTableSortHeader<_FoodSortField>(
               label: 'Name',
               field: _FoodSortField.name,
               activeSortField: activeSortField,
               activeSortDirection: activeSortField == _FoodSortField.name
                   ? activeSortDirection
                   : null,
-              onSortSelected: onSortSelected,
+              onSelected: onSortSelected,
             ),
           ),
           const _FoodExpandedCell(
@@ -677,14 +674,14 @@ class _FoodTableHeader extends StatelessWidget {
           ),
           _FoodCell(
             width: colCity,
-            child: _FoodSortHeader(
+            child: AdminTableSortHeader<_FoodSortField>(
               label: 'City / Province',
               field: _FoodSortField.city,
               activeSortField: activeSortField,
               activeSortDirection: activeSortField == _FoodSortField.city
                   ? activeSortDirection
                   : null,
-              onSortSelected: onSortSelected,
+              onSelected: onSortSelected,
             ),
           ),
           _FoodCell(
@@ -1069,7 +1066,6 @@ class _FoodSortMenuItem extends PopupMenuItem<_FoodSortMenuAction> {
          ),
        );
 }
-
 class _TypeBadge extends StatelessWidget {
   const _TypeBadge({required this.type});
   final FoodType type;

@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app_mobile.dart';
 import 'app/deep_link_state.dart';
 import 'core/config/env.dart';
+import 'features/planner/data/trip_store.dart';
 import 'features/personalization/data/travel_preferences_repository.dart';
 
 Future<void> main() async {
@@ -15,6 +16,7 @@ Future<void> main() async {
   );
 
   await TravelPreferencesRepository.instance.initialize();
+  await TripStore.instance.init();
   await initDeepLinks();
 
   runApp(const MobileApp());

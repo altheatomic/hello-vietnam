@@ -489,7 +489,6 @@ GoRouter buildRouter() {
           return PopularAppsDetailPage(appId: id);
         },
       ),
-
       // can highlight the active route without any extra state management.
       ShellRoute(
         builder: (context, state, child) =>

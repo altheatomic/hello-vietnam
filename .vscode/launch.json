@@ -1,7 +1,6 @@
 {
   "version": "0.2.0",
   "configurations": [
-    
     {
       "name": "Mobile App (Default)",
       "request": "launch",
@@ -10,6 +9,12 @@
     },
     {
       "name": "Admin Web (Chrome :3001)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "Admin App (Web)",
       "request": "launch",
       "type": "dart",
       "deviceId": "chrome",

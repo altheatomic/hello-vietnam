@@ -34,12 +34,12 @@ class AdminSidebar extends StatefulWidget {
       selectedIcon: Icons.people_rounded,
       route: '/admin/users',
     ),
-    _NavDestination(
+    /*_NavDestination(
       label: 'Canned Replies',
       icon: Icons.chat_bubble_outline_rounded,
       selectedIcon: Icons.chat_bubble_rounded,
       route: '/admin/canned-replies',
-    ),
+    ),*/
     _NavDestination(
       label: 'Report',
       icon: Icons.flag_outlined,

@@ -16,10 +16,12 @@ import 'package:hellovietnam/features/personalization/domain/travel_preferences.
 import 'package:hellovietnam/features/personalization/presentation/widgets/travel_preferences_summary_card.dart';
 import 'package:hellovietnam/features/recommend/domain/recommend_destination.dart';
 import '../data/home_mock_data.dart';
+import 'widgets/active_trip_card.dart';
 import 'widgets/home_banner.dart';
 import 'widgets/feature_grid.dart';
 import 'widgets/recommendation_section.dart';
 import 'widgets/recommendation_card.dart';
+import 'package:hellovietnam/features/planner/data/trip_store.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -203,6 +205,32 @@ class HomePage extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 14),
+
+                // ── Active trip card (shown only when a trip is in progress) ──
+                ListenableBuilder(
+                  listenable: TripStore.instance,
+                  builder: (context, _) {
+                    final trip = TripStore.instance.activeTrip;
+                    if (trip == null) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppConstants.pagePadding,
+                        0,
+                        AppConstants.pagePadding,
+                        16,
+                      ),
+                      child: ActiveTripCard(
+                        trip: trip,
+                        onViewOrRoute: () => context.push(
+                          AppRoutes.tripPlannerDayDetailPath(
+                            trip.relevantActivity.dayIndex,
+                          ),
+                        ),
+                        onEnd: TripStore.instance.endTrip,
+                      ),
+                    );
+                  },
+                ),
 
                 // ── Banner ───────────────────────────────────
                 const Padding(

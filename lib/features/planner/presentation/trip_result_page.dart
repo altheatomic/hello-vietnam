@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/features/planner/data/trip_store.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 
 class TripResultPage extends StatelessWidget {
@@ -89,6 +90,16 @@ class TripResultPage extends StatelessWidget {
                           onTap: () => _showToast(context, 'Share options'),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 12),
+                    _StartTripButton(
+                      onTap: () {
+                        TripStore.instance.startTrip(
+                          title: 'Your Vietnam Adventure',
+                          days: TripPlannerMockData.tripDays,
+                        );
+                        context.go(AppRoutes.home);
+                      },
                     ),
                     const SizedBox(height: 16),
                     const Wrap(
@@ -240,6 +251,54 @@ class _IconActionButton extends StatelessWidget {
             ],
           ),
           child: Icon(icon, color: const Color(0xFF3B495D), size: 22),
+        ),
+      ),
+    );
+  }
+}
+
+class _StartTripButton extends StatelessWidget {
+  const _StartTripButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          height: 52,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            gradient: const LinearGradient(
+              colors: <Color>[Color(0xFF10C4E8), Color(0xFF4E98F7)],
+            ),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x2910C4E8),
+                blurRadius: 18,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
+              SizedBox(width: 8),
+              Text(
+                'Start Trip',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

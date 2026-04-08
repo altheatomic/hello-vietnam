@@ -21,11 +21,7 @@ import 'widgets/admin_topbar.dart';
 /// and would require invasive changes to work on desktop. AdminShell is a
 /// clean parallel that shares the same theme tokens but not the same structure.
 class AdminShell extends StatelessWidget {
-  const AdminShell({
-    super.key,
-    required this.child,
-    required this.currentPath,
-  });
+  const AdminShell({super.key, required this.child, required this.currentPath});
 
   final Widget child;
   final String currentPath;
@@ -34,15 +30,14 @@ class AdminShell extends StatelessWidget {
   static const Map<String, String> _pageTitles = {
     '/admin/dashboard': 'Dashboard',
     '/admin/users': 'User Manager',
-    '/admin/canned-replies': 'Canned Replies',
+    //'/admin/canned-replies': 'Canned Replies',
     '/admin/reports': 'Reports',
     '/admin/food': 'Food Management',
   };
 
   String get _title {
     for (final entry in _pageTitles.entries) {
-      if (currentPath == entry.key ||
-          currentPath.startsWith('${entry.key}/')) {
+      if (currentPath == entry.key || currentPath.startsWith('${entry.key}/')) {
         return entry.value;
       }
     }
@@ -65,9 +60,7 @@ class AdminShell extends StatelessWidget {
             child: Column(
               children: [
                 AdminTopBar(title: _title),
-                Expanded(
-                  child: AdminPageContainer(child: child),
-                ),
+                Expanded(child: AdminPageContainer(child: child)),
               ],
             ),
           ),
