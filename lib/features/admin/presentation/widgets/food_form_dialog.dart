@@ -60,7 +60,7 @@ class _FoodFormDialogState extends State<FoodFormDialog> {
   void _onSave() {
     if (!_formKey.currentState!.validate()) return;
     Navigator.of(context).pop(AdminFood(
-      id:          widget.initial?.id ?? 'food-${DateTime.now().millisecondsSinceEpoch}',
+      id:          widget.initial?.id ?? '',
       name:        _name.text.trim(),
       typeId:      _typeId,
       city:        _city.text.trim(),

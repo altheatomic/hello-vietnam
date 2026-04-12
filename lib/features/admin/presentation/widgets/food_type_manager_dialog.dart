@@ -1,3 +1,5 @@
+import 'dart:math' show Random;
+
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
@@ -98,19 +100,34 @@ class _FoodTypeManagerDialogState extends State<FoodTypeManagerDialog> {
       _snack('A type with this name already exists.');
       return;
     }
-    final raw = label
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '-')
-        .replaceAll(RegExp(r'-+'), '-')
-        .replaceAll(RegExp(r'^-|-$'), '');
-    final id = _types.any((t) => t.id == raw)
-        ? '$raw-${DateTime.now().millisecondsSinceEpoch}'
-        : raw;
+
+    // Backend stores type id as UUID; generate UUIDv4 for new types.
+    String id = _newUuidV4();
+    while (_types.any((FoodType t) => t.id == id)) {
+      id = _newUuidV4();
+    }
+
     setState(() {
       _types.add(FoodType(id: id, label: label, colorIndex: _addColorIndex));
       _addLabelCtrl.clear();
       _addColorIndex = 0;
     });
+  }
+
+  String _newUuidV4() {
+    final Random random = Random.secure();
+    final List<int> bytes =
+        List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 10
+
+    String hexByte(int b) => b.toRadixString(16).padLeft(2, '0');
+    final StringBuffer out = StringBuffer();
+    for (int i = 0; i < bytes.length; i++) {
+      out.write(hexByte(bytes[i]));
+      if (i == 3 || i == 5 || i == 7 || i == 9) out.write('-');
+    }
+    return out.toString();
   }
 
   void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
