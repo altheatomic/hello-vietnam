@@ -32,6 +32,12 @@
         "--web-port",
         "3000"
       ]
+    },
+    {
+      "name": "User (Android)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart"
     }
   ],
   "compounds": [

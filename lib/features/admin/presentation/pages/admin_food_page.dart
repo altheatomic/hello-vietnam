@@ -1,4 +1,4 @@
-import 'dart:math' show min;
+﻿import 'dart:math' show min;
 
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
@@ -7,6 +7,7 @@ import 'package:hellovietnam/core/widgets/empty_state.dart';
 import '../../data/admin_food_repository.dart';
 import '../../domain/admin_food.dart';
 import '../widgets/admin_section_header.dart';
+import '../widgets/admin_table_sort_header.dart';
 import '../widgets/food_form_dialog.dart';
 import '../widgets/food_type_manager_dialog.dart';
 
@@ -21,13 +22,7 @@ class AdminFoodPage extends StatefulWidget {
 
 enum _FoodSortField { name, city }
 
-enum _FoodSortDirection { ascending, descending }
-
-enum _FoodSortMenuAction { defaultOrder, ascending, descending }
-
 class _AdminFoodPageState extends State<AdminFoodPage> {
-  static const String _language = 'en';
-
   final AdminFoodRepository _repository = AdminFoodRepository();
   final List<AdminFood> _foods = <AdminFood>[];
   final List<FoodType> _types = <FoodType>[];
@@ -35,12 +30,10 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
   final TextEditingController _searchController = TextEditingController();
   String? _filterTypeId;
   _FoodSortField? _activeSortField;
-  _FoodSortDirection? _activeSortDirection;
+  SortDirection? _activeSortDirection;
+  bool _isLoading = true;
   int _currentPage = 1;
   static const int _pageSize = 8;
-  bool _isLoading = true;
-  bool _isMutating = false;
-  String? _loadError;
 
   @override
   void initState() {
@@ -54,20 +47,14 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _loadError = null;
-    });
+  Future<void> _loadData({bool showLoader = true}) async {
+    if (showLoader && mounted) {
+      setState(() => _isLoading = true);
+    }
 
     try {
-      final List<AdminFood> foods =
-          await _repository.fetchFoods(language: _language);
-      final List<FoodType> loadedTypes =
-          await _repository.fetchFoodTypes(language: _language);
-
-      final List<FoodType> types =
-          loadedTypes.isNotEmpty ? loadedTypes : _deriveTypesFromFoods(foods);
+      final foods = await _repository.fetchFoods();
+      final types = await _repository.fetchFoodTypes();
 
       if (!mounted) return;
       setState(() {
@@ -77,56 +64,17 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
         _types
           ..clear()
           ..addAll(types);
-        if (_filterTypeId != null &&
-            !_types.any((FoodType t) => t.id == _filterTypeId)) {
+
+        if (_filterTypeId != null && !_types.any((t) => t.id == _filterTypeId)) {
           _filterTypeId = null;
         }
-        _currentPage = 1;
+        _currentPage = _currentPage > _totalPages ? _totalPages : _currentPage;
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _loadError = e.toString();
-      });
-    }
-  }
-
-  List<FoodType> _deriveTypesFromFoods(List<AdminFood> foods) {
-    final Map<String, FoodType> unique = <String, FoodType>{};
-    for (final AdminFood food in foods) {
-      if (food.typeId.isEmpty) continue;
-      unique.putIfAbsent(
-        food.typeId,
-        () => FoodType(
-          id: food.typeId,
-          label: food.typeId,
-          colorIndex: _colorIndexForTypeId(food.typeId),
-        ),
-      );
-    }
-    final List<FoodType> types = unique.values.toList()
-      ..sort(
-        (FoodType a, FoodType b) =>
-            a.label.toLowerCase().compareTo(b.label.toLowerCase()),
-      );
-    return types;
-  }
-
-  int _colorIndexForTypeId(String typeId) {
-    final int hash = typeId.codeUnits.fold<int>(0, (int acc, int c) {
-      return (acc * 31 + c) & 0x7fffffff;
-    });
-    return hash % foodTypeColorPalette.length;
-  }
-
-  Future<void> _runMutation(Future<void> Function() action) async {
-    setState(() => _isMutating = true);
-    try {
-      await action();
-    } finally {
-      if (mounted) setState(() => _isMutating = false);
+      setState(() => _isLoading = false);
+      _showSnack('Load food failed: $e');
     }
   }
 
@@ -199,7 +147,7 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
       };
 
       if (result != 0) {
-        return _activeSortDirection == _FoodSortDirection.ascending
+        return _activeSortDirection == SortDirection.ascending
             ? result
             : -result;
       }
@@ -228,16 +176,16 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     _currentPage = 1;
   });
 
-  void _onSortSelected(_FoodSortField field, _FoodSortMenuAction action) =>
+  void _onSortSelected(_FoodSortField field, SortMenuAction action) =>
       setState(() {
-        if (action == _FoodSortMenuAction.defaultOrder) {
+        if (action == SortMenuAction.defaultOrder) {
           _activeSortField = null;
           _activeSortDirection = null;
         } else {
           _activeSortField = field;
-          _activeSortDirection = action == _FoodSortMenuAction.ascending
-              ? _FoodSortDirection.ascending
-              : _FoodSortDirection.descending;
+          _activeSortDirection = action == SortMenuAction.ascending
+              ? SortDirection.ascending
+              : SortDirection.descending;
         }
         _currentPage = 1;
       });
@@ -245,9 +193,8 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
   // ── CRUD ───────────────────────────────────────────────────────────────────
 
   Future<void> _openCreate() async {
-    if (_isMutating) return;
     if (_types.isEmpty) {
-      _showSnack('No food types found. Please create a type first.');
+      _showSnack('No type available. Please add a type first.');
       return;
     }
 
@@ -259,26 +206,19 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     if (result == null) return;
 
     try {
-      await _runMutation(() async {
-        final AdminFood created = await _repository.createFood(
-          food: result,
-          language: _language,
-        );
-        if (!mounted) return;
-        setState(() {
-          _foods.insert(0, created);
-          _currentPage = 1;
-        });
+      final created = await _repository.createFood(food: result);
+      if (!mounted) return;
+      setState(() {
+        _foods.insert(0, created);
+        _currentPage = 1;
       });
-      _showSnack('"${result.name}" added.');
+      _showSnack('"${created.name}" added.');
     } catch (e) {
-      _showSnack('Add food failed: $e');
+      _showSnack('Create food failed: $e');
     }
   }
 
   Future<void> _openEdit(AdminFood food) async {
-    if (_isMutating) return;
-
     final result = await showDialog<AdminFood>(
       context: context,
       barrierDismissible: false,
@@ -287,18 +227,13 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     if (result == null) return;
 
     try {
-      await _runMutation(() async {
-        final AdminFood updated = await _repository.updateFood(
-          food: result,
-          language: _language,
-        );
-        if (!mounted) return;
-        setState(() {
-          final int idx = _foods.indexWhere((AdminFood f) => f.id == updated.id);
-          if (idx != -1) _foods[idx] = updated;
-        });
+      final updated = await _repository.updateFood(food: result);
+      if (!mounted) return;
+      setState(() {
+        final idx = _foods.indexWhere((f) => f.id == updated.id);
+        if (idx != -1) _foods[idx] = updated;
       });
-      _showSnack('"${result.name}" updated.');
+      _showSnack('"${updated.name}" updated.');
     } catch (e) {
       _showSnack('Update food failed: $e');
     }
@@ -312,9 +247,19 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     );
   }
 
-  Future<void> _confirmDelete(AdminFood food) async {
-    if (_isMutating) return;
+  Future<void> _openImagePreview(AdminFood food) async {
+    if (!food.hasImage || (food.urlImage?.isEmpty ?? true)) {
+      _showSnack('No image for "${food.name}".');
+      return;
+    }
 
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _FoodImagePreviewDialog(food: food),
+    );
+  }
+
+  Future<void> _confirmDelete(AdminFood food) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => _DeleteConfirmDialog(name: food.name),
@@ -322,12 +267,13 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     if (ok != true) return;
 
     try {
-      await _runMutation(() async {
-        await _repository.deleteFood(food.id);
-        if (!mounted) return;
-        setState(() {
-          _foods.removeWhere((AdminFood f) => f.id == food.id);
-        });
+      await _repository.deleteFood(food.id);
+      if (!mounted) return;
+      setState(() {
+        _foods.removeWhere((f) => f.id == food.id);
+        if (_currentPage > _totalPages) {
+          _currentPage = _totalPages;
+        }
       });
       _showSnack('"${food.name}" deleted.');
     } catch (e) {
@@ -338,8 +284,6 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
   // ── Manage Types ───────────────────────────────────────────────────────────
 
   Future<void> _openManageTypes() async {
-    if (_isMutating) return;
-
     final result = await showDialog<List<FoodType>>(
       context: context,
       builder: (_) => FoodTypeManagerDialog(
@@ -349,28 +293,23 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     );
     if (result == null) return;
 
-    final Map<String, FoodType> oldById = <String, FoodType>{
-      for (final FoodType t in _types) t.id: t,
-    };
-    final Set<String> oldIds = oldById.keys.toSet();
-    final Set<String> newIds = result.map((FoodType t) => t.id).toSet();
-    final Set<String> deletedIds = oldIds.difference(newIds);
-    final String? fallbackId = result.isNotEmpty ? result.first.id : null;
-
     try {
-      await _runMutation(() async {
-        for (final FoodType type in result) {
-          final FoodType? old = oldById[type.id];
-          if (old == null || old.label != type.label) {
-            await _repository.upsertFoodType(
-              type: type,
-              language: _language,
-            );
-          }
-        }
+      final oldIds = _types.map((t) => t.id).toSet();
+      final newIds = result.map((t) => t.id).toSet();
+      final deletedIds = oldIds.difference(newIds);
 
-        for (final String deletedId in deletedIds) {
-          if (fallbackId != null) {
+      for (final type in result) {
+        await _repository.upsertFoodType(type: type);
+      }
+
+      if (deletedIds.isNotEmpty) {
+        if (result.isEmpty) {
+          throw StateError('At least one type must remain.');
+        }
+        final fallbackId = result.first.id;
+
+        for (final deletedId in deletedIds) {
+          if (deletedId != fallbackId) {
             await _repository.reassignFoodType(
               fromTypeId: deletedId,
               toTypeId: fallbackId,
@@ -378,189 +317,153 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
           }
           await _repository.deleteFoodType(deletedId);
         }
+      }
 
-        if (!mounted) return;
-        setState(() {
-          if (deletedIds.isNotEmpty && fallbackId != null) {
-            for (int i = 0; i < _foods.length; i++) {
-              if (deletedIds.contains(_foods[i].typeId)) {
-                _foods[i] = _foods[i].copyWith(typeId: fallbackId);
-              }
-            }
-          }
-
-          _types
-            ..clear()
-            ..addAll(result);
-
-          if (_filterTypeId != null &&
-              !_types.any((FoodType t) => t.id == _filterTypeId)) {
-            _filterTypeId = null;
-          }
-        });
-      });
-
+      await _loadData(showLoader: false);
+      if (!mounted) return;
       _showSnack('Types updated.');
     } catch (e) {
       _showSnack('Update types failed: $e');
     }
   }
 
-  void _showSnack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(msg),
-      duration: const Duration(seconds: 2),
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
+  void _showSnack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_loadError != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const EmptyState(
-              icon: Icons.error_outline_rounded,
-              message: 'Failed to load food data.',
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: _loadData,
-              icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Retry'),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textOnPrimary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
     final filtered = _filtered;
     final paged = _paged;
 
-    return SingleChildScrollView(
-      physics: const NeverScrollableScrollPhysics(),
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1360),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              AdminSectionHeader(
-                title: 'Food Management',
-                subtitle: 'Create and manage Vietnamese food entries',
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: _isMutating ? null : _openManageTypes,
-                      icon: const Icon(
-                        Icons.restaurant_menu_outlined,
-                        size: 16,
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1360),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            AdminSectionHeader(
+              title: 'Food Management',
+              subtitle: 'Create and manage Vietnamese food entries',
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _openManageTypes,
+                    icon: const Icon(
+                      Icons.restaurant_menu_outlined,
+                      size: 16,
+                    ),
+                    label: const Text('Manage Types'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textPrimary,
+                      side: BorderSide(color: AppColors.divider, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.buttonRadius,
+                        ),
                       ),
-                      label: const Text('Manage Types'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textPrimary,
-                        side: BorderSide(color: AppColors.divider, width: 1.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.buttonRadius,
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 11,
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 11,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    FilledButton.icon(
-                      onPressed: _isMutating ? null : _openCreate,
-                      icon: const Icon(Icons.add_rounded, size: 17),
-                      label: const Text('Add Food'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.textOnPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.buttonRadius,
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 11,
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                  ),
+                  const SizedBox(width: 10),
+                  FilledButton.icon(
+                    onPressed: _openCreate,
+                    icon: const Icon(Icons.add_rounded, size: 17),
+                    label: const Text('Add Food'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.textOnPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.buttonRadius,
                         ),
                       ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 11,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
 
-              _FoodContentCard(
-                filterBar: _TypeFilterBar(
-                  controller: _searchController,
-                  types: _types,
-                  selectedId: _filterTypeId,
-                  onTypeChanged: _onTypeFilterChanged,
-                  onSearchChanged: _onSearchChanged,
-                ),
-                child: filtered.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 36),
-                        child: EmptyState(
-                          icon: Icons.restaurant_outlined,
-                          message: 'No food items match your search.',
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          _FoodTable(
-                            foods: paged,
-                            resolveType: _resolveType,
-                            activeSortField: _activeSortField,
-                            activeSortDirection: _activeSortDirection,
-                            onSortSelected: _onSortSelected,
-                            onView: _openView,
-                            onEdit: _openEdit,
-                            onDelete: _confirmDelete,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                            child: _TableFooter(
-                              currentPage: _currentPage,
-                              totalPages: _totalPages,
-                              totalItems: filtered.length,
-                              pageSize: _pageSize,
-                              onPageChanged: (p) =>
-                                  setState(() => _currentPage = p),
-                            ),
-                          ),
-                        ],
-                      ),
+            _FoodContentCard(
+              filterBar: _TypeFilterBar(
+                controller: _searchController,
+                types: _types,
+                selectedId: _filterTypeId,
+                onTypeChanged: _onTypeFilterChanged,
+                onSearchChanged: _onSearchChanged,
               ),
-            ],
-          ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 280,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    )
+                  : filtered.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 36),
+                      child: EmptyState(
+                        icon: Icons.restaurant_outlined,
+                        message: 'No food items match your search.',
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        _FoodTable(
+                          foods: paged,
+                          resolveType: _resolveType,
+                          activeSortField: _activeSortField,
+                          activeSortDirection: _activeSortDirection,
+                          onSortSelected: _onSortSelected,
+                          onImageTap: _openImagePreview,
+                          onView: _openView,
+                          onEdit: _openEdit,
+                          onDelete: _confirmDelete,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                          child: _TableFooter(
+                            currentPage: _currentPage,
+                            totalPages: _totalPages,
+                            totalItems: filtered.length,
+                            pageSize: _pageSize,
+                            onPageChanged: (p) =>
+                                setState(() => _currentPage = p),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ],
         ),
       ),
     );
@@ -584,14 +487,9 @@ class _TypeFilterBar extends StatelessWidget {
   final ValueChanged<String?> onTypeChanged;
   final ValueChanged<String> onSearchChanged;
 
-  static const String _allValue = '__all_types__';
-
   @override
   Widget build(BuildContext context) {
-    final bool selectedExists = selectedId != null
-        ? types.any((FoodType t) => t.id == selectedId)
-        : false;
-    final String dropdownValue = selectedExists ? selectedId! : _allValue;
+    final visibleTypes = types.take(5).toList(growable: false);
 
     return Row(
       children: [
@@ -637,89 +535,23 @@ class _TypeFilterBar extends StatelessWidget {
 
         const Spacer(),
 
-        // Type dropdown filter
-        Container(
-          width: 280,
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(45),
-            border: Border.all(color: AppColors.divider),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: dropdownValue,
-              isExpanded: true,
-              menuMaxHeight: 320,
-              borderRadius: BorderRadius.circular(16),
-              dropdownColor: AppColors.surface,
-              icon: const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 20,
-                color: AppColors.textSecondary,
-              ),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-              items: <DropdownMenuItem<String>>[
-                const DropdownMenuItem<String>(
-                  value: _allValue,
-                  child: Text('All Types'),
-                ),
-                ...types.map(
-                  (FoodType t) => DropdownMenuItem<String>(
-                    value: t.id,
-                    child: _TypeDropdownItem(type: t),
-                  ),
-                ),
-              ],
-              onChanged: (String? value) {
-                if (value == null || value == _allValue) {
-                  onTypeChanged(null);
-                  return;
-                }
-                onTypeChanged(value);
-              },
+        // "All" chip
+        _FoodFilterChip(
+          label: 'All',
+          isSelected: selectedId == null,
+          onTap: () => onTypeChanged(null),
+        ),
+        const SizedBox(width: 6),
+
+        ...visibleTypes.map(
+          (t) => Padding(
+            padding: const EdgeInsets.only(left: 6),
+            child: _FoodFilterChip(
+              label: t.label,
+              isSelected: selectedId == t.id,
+              color: t.color,
+              onTap: () => onTypeChanged(selectedId == t.id ? null : t.id),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TypeDropdownItem extends StatelessWidget {
-  const _TypeDropdownItem({required this.type});
-
-  final FoodType type;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: type.color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            type.label,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -763,6 +595,49 @@ class _FoodContentCard extends StatelessWidget {
   }
 }
 
+class _FoodFilterChip extends StatelessWidget {
+  const _FoodFilterChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    this.color,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeColor = color ?? AppColors.primary;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: AppConstants.defaultAnimation,
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor : AppColors.surface,
+          borderRadius: BorderRadius.circular(45),
+          border: Border.all(
+            color: isSelected ? activeColor : AppColors.divider,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: isSelected ? Colors.white : AppColors.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Table ─────────────────────────────────────────────────────────────────────
 
 class _FoodTable extends StatelessWidget {
@@ -772,6 +647,7 @@ class _FoodTable extends StatelessWidget {
     required this.activeSortField,
     required this.activeSortDirection,
     required this.onSortSelected,
+    required this.onImageTap,
     required this.onView,
     required this.onEdit,
     required this.onDelete,
@@ -780,12 +656,12 @@ class _FoodTable extends StatelessWidget {
   final List<AdminFood> foods;
   final FoodType Function(String) resolveType;
   final _FoodSortField? activeSortField;
-  final _FoodSortDirection? activeSortDirection;
-  final void Function(_FoodSortField field, _FoodSortMenuAction action)
+  final SortDirection? activeSortDirection;
+  final void Function(_FoodSortField field, SortMenuAction action)
   onSortSelected;
+  final ValueChanged<AdminFood> onImageTap;
   final ValueChanged<AdminFood> onView, onEdit, onDelete;
 
-  static const double _colId = 110;
   static const double _colName = 180;
   static const double _colType = 108;
   static const double _colCity = 156;
@@ -807,7 +683,6 @@ class _FoodTable extends StatelessWidget {
         child: Column(
           children: [
             _FoodTableHeader(
-              colId: _colId,
               colName: _colName,
               colType: _colType,
               colCity: _colCity,
@@ -823,7 +698,7 @@ class _FoodTable extends StatelessWidget {
                 food: foods[i],
                 type: resolveType(foods[i].typeId),
                 isLast: i == foods.length - 1,
-                colId: _colId,
+                onImageTap: () => onImageTap(foods[i]),
                 onView: () => onView(foods[i]),
                 onEdit: () => onEdit(foods[i]),
                 onDelete: () => onDelete(foods[i]),
@@ -845,7 +720,6 @@ class _FoodTable extends StatelessWidget {
 
 class _FoodTableHeader extends StatelessWidget {
   const _FoodTableHeader({
-    required this.colId,
     required this.colName,
     required this.colType,
     required this.colCity,
@@ -856,15 +730,14 @@ class _FoodTableHeader extends StatelessWidget {
     required this.onSortSelected,
   });
 
-  final double colId,
-      colName,
+  final double colName,
       colType,
       colCity,
       colImg,
       colActions;
   final _FoodSortField? activeSortField;
-  final _FoodSortDirection? activeSortDirection;
-  final void Function(_FoodSortField field, _FoodSortMenuAction action)
+  final SortDirection? activeSortDirection;
+  final void Function(_FoodSortField field, SortMenuAction action)
   onSortSelected;
 
   @override
@@ -877,19 +750,15 @@ class _FoodTableHeader extends StatelessWidget {
       child: Row(
         children: [
           _FoodCell(
-            width: colId,
-            child: Text('Food ID', style: style),
-          ),
-          _FoodCell(
             width: colName,
-            child: _FoodSortHeader(
+            child: AdminTableSortHeader<_FoodSortField>(
               label: 'Name',
               field: _FoodSortField.name,
               activeSortField: activeSortField,
               activeSortDirection: activeSortField == _FoodSortField.name
                   ? activeSortDirection
                   : null,
-              onSortSelected: onSortSelected,
+              onSelected: onSortSelected,
             ),
           ),
           const _FoodExpandedCell(
@@ -904,14 +773,14 @@ class _FoodTableHeader extends StatelessWidget {
           ),
           _FoodCell(
             width: colCity,
-            child: _FoodSortHeader(
+            child: AdminTableSortHeader<_FoodSortField>(
               label: 'City / Province',
               field: _FoodSortField.city,
               activeSortField: activeSortField,
               activeSortDirection: activeSortField == _FoodSortField.city
                   ? activeSortDirection
                   : null,
-              onSortSelected: onSortSelected,
+              onSelected: onSortSelected,
             ),
           ),
           _FoodCell(
@@ -935,10 +804,10 @@ class _FoodRow extends StatefulWidget {
     required this.food,
     required this.type,
     required this.isLast,
+    required this.onImageTap,
     required this.onView,
     required this.onEdit,
     required this.onDelete,
-    required this.colId,
     required this.colName,
     required this.colType,
     required this.colCity,
@@ -949,9 +818,9 @@ class _FoodRow extends StatefulWidget {
   final AdminFood food;
   final FoodType type;
   final bool isLast;
+  final VoidCallback onImageTap;
   final VoidCallback onView, onEdit, onDelete;
-  final double colId,
-      colName,
+  final double colName,
       colType,
       colCity,
       colImg,
@@ -987,19 +856,6 @@ class _FoodRowState extends State<_FoodRow> {
         ),
         child: Row(
           children: [
-            _FoodCell(
-              width: widget.colId,
-              child: Text(
-                f.id,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-
             // Name
             _FoodCell(
               width: widget.colName,
@@ -1051,15 +907,13 @@ class _FoodRowState extends State<_FoodRow> {
               width: widget.colImg,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Tooltip(
-                  message: f.hasImage ? 'Has image' : 'No image',
-                  child: Icon(
-                    Icons.image_outlined,
-                    size: 18,
-                    color: f.hasImage
-                        ? AppColors.primary
-                        : AppColors.textSecondary.withValues(alpha: 0.35),
-                  ),
+                child: _FoodIconAction(
+                  icon: Icons.image_outlined,
+                  tooltip: f.hasImage ? 'Preview image' : 'No image',
+                  color: f.hasImage
+                      ? AppColors.primary
+                      : AppColors.textSecondary.withValues(alpha: 0.35),
+                  onTap: f.hasImage ? widget.onImageTap : null,
                 ),
               ),
             ),
@@ -1126,177 +980,6 @@ class _FoodExpandedCell extends StatelessWidget {
 
 // ── Sub-widgets ───────────────────────────────────────────────────────────────
 
-class _FoodSortHeader extends StatelessWidget {
-  const _FoodSortHeader({
-    required this.label,
-    required this.field,
-    required this.activeSortField,
-    required this.activeSortDirection,
-    required this.onSortSelected,
-  });
-
-  final String label;
-  final _FoodSortField field;
-  final _FoodSortField? activeSortField;
-  final _FoodSortDirection? activeSortDirection;
-  final void Function(_FoodSortField field, _FoodSortMenuAction action)
-  onSortSelected;
-
-  bool get _isActive => activeSortField == field && activeSortDirection != null;
-
-  IconData get _icon {
-    if (!_isActive) return Icons.unfold_more_rounded;
-    return activeSortDirection == _FoodSortDirection.ascending
-        ? Icons.arrow_upward_rounded
-        : Icons.arrow_downward_rounded;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textStyle = Theme.of(context).textTheme.labelMedium;
-    final menuTheme = Theme.of(context).copyWith(
-      popupMenuTheme: PopupMenuThemeData(
-        color: AppColors.surface,
-        elevation: 10,
-        shadowColor: Colors.black.withValues(alpha: 0.14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: AppColors.divider),
-        ),
-        textStyle: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
-      ),
-    );
-
-    return Row(
-      children: [
-        Expanded(
-          child: Text(label, style: textStyle, overflow: TextOverflow.ellipsis),
-        ),
-        Theme(
-          data: menuTheme,
-          child: PopupMenuButton<_FoodSortMenuAction>(
-            tooltip: 'Sort $label',
-            requestFocus: false,
-            offset: const Offset(0, 12),
-            onSelected: (action) => onSortSelected(field, action),
-            itemBuilder: (context) => [
-              _FoodSortMenuItem(
-                value: _FoodSortMenuAction.defaultOrder,
-                label: 'Default',
-                selected: !_isActive,
-                icon: Icons.history_rounded,
-              ),
-              _FoodSortMenuItem(
-                value: _FoodSortMenuAction.ascending,
-                label: 'A → Z',
-                selected:
-                    _isActive &&
-                    activeSortDirection == _FoodSortDirection.ascending,
-                icon: Icons.arrow_upward_rounded,
-              ),
-              _FoodSortMenuItem(
-                value: _FoodSortMenuAction.descending,
-                label: 'Z → A',
-                selected:
-                    _isActive &&
-                    activeSortDirection == _FoodSortDirection.descending,
-                icon: Icons.arrow_downward_rounded,
-              ),
-            ],
-            padding: EdgeInsets.zero,
-            splashRadius: 18,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            icon: AnimatedContainer(
-              duration: AppConstants.defaultAnimation,
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: _isActive
-                    ? AppColors.primary.withValues(alpha: 0.12)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: _isActive
-                      ? AppColors.primary.withValues(alpha: 0.30)
-                      : AppColors.divider,
-                ),
-                boxShadow: _isActive
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.08),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                _icon,
-                size: 15,
-                color: _isActive ? AppColors.primary : AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FoodSortMenuItem extends PopupMenuItem<_FoodSortMenuAction> {
-  _FoodSortMenuItem({
-    required super.value,
-    required String label,
-    required bool selected,
-    required IconData icon,
-  }) : super(
-         height: 44,
-         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-         child: Container(
-           decoration: BoxDecoration(
-             color: selected
-                 ? AppColors.primary.withValues(alpha: 0.10)
-                 : Colors.transparent,
-             borderRadius: BorderRadius.circular(10),
-           ),
-           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-           child: Row(
-             children: [
-               Icon(
-                 icon,
-                 size: 16,
-                 color: selected ? AppColors.primary : AppColors.textSecondary,
-               ),
-               const SizedBox(width: 10),
-               Expanded(
-                 child: Text(
-                   label,
-                   style: TextStyle(
-                     fontSize: 13,
-                     fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                     color: selected
-                         ? AppColors.primaryDark
-                         : AppColors.textPrimary,
-                   ),
-                 ),
-               ),
-               AnimatedOpacity(
-                 duration: AppConstants.defaultAnimation,
-                 opacity: selected ? 1 : 0,
-                 child: const Icon(
-                   Icons.check_rounded,
-                   size: 16,
-                   color: AppColors.primary,
-                 ),
-               ),
-             ],
-           ),
-         ),
-       );
-}
-
 class _TypeBadge extends StatelessWidget {
   const _TypeBadge({required this.type});
   final FoodType type;
@@ -1331,7 +1014,7 @@ class _FoodIconAction extends StatefulWidget {
   final IconData icon;
   final String tooltip;
   final Color color;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   State<_FoodIconAction> createState() => _FoodIconActionState();
@@ -1343,7 +1026,9 @@ class _FoodIconActionState extends State<_FoodIconAction> {
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
+      cursor: widget.onTap != null
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: Tooltip(
@@ -1355,7 +1040,7 @@ class _FoodIconActionState extends State<_FoodIconAction> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: _hovered
+              color: _hovered && widget.onTap != null
                   ? widget.color.withValues(alpha: 0.10)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
@@ -1382,10 +1067,40 @@ class _TableFooter extends StatelessWidget {
   final int currentPage, totalPages, totalItems, pageSize;
   final ValueChanged<int> onPageChanged;
 
+  List<int?> _visiblePageTokens() {
+    if (totalPages <= 1) return const <int?>[1];
+
+    final Set<int> keptPages = <int>{1, totalPages, currentPage};
+    for (int page = currentPage - 2; page <= currentPage + 2; page++) {
+      if (page >= 1 && page <= totalPages) {
+        keptPages.add(page);
+      }
+    }
+
+    final List<int> sorted = keptPages.toList()..sort();
+    final List<int?> tokens = <int?>[];
+
+    for (final int page in sorted) {
+      if (tokens.isNotEmpty) {
+        final int previous = tokens.last!;
+        final int gap = page - previous;
+        if (gap == 2) {
+          tokens.add(previous + 1);
+        } else if (gap > 2) {
+          tokens.add(null); // ellipsis
+        }
+      }
+      tokens.add(page);
+    }
+
+    return tokens;
+  }
+
   @override
   Widget build(BuildContext context) {
     final start = (currentPage - 1) * pageSize + 1;
     final end = min(currentPage * pageSize, totalItems);
+    final pageTokens = _visiblePageTokens();
 
     return Row(
       children: [
@@ -1402,14 +1117,20 @@ class _TableFooter extends StatelessWidget {
           onTap: () => onPageChanged(currentPage - 1),
         ),
         const SizedBox(width: 4),
-        ...List.generate(totalPages, (i) {
-          final page = i + 1;
+        ...pageTokens.map((token) {
+          if (token == null) {
+            return const Padding(
+              padding: EdgeInsets.only(right: 4),
+              child: _PgEllipsis(),
+            );
+          }
+
           return Padding(
             padding: const EdgeInsets.only(right: 4),
             child: _PgBtn(
-              label: '$page',
-              isActive: page == currentPage,
-              onTap: () => onPageChanged(page),
+              label: '$token',
+              isActive: token == currentPage,
+              onTap: () => onPageChanged(token),
             ),
           );
         }),
@@ -1475,6 +1196,93 @@ class _PgBtn extends StatelessWidget {
 }
 
 // ── View dialog ───────────────────────────────────────────────────────────────
+
+class _FoodImagePreviewDialog extends StatelessWidget {
+  const _FoodImagePreviewDialog({required this.food});
+
+  final AdminFood food;
+
+  @override
+  Widget build(BuildContext context) {
+    final String imageUrl = food.urlImage ?? '';
+
+    return Dialog(
+      backgroundColor: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640, maxHeight: 560),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      food.name,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    width: double.infinity,
+                    color: AppColors.background,
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => const Center(
+                        child: Text(
+                          'Unable to load image.',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PgEllipsis extends StatelessWidget {
+  const _PgEllipsis();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 24,
+      height: 34,
+      child: Center(
+        child: Text(
+          '...',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary.withValues(alpha: 0.85),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _FoodViewDialog extends StatelessWidget {
   const _FoodViewDialog({required this.food, required this.type});

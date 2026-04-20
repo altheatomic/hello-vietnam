@@ -66,7 +66,12 @@ class AdminShell extends StatelessWidget {
               children: [
                 AdminTopBar(title: _title),
                 Expanded(
-                  child: AdminPageContainer(child: child),
+                  child: AdminPageContainer(
+                    child: KeyedSubtree(
+                      key: ValueKey<String>(currentPath),
+                      child: child,
+                    ),
+                  ),
                 ),
               ],
             ),

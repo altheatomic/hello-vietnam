@@ -1610,7 +1610,7 @@ class _AttachmentSection extends StatelessWidget {
           child: Image.network(
             url,
             fit: BoxFit.cover,
-            errorBuilder: (_, error, stackTrace) => Container(
+            errorBuilder: (_, _, _) => Container(
               color: const Color(0xFFF1F5F9),
               alignment: Alignment.center,
               child: const Icon(
