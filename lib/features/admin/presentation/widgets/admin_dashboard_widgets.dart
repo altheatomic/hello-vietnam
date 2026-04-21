@@ -31,7 +31,7 @@ class AdminDashboardOverview extends StatelessWidget {
         AdminSectionHeader(
           title: 'Dashboard',
           subtitle:
-              'A focused overview of demand, moderation workload, and content performance across Hello Vietnam.',
+              'Business growth signals and system operations are separated so each admin role can focus on the right decisions.',
           trailing: Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -72,40 +72,152 @@ class AdminDashboardOverview extends StatelessWidget {
           ),
         ),
         _HeroPanel(hero: snapshot.hero),
-        const SizedBox(height: 24),
-        _MetricsGrid(metrics: snapshot.metrics),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
+        const _AdminAreaHeader(
+          icon: Icons.business_center_rounded,
+          title: 'Admin - Quản lý nghiệp vụ',
+          subtitle:
+              'Track new places, trending destinations, user demand, and growth signals that should guide system development priorities.',
+        ),
+        const SizedBox(height: 16),
+        _MetricsGrid(metrics: snapshot.businessMetrics),
+        const SizedBox(height: 22),
         _ResponsivePair(
           leftFlex: 8,
-          rightFlex: 5,
+          rightFlex: 7,
           compact: compact,
-          left: _UsageTrendCard(panel: snapshot.usageTrend),
-          right: _FeatureUsageCard(items: snapshot.featureUsage),
+          left: _UsageTrendCard(panel: snapshot.customerDemandTrend),
+          right: _UsageTrendCard(panel: snapshot.newPlacesTrend),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 22),
+        _ResponsivePair(
+          leftFlex: 8,
+          rightFlex: 7,
+          compact: compact,
+          left: _ContentSpotlightCard(
+            title: 'Hot And Trending Places',
+            subtitle:
+                'Places where users are concentrating attention through searches, views, saves, and planner handoffs.',
+            items: snapshot.trendingPlaces,
+          ),
+          right: _SearchInsightsCard(
+            title: 'Growth Opportunity Signals',
+            subtitle:
+                'Demand clusters where adding content, guides, or promotion can lift customer acquisition and conversion.',
+            items: snapshot.growthOpportunities,
+          ),
+        ),
+        const SizedBox(height: 30),
+        const _AdminAreaHeader(
+          icon: Icons.settings_suggest_rounded,
+          title: 'Admin - Quản lý hệ thống',
+          subtitle:
+              'Monitor pending requests and tasks, reports, user volume, operational health, and feature adoption across the system.',
+        ),
+        const SizedBox(height: 16),
+        _MetricsGrid(metrics: snapshot.systemMetrics),
+        const SizedBox(height: 22),
         _ResponsivePair(
           leftFlex: 7,
-          rightFlex: 6,
+          rightFlex: 7,
           compact: compact,
-          left: _SearchInsightsCard(items: snapshot.searchInsights),
-          right: _PriorityQueueCard(items: snapshot.priorityQueue),
+          left: _BreakdownChartCard(panel: snapshot.requestBreakdown),
+          right: _BreakdownChartCard(panel: snapshot.reportBreakdown),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 22),
         _ResponsivePair(
           leftFlex: 8,
           rightFlex: 5,
           compact: compact,
-          left: _ContentSpotlightCard(items: snapshot.contentSpotlights),
+          left: _UsageTrendCard(panel: snapshot.userGrowthTrend),
+          right: _FeatureUsageCard(periods: snapshot.featureUsagePeriods),
+        ),
+        const SizedBox(height: 22),
+        _ResponsivePair(
+          leftFlex: 8,
+          rightFlex: 5,
+          compact: compact,
+          left: _PriorityQueueCard(items: snapshot.priorityQueue),
           right: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              _HealthChecksCard(items: snapshot.healthChecks),
+              _HealthChecksCard(
+                title: 'Reports And System Signals',
+                subtitle:
+                    'Current report volume, request issues, user growth, and response-time health.',
+                items: snapshot.reportInsights,
+              ),
               const SizedBox(height: 24),
               _QuickActionsCard(items: snapshot.quickActions),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AdminAreaHeader extends StatelessWidget {
+  const _AdminAreaHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: AppColors.primaryDark, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.55,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -657,14 +769,197 @@ class _UsageTrendCard extends StatelessWidget {
   }
 }
 
-class _FeatureUsageCard extends StatelessWidget {
-  const _FeatureUsageCard({required this.items});
+class _BreakdownChartCard extends StatelessWidget {
+  const _BreakdownChartCard({required this.panel});
 
-  final List<DashboardFeatureUsage> items;
+  final DashboardBreakdownPanel panel;
 
   @override
   Widget build(BuildContext context) {
-    final total = items.fold<int>(0, (sum, item) => sum + item.sessions);
+    return _DashboardCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _SectionHead(title: panel.title, subtitle: panel.summary),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 190,
+            child: Stack(
+              alignment: Alignment.center,
+              children: <Widget>[
+                CustomPaint(
+                  size: const Size.square(190),
+                  painter: _BreakdownDonutChartPainter(items: panel.items),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const Text(
+                      'Total',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      panel.totalLabel,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          ...List<Widget>.generate(panel.items.length, (int index) {
+            final item = panel.items[index];
+            final color = item.severity == null
+                ? _chartPalette[index % _chartPalette.length]
+                : _severityTone(item.severity!).$1;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _BreakdownRow(item: item, color: color),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _BreakdownRow extends StatelessWidget {
+  const _BreakdownRow({required this.item, required this.color});
+
+  final DashboardBreakdownItem item;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Column(
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                item.label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              item.valueLabel,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: item.share.clamp(0.0, 1.0),
+                  minHeight: 8,
+                  backgroundColor: color.withValues(alpha: 0.14),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '${(item.share * 100).toStringAsFixed(0)}%',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            item.helper,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.45,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    if (item.route == null) {
+      return content;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.go(item.route!),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(padding: const EdgeInsets.all(6), child: content),
+      ),
+    );
+  }
+}
+
+class _FeatureUsageCard extends StatefulWidget {
+  const _FeatureUsageCard({required this.periods});
+
+  final List<DashboardFeatureUsagePeriod> periods;
+
+  @override
+  State<_FeatureUsageCard> createState() => _FeatureUsageCardState();
+}
+
+class _FeatureUsageCardState extends State<_FeatureUsageCard> {
+  DashboardFeatureUsageRange _selectedRange = DashboardFeatureUsageRange.month;
+
+  DashboardFeatureUsagePeriod get _selectedPeriod {
+    if (widget.periods.isEmpty) {
+      return const DashboardFeatureUsagePeriod(
+        range: DashboardFeatureUsageRange.month,
+        label: '1 Month',
+        helper: 'No feature adoption data is available.',
+        totalLabel: '0 sessions',
+        items: <DashboardFeatureUsage>[],
+      );
+    }
+
+    return widget.periods.firstWhere(
+      (period) => period.range == _selectedRange,
+      orElse: () => widget.periods.first,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final period = _selectedPeriod;
+    final items = period.items;
     return _DashboardCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -672,9 +967,40 @@ class _FeatureUsageCard extends StatelessWidget {
           const _SectionHead(
             title: 'Feature Adoption',
             subtitle:
-                'Which parts of the product are carrying the most user demand right now.',
+                'Switch between monthly and quarterly adoption to understand what users keep coming back to.',
+          ),
+          const SizedBox(height: 14),
+          SegmentedButton<DashboardFeatureUsageRange>(
+            showSelectedIcon: false,
+            segments: widget.periods
+                .map(
+                  (period) => ButtonSegment<DashboardFeatureUsageRange>(
+                    value: period.range,
+                    label: Text(period.label),
+                  ),
+                )
+                .toList(),
+            selected: <DashboardFeatureUsageRange>{period.range},
+            onSelectionChanged: (ranges) {
+              setState(() => _selectedRange = ranges.first);
+            },
+            style: ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              textStyle: WidgetStateProperty.all(
+                const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
+          Text(
+            period.helper,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.5,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 14),
           SizedBox(
             height: 220,
             child: Stack(
@@ -687,8 +1013,8 @@ class _FeatureUsageCard extends StatelessWidget {
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    const Text(
-                      'Sessions',
+                    Text(
+                      period.label,
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -696,9 +1022,10 @@ class _FeatureUsageCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${(total / 1000).toStringAsFixed(1)}k',
+                      period.totalLabel,
+                      textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 28,
+                        fontSize: 22,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
                       ),
@@ -816,8 +1143,14 @@ class _FeatureUsageRow extends StatelessWidget {
 }
 
 class _SearchInsightsCard extends StatelessWidget {
-  const _SearchInsightsCard({required this.items});
+  const _SearchInsightsCard({
+    required this.title,
+    required this.subtitle,
+    required this.items,
+  });
 
+  final String title;
+  final String subtitle;
   final List<DashboardSearchInsight> items;
 
   @override
@@ -831,11 +1164,7 @@ class _SearchInsightsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const _SectionHead(
-            title: 'Search Intent',
-            subtitle:
-                'High-signal traveler queries, including where content or guide coverage still feels thin.',
-          ),
+          _SectionHead(title: title, subtitle: subtitle),
           const SizedBox(height: 10),
           ...items.map(
             (item) => Padding(
@@ -946,9 +1275,9 @@ class _PriorityQueueCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const _SectionHead(
-            title: 'Priority Queue',
+            title: 'Request And Task Queue',
             subtitle:
-                'The highest-value admin actions to tackle first based on urgency and user impact.',
+                'Pending requests, reports, account reviews, and guide refresh tasks ordered by urgency.',
           ),
           const SizedBox(height: 10),
           ...items.map(
@@ -1033,8 +1362,14 @@ class _QueueItemTile extends StatelessWidget {
 }
 
 class _ContentSpotlightCard extends StatelessWidget {
-  const _ContentSpotlightCard({required this.items});
+  const _ContentSpotlightCard({
+    required this.title,
+    required this.subtitle,
+    required this.items,
+  });
 
+  final String title;
+  final String subtitle;
   final List<DashboardContentSpotlight> items;
 
   @override
@@ -1043,11 +1378,7 @@ class _ContentSpotlightCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const _SectionHead(
-            title: 'Content Spotlight',
-            subtitle:
-                'Top-performing destinations, foods, and support guides that are shaping traveler behavior.',
-          ),
+          _SectionHead(title: title, subtitle: subtitle),
           const SizedBox(height: 8),
           ...items.map(
             (item) => Padding(
@@ -1168,8 +1499,14 @@ class _ContentSpotlightRow extends StatelessWidget {
 }
 
 class _HealthChecksCard extends StatelessWidget {
-  const _HealthChecksCard({required this.items});
+  const _HealthChecksCard({
+    required this.title,
+    required this.subtitle,
+    required this.items,
+  });
 
+  final String title;
+  final String subtitle;
   final List<DashboardHealthCheck> items;
 
   @override
@@ -1178,11 +1515,7 @@ class _HealthChecksCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const _SectionHead(
-            title: 'Data Health',
-            subtitle:
-                'A quick check on coverage, freshness, and operational quality before you drill into detail pages.',
-          ),
+          _SectionHead(title: title, subtitle: subtitle),
           const SizedBox(height: 12),
           ...items.map(
             (item) => Padding(
@@ -1621,6 +1954,73 @@ class _MultiSeriesTrendPainter extends CustomPainter {
       oldDelegate.panel != panel;
 }
 
+class _BreakdownDonutChartPainter extends CustomPainter {
+  const _BreakdownDonutChartPainter({required this.items});
+
+  final List<DashboardBreakdownItem> items;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final rect = Rect.fromCircle(center: center, radius: size.width / 2 - 16);
+    const startAngle = -math.pi / 2;
+    final total = items.fold<double>(0, (sum, item) => sum + item.share);
+
+    if (total <= 0) {
+      canvas.drawArc(
+        rect,
+        0,
+        math.pi * 2,
+        false,
+        Paint()
+          ..color = AppColors.primaryLight.withValues(alpha: 0.22)
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeWidth = 22,
+      );
+      canvas.drawCircle(
+        center,
+        size.width / 2 - 40,
+        Paint()..color = Colors.white,
+      );
+      return;
+    }
+
+    var currentAngle = startAngle;
+    for (int index = 0; index < items.length; index++) {
+      final item = items[index];
+      final sweep = (item.share / total) * (math.pi * 2);
+      final color = item.severity == null
+          ? _chartPalette[index % _chartPalette.length]
+          : _severityTone(item.severity!).$1;
+
+      canvas.drawArc(
+        rect,
+        currentAngle,
+        sweep,
+        false,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeWidth = 22,
+      );
+
+      currentAngle += sweep + 0.03;
+    }
+
+    canvas.drawCircle(
+      center,
+      size.width / 2 - 40,
+      Paint()..color = Colors.white,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _BreakdownDonutChartPainter oldDelegate) =>
+      oldDelegate.items != items;
+}
+
 class _DonutChartPainter extends CustomPainter {
   const _DonutChartPainter({required this.items});
 
@@ -1632,6 +2032,25 @@ class _DonutChartPainter extends CustomPainter {
     final rect = Rect.fromCircle(center: center, radius: size.width / 2 - 16);
     const startAngle = -math.pi / 2;
     final total = items.fold<double>(0, (sum, item) => sum + item.share);
+    if (total <= 0) {
+      canvas.drawArc(
+        rect,
+        0,
+        math.pi * 2,
+        false,
+        Paint()
+          ..color = AppColors.primaryLight.withValues(alpha: 0.22)
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeWidth = 24,
+      );
+      canvas.drawCircle(
+        center,
+        size.width / 2 - 42,
+        Paint()..color = Colors.white,
+      );
+      return;
+    }
 
     var currentAngle = startAngle;
     for (int index = 0; index < items.length; index++) {
@@ -1697,6 +2116,36 @@ class _DonutChartPainter extends CustomPainter {
       const Color(0xFF1C9AB7),
       const Color(0xFFE8F9FD),
       Icons.travel_explore_rounded,
+    ),
+    DashboardMetricKind.places => (
+      const Color(0xFF0E9F6E),
+      const Color(0xFFE8FBF4),
+      Icons.add_location_alt_rounded,
+    ),
+    DashboardMetricKind.hotPlaces => (
+      const Color(0xFFE11D48),
+      const Color(0xFFFFEEF3),
+      Icons.local_fire_department_rounded,
+    ),
+    DashboardMetricKind.requests => (
+      const Color(0xFFF2994A),
+      const Color(0xFFFFF3E8),
+      Icons.pending_actions_rounded,
+    ),
+    DashboardMetricKind.reports => (
+      const Color(0xFFD64545),
+      const Color(0xFFFFEFEF),
+      Icons.report_rounded,
+    ),
+    DashboardMetricKind.adoption => (
+      const Color(0xFF8B5CF6),
+      const Color(0xFFF3EEFF),
+      Icons.insights_rounded,
+    ),
+    DashboardMetricKind.revenue => (
+      const Color(0xFFB7791F),
+      const Color(0xFFFFF8E7),
+      Icons.trending_up_rounded,
     ),
   };
 }

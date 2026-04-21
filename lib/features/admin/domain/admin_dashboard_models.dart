@@ -7,33 +7,51 @@ enum DashboardMetricKind {
   content,
   planning,
   search,
+  places,
+  hotPlaces,
+  requests,
+  reports,
+  adoption,
+  revenue,
 }
 
 enum DashboardQueueSeverity { critical, high, medium, low }
+
+enum DashboardFeatureUsageRange { month, quarter }
 
 class AdminDashboardSnapshot {
   const AdminDashboardSnapshot({
     required this.generatedAtLabel,
     required this.hero,
-    required this.metrics,
-    required this.usageTrend,
-    required this.featureUsage,
-    required this.searchInsights,
+    required this.businessMetrics,
+    required this.systemMetrics,
+    required this.customerDemandTrend,
+    required this.newPlacesTrend,
+    required this.trendingPlaces,
+    required this.growthOpportunities,
+    required this.requestBreakdown,
+    required this.reportBreakdown,
+    required this.userGrowthTrend,
     required this.priorityQueue,
-    required this.contentSpotlights,
-    required this.healthChecks,
+    required this.reportInsights,
+    required this.featureUsagePeriods,
     required this.quickActions,
   });
 
   final String generatedAtLabel;
   final DashboardHero hero;
-  final List<DashboardMetric> metrics;
-  final DashboardTrendPanel usageTrend;
-  final List<DashboardFeatureUsage> featureUsage;
-  final List<DashboardSearchInsight> searchInsights;
+  final List<DashboardMetric> businessMetrics;
+  final List<DashboardMetric> systemMetrics;
+  final DashboardTrendPanel customerDemandTrend;
+  final DashboardTrendPanel newPlacesTrend;
+  final List<DashboardContentSpotlight> trendingPlaces;
+  final List<DashboardSearchInsight> growthOpportunities;
+  final DashboardBreakdownPanel requestBreakdown;
+  final DashboardBreakdownPanel reportBreakdown;
+  final DashboardTrendPanel userGrowthTrend;
   final List<DashboardQueueItem> priorityQueue;
-  final List<DashboardContentSpotlight> contentSpotlights;
-  final List<DashboardHealthCheck> healthChecks;
+  final List<DashboardHealthCheck> reportInsights;
+  final List<DashboardFeatureUsagePeriod> featureUsagePeriods;
   final List<DashboardQuickAction> quickActions;
 }
 
@@ -119,6 +137,40 @@ class DashboardTrendSeries {
   final String summaryValue;
 }
 
+class DashboardBreakdownPanel {
+  const DashboardBreakdownPanel({
+    required this.title,
+    required this.summary,
+    required this.totalLabel,
+    required this.items,
+  });
+
+  final String title;
+  final String summary;
+  final String totalLabel;
+  final List<DashboardBreakdownItem> items;
+}
+
+class DashboardBreakdownItem {
+  const DashboardBreakdownItem({
+    required this.label,
+    required this.valueLabel,
+    required this.count,
+    required this.share,
+    required this.helper,
+    this.severity,
+    this.route,
+  });
+
+  final String label;
+  final String valueLabel;
+  final int count;
+  final double share;
+  final String helper;
+  final DashboardQueueSeverity? severity;
+  final String? route;
+}
+
 class DashboardFeatureUsage {
   const DashboardFeatureUsage({
     required this.feature,
@@ -133,6 +185,22 @@ class DashboardFeatureUsage {
   final double share;
   final String helper;
   final String? route;
+}
+
+class DashboardFeatureUsagePeriod {
+  const DashboardFeatureUsagePeriod({
+    required this.range,
+    required this.label,
+    required this.helper,
+    required this.totalLabel,
+    required this.items,
+  });
+
+  final DashboardFeatureUsageRange range;
+  final String label;
+  final String helper;
+  final String totalLabel;
+  final List<DashboardFeatureUsage> items;
 }
 
 class DashboardSearchInsight {
