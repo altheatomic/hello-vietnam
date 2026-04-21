@@ -7,34 +7,21 @@
       "type": "dart",
       "deviceId": "chrome",
       "program": "lib/main_admin.dart",
-      "args": [
-        "--web-hostname",
-        "localhost",
-        "--web-port",
-        "3000"
-      ]
+      "args": ["--web-hostname", "localhost", "--web-port", "3000"]
     },
     {
       "name": "User",
       "request": "launch",
       "type": "dart",
-      "deviceId": "chrome",
+      //"deviceId": "chrome",
       "program": "lib/main.dart",
-      "args": [
-        "--web-hostname",
-        "localhost",
-        "--web-port",
-        "3000"
-      ]
+      "args": ["--web-hostname", "localhost", "--web-port", "3000"]
     }
   ],
   "compounds": [
     {
       "name": "User + Admin",
-      "configurations": [
-        "User",
-        "Admin"
-      ],
+      "configurations": ["User", "Admin"],
       "stopAll": true
     }
   ]
