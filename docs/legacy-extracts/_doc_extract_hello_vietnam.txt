@@ -1,0 +1,1291 @@
+Report v0.1
+Bảng chia việc - thời gian thực hiện: 2 ngày (deadline: 5h chiều thứ bảy 28/6)
+[TABLE]
+Task || Nội dung cụ thể || Người thực hiện || Deadline || Đánh giá độ hoàn thành
+Task 1: Rà soát các chức năng đã đề xuất trong đề tài || Đọc lại toàn bộ phần chức năng đã có, trích xuất các tính năng nhỏ || Kim Oanh || 08:00 thứ sáu 27/6
+Task 2: Viết mô tả ngắn cho mỗi chức năng || Gồm: Mục đích – Đầu vào – Kết quả đầu ra – Ví dụ sử dụng || Phúc || 20:00 thứ sáu 27/6
+Task 3: Đề xuất chức năng mở rộng || Viết ngắn gọn 3–5 tính năng có thể bổ sung sau: AR, Booking, Lịch offline... || Thái || 08:00 thứ bảy 28/6
+Task 4: Biên soạn report hoàn chỉnh || Trình bày logic, rõ ràng từng phần: mở đầu, chức năng, mở rộng, sơ đồ || Kim Oanh || 17:00 thứ bảy 28/6
+[/TABLE]
+Hello Vietnam - Project Report
+1. Tóm tắt ý chính của đề tài “Hello Vietnam”
+Mục tiêu chính:Tạo một ứng dụng đa nền tảng (iOS, Android, Windows, macOS) giúp:
+Cá nhân hóa trải nghiệm du lịch tại Việt Nam.
+Kết nối khách du lịch và người địa phương.
+Quảng bá văn hóa, sản phẩm, dịch vụ Việt Nam ra quốc tế.
+Vấn đề thực tế:
+Việt Nam có tỷ lệ khách quay lại <10%, trong khi Thái Lan đạt 60%.
+Nhận diện thương hiệu du lịch Việt còn yếu, thiếu trải nghiệm “cá nhân hóa”.
+2. Tiếp cận nhu cầu của du khách
+Bạn là ai và bạn đang ở đâu?
+Tôi đang:
+1.1) Ở Việt Nam1.2) Ở ngoài Việt Nam
+Tôi muốn biết thêm về:
+Nếu đang ở Việt Nam (1.1):
+1.1.1) Những hoạt động thú vị gần tôi1.1.2) Địa điểm tiếp theo nên ghé thăm
+Nếu đang ở nước ngoài (1.2):
+1.2.1) Tìm hiểu điều gì làm Việt Nam trở nên đặc biệt1.2.2) Tìm ý tưởng về địa điểm và thời điểm nên đi du lịch1.2.3) Tôi đã đặt vé và đang lên kế hoạch chuyến đi
+Thời gian tôi dự định đi du lịch:
+1 tuần hoặc ít hơn (phù hợp để khám phá 1–3 địa điểm)
+2 tuần (đủ để khám phá núi, biển và văn hóa)
+Hơn 2 tuần (thực sự “hiểu” và “trải nghiệm” Việt Nam)
+Tôi sẽ đi du lịch vào thời điểm:
+Tháng 12 – Tháng 2
+Tháng 3 – Tháng 5
+Tháng 6 – Tháng 8
+Tháng 9 – Tháng 11
+Tôi chủ yếu đi du lịch vì lý do gì? (có thể chọn nhiều lý do)
+Ẩm thực
+Văn hóa truyền thống
+Văn hóa biểu diễn / nghệ thuật
+Thiên nhiên
+Tiệc tùng / sôi động
+Khám phá / phiêu lưu
+3. Các chức năng chính cần có
+1. Công cụ hỗ trợ du khách
+Gợi ý thời điểm & địa điểm du lịch theo thời tiết, sở thích, thời gian rảnh.
+Gợi ý hoạt động gần vị trí hiện tại.
+Giới thiệu văn hóa, món ăn, sản phẩm bản địa theo khu vực.
+Giải thích cách sử dụng các ứng dụng phổ biến tại Việt Nam (Zalo, Grab…)
+Từ điển ảnh (image-based translator) dùng AI để nhận diện món ăn, đồ vật
+Cung cấp từ vựng mẫu, phiên âm, hỗ trợ luyện phát âm
+Lịch trình gợi ý dựa theo sở thích cá nhân (ẩm thực, thiên nhiên, văn hóa…)
+Tạo nhật ký hành trình (timeline) để lưu giữ và chia sẻ trải nghiệm
+Lưu địa điểm, món ăn, người dân vào danh sách yêu thích
+2. Công cụ hỗ trợ người bản địa
+Tạo gian hàng mini để giới thiệu sản phẩm/dịch vụ (đa ngôn ngữ: Việt, Anh, Pháp, Đức)
+Sử dụng mẫu có sẵn để đăng sản phẩm dễ dàng (form khai báo: loại hình, nguồn gốc, mức độ cay…)
+Gắn bộ lọc tìm kiếm: món chay, độ cay, thủ công, đặc sản vùng miền…
+Tự động định vị trên bản đồ (Google Maps + OSM)
+Nhận compliment từ du khách (nút “Cảm ơn”/“Bạn thật tuyệt”)
+Quản lý lượt tương tác, bình luận từ người dùng
+3. Chức năng xã hội và tương tác
+Nút Compliment tạo kết nối tích cực giữa khách và dân địa phương
+Chia sẻ nhật ký hành trình lên mạng xã hội hoặc với bạn bè.
+Hệ thống yêu thích (favorites) cho người dùng lưu lại mọi trải nghiệm
+Gợi ý bạn đồng hành hoặc nhóm đi cùng (nếu được mở rộng sau)
+Đánh giá/quay lại trải nghiệm sau khi kết thúc hành trình.
+4. Kỹ thuật
+Frontend: Flutter (đa nền tảng: mobile, desktop)
+Backend: Supabase
+Xác thực: Open-source OAuth (Google, Facebook, email)
+UI/UX: Penpot hoặc Figma
+Quản lý dự án: Trello
+4. Kế hoạch khảo sát & tìm hiểu
+1. Khảo sát người dùng mục tiêu
+Khách du lịch nước ngoài: Dùng Google Forms hỏi về thói quen, nhu cầu, app đang dùng khi du lịch.
+Người bản địa: (chủ quán ăn, homestay...) phỏng vấn qua Zalo, Facebook.
+2. Nghiên cứu đối thủ
+Phân tích các ứng dụng: Klook, KKDay, Airbnb Experiences, Culture Trip hay những app gần với app của mình/ app nổi tiếng và hơi giống mà bạn biết.
+So sánh chức năng, UI, điểm mạnh/yếu.
+3. Tìm hiểu kỹ thuật
+Thử nghiệm Flutter (cross-platform).
+Khởi tạo Supabase DB (users, places, foods).
+Tìm hiểu xác thực OAuth (Firebase Auth vs Supabase Auth vs NextAuth).
+5. Kết luận
+"Hello Vietnam" nhằm mang lại trải nghiệm du lịch cá nhân hóa, kết nối văn hóa bản địa với du khách quốc tế, đóng góp vào việc nâng cao hình ảnh du lịch Việt Nam trên bản đồ quốc tế.
+Mô tả chức năng
+Công cụ hỗ trợ khách du lịch
+Gợi ý thời điểm & địa điểm du lịch theo thời tiết, sở thích, thời gian rảnh.
+Mục đích: Giúp du khách lựa chọn thời gian và địa điểm phù hợp để có trải nghiệm trọn vẹn, tránh thời tiết xấu hoặc không đúng mùa du lịch.
+Đầu vào: Thời gian dự kiến đi du lịch, sở thích cá nhân (ẩm thực, thiên nhiên, khám phá,...), vị trí hiện tại (nếu có), số ngày lưu trú.
+Kết quả đầu ra: Danh sách gợi ý điểm đến phù hợp theo mùa, kèm lý do đề xuất và các mẹo như nên mang gì, nên tránh gì.
+Ví dụ sử dụng: Nếu người dùng chọn đi vào tháng 12, ứng dụng gợi ý nên đến Sa Pa hoặc Hà Nội, vì thời tiết lạnh thích hợp thưởng thức phở và tham quan mùa lễ hội, đồng thời đề xuất mang theo áo khoác và khăn ấm.
+Gợi ý hoạt động gần vị trí hiện tại.
+Mục đích: Giúp du khách tận dụng thời gian rảnh hiệu quả bằng cách khám phá các hoạt động, điểm đến thú vị quanh họ trong bán kính gần.
+Đầu vào: Vị trí GPS hiện tại của người dùng; tuỳ chọn bán kính tìm kiếm và loại hình hoạt động mong muốn.
+Kết quả đầu ra: Danh sách hoạt động gợi ý có sắp xếp theo khoảng cách và mức độ phổ biến, bao gồm hình ảnh, mô tả ngắn và chỉ đường.
+Ví dụ sử dụng: Người dùng đang ở TP. Hồ Chí Minh mở ứng dụng vào buổi tối sẽ được gợi ý “Ăn khuya ở chợ Hồ Thị Kỷ – 1.2km” hoặc “Đi dạo phố đi bộ Nguyễn Huệ – 800m”.
+Giới thiệu văn hóa, món ăn, sản phẩm bản địa theo khu vực.
+Mục đích: Giúp khách hiểu sâu hơn về vùng đất mình ghé thăm, tăng sự gắn kết và hứng thú với văn hóa Việt.
+Đầu vào: Khu vực hiện tại hoặc khu vực đang tìm kiếm.
+Kết quả đầu ra: Thông tin chi tiết về các món ăn, trang phục, tập tục, sản phẩm thủ công, được trình bày sinh động với hình ảnh, phiên âm, giải thích ngắn gọn.
+Ví dụ sử dụng: Khi đến Huế, ứng dụng giới thiệu các món ăn đặc trưng của Huế, nếu người dùng bấm vào món “Bánh bèo” thì sẽ có kèm hình ảnh và video ngắn về món ăn, gợi ý địa điểm ăn uy tín và đánh giá của người dùng khác.
+Giải thích cách sử dụng các ứng dụng phổ biến tại Việt Nam (Zalo, Grab…)
+Mục đích: Giảm bỡ ngỡ cho du khách khi sử dụng các dịch vụ số phổ biến ở Việt Nam.
+Đầu vào: Lựa chọn ứng dụng hoặc nhu cầu (ví dụ: “Tôi muốn đặt xe” → gợi ý Grab).
+Kết quả đầu ra: Hướng dẫn bằng hình ảnh và video minh họa từng bước, có bản dịch nhiều ngôn ngữ.
+Ví dụ sử dụng: Du khách chưa biết cách đặt xe qua Grab được hướng dẫn bằng ảnh: chọn điểm đón, chọn hình thức thanh toán, lưu ý về giá cước giờ cao điểm.
+Từ điển ảnh (image-based translator) dùng AI để nhận diện món ăn, đồ vật
+Mục đích: Giúp người dùng nhận diện nhanh món ăn hoặc vật dụng bằng hình ảnh, ngay cả khi không biết tiếng Việt.
+Đầu vào: Ảnh chụp trực tiếp từ camera hoặc tải từ thư viện ảnh.
+Kết quả đầu ra: Tên món/vật thể + thành phần chính + vùng miền phổ biến + gợi ý địa điểm mua/thưởng thức.
+Ví dụ sử dụng: Du khách chụp ảnh món bánh có hình hoa, app trả về: “Bánh in Huế – làm từ bột nếp, đường và đậu xanh – có bán tại chợ Đông Ba”.
+Cung cấp từ vựng mẫu, phiên âm, hỗ trợ luyện phát âm
+Mục đích: Tăng khả năng giao tiếp cơ bản bằng tiếng Việt, hỗ trợ tương tác nhẹ nhàng với người địa phương.
+Đầu vào: Chủ đề cần luyện (ăn uống, hỏi đường, chào hỏi,...).
+Kết quả đầu ra: Danh sách từ/câu mẫu có phiên âm quốc tế, phát âm giọng chuẩn.
+Ví dụ sử dụng: Chọn chủ đề “hỏi giá”, người dùng được học cụm từ “Cái này bao nhiêu tiền?” – phiên âm: cách đọc ra âm tương tự trong ngôn ngữ của họ, giọng đọc đi kèm + nút ghi âm lại để so sánh.
+Lịch trình gợi ý dựa theo sở thích cá nhân (ẩm thực, thiên nhiên, văn hóa…)
+Mục đích: Tự động tạo lịch trình theo nhu cầu và thời gian của người dùng.
+Đầu vào: Thời gian lưu trú, địa điểm mong muốn, sở thích cá nhân (có thể chọn nhiều: ẩm thực, khám phá, nghỉ dưỡng).
+Kết quả đầu ra: Lịch trình gợi ý từng ngày (sáng – trưa – chiều – tối), tích hợp bản đồ chỉ đường và mẹo trải nghiệm.
+Ví dụ sử dụng: Người dùng chọn “Khám phá kết hợp văn hóa – ẩm thực” trong 2 ngày tại Đà Nẵng – Hội An, hệ thống gợi ý:
+Ngày 1 – Khám phá Đà Nẵng
+Sáng: Tham quan chùa Linh Ứng – Bán đảo Sơn Trà
+Trưa: Ăn mì Quảng Bà Mua
+Chiều: Tham quan Bảo tàng Chăm – ngắm cầu Rồng
+Tối: Đi chợ đêm ăn vặt, xem trình diễn nghệ thuật đường phố
+Ngày 2 – Đi về trong ngày đến Hội An (30km)
+Sáng: Di chuyển từ Đà Nẵng đến phố cổ Hội An, tham quan Chùa Cầu, nhà cổ
+Trưa: Thưởng thức cao lầu
+Chiều: Đi thuyền trên sông Hoài
+Tối: Thả hoa đăng, về lại Đà Nẵng
+Tạo nhật ký hành trình (timeline) để lưu giữ và chia sẻ trải nghiệm
+Mục đích: Giúp người dùng ghi lại kỷ niệm, lưu giữ trải nghiệm, dễ dàng chia sẻ với bạn bè.
+Đầu vào: Ảnh, mô tả, địa điểm đã ghé thăm (ghi lại tự động hoặc do người dùng nhập).
+Kết quả đầu ra: Dòng thời gian hành trình hiển thị theo thứ tự ngày/thời gian, có thể chỉnh sửa hoặc chia sẻ.
+Ví dụ sử dụng: Sau 3 ngày du lịch, timeline hiển thị: “Ngày 1 – Tham quan Đà nẵng, ăn mì quảng, đi chợ đêm”; “Ngày 2 – Khám phá Hội An, ăn cao lầu, thả hoa đăng, ..”.
+Lưu địa điểm, món ăn, người dân vào danh sách yêu thích
+Mục đích: Tăng trải nghiệm cá nhân hóa, giúp người dùng dễ quay lại nơi đã yêu thích hoặc gợi ý cho người khác.
+Đầu vào: Nút “Thêm vào yêu thích” khi xem thông tin chi tiết về món ăn, địa điểm, người dân hoặc hoạt động.
+Kết quả đầu ra: Một danh sách cá nhân hóa có thể truy cập mọi lúc, chia sẻ hoặc dùng để xây dựng lịch trình sau này.
+Ví dụ sử dụng: Người dùng sau khi đến tiệm bánh Cối Xay Gió ở Đà Lạt bấm “Yêu thích” để chia sẻ cho bạn bè lần sau đến.
+Công cụ hỗ trợ người bản địa
+Tạo gian hàng mini để giới thiệu sản phẩm/dịch vụ (đa ngôn ngữ: Việt, Anh, Pháp, Đức)
+Giúp người dân, tiểu thương dễ dàng tiếp cận du khách quốc tế bằng cách giới thiệu sản phẩm bằng nhiều ngôn ngữ.
+Đầu vào: Thông tin cơ bản của sản phẩm/dịch vụ (tên, hình ảnh, mô tả, giá, ngôn ngữ).
+Kết quả đầu ra: Một “gian hàng số” hiển thị trong app, có thể truy cập công khai, với giao diện dịch sẵn sang Anh, Pháp, Đức.
+Ví dụ sử dụng: Chị Lan bán tranh thêu tay nhập mô tả bằng tiếng Việt, hệ thống tự tạo bản dịch sang tiếng Anh: “Hand-embroidered painting – Hue style – 100% silk”.
+Sử dụng mẫu có sẵn để đăng sản phẩm dễ dàng (form khai báo: loại hình, nguồn gốc, mức độ cay…)
+Mục đích: Giúp người dân đăng thông tin sản phẩm nhanh chóng, đầy đủ mà không cần hiểu về công nghệ.
+Đầu vào: Chọn loại sản phẩm → điền theo form có sẵn: món ăn, dịch vụ, đồ lưu niệm, chọn nguồn gốc, đặc điểm (cay/không cay, vùng miền,...).
+Kết quả đầu ra: Trang thông tin sản phẩm được tạo chuẩn hóa, dễ đọc, dễ hiển thị trong app, có khả năng gợi ý cho du khách đúng mục tiêu.
+Ví dụ sử dụng: Chị Ba bán mắm nhập thông tin qua form: “Loại hình: Thực phẩm – Nguồn gốc: Bến Tre – Đặc điểm: cay nhẹ – thủ công”. Hệ thống tự sinh trang sản phẩm.
+Gắn bộ lọc tìm kiếm: món chay, độ cay, thủ công, đặc sản vùng miền…
+Mục đích: Tăng khả năng tiếp cận khách hàng mục tiêu bằng cách cho phép người dùng lọc theo nhu cầu cụ thể.
+Đầu vào: Thông tin sản phẩm được gắn tag phù hợp lúc đăng.
+Kết quả đầu ra: Khi khách tìm kiếm, các sản phẩm sẽ được gợi ý theo đúng bộ lọc (VD: chỉ hiện món chay, hoặc sản phẩm thủ công miền Trung).
+Ví dụ sử dụng: Du khách ăn chay tìm kiếm “vegetarian food” → app trả về “Bánh ít trần chay – Bến Tre” của chị Ba.
+Tự động định vị trên bản đồ (Google Maps + OSM)
+Mục đích: Giúp khách dễ tìm đến địa điểm kinh doanh, tránh bị lạc hoặc bỏ qua các gian hàng nhỏ.
+Đầu vào: Người bán xác nhận vị trí hiện tại hoặc nhập địa chỉ.
+Kết quả đầu ra: Gian hàng hiển thị đúng trên bản đồ, kèm hướng dẫn đường đi.
+Ví dụ sử dụng: Chị Năm bán bún bò Huế được định vị chính xác trên bản đồ Hội An. Du khách dùng app có thể đi bộ 5 phút là đến.
+Nhận compliment từ du khách (nút “Cảm ơn”/“Bạn thật tuyệt”)
+Mục đích: Tăng sự khích lệ, tương tác tích cực từ khách du lịch đối với người bản địa.
+Đầu vào: Khách hàng nhấn nút cảm ơn sau khi trải nghiệm sản phẩm/dịch vụ.
+Kết quả đầu ra: Người bán nhận được thông báo về lời khen của du khách
+Ví dụ sử dụng: Anh bán nước mía được 7 lời khen từ khách nước ngoài sau 1 ngày bán, có thể dùng để tạo uy tín và quảng bá thêm.
+Quản lý lượt tương tác, bình luận từ người dùng
+Mục đích: Giúp người bán hiểu rõ mức độ quan tâm, phản hồi và nhu cầu từ khách hàng.
+Đầu vào: Hành động của khách như xem, thích, bình luận, chia sẻ.
+Kết quả đầu ra: Bảng thống kê đơn giản: bao nhiêu lượt xem, bao nhiêu lượt thích, bình luận nào nổi bật. Có thể phản hồi bình luận.
+Ví dụ sử dụng: Chị Sáu bán nón lá thấy sản phẩm được 250 lượt xem trong tuần qua, có 12 người thả tim và 3 bình luận tích cực. Chị trả lời cảm ơn từng người để tăng kết nối.
+Chức năng xã hội và tương tác
+Nút Compliment tạo kết nối tích cực giữa khách và dân địa phương
+Mục đích: Khuyến khích sự công nhận, tạo động lực tinh thần cho người dân phục vụ tốt hơn và xây dựng bầu không khí du lịch tích cực.
+Đầu vào: Du khách nhấn nút “Cảm ơn” hoặc “Bạn thật tuyệt” sau khi dùng sản phẩm/dịch vụ hoặc gặp người thân thiện.
+Kết quả đầu ra: Người địa phương nhận được thông báo lời khen kèm người gửi và lý do (nếu có).
+Ví dụ sử dụng: Du khách ăn bánh mì thấy cô bán hàng dễ thương, nhấn “Cảm ơn” → Cô nhận được: “Bạn vừa được khen bởi Marie (France): ‘Món ăn của cô rất ngon’”
+Chia sẻ nhật ký hành trình lên mạng xã hội hoặc với bạn bè.
+Mục đích: Giúp người dùng lưu giữ và chia sẻ trải nghiệm với bạn bè, đồng thời lan tỏa hình ảnh tích cực về Việt Nam.
+Đầu vào: Ảnh, ghi chú hành trình, địa điểm, đánh giá cá nhân được người dùng ghi lại.
+Kết quả đầu ra: Link chia sẻ trên mạng xã hội hoặc gửi qua email/messenger, kèm hình ảnh và đường dẫn timeline.
+Ví dụ sử dụng: Bạn Linh vừa kết thúc chuyến đi Đà Lạt 3 ngày, chia sẻ nhật ký qua Facebook với caption: “Một hành trình tuyệt vời🧡”.
+Hệ thống yêu thích (favorites) cho người dùng lưu lại mọi trải nghiệm
+Mục đích: Cho phép người dùng lưu lại những trải nghiệm đáng nhớ để dễ quay lại hoặc gợi ý cho người khác.
+Đầu vào: Nút “Yêu thích” tại mỗi điểm đến, món ăn, người bản địa, hoạt động,...
+Kết quả đầu ra: Danh sách cá nhân hóa có thể xem lại mọi lúc, có thể dùng để lên lịch trình mới hoặc chia sẻ.
+Ví dụ sử dụng: Bạn Hải lưu “Phở Thìn – Hà Nội” và “Cô Hằng bán chè sen” vào mục yêu thích để ghé lại lần sau hoặc giới thiệu cho bạn mình.
+Gợi ý bạn đồng hành hoặc nhóm đi cùng (nếu được mở rộng sau)
+Mục đích: Giúp người du lịch một mình tìm được bạn đồng hành an toàn, có cùng sở thích, hoặc nhóm du lịch cùng tuyến.
+Đầu vào: Người dùng chọn bật chế độ “Tìm bạn đồng hành” + cung cấp lịch trình dự kiến, sở thích và giới tính nếu muốn.
+Kết quả đầu ra: Danh sách những người có lịch trình tương tự, có thể gửi lời mời trò chuyện hoặc tạo nhóm.
+Ví dụ sử dụng: Bạn Tom (Mỹ) muốn khám phá Hội An vào ngày 12/7, được gợi ý bạn Trang (Việt Nam) cũng đi ngày đó, cùng sở thích chụp ảnh và ăn chay → ghép nhóm đi cùng.
+Đánh giá/quay lại trải nghiệm sau khi kết thúc hành trình.
+Mục đích: Thu thập phản hồi để cải thiện dịch vụ, đồng thời giúp người dùng nhớ lại hành trình và đóng góp cho cộng đồng.
+Đầu vào: Sau khi kết thúc mỗi hoạt động hoặc chuyến đi, người dùng được nhắc đánh giá.
+Kết quả đầu ra: Sao, nhận xét, hình ảnh đính kèm sẽ hiển thị cho những người dùng khác tham khảo.
+Ví dụ sử dụng: Bạn Ngọc đánh giá 5 sao cho “Homestay Mây Núi” sau chuyến đi Sapa: “Chị chủ thân thiện, cảnh cực chill!”
+Đề xuất chức năng mở rộng
+CHỨC NĂNG MỞ RỘNG ĐỀ XUẤT
+1. Đặt dịch vụ nội địa (In-app Booking)
+Mục đích: Giúp du khách đặt các dịch vụ như tour trải nghiệm, lớp học nấu ăn, thuê xe máy, vé tham quan... ngay trong app mà không cần dùng app ngoài.
+Đầu vào: Địa điểm, thời gian mong muốn, loại hình dịch vụ (tour, vé, lớp học,...)
+Kết quả đầu ra: Danh sách dịch vụ có thể đặt, kèm giá, thời gian, thông tin người tổ chức, và nút thanh toán.
+Ví dụ sử dụng: Du khách ở Hội An có thể đặt “Tour làm đèn lồng 2 giờ” từ người dân địa phương.
+2. Chế độ sử dụng offline (Offline Mode)
+Mục đích: Hỗ trợ du khách khi mất kết nối mạng (vùng sâu, tàu xe, nước ngoài…)
+Đầu vào: Các mục được người dùng chọn tải về (bản đồ, lịch trình, từ điển, timeline,…)
+Kết quả đầu ra: App hoạt động được các tính năng cơ bản mà không cần mạng.
+Ví dụ sử dụng: Du khách ở Sapa tải trước lịch trình + bản đồ đi bộ, vẫn xem được thông tin khi ở bản làng không có sóng.
+3. Tích hợp AR tại điểm du lịch (Augmented Reality)
+Mục đích: Tăng tính tương tác và hiểu biết bằng cách chiếu thông tin ảo tại các điểm tham quan.
+Đầu vào: Vị trí GPS và camera.
+Kết quả đầu ra: Khi giơ camera tại di tích, app hiển thị hình ảnh, lời kể, video hướng dẫn, lịch sử địa điểm.
+Ví dụ sử dụng: Giơ máy tại Chùa Cầu – Hội An → hiện thông tin lịch sử, hình ảnh phục dựng qua các thời kỳ.
+4. Tích điểm đổi quà (Reward & Loyalty System)
+Mục đích: Khuyến khích người dùng tương tác nhiều hơn, quay lại app thường xuyên.
+Đầu vào: Hành động người dùng: check-in, đánh giá, chia sẻ, tặng compliment,...
+Kết quả đầu ra: Điểm thưởng tích lũy, có thể đổi lấy voucher ăn uống, vé vào cổng, món quà lưu niệm.
+Ví dụ sử dụng: Sau 10 lần check-in, người dùng nhận được mã giảm giá 50.000đ khi đặt lớp học nấu ăn truyền thống.
+5. Tự động nhận diện lịch trình từ ảnh vé/mã QR (Smart Scan)
+Mục đích: Giúp người dùng tiết kiệm thời gian lên lịch trình, đồng bộ nhanh với lịch cá nhân.
+Đầu vào: Ảnh vé máy bay, vé tàu, email xác nhận đặt phòng/tour.
+Kết quả đầu ra: App tự động đề xuất khung lịch trình phù hợp với thời gian và địa điểm.
+Ví dụ sử dụng: Người dùng chụp ảnh vé máy bay tới Huế vào ngày 20/8 → app gợi ý hành trình khám phá Huế trong 3 ngày.
+Report v0.2
+Hello Vietnam - Project Report
+[TABLE]
+Giáo viên hướng dẫn
+MsC. Tiết Gia Hồng
+Nhóm sinh viên
+22127319 - Lê Trần Kim Oanh
+22127331 - Nguyễn Gia Phúc
+22127382 - Cao Phạm Hoàng Thái
+Thành phố Hồ Chí Minh, 01/07/2025
+[/TABLE]
+Khoa Công Nghệ Thông Tin
+Bộ môn Hệ thống thông tin
+Trường Đại học Khoa Học Tự Nhiên
+Mục lục
+Phân công công việc
+[TABLE]
+Task || Nội dung cụ thể || Người thực hiện || Đánh giá
+Task 1: Viết report cơ bản + phân công || Làm report v0.1 có các chức năng chính cần có, chia việc và gợi ý cách làm || Oanh || 100%
+Task 2: Viết mô tả ngắn cho mỗi chức năng || Gồm: Mục đích – Đầu vào – Kết quả đầu ra – Ví dụ sử dụng || Phúc || 100%
+Task 3: Đề xuất chức năng mở rộng || Viết ngắn gọn 3–5 tính năng có thể bổ sung sau: AR, Booking, Lịch offline... || Thái || 100%
+Task 4: Biên soạn report hoàn chỉnh || Tổng hợp bảng chức năng + trình bày logic, rõ ràng từng phần || Oanh || 100%
+[/TABLE]
+Tóm tắt ý chính của đề tài “Hello Vietnam”
+Mục tiêu chính:Tạo một ứng dụng đa nền tảng (iOS, Android, Windows) giúp:
+Cá nhân hóa trải nghiệm du lịch tại Việt Nam.
+Kết nối khách du lịch và người địa phương.
+Quảng bá văn hóa, sản phẩm, dịch vụ Việt Nam ra quốc tế.
+Vấn đề thực tế:
+Việt Nam có tỷ lệ khách quay lại <10%, trong khi Thái Lan đạt 60%.
+Nhận diện thương hiệu du lịch Việt còn yếu, thiếu trải nghiệm “cá nhân hóa”.
+Tiếp cận nhu cầu của du khách
+Bạn là ai và bạn đang ở đâu?
+Tôi đang:
+Ở Việt Nam
+Ở ngoài Việt Nam
+Tôi muốn biết thêm về:
+Nếu đang ở Việt Nam (a):
+Những hoạt động thú vị gần tôi
+Địa điểm tiếp theo nên ghé thăm
+Nếu đang ở nước ngoài (b):
+Tìm hiểu điều gì làm Việt Nam trở nên đặc biệt
+Tìm ý tưởng về địa điểm và thời điểm nên đi du lịch
+Tôi đã đặt vé và đang lên kế hoạch chuyến đi
+Thời gian tôi dự định đi du lịch:
+1 tuần hoặc ít hơn (phù hợp để khám phá 1–3 địa điểm)
+2 tuần (đủ để khám phá núi, biển và văn hóa)
+Hơn 2 tuần (thực sự “hiểu” và “trải nghiệm” Việt Nam)
+Tôi sẽ đi du lịch vào thời điểm:
+Tháng 12 – Tháng 2
+Tháng 3 – Tháng 5
+Tháng 6 – Tháng 8
+Tháng 9 – Tháng 11
+Tôi chủ yếu đi du lịch vì lý do gì? (có thể chọn nhiều lý do)
+Ẩm thực
+Văn hóa truyền thống
+Văn hóa biểu diễn / nghệ thuật
+Thiên nhiên
+Tiệc tùng / sôi động
+Khám phá / phiêu lưu
+Các chức năng chính cần có
+Công cụ hỗ trợ du khách
+Gợi ý thời điểm & địa điểm du lịch theo thời tiết, sở thích, thời gian rảnh.
+Gợi ý hoạt động gần vị trí hiện tại.
+Giới thiệu văn hóa, món ăn, sản phẩm bản địa theo khu vực.
+Giải thích cách sử dụng các ứng dụng phổ biến tại Việt Nam (Zalo, Grab…)
+Từ điển ảnh (image-based translator) dùng AI để nhận diện món ăn, đồ vật
+Cung cấp từ vựng mẫu, phiên âm, hỗ trợ luyện phát âm
+Lịch trình gợi ý dựa theo sở thích cá nhân (ẩm thực, thiên nhiên, văn hóa…)
+Tạo nhật ký hành trình (timeline) để lưu giữ và chia sẻ trải nghiệm
+Lưu địa điểm, món ăn, người dân vào danh sách yêu thích
+Công cụ hỗ trợ người bản địa
+Tạo gian hàng mini để giới thiệu sản phẩm/dịch vụ (đa ngôn ngữ: Việt, Anh, Pháp, Đức)
+Sử dụng mẫu có sẵn để đăng sản phẩm dễ dàng (form khai báo: loại hình, nguồn gốc, mức độ cay…)
+Gắn bộ lọc tìm kiếm: món chay, độ cay, thủ công, đặc sản vùng miền…
+Tự động định vị trên bản đồ (Google Maps + OSM)
+Nhận compliment từ du khách (nút “Cảm ơn”/“Bạn thật tuyệt”)
+Quản lý lượt tương tác, bình luận từ người dùng
+Chức năng xã hội và tương tác
+Nút Compliment tạo kết nối tích cực giữa khách và dân địa phương
+Chia sẻ nhật ký hành trình lên mạng xã hội hoặc với bạn bè.
+Hệ thống yêu thích (favorites) cho người dùng lưu lại mọi trải nghiệm
+Gợi ý bạn đồng hành hoặc nhóm đi cùng (nếu được mở rộng sau)
+Đánh giá/quay lại trải nghiệm sau khi kết thúc hành trình.
+Mô tả chi tiết chức năng
+Công cụ hỗ trợ khách du lịch
+Gợi ý thời điểm & địa điểm du lịch theo thời tiết, sở thích, thời gian rảnh.
+Mục đích: Giúp du khách lựa chọn thời gian và địa điểm phù hợp để có trải nghiệm trọn vẹn, tránh thời tiết xấu hoặc không đúng mùa du lịch.
+Đầu vào: Thời gian dự kiến đi du lịch, sở thích cá nhân (ẩm thực, thiên nhiên, khám phá,...), vị trí, số ngày lưu trú.
+Kết quả đầu ra: Danh sách gợi ý điểm đến phù hợp theo mùa, kèm lý do đề xuất và các mẹo như nên mang gì, nên tránh gì.
+Ví dụ sử dụng: Nếu người dùng chọn đi vào tháng 12, ứng dụng gợi ý nên đến Sa Pa hoặc Hà Nội, vì thời tiết lạnh thích hợp thưởng thức phở và tham quan mùa lễ hội, đồng thời đề xuất mang theo áo khoác và khăn ấm.
+Gợi ý hoạt động gần vị trí hiện tại.
+Mục đích: Giúp du khách tận dụng thời gian rảnh hiệu quả bằng cách khám phá các hoạt động, điểm đến thú vị quanh họ trong bán kính gần.
+Đầu vào: Vị trí GPS hiện tại của người dùng; tuỳ chọn bán kính tìm kiếm và loại hình hoạt động mong muốn.
+Kết quả đầu ra: Danh sách hoạt động gợi ý có sắp xếp theo khoảng cách và mức độ phổ biến, bao gồm hình ảnh, mô tả ngắn và chỉ đường.
+Ví dụ sử dụng: Người dùng đang ở TP. Hồ Chí Minh mở ứng dụng vào buổi tối sẽ được gợi ý “Ăn khuya ở chợ Hồ Thị Kỷ – 1.2km” hoặc “Đi dạo phố đi bộ Nguyễn Huệ – 800m”.
+Giới thiệu văn hóa, món ăn, sản phẩm bản địa theo khu vực.
+Mục đích: Giúp khách hiểu sâu hơn về vùng đất mình ghé thăm, tăng sự gắn kết và hứng thú với văn hóa Việt.
+Đầu vào: Khu vực hiện tại hoặc khu vực đang tìm kiếm.
+Kết quả đầu ra: Thông tin chi tiết về các món ăn, trang phục, tập tục, sản phẩm thủ công, được trình bày sinh động với hình ảnh, phiên âm, giải thích ngắn gọn.
+Ví dụ sử dụng: Khi đến Huế, ứng dụng giới thiệu các món ăn đặc trưng của Huế, nếu người dùng bấm vào món “Bánh bèo” thì sẽ có kèm hình ảnh và video ngắn về món ăn, gợi ý địa điểm ăn uy tín và đánh giá của người dùng khác.
+Giải thích cách sử dụng các ứng dụng phổ biến tại Việt Nam (Zalo, Grab…)
+Mục đích: Giảm bỡ ngỡ cho du khách khi sử dụng các dịch vụ số phổ biến ở Việt Nam.
+Đầu vào: Lựa chọn ứng dụng hoặc nhu cầu (ví dụ: “Tôi muốn đặt xe” → gợi ý Grab).
+Kết quả đầu ra: Hướng dẫn bằng hình ảnh và video minh họa từng bước, có bản dịch nhiều ngôn ngữ.
+Ví dụ sử dụng: Du khách chưa biết cách đặt xe qua Grab được hướng dẫn bằng ảnh: chọn điểm đón, chọn hình thức thanh toán, lưu ý về giá cước giờ cao điểm.
+Từ điển ảnh (image-based translator) dùng AI để nhận diện món ăn, đồ vật
+Mục đích: Giúp người dùng nhận diện nhanh món ăn hoặc vật dụng bằng hình ảnh, ngay cả khi không biết tiếng Việt.
+Đầu vào: Ảnh chụp trực tiếp từ camera hoặc tải từ thư viện ảnh.
+Kết quả đầu ra: Tên món/vật thể + thành phần chính + vùng miền phổ biến + gợi ý địa điểm mua/thưởng thức.
+Ví dụ sử dụng: Du khách chụp ảnh món bánh có hình hoa, app trả về: “Bánh in Huế – làm từ bột nếp, đường và đậu xanh – có bán tại chợ Đông Ba”.
+Cung cấp từ vựng mẫu, phiên âm, hỗ trợ luyện phát âm
+Mục đích: Tăng khả năng giao tiếp cơ bản bằng tiếng Việt, hỗ trợ tương tác nhẹ nhàng với người địa phương.
+Đầu vào: Chủ đề cần luyện (ăn uống, hỏi đường, chào hỏi,...).
+Kết quả đầu ra: Danh sách từ/câu mẫu có phiên âm quốc tế, phát âm giọng chuẩn.
+Ví dụ sử dụng: Chọn chủ đề “hỏi giá”, người dùng được học cụm từ “Cái này bao nhiêu tiền?” – phiên âm: cách đọc ra âm tương tự trong ngôn ngữ của họ, giọng đọc đi kèm + nút ghi âm lại để so sánh.
+Lịch trình gợi ý dựa theo sở thích cá nhân (ẩm thực, thiên nhiên, văn hóa…)
+Mục đích: Tự động tạo lịch trình theo nhu cầu và thời gian của người dùng.
+Đầu vào: Thời gian lưu trú, địa điểm mong muốn, sở thích cá nhân (có thể chọn nhiều: ẩm thực, khám phá, nghỉ dưỡng).
+Kết quả đầu ra: Lịch trình gợi ý từng ngày (sáng – trưa – chiều – tối), tích hợp bản đồ chỉ đường và mẹo trải nghiệm.
+Ví dụ sử dụng: Người dùng chọn “Khám phá kết hợp văn hóa – ẩm thực” trong 2 ngày tại Đà Nẵng – Hội An, hệ thống gợi ý:
+Ngày 1 – Khám phá Đà Nẵng
+Sáng: Tham quan chùa Linh Ứng – Bán đảo Sơn Trà
+Trưa: Ăn mì Quảng Bà Mua
+Chiều: Tham quan Bảo tàng Chăm – ngắm cầu Rồng
+Tối: Đi chợ đêm ăn vặt, xem trình diễn nghệ thuật đường phố
+Ngày 2 – Đi về trong ngày đến Hội An (30km)
+Sáng: Di chuyển từ Đà Nẵng đến phố cổ Hội An, tham quan Chùa Cầu, nhà cổ
+Trưa: Thưởng thức cao lầu
+Chiều: Đi thuyền trên sông Hoài
+Tối: Thả hoa đăng, về lại Đà Nẵng
+Tạo nhật ký hành trình (timeline) để lưu giữ và chia sẻ trải nghiệm
+Mục đích: Giúp người dùng ghi lại kỷ niệm, lưu giữ trải nghiệm, dễ dàng chia sẻ với bạn bè.
+Đầu vào: Ảnh, mô tả, địa điểm đã ghé thăm (ghi lại tự động hoặc do người dùng nhập).
+Kết quả đầu ra: Dòng thời gian hành trình hiển thị theo thứ tự ngày/thời gian, có thể chỉnh sửa hoặc chia sẻ.
+Ví dụ sử dụng: Sau 3 ngày du lịch, timeline hiển thị: “Ngày 1 – Tham quan Đà nẵng, ăn mì quảng, đi chợ đêm”; “Ngày 2 – Khám phá Hội An, ăn cao lầu, thả hoa đăng, ..”.
+Lưu địa điểm, món ăn, người dân vào danh sách yêu thích
+Mục đích: Tăng trải nghiệm cá nhân hóa, giúp người dùng dễ quay lại nơi đã yêu thích hoặc gợi ý cho người khác.
+Đầu vào: Nút “Thêm vào yêu thích” khi xem thông tin chi tiết về món ăn, địa điểm, người dân hoặc hoạt động.
+Kết quả đầu ra: Một danh sách cá nhân hóa có thể truy cập mọi lúc, chia sẻ hoặc dùng để xây dựng lịch trình sau này.
+Ví dụ sử dụng: Người dùng sau khi đến tiệm bánh Cối Xay Gió ở Đà Lạt bấm “Yêu thích” để chia sẻ cho bạn bè lần sau đến.
+Công cụ hỗ trợ người bản địa
+Tạo gian hàng mini để giới thiệu sản phẩm/dịch vụ
+Giúp người dân, tiểu thương dễ dàng tiếp cận du khách quốc tế bằng cách giới thiệu sản phẩm bằng nhiều ngôn ngữ.
+Đầu vào: Thông tin cơ bản của cửa hàng/dịch vụ (tên, hình ảnh, mô tả, mức giá, ngôn ngữ gốc).
+Kết quả đầu ra: Một “gian hàng số” hiển thị trong app, có thể truy cập công khai.
+Ví dụ sử dụng: Chị Lan bán tranh thêu tay nhập mô tả bằng tiếng Việt, hệ thống tự tạo bản dịch sang tiếng Anh: “Hand-embroidered painting – Hue style – 100% silk”.
+Sử dụng mẫu có sẵn để đăng sản phẩm dễ dàng (form khai báo: loại hình, nguồn gốc, mức độ cay…)
+Mục đích: Giúp người dân đăng thông tin sản phẩm nhanh chóng, đầy đủ mà không cần hiểu về công nghệ.
+Đầu vào: Chọn loại sản phẩm → điền theo form có sẵn: món ăn, dịch vụ, đồ lưu niệm, chọn nguồn gốc, đặc điểm (cay/không cay, vùng miền,...).
+Kết quả đầu ra: Trang thông tin sản phẩm được tạo chuẩn hóa, dễ đọc, dễ hiển thị trong app, có khả năng gợi ý cho du khách đúng mục tiêu.
+Ví dụ sử dụng: Chị Ba bán mắm nhập thông tin qua form: “Loại hình: Thực phẩm – Nguồn gốc: Bến Tre – Đặc điểm: cay nhẹ – thủ công”. Hệ thống tự sinh trang sản phẩm.
+Gắn bộ lọc tìm kiếm: món chay, độ cay, thủ công, đặc sản vùng miền…
+Mục đích: Tăng khả năng tiếp cận khách hàng mục tiêu bằng cách cho phép người dùng lọc theo nhu cầu cụ thể.
+Đầu vào: Thông tin sản phẩm được gắn tag phù hợp lúc đăng.
+Kết quả đầu ra: Khi khách tìm kiếm, các sản phẩm sẽ được gợi ý theo đúng bộ lọc (VD: chỉ hiện món chay, hoặc sản phẩm thủ công miền Trung).
+Ví dụ sử dụng: Du khách ăn chay tìm kiếm “vegetarian food” → app trả về “Bánh ít trần chay – Bến Tre” của chị Ba.
+Tự động định vị trên bản đồ (Google Maps + OSM)
+Mục đích: Giúp khách dễ tìm đến địa điểm kinh doanh, tránh bị lạc hoặc bỏ qua các gian hàng nhỏ.
+Đầu vào: Người bán xác nhận vị trí hiện tại hoặc nhập địa chỉ.
+Kết quả đầu ra: Gian hàng hiển thị đúng trên bản đồ, kèm hướng dẫn đường đi.
+Ví dụ sử dụng: Chị Năm bán bún bò Huế được định vị chính xác trên bản đồ Hội An. Du khách dùng app có thể đi bộ 5 phút là đến.
+Trả lời đánh giá của du khách
+Mục đích: Giúp người bán xem đánh giá của du khách rồi trả lời
+Đầu vào: Đánh giá của khách hàng.
+Kết quả đầu ra: Người bán trả lời đánh giá của khách hàng
+Ví dụ sử dụng: Anh bán nước mía được 7 lời khen từ khách nước ngoài sau 1 ngày bán, có thể có thể trả lời đánh giá của du khách (hệ thống có thể gợi ý câu trả lời mẫu như “Cảm ơn bạn” hoặc người bán có thể cài đặt sẵn câu trả lời mẫu).
+Quản lý lượt tương tác, bình luận từ người dùng
+Mục đích: Giúp người bán hiểu rõ mức độ quan tâm, phản hồi và nhu cầu từ khách hàng.
+Đầu vào: Hành động của khách như xem, thích, bình luận, chia sẻ.
+Kết quả đầu ra: Bảng thống kê đơn giản: bao nhiêu lượt xem, bao nhiêu lượt thích, bình luận nào nổi bật. Có thể phản hồi bình luận.
+Ví dụ sử dụng: Chị Sáu bán nón lá thấy sản phẩm được 250 lượt xem trong tuần qua, có 12 người thả tim và 3 bình luận tích cực. Chị trả lời cảm ơn từng người để tăng kết nối.
+Chức năng xã hội và tương tác
+Nút Compliment tạo kết nối tích cực giữa khách và dân địa phương -> Mẫu tạo sẵn cho user click dễ dàng
+Mục đích: Khuyến khích sự công nhận, tạo động lực tinh thần cho người dân phục vụ tốt hơn và xây dựng bầu không khí du lịch tích cực.
+Đầu vào: Du khách nhấn nút “Cảm ơn” hoặc “Bạn thật tuyệt” sau khi dùng sản phẩm/dịch vụ hoặc gặp người thân thiện.
+Kết quả đầu ra: Người địa phương nhận được thông báo lời khen kèm người gửi và lý do (nếu có).
+Ví dụ sử dụng: Du khách ăn bánh mì thấy cô bán hàng dễ thương, nhấn “Cảm ơn” → Cô nhận được: “Bạn vừa được khen bởi Marie (France): ‘Món ăn của cô rất ngon’”
+Chia sẻ nhật ký hành trình lên mạng xã hội hoặc với bạn bè.
+Mục đích: Giúp người dùng lưu giữ và chia sẻ trải nghiệm với bạn bè, đồng thời lan tỏa hình ảnh tích cực về Việt Nam.
+Đầu vào: Ảnh, ghi chú hành trình, địa điểm, đánh giá cá nhân được người dùng ghi lại.
+Kết quả đầu ra: Link chia sẻ trên mạng xã hội hoặc gửi qua email/messenger, kèm hình ảnh và đường dẫn timeline.
+Ví dụ sử dụng: Bạn Linh vừa kết thúc chuyến đi Đà Lạt 3 ngày, chia sẻ nhật ký qua Facebook với caption: “Một hành trình tuyệt vời!”.
+Hệ thống yêu thích (favorites) cho người dùng lưu lại mọi trải nghiệm
+Mục đích: Cho phép người dùng lưu lại những trải nghiệm đáng nhớ để dễ quay lại hoặc gợi ý cho người khác.
+Đầu vào: Nút “Yêu thích” tại mỗi điểm đến, món ăn, người bản địa, hoạt động,...
+Kết quả đầu ra: Danh sách cá nhân hóa có thể xem lại mọi lúc, có thể dùng để lên lịch trình mới hoặc chia sẻ.
+Ví dụ sử dụng: Bạn Hải lưu “Phở Thìn – Hà Nội” và “Cô Hằng bán chè sen” vào mục yêu thích để ghé lại lần sau hoặc giới thiệu cho bạn mình.
+Gợi ý bạn đồng hành hoặc nhóm đi cùng (nếu được mở rộng sau)
+Mục đích: Giúp người du lịch một mình tìm được bạn đồng hành an toàn, có cùng sở thích, hoặc nhóm du lịch cùng tuyến.
+Đầu vào: Người dùng chọn bật chế độ “Tìm bạn đồng hành” + cung cấp lịch trình dự kiến, sở thích và giới tính nếu muốn.
+Kết quả đầu ra: Danh sách những người có lịch trình tương tự, có thể gửi lời mời trò chuyện hoặc tạo nhóm.
+Ví dụ sử dụng: Bạn Tom (Mỹ) muốn khám phá Hội An vào ngày 12/7, được gợi ý bạn Trang (Việt Nam) cũng đi ngày đó, cùng sở thích chụp ảnh và ăn chay → ghép nhóm đi cùng.
+Đánh giá/quay lại trải nghiệm sau khi kết thúc hành trình.
+Mục đích: Thu thập phản hồi để cải thiện dịch vụ, đồng thời giúp người dùng nhớ lại hành trình và đóng góp cho cộng đồng.
+Đầu vào: Sau khi kết thúc mỗi hoạt động hoặc chuyến đi, người dùng được nhắc đánh giá.
+Kết quả đầu ra: Sao, nhận xét, hình ảnh đính kèm sẽ hiển thị cho những người dùng khác tham khảo.
+Ví dụ sử dụng: Bạn Ngọc đánh giá 5 sao cho “Homestay Mây Núi” sau chuyến đi Sapa: “Chị chủ thân thiện, cảnh cực chill!”
+Lưu ý phân biệt 2 chức năng Gợi ý thời điểm và địa điểm du lịch theo thời tiết, sở thích, thời gian rảnh và Lịch trình gợi ý dựa theo sở thích cá nhân (ẩm thực, thiên nhiên, văn hóa…):
+Gợi ý thời điểm và địa điểm du lịch theo thời tiết, sở thích, thời gian rảnh
+Mục đích: Hỗ trợ người dùng chưa biết đi đâu, khi nào.
+Thời điểm sử dụng: Trước chuyến đi.
+Cơ chế: Phân tích sở thích + thời gian nghỉ + mùa/thời tiết để đưa ra đề xuất địa điểm + thời điểm phù hợp.
+Ví dụ:
+Bạn thích lễ hội + có 1 tuần rảnh vào tháng 4 → Gợi ý đến Huế dịp Festival.
+Bạn thích tránh nóng + du lịch thiên nhiên → Gợi ý đi Đà Lạt vào tháng 7.
+Lịch trình gợi ý dựa theo sở thích cá nhân (ẩm thực, thiên nhiên, văn hóa…)
+Mục đích: Hỗ trợ người dùng đã chọn nơi đến, cần lên kế hoạch chi tiết từng ngày.
+Thời điểm sử dụng: Trong hoặc ngay trước chuyến đi.
+Cơ chế: Tạo lịch trình ngày 1, ngày 2, ngày 3… theo sở thích của người dùng.
+Ví dụ:
+Bạn đến Hội An và thích ẩm thực → Lịch trình có tour nấu ăn, chợ đêm, đặc sản địa phương.
+Bạn thích khám phá → Lịch trình gồm đạp xe ra làng gốm, dạo thuyền sông Thu Bồn.
+Đề xuất chức năng mở rộng
+Đặt dịch vụ nội địa (In-app Booking)
+Mục đích: Giúp du khách đặt các dịch vụ như tour trải nghiệm, lớp học nấu ăn, thuê xe máy, vé tham quan... ngay trong app mà không cần dùng app ngoài.
+Đầu vào: Địa điểm, thời gian mong muốn, loại hình dịch vụ (tour, vé, lớp học,...)
+Kết quả đầu ra: Danh sách dịch vụ có thể đặt, kèm giá, thời gian, thông tin người tổ chức, và nút thanh toán.
+Ví dụ sử dụng: Du khách ở Hội An có thể đặt “Tour làm đèn lồng 2 giờ” từ người dân địa phương.
+Chế độ sử dụng offline (Offline Mode)
+Mục đích: Hỗ trợ du khách khi mất kết nối mạng (vùng sâu, tàu xe, nước ngoài…)
+Đầu vào: Các mục được người dùng chọn tải về (bản đồ, lịch trình, từ điển, timeline,…)
+Kết quả đầu ra: App hoạt động được các tính năng cơ bản mà không cần mạng.
+Ví dụ sử dụng: Du khách ở Sapa tải trước lịch trình + bản đồ đi bộ, vẫn xem được thông tin khi ở bản làng không có sóng.
+Tích hợp AR tại điểm du lịch (Augmented Reality)
+Mục đích: Tăng tính tương tác và hiểu biết bằng cách chiếu thông tin ảo tại các điểm tham quan.
+Đầu vào: Vị trí GPS và camera.
+Kết quả đầu ra: Khi giơ camera tại di tích, app hiển thị hình ảnh, lời kể, video hướng dẫn, lịch sử địa điểm.
+Ví dụ sử dụng: Giơ máy tại Chùa Cầu – Hội An → hiện thông tin lịch sử, hình ảnh phục dựng qua các thời kỳ.
+Tích điểm đổi quà (Reward & Loyalty System)
+Mục đích: Khuyến khích người dùng tương tác nhiều hơn, quay lại app thường xuyên.
+Đầu vào: Hành động người dùng: check-in, đánh giá, chia sẻ, tặng compliment,...
+Kết quả đầu ra: Điểm thưởng tích lũy, có thể đổi lấy voucher ăn uống, vé vào cổng, món quà lưu niệm.
+Ví dụ sử dụng: Sau 10 lần check-in, người dùng nhận được mã giảm giá 50.000đ khi đặt lớp học nấu ăn truyền thống.
+Tự động nhận diện lịch trình từ ảnh vé/mã QR (Smart Scan)
+Mục đích: Giúp người dùng tiết kiệm thời gian lên lịch trình, đồng bộ nhanh với lịch cá nhân.
+Đầu vào: Ảnh vé máy bay, vé tàu, email xác nhận đặt phòng/tour.
+Kết quả đầu ra: App tự động đề xuất khung lịch trình phù hợp với thời gian và địa điểm.
+Ví dụ sử dụng: Người dùng chụp ảnh vé máy bay tới Huế vào ngày 20/8 → app gợi ý hành trình khám phá Huế trong 3 ngày.
+Bảng tổng hợp chức năng (chưa có các chức năng mở rộng)
+[TABLE]
+STT || Tên chức năng || Nhóm người dùng || Mô tả || Mức độ ưu tiên
+1 || Gợi ý thời điểm & địa điểm theo thời tiết, sở thích || Du khách || Đề xuất nơi và thời gian phù hợp dựa trên sở thích và thời tiết. || Cao
+2 || Gợi ý hoạt động gần vị trí hiện tại || Du khách || Hiển thị các điểm đến/hoạt động thú vị gần vị trí người dùng. || Cao
+3 || Giới thiệu văn hóa, món ăn, sản phẩm theo khu vực || Du khách || Cung cấp thông tin văn hóa và đặc sản theo từng vùng miền. || Trung bình
+4 || Hướng dẫn sử dụng app phổ biến (Zalo, Grab...) || Du khách || Video, hình ảnh hướng dẫn các ứng dụng phổ biến tại VN. || Trung bình
+5 || Từ điển ảnh AI (Image-based Translator) || Du khách || Nhận diện món ăn, đồ vật qua ảnh, cung cấp thông tin. || Cao
+6 || Cung cấp từ vựng, phiên âm, luyện phát âm || Du khách || Giúp người dùng học giao tiếp tiếng Việt cơ bản. || Trung bình
+7 || Lịch trình gợi ý theo sở thích cá nhân || Du khách || Tạo lịch trình tự động theo thời gian và sở thích người dùng. || Cao
+8 || Tạo nhật ký hành trình (timeline) || Du khách || Lưu giữ và chia sẻ hành trình, ảnh, địa điểm. || Trung bình
+9 || Lưu yêu thích (món ăn, địa điểm, người dân...) || Du khách || Cho phép lưu lại các địa điểm hoặc trải nghiệm yêu thích. || Cao
+10 || Tạo gian hàng mini đa ngôn ngữ || Người bản địa || Người dân đăng sản phẩm/dịch vụ để giới thiệu đến khách. || Cao
+11 || Mẫu đăng sản phẩm theo form || Người bản địa || Đăng sản phẩm theo mẫu sẵn, dễ thao tác, có đầy đủ thông tin. || Cao
+12 || Bộ lọc tìm kiếm thông minh || Người bản địa || Cho phép gắn tag để khách dễ tìm sản phẩm phù hợp (chay, cay...) || Trung bình
+13 || Tự động định vị trên bản đồ || Người bản địa || Xác định vị trí quán hàng trên Google Maps/OSM. || Cao
+14 || Nhận compliment từ du khách || Người bản địa || Tạo động lực và uy tín cho người dân nhờ lời khen từ du khách. || Trung bình
+15 || Thống kê lượt tương tác và bình luận || Người bản địa || Hiển thị số lượt xem, thả tim, bình luận để người bán theo dõi. || Thấp
+16 || Nút compliment (tương tác tích cực) || Chung || Cho phép người dùng gửi lời khen đến người dân. || Cao
+17 || Chia sẻ nhật ký hành trình || Chung || Cho phép người dùng chia sẻ hành trình qua mạng xã hội. || Trung bình
+18 || Gợi ý bạn đồng hành || Chung || Gợi ý kết nối du khách cùng lịch trình, sở thích. || Thấp
+19 || Đánh giá sau hành trình || Chung || Cho phép người dùng đánh giá điểm đến/sản phẩm/dịch vụ. || Trung bình
+[/TABLE]
+Kỹ thuật
+Frontend: Flutter (đa nền tảng: mobile, desktop)
+Backend: Supabase
+Xác thực: Open-source OAuth (Google, Facebook, email)
+UI/UX: Penpot hoặc Figma
+Quản lý dự án: Trello
+Kế hoạch khảo sát & tìm hiểu
+Khảo sát người dùng mục tiêu
+Khách du lịch nước ngoài: Dùng Google Forms hỏi về thói quen, nhu cầu, app đang dùng khi du lịch.
+Người bản địa: (chủ quán ăn, homestay...) phỏng vấn qua Zalo, Facebook.
+Nghiên cứu đối thủ
+Phân tích các ứng dụng: Klook, KKDay, Airbnb Experiences, Culture Trip hay những app gần với app của mình/ app nổi tiếng và hơi giống mà bạn biết.
+So sánh chức năng, UI, điểm mạnh/yếu.
+Tìm hiểu kỹ thuật
+Thử nghiệm Flutter (cross-platform).
+Khởi tạo Supabase DB (users, places, foods).
+Tìm hiểu xác thực OAuth (Firebase Auth vs Supabase Auth vs NextAuth).
+Kết luận
+"Hello Vietnam" nhằm mang lại trải nghiệm du lịch cá nhân hóa, kết nối văn hóa bản địa với du khách quốc tế, đóng góp vào việc nâng cao hình ảnh du lịch Việt Nam trên bản đồ quốc tế.
+Phúc
+Get Travel Recommendations – Gợi ý thời điểm & địa điểm du lịch
+Trải nghiệm khách hàng & Cài đặt hệ thống
+1. Nhập thông tin cơ bản
+Trải nghiệm: Người dùng mở tính năng, chọn ít nhất một trong hai:
+Thời gian đi du lịch
+Địa điểm mong muốn
+Hệ thống:
+Nếu có địa điểm → backend chuẩn hóa địa điểm (geocoding → tọa độ, vùng).
+Nếu có thời gian → backend ghi nhận để tính toán thời tiết/mùa.
+Nếu không chọn gì → hiển thị lỗi: “Vui lòng chọn ít nhất thời gian hoặc địa điểm.”
+Nếu offline → hiển thị thông báo: “Cần kết nối mạng để dùng tính năng này.”
+2. Nhập thêm thông tin tùy chọn
+Trải nghiệm: Người dùng có thể nhập số ngày lưu trú và chọn sở thích cá nhân (ẩm thực, thiên nhiên, lễ hội…).  Hệ thống:
+Lưu lại thông tin vào bộ nhớ tạm..
+Gửi toàn bộ input (bắt buộc + tùy chọn) lên backend qua API.
+3. Phân tích thời tiết & mùa du lịch
+Trải nghiệm: Người dùng bấm “Xem gợi ý”, hệ thống hiển thị trạng thái đang xử lý. Hệ thống:
+Backend gọi Weather API để lấy dữ liệu dự báo (≤16 ngày) hoặc climatology (nếu xa hơn).
+Tính WeatherScore từ các chỉ số (nhiệt độ, mưa, ẩm, UV).
+Kết quả được lưu vào cache để tránh gọi API nhiều lần.
+4. Cá nhân hóa theo sở thích & sự kiện
+Trải nghiệm: Người dùng chọn “Ẩm thực” hoặc “Lễ hội” trong phần sở thích. Hệ thống:
+Backend so khớp interests của người dùng với tags của destinations và events.
+Nếu có sự kiện trùng thời gian + sở thích → cộng thêm điểm ưu tiên.
+Nếu không có dữ liệu sự kiện → chỉ dựa vào tag chung của điểm đến.
+5. Xếp hạng & chọn gợi ý tối ưu
+Trải nghiệm: Người dùng thấy danh sách điểm đến xếp hạng theo mức độ phù hợp. Hệ thống:
+Backend tính tổng điểm = Weather + Season + Interest + Duration + EventBonus.
+Chuẩn hóa thang điểm (0–100).
+Chọn top 5–10 điểm đến có điểm cao nhất.
+7. Hiển thị lý do và tips
+Trải nghiệm: Trên mỗi card gợi ý, người dùng thấy: “Thời tiết đẹp”, “Có Festival Huế”, “Phù hợp với 7 ngày lưu trú”. Hệ thống:
+Lấy tips (ví dụ: nhiệt độ < 15°C → gợi ý “mang áo khoác”).
+Hiển thị tips kèm biểu tượng, có thể mở rộng.
+8. Tương tác sau khi nhận gợi ý
+Trải nghiệm: Người dùng chọn “Thêm vào yêu thích”. Hệ thống:
+Đồng bộ dữ liệu lưu vào server khi có mạng.
+Các lưu ý khi cài đặt hệ thống
+Tích hợp dịch vụ ngoài
+Phải có API key Weather/Geocoding.
+Cần cơ chế bảo mật, không hardcode API key trong ứng dụng.
+Đặt giới hạn retry và xử lý khi API ngoài bị timeout hoặc quota hết.
+Cache dữ liệu
+Cache kết quả Weather API trong 24–72 giờ để tiết kiệm chi phí và tăng tốc.
+Cache geocoding (tọa độ cho địa danh) để tránh gọi API lặp lại.
+Quản lý dữ liệu nội bộ
+Tạo bảng destinations với metadata (best_months, min_days, tags).
+Tạo bảng events để quản lý sự kiện du lịch theo địa phương.
+Có thể seed dữ liệu ban đầu thủ công cho các điểm đến lớn (Huế, Đà Nẵng, Đà Lạt, Hạ Long…).
+Trải nghiệm offline
+Nếu không có mạng: thông báo rõ ràng “Cần kết nối Internet để dùng tính năng này”.
+Cho phép lưu trước một số gói dữ liệu offline cơ bản (top 10 điểm đến).
+Hiệu năng & phản hồi
+Thời gian trả kết quả tối đa: 1.5 giây (có cache), 3 giây (khi gọi API).
+Đa ngôn ngữ & UX
+Tips, lý do và thông báo nên có song ngữ (Tiếng Việt + Tiếng Anh).
+UI cần đơn giản: 2 input bắt buộc, 2 input tùy chọn trong phần “Nâng cao”.
+Phân tích dữ liệu và lựa chọn điểm đến
+1. Xác định tiêu chí đánh giá gợi ý
+Mỗi gợi ý (địa điểm hoặc thời gian, tùy input) được tính một điểm tổng hợp dựa trên:
+Phù hợp thời điểm (TimeFit Score): 0–100, dựa vào dự báo thời tiết hoặc dữ liệu climatology (nhiệt độ, mưa, UV, độ ẩm).
+Phù hợp địa điểm (DestinationFit Score): nếu người dùng chọn địa điểm → hệ thống so khớp thời điểm đi với best_months, mùa cao điểm, lễ hội.
+Phù hợp thời gian (DurationFit Score): nếu người dùng nhập số ngày → so sánh với min_days hoặc recommended_days của điểm đến.
+Phù hợp sở thích (InterestMatch Score): nếu người dùng có nhập sở thích → tính % trùng giữa sở thích và tags của điểm đến/sự kiện.
+Điểm sự kiện (EventBonus Score): cộng thêm điểm nếu trong thời gian đó có lễ hội hoặc sự kiện đặc biệt.
+Độ phổ biến (Popularity Score): dựa trên số lượt chọn trước đó, hoặc số lần lưu gợi ý.
+2. Công thức tính điểm tổng hợp
+Dùng mô hình chấm điểm tuyến tính:
+FinalScore=w1 × TimeFit + w2 × DestinationFit + w3 × DurationFit + w4 × InterestMatch + w5  × EventBonus + w6 × Popularity + w7 × Feasibility
+Các trọng số (w1…w7) được điều chỉnh tùy thuộc vào dữ liệu khảo sát và mức độ quan trọng.
+Ví dụ:
+w1 (TimeFit) = 0.30
+w2 (DestinationFit) = 0.20
+w3 (DurationFit) = 0.20
+w4 (InterestMatch) = 0.15
+w5 (EventBonus) = 0.05
+w6 (Popularity) = 0.05
+Nếu người dùng không nhập sở thích hoặc không có số ngày → hệ thống loại bỏ thành phần đó khỏi công thức và chuẩn hóa lại trọng số.
+3. Dữ liệu khách quan
+Weather: từ API công khai (OpenWeather, Meteostat)
+Destination metadata: best_months, min_days, recommended_days, tags.
+Events: cơ sở dữ liệu sự kiện theo vùng/thời gian.
+Popularity: thống kê từ hệ thống (số lượt người dùng chọn, lưu gợi ý).
+Feasibility: tính toán thời gian di chuyển từ bản đồ (Google Maps, OpenStreetMap).
+4. Tránh chủ quan
+Không chỉ viết “thời điểm này đẹp để đi” → phải chứng minh bằng dữ liệu thời tiết (nhiệt độ, mưa, UV).
+Không chỉ viết “địa điểm này nổi tiếng” → phải có số liệu rating, số lượt chọn, hoặc đánh giá từ hệ thống.
+Phải mô tả rõ “độ hiệu quả”: bao nhiêu % người dùng chấp nhận gợi ý, độ chính xác so với lựa chọn cuối cùng.
+Thái
+Explore Local Culture & Cuisine
+Trải nghiệm khách hàng & Cài đặt hệ thống
+Mở mục “Khám phá văn hóa & ẩm thực” Trải nghiệm: Người dùng vào tab “Explore”. Hệ thống: Hiển thị 3 lối vào chính: Danh mục chủ đề, Bản đồ, Gợi ý gần tôi. Option cơ bản được nạp sẵn từ bộ dữ liệu offline.
+Chọn góc nhìn khám phá Trải nghiệm: Người dùng chọn theo Chủ đề (Văn hóa, Lễ hội, Ứng xử, Ẩm thực), theo Khu vực, hoặc “Gần tôi”. Hệ thống:
+Nếu có mạng: gọi API trả về danh sách điểm/ bài viết theo bộ lọc, kèm xếp hạng và ảnh bìa.
+Nếu offline: dùng gói micro-guide đã cache trong SQLite hoặc JSON.
+Xem thẻ nội dung văn hóa hoặc món ăn Trải nghiệm: Màn hình chi tiết gồm mô tả ngắn, “Nên làm” và “Tránh làm”, ảnh minh họa, câu Việt đơn giản có phiên âm, món tiêu biểu, khung giờ gợi ý. Thẻ item gồm các nội dung: phiên âm, mô tả, gợi ý địa điểm, video, bản đồ. Hệ thống:
+Render nội dung text và ảnh từ cache trước, sau đó lazy-load ảnh HD nếu có mạng.
+Hiển thị nút “Nghe” cho tên món và câu mẫu bằng audio TTS hoặc file thu âm đã cache.
+Gợi ý gần vị trí hiện tại Trải nghiệm: Ở tab Bản đồ hoặc “Gần tôi”, app gợi ý món đặc trưng, chợ đêm, phố ẩm thực, bảo tàng, lễ hội gần người dùng. Hệ thống:
+Xin quyền GPS. Nếu người dùng chưa cho phép GPS → chuyển sang khám phá theo chủ đề.
+Tính khoảng cách và thời gian di chuyển, ưu tiên điểm mở cửa, phù hợp thời điểm ngày.
+Nếu offline: hiển thị lớp bản đồ đơn giản và danh sách gợi ý tĩnh.
+Quy tắc ứng xử và mẹo ăn uống Trải nghiệm: Người dùng xem “Do & Don’t”, quy trình gọi món, tip văn hóa trả tiền, chia sẻ món. Hệ thống:
+Hiển thị checklist, câu mẫu kèm audio, link sang “Practice Phrases”.
+Cache nội dung để xem offline.
+Lưu, đánh dấu, và chia sẻ Trải nghiệm: Lưu danh sách món, quán, mẹo; chia sẻ thẻ nội dung. Hệ thống:
+Lưu cục bộ ngay.
+Đồng bộ server khi có mạng. Xuất ảnh thẻ nội dung nhẹ để chia sẻ.
+Gợi ý theo ngữ cảnh thời gian – vị trí Trải nghiệm: Gần giờ ăn tối, app nhắc nhẹ món địa phương xung quanh. Hệ thống:
+Chỉ kích hoạt nếu người dùng bật cho phép.
+Dùng geofence đơn giản, tần suất hợp lý để tiết kiệm pin.
+Fallback tắt nhắc nếu offline lâu.
+Dòng thay thế
+A2: Không có vị trí hoặc người dùng từ chối GPS → chuyển sang khám phá theo chủ đề. A3: Thiếu mạng và chưa có bundle offline → hiển thị “Tải gói nội dung trước chuyến đi”. A4: Điểm đến đóng cửa hoặc quá xa → đề xuất lựa chọn thay thế gần hơn.
+A5: Nếu dữ liệu khu vực chưa có → hiển thị thông báo ‘Đang cập nhật’ và gợi ý khu vực lân cận. A6: Lưu trùng → hợp nhất danh sách yêu thích. Nếu offline → hiển thị danh sách đã lưu.
+Tổng kết
+Những phần chỉ cần hiển thị
+Danh mục chủ đề, bài viết văn hóa, món tiêu biểu, mẹo ứng xử, hình ảnh minh họa.
+Những phần tương tác với thiết bị
+GPS để “Gần tôi” và Bản đồ.
+Loa để phát audio tên món và câu mẫu.
+Những phần tương tác với API
+Truy vấn danh sách điểm văn hóa, món ăn, quán gợi ý.
+Xếp hạng theo mức độ phù hợp, giờ mở cửa, khoảng cách.
+Đồng bộ danh sách yêu thích.
+Nội dung cần chuẩn bị
+Văn bản
+Chủ đề văn hóa: ứng xử bàn ăn, trang phục, chào hỏi, mặc cả, tip.
+Ẩm thực: món đặc trưng, mô tả ngắn, giá tham khảo, khu vực phổ biến, câu gọi món.
+Bản dịch đa ngôn ngữ. Câu Việt có phiên âm đơn giản để đọc.
+Hình ảnh
+Ảnh món, không gian ăn uống, biểu tượng văn hóa. Dung lượng đã nén.
+Âm thanh
+Audio tên món và câu mẫu. Ưu tiên giọng bản địa, có thể TTS cho phần ít quan trọng.
+Rating, độ phổ biến
+Metadata và cấu trúc quản lý
+Place: id, tên, loại, tọa độ, giờ mở cửa, giá, phù hợp sáng trưa chiều tối, rating, vùng.
+Dish: id, tên_vi, tên_en, phiên âm, mô tả, nguyên liệu chính, vùng, dịp lễ, mức cay, mức phổ biến.
+CultureCard: id, chủ đề, do_list, don’t_list, câu mẫu, link audio, ảnh.
+Quan hệ: Place ↔ Dish, Region ↔ CultureCard.
+Local cache: SQLite các bảng chính, TTL cho ảnh và audio.
+Lưu ý khi cài đặt
+Offline-first: gói nội dung cốt lõi theo thành phố.
+Quyền riêng tư: xin quyền vị trí rõ ràng, có chế độ chỉ dùng khi mở app.
+Hiệu năng: phân trang, lazy-load ảnh, nén audio.
+Chất lượng nội dung: chuẩn hóa giọng audio, thống nhất phiên âm.
+Khả dụng: hỗ trợ color-blind cho bản đồ heat điểm ăn uống, cỡ chữ lớn.
+Identify Dish or Item via AI
+Trải nghiệm khách hàng & Cài đặt hệ thống
+Chọn “Nhận diện món hoặc vật dụng” Trải nghiệm: Người dùng mở camera trong app hoặc chọn ảnh từ thư viện. Hệ thống:
+Xin quyền Camera và Ảnh.
+Hiển thị khung chụp, gợi ý “chụp rõ, đủ ánh sáng”.
+Chụp ảnh hoặc tải ảnh Trải nghiệm: Người dùng chụp ảnh món ăn, menu, đồ vật văn hóa. Hệ thống:
+Tiền xử lý ảnh trên thiết bị: crop, resize, nén.
+Nếu có mạng: gửi ảnh đã nén tới API AI nhận diện.
+Nhận diện và phân tích Trải nghiệm: App hiển thị kết quả chính và 2 đến 3 gợi ý thay thế với độ tin cậy. Hệ thống:
+Pipeline model:
+Food detection hoặc object detection.
+Classification theo danh mục món hoặc đồ vật.
+Kết hợp vị trí hiện tại và ngôn ngữ thiết bị để ưu tiên kết quả phù hợp vùng.
+Thẻ kết quả Trải nghiệm: Thẻ gồm tên món/đồ vật, mô tả ngắn, nguyên liệu chính hoặc chất liệu, dị ứng phổ biến, vùng xuất xứ, câu gọi món bằng tiếng Việt kèm audio, nơi gần nhất có món đó hoặc nơi thường gặp đồ vật này. Hệ thống:
+Lấy metadata từ DB, audio từ cache hoặc TTS.
+Nếu có mạng: gợi ý quán gần tôi có món tương tự.
+Nếu offline: hiển thị nội dung có sẵn, ẩn phần “gần tôi”.
+Hành động tiếp theo
+Trải nghiệm:
+“Nghe cách gọi món”.
+“Thêm vào lịch trình ăn” hoặc “Lưu vào yêu thích”.
+“Xem món tương tự”.
+“Xem hướng dẫn ăn / sử dụng đồ vật”
+Hệ thống:
+Ghi log sự kiện, đồng bộ khi online.
+Liên kết sang “Practice Phrases” để luyện nhanh.
+Dòng thay thế
+A2: Ảnh mờ hoặc thiếu sáng → nhắc chụp lại, bật đèn flash. A3: Độ tin cậy thấp → hỏi người dùng chọn một trong 3 gợi ý hoặc thêm ngữ cảnh “đang ở quận, nhà hàng”. A4: Không tìm thấy metadata → hiển thị khung “Gửi phản hồi để cập nhật sau”.
+Tổng kết
+Những phần chỉ cần hiển thị
+Thẻ kết quả: tên, mô tả, ảnh mẫu, nguyên liệu, dị ứng, câu gọi món, tương tự.
+Những phần tương tác với thiết bị
+Camera, Thư viện ảnh, Flash, Loa để phát audio, GPS để ưu tiên theo vùng.
+Những phần tương tác với API
+API nhận diện ảnh.
+API gợi ý quán gần tôi.
+Đồng bộ yêu thích và lịch sử nhận diện.
+Nội dung cần chuẩn bị
+Văn bản
+Từ điển món ăn theo vùng: tên đa ngôn ngữ, phiên âm, mô tả, dị ứng, nguyên liệu nổi bật, mức cay, cách ăn.
+Đồ vật văn hóa: tên, mô tả, chất liệu, bối cảnh sử dụng, bảo tàng hoặc khu phố liên quan.
+Câu gọi món ngắn gọn kèm phiên âm.
+Hình ảnh
+Ảnh mẫu chuẩn hóa cho mỗi món và đồ vật, nhiều góc độ.
+Ảnh mẫu thực địa để tăng độ robust.
+Âm thanh
+Audio tên món và câu gọi món.
+Có thể TTS cho phiên bản multi-language.
+Metadata và cấu trúc quản lý
+Dish: id, tên_vi, tên_en, phiên âm, mô tả, nguyên liệu, dị ứng, vùng, mức cay, ảnh_ids, audio_id.
+FoodAlias: dish_id, alias theo vùng, theo menu.
+Object: id, tên, mô tả, chất liệu, vùng, lễ hội liên quan, ảnh_ids.
+MenuLexicon: từ vựng thường gặp, viết tắt, lỗi chính tả phổ biến.
+ModelHints: tag hình ảnh, bối cảnh, mùa vụ, thời điểm trong ngày để rerank.
+Mapping theo vùng để ưu tiên kết quả.
+Lưu ý khi cài đặt
+Quyền riêng tư: xử lý ảnh cục bộ khi có thể, chỉ tải lên server khi người dùng đồng ý. Có tùy chọn “đóng góp ảnh để cải thiện AI”.
+Hiệu năng: giới hạn kích thước ảnh gửi lên, hiển thị skeleton trong lúc chờ, timeout hợp lý, retry với chất lượng thấp hơn nếu mạng yếu.
+Chất lượng nhận diện: hiển thị độ tin cậy, luôn cho phép người dùng chọn gợi ý khác, lưu phản hồi để fine-tune.
+Khả dụng: cảnh báo dị ứng rõ ràng, biểu tượng dễ hiểu, text lớn.
+Oanh
+Practice Essential Vietnamese Phrases
+Trải nghiệm khách hàng & Cài đặt hệ thống
+1. Chọn chủ đề cụm từ
+Trải nghiệm: Người dùng mở ứng dụng, chọn chủ đề như “Chào hỏi” hoặc “Ăn uống”.
+Hệ thống: Ứng dụng gọi API cơ sở dữ liệu để lấy danh sách cụm từ theo chủ đề.
+Nếu có mạng: gửi request đến server/database.
+Nếu offline: đọc dữ liệu từ bộ nhớ cục bộ (SQLite hoặc file JSON đã cache).
+2. Xem cụm từ và nghe phát âm
+Trải nghiệm: Người dùng thấy cụm từ “Xin chào” và nhấn nút loa để nghe audio.
+Hệ thống:
+Ứng dụng phát file audio qua trình phát âm thanh trên thiết bị.
+Nếu audio chưa tải về: ứng dụng kết nối API file server để tải file .mp3/.wav.
+Nếu audio đã cache: phát trực tiếp từ bộ nhớ cục bộ.
+3. Luyện phát âm (speech-to-text)
+Trải nghiệm: Người dùng nhấn nút micro, đọc “Xin chào”, và chờ phản hồi.
+Hệ thống:
+Ứng dụng yêu cầu quyền microphone của thiết bị.
+Âm thanh thu được gửi vào engine nhận diện giọng nói có sẵn trên thiết bị (Google Speech API trên Android, Apple Speech Recognition trên iOS).
+Kết quả text trả về từ API của hệ điều hành.
+Hệ thống so sánh text đó với cụm từ gốc trong cơ sở dữ liệu và phản hồi ngay.
+4. Lưu cụm từ yêu thích và tiến trình học
+Trải nghiệm: Người dùng đánh dấu “Xin chào” là cụm từ yêu thích.
+Hệ thống:
+Thao tác này được ghi vào bộ nhớ cục bộ để đảm bảo offline vẫn hoạt động.
+Khi có kết nối mạng, ứng dụng đồng bộ với API backend để lưu tiến trình lên server.
+5. Quiz và flashcard
+Trải nghiệm: Người dùng làm quiz: hệ thống hỏi “How to say Hello in Vietnamese?” và chờ người dùng chọn hoặc đọc ra.
+Hệ thống:
+Ứng dụng lấy câu hỏi từ cơ sở dữ liệu.
+Nếu quiz yêu cầu nói: lại kích hoạt microphone + speech recognition API.
+Kết quả được xử lý và hiển thị ngay trên app.
+6. Tổng kết
+Những phần chỉ cần hiển thị
+Bao gồm danh sách cụm từ, bản dịch.
+Dữ liệu có thể được lấy từ server hoặc đọc trực tiếp từ bộ nhớ cục bộ nếu đã cache/offline.
+Những phần tương tác với thiết bị
+Nghe phát âm: khi người dùng nhấn nút loa, ứng dụng phát audio bằng loa của thiết bị; nguồn audio có thể từ file server hoặc từ cache trong bộ nhớ.
+Luyện phát âm: khi người dùng nhấn nút micro, ứng dụng kích hoạt engine nhận diện giọng nói (speech recognition) có sẵn trên thiết bị để ghi âm và xử lý.
+Những phần tương tác với API
+Lấy dữ liệu: ứng dụng gửi yêu cầu đến API để lấy danh sách cụm từ theo chủ đề.
+Tải file audio/hình ảnh: nếu chưa có trong cache, ứng dụng sẽ kết nối đến file server để tải.
+Đồng bộ tiến trình học: khi người dùng lưu cụm từ yêu thích hoặc làm quiz, dữ liệu được ghi tạm vào bộ nhớ cục bộ và đồng bộ lên server qua API khi có kết nối mạng.
+Nội dung cần chuẩn bị cho chức năng
+1. Văn bản (Text)
+Cụm từ tiếng Việt: danh sách câu ngắn, dễ dùng trong tình huống thực tế (chào hỏi, hỏi đường, mua sắm, khẩn cấp…).
+Bản dịch: ít nhất là tiếng Anh; có thể bổ sung tiếng Pháp, tiếng Đức, tiếng Trung… tùy đối tượng khách du lịch.
+Cách lưu:
+Lưu trong cơ sở dữ liệu chính (server).
+Với chế độ offline: xuất ra file JSON/SQLite đóng gói trong ứng dụng để tải sẵn.
+2. Âm thanh (Audio)
+Audio mẫu: file phát âm chuẩn cho từng cụm từ. Có thể:
+Thu âm giọng bản xứ để tạo trải nghiệm tự nhiên.
+Hoặc sử dụng công cụ Text-to-Speech (TTS) để tạo file mp3/wav.
+Cách lưu:
+Trên server lưu trữ file (CDN, cloud storage).
+Trong ứng dụng, khi lần đầu tải sẽ cache vào bộ nhớ cục bộ.
+3. Hình ảnh minh họa (Image)
+Hình ảnh hỗ trợ “show & tell”: minh họa cho các cụm từ thường dùng (ví dụ: hình bát phở, chai nước, taxi).
+Giúp người dùng đưa điện thoại cho người địa phương xem nếu không nói được.
+Cách lưu:
+Bộ hình ảnh chuẩn hóa (PNG/JPG dung lượng nhẹ) được đóng gói trong ứng dụng.
+Có thể bổ sung ảnh mới từ server qua cập nhật, nhưng cần tối ưu dung lượng.
+Các lưu ý khi cài đặt hệ thống
+1. Kết nối API (server, cơ sở dữ liệu, file audio)
+Độ trễ và tốc độ tải:Khi người dùng gọi API lấy cụm từ hoặc audio, cần tối ưu để hiển thị nhanh (cache dữ liệu, nén file audio).
+Quyền truy cập và bảo mật:Không nên đưa khóa API dịch vụ backend trực tiếp trong app (dễ bị lộ). Cần phân tách khóa công khai (anon key) cho client và khóa riêng cho quản trị.
+Hoạt động offline:Người dùng du lịch có thể không có mạng, nên cần cơ chế tải sẵn dữ liệu và fallback về dữ liệu cục bộ.
+2. Engine nhận diện giọng nói trên điện thoại (speech-to-text)
+Quyền truy cập:Bắt buộc xin quyền microphone và speech recognition. Nếu người dùng từ chối, cần có thông báo giải thích cho người dùng.
+Độ chính xác:Engine của Google/Apple hoạt động tốt, nhưng tiếng Việt có dấu nên vẫn có khả năng nhận sai → chỉ nên dùng để phản hồi cơ bản, không chấm điểm tuyệt đối.
+Sự khác biệt giữa nền tảng: Android dễ dùng Google Speech API, iOS cần thêm khai báo quyền trong Info.plist. Cần test trên cả hai hệ điều hành.
+3. Lưu trữ dữ liệu (text, audio, hình ảnh)
+Trên server:
+Dữ liệu text trong cơ sở dữ liệu (dễ mở rộng).
+File audio/hình ảnh trên dịch vụ lưu trữ (CDN hoặc cloud storage) để truy cập nhanh.
+Trong ứng dụng (offline mode):
+Dữ liệu quan trọng (cụm từ + audio cơ bản) nên đóng gói sẵn trong app hoặc cho phép tải về trước chuyến đi.
+Dùng SQLite hoặc JSON để lưu cụm từ, folder riêng để cache audio/hình ảnh.
+Dung lượng:Tối ưu kích thước file audio và hình ảnh (nén, chọn định dạng nhẹ) để app không quá nặng khi tải offline.
+4. Đồng bộ dữ liệu người dùng (yêu thích, tiến trình học)
+Offline-first:Lưu tạm vào bộ nhớ cục bộ, sau đó đồng bộ lên server khi có internet.
+Xung đột dữ liệu:Nếu người dùng học trên nhiều thiết bị, cần cơ chế đồng bộ ưu tiên theo timestamp hoặc cho phép merge dữ liệu.
+5. Chức năng luyện âm:
+Sử dụng thuật toán Levenshtein Distance để đo độ tương đồng giữa 2 chuỗi
+=> Không chỉ trả kết quả đúng sai mà còn có tỉ lệ %.
+Cho người dùng làm quiz, sau mỗi quiz, hỏi người dùng đánh giá (1–5 sao) về sự rõ ràng và hữu ích của phần luyện phát âm.
+6. Có những thuật toán hiển thị để tối ưu hiệu quả học tập sau:
+6.1. Thuật toán dựa trên Spaced Repetition (Ôn tập ngắt quãng)
+Sử dụng mô hình như SM-2 (Anki) hoặc biến thể:
+Quiz sẽ lặp lại các từ/câu người học sai nhiều, nhưng theo khoảng cách thời gian tăng dần.
+Câu nào đã trả lời đúng nhiều lần -> hiển thị ít hơn.
+=> Tăng khả năng ghi nhớ dài hạn, tránh học vẹt.
+6.2. Adaptive Learning (Điều chỉnh theo năng lực)
+Dựa trên mức độ thành thạo:
+Nếu user sai nhiều -> quiz giảm độ khó, nhiều gợi ý hơn.
+Nếu user đúng liên tục -> quiz nâng cấp độ khó (tốc độ nhanh hơn, câu dài hơn).
+Có thể dùng Item Response Theory (IRT) để chọn câu hỏi phù hợp năng lực.
+6.3. Thuật toán xen kẽ (Interleaving Practice)
+Thay vì học 1 loại quiz liên tục, trộn lẫn:
+Nghe → nói → đọc → viết.
+Trắc nghiệm từ vựng xen với hoàn thành câu, chọn phát âm đúng.
+Giúp não “khó đoán”, tăng khả năng ứng dụng linh hoạt.
+6.4. Gamification + Randomization
+Quiz shuffle để tránh học thuộc vị trí đáp án.
+Thêm “boss level” hoặc checkpoint (ví dụ: 5 câu đúng liên tiếp để qua màn).
+Dùng hệ thống XP/coin/badge để duy trì động lực.
+6.5. Dựa vào dữ liệu hành vi (Learning Analytics)
+Ghi log thời gian làm quiz, số lần trả lời sai/đúng, phát âm bị lỗi.
+Thuật toán chọn quiz ưu tiên các từ hay quên hoặc phát âm sai.
+Áp dụng machine learning để dự đoán điểm yếu và gợi ý luyện tập.
+Generate Personalized Itinerary
+Trải nghiệm khách hàng & Cài đặt hệ thống
+1. Chọn mục “Lịch trình gợi ý”
+Trải nghiệm: Người dùng mở ứng dụng và chọn mục “Lịch trình gợi ý”.Hệ thống: Ứng dụng hiển thị giao diện lựa chọn thông tin cơ bản (thời gian lưu trú, khu vực, sở thích). Không cần kết nối mạng ở bước này vì dữ liệu option được nạp sẵn từ hệ thống.
+2. Chọn thông tin chuyến đi
+Trải nghiệm: Người dùng chọn từ danh sách có sẵn: thời gian lưu trú (1 tuần, 2 tuần…), khu vực (Hà Nội, Đà Nẵng, TP.HCM…), sở thích (ẩm thực, thiên nhiên, văn hóa, nghỉ dưỡng…).Hệ thống:
+Ứng dụng ghi nhận các lựa chọn.
+Nếu có mạng: gửi thông tin qua API đến server để phân tích.
+Nếu offline: gợi ý một số lịch trình mẫu có sẵn trong app.
+3. Hệ thống gợi ý điểm đến theo mốc thời gian
+Trải nghiệm: Người dùng thấy hệ thống gợi ý nhiều điểm đến/hoạt động phù hợp cho từng mốc thời gian (sáng – trưa – chiều – tối). Ví dụ: sáng – tham quan Hồ Gươm, trưa – ăn phở, chiều – tham quan Văn Miếu.Hệ thống:
+Server phân tích dữ liệu đầu vào.
+Truy vấn cơ sở dữ liệu để lấy danh sách điểm đến/hoạt động phù hợp với sở thích và thời gian.
+Trả về danh sách gợi ý được chia theo từng khung giờ.
+4. Người dùng chọn điểm yêu thích
+Trải nghiệm: Người dùng tự chọn những điểm gợi ý mà mình thích cho từng mốc thời gian.Hệ thống:
+Ứng dụng lưu lại danh sách lựa chọn của người dùng.
+Nếu có mạng: đồng bộ với server để chuẩn bị sinh lịch trình.
+Nếu offline: lưu tạm trong bộ nhớ cục bộ.
+5. Sinh lịch trình chi tiết
+Trải nghiệm: Sau khi người dùng xác nhận lựa chọn, ứng dụng hiển thị lịch trình chi tiết theo từng ngày, từng mốc thời gian dựa trên các điểm đã chọn.Hệ thống:
+API server tổng hợp lựa chọn, tạo lịch trình cuối cùng (timeline sáng – trưa – chiều – tối).
+Ứng dụng hiển thị lịch trình dạng timeline kèm bản đồ, gợi ý món ăn, mẹo trải nghiệm.
+Nếu offline: sinh lịch trình dựa trên dữ liệu mẫu đã có trong app.
+6. Lưu lịch trình
+Trải nghiệm: Người dùng có thể share lịch trình này lên trang cá nhân hoặc tải về dưới dạng PDF/ảnh.Hệ thống:
+Nếu có mạng: lưu lịch trình vào cơ sở dữ liệu cá nhân của người dùng.
+Nếu offline: lưu tạm vào bộ nhớ cục bộ và đồng bộ khi có kết nối.
+Tổng kết
+Những phần chỉ cần hiển thị
+Danh sách option (thời gian, khu vực, sở thích).
+Gợi ý điểm đến theo khung giờ.
+Lịch trình chi tiết sau khi người dùng chọn.
+Những phần tương tác với thiết bị
+GPS: hiển thị vị trí và chỉ đường.
+Bản đồ: dùng dịch vụ bản đồ (Google Maps hoặc OpenStreetMap).
+Những phần tương tác với API
+Phân tích dữ liệu đầu vào để gợi ý điểm đến.
+Lấy danh sách gợi ý điểm đến, hoạt động, món ăn, mẹo.
+Sinh lịch trình chi tiết sau khi người dùng chọn.
+Đồng bộ lịch trình đã lưu của người dùng.
+Nội dung cần chuẩn bị
+Văn bản (Text)
+Danh sách điểm đến/hoạt động chia theo loại hình (ẩm thực, văn hóa, thiên nhiên…).
+Mô tả ngắn, thời gian gợi ý.
+Gợi ý món ăn và mẹo trải nghiệm.
+Hình ảnh (Image)
+Hình ảnh điểm đến, món ăn, hoạt động.
+Dung lượng tối ưu để hiển thị nhanh.
+Metadata và cấu trúc quản lý
+Tag cho điểm đến: loại hình, khu vực, phù hợp thời gian nào (sáng, trưa, chiều, tối).
+Liên kết với bản đồ (tọa độ GPS).
+Các lưu ý khi cài đặt hệ thống
+Tích hợp bản đồ/GPS
+Phải xin quyền truy cập vị trí.
+Nên có bản đồ offline cơ bản cho du khách.
+Đồng bộ dữ liệu người dùng
+Offline-first: lưu tạm lựa chọn, đồng bộ khi có internet.
+Giải quyết xung đột nếu người dùng chỉnh sửa lịch trình trên nhiều thiết bị.
+Cách hệ thống phân tích dữ liệu và lựa chọn điểm đến
+Thu thập dữ liệu đầu vào
+User input: ngày lưu trú, khu vực, loại du lịch, sở thích.
+Contextual data: thời tiết, giờ mở cửa, mùa vụ.
+Lịch sử sử dụng: các lịch trình trước, hành vi chọn/bỏ.
+Lọc điểm đến theo điều kiện cơ bản
+Chỉ chọn những điểm phù hợp logic (cùng thành phố, mở cửa, hợp mùa).
+Lọc theo loại hình:
+Gia đình -> ưu tiên các địa điểm an toàn, phù hợp trẻ em (công viên, bảo tàng, khu vui chơi, bãi biển có dịch vụ).
+Cặp đôi -> gợi ý điểm lãng mạn (cảnh đẹp ngắm hoàng hôn, resort yên tĩnh, trải nghiệm riêng tư).
+Nhóm bạn -> gợi ý hoạt động nhiều người tham gia (team-building, bar/pub, trekking nhóm, thể thao dưới nước).
+Cá nhân -> gợi ý trải nghiệm tự do, dễ di chuyển một mình (walking tour, café độc đáo, homestay).
+Loại bỏ điểm không khả thi (quá xa > X km so với timeline, đóng cửa ngày đó).
+Đánh giá và xếp hạng điểm đếnHệ thống tính điểm cho từng điểm đến dựa trên nhiều tiêu chí:
+x2: Chuẩn hóa từ rating thực (1–5 sao). => lọc trước với ngưỡng
+x3: Số lượt check-in, review (log scale).  => lọc trước với ngưỡng
+x5: Độ phù hợp mùa/điều kiện thời tiết. => lọc trước
+x1: Mức độ khớp giữa sở thích người dùng, loại du lịch và category/tags của điểm đến.
+Lọc thông tin input
+Thuật toán gợi ý: (gợi ý dựa trên nội dung, dựa trên lọc cộng tác)
+Dựa trên tt user
+Dựa trên lịch sử trải nghiệm của user (rate, like)
+Score = a.x1 + b.x2 + c.x3 + e.x5
+x4: Độ phù hợp với mốc giờ (sáng/chiều/tối).
+Lưu ý:
+Khi phân tích dữ liệu hành vi, hệ thống có thể kiểm tra: Khách lựa chọn sở thích có nhiều tương đồng với loại hình gia đình không, từ đó tinh chỉnh trọng số f để gợi ý càng chính xác.
+Sắp xếp:
+Chọn top-N điểm có điểm số cao nhất cho từng mốc thời gian.
+Giữ log tính điểm (feature contribution) -> explainability: hệ thống có thể giải thích vì sao đề xuất (ví dụ: “Gợi ý Hồ Gươm vì phù hợp sở thích thiên nhiên)
+Tối ưu hóa timeline: => phải khảo sát ngta dựa trên tuổi hay gì (tour, app…)
+Gia đình: tránh lịch dày, ưu tiên nghỉ trưa dài.
+Nhóm bạn: timeline có thể dày hơn, nhiều hoạt động ban đêm.
+Cặp đôi: timeline có thêm khoảng thời gian trống (không bị “nhồi nhét”).
+Cá nhân: có thể linh hoạt, nhiều trải nghiệm cá nhân.
+Sinh lịch trình chi tiết cuối cùng
+Hệ thống tổng hợp các lựa chọn, sắp xếp vào timeline từng ngày.
+Kèm bản đồ chỉ đường, gợi ý món ăn đặc trưng và mẹo trải nghiệm.
+Những nhóm attribute quan trọng:
+1 object địa điểm gồm:
+Thông tin cơ bản: id, tên, mô tả, địa chỉ, tọa độ (dùng để liên kết link tới map).
+Phân loại: category, subCategory, tags.
+Chi phí: priceRange, estimatedCost.
+Thời gian: openHours, seasonality, recommendedTimeSlots, durationMinutes.
+Định lượng khách quan: rating, ratingCount, popularityScore.
+Không gian: coords, region, city.
+Nội dung phụ trợ: images, relatedFoods, transport.
+Metadata quản trị: nguồn, cập nhật cuối.
+User input:
+Số ngày lưu trú (Duration options)
+1 ngày (day trip)
+2 ngày 1 đêm
+3 ngày 2 đêm
+5 ngày 4 đêm
+7 ngày (1 tuần)
+10 ngày
+14 ngày (2 tuần)
+21 ngày (3 tuần)
+Loại hình du lịch (Travel type)
+Cá nhân (Solo travel)
+Gia đình (Family trip, có trẻ nhỏ)
+Nhóm bạn (Group travel, 3–6 người)
+Cặp đôi (Couple / Honeymoon)
+Sở thích (Preferences / Categories)
+Văn hóa – Lịch sử (Culture & History)
+Bảo tàng, di tích, chùa đền
+Làng nghề truyền thống
+Kiến trúc (nhà cổ, phố cổ, cung đình)
+Thiên nhiên – Ngoài trời (Nature & Outdoor)
+Leo núi, trekking
+Tham quan hang động
+Bãi biển, lặn ngắm san hô
+Công viên quốc gia
+Nghỉ dưỡng (Relaxation & Wellness)
+Resort biển
+Spa, massage
+Tắm khoáng nóng, suối nước nóng
+Khám phá – Phiêu lưu (Adventure)
+Thể thao dưới nước (kayak, lướt sóng)
+Motorbike tour / off-road
+Zipline, dù lượn
+Giải trí – Mua sắm (Entertainment & Shopping)
+Chợ đêm, trung tâm thương mại
+Quán bar, pub, café độc đáo
+Công viên giải trí
+Tham quan chợ đêm / street food
+Trải nghiệm cộng đồng (Community & Local life)
+Homestay cùng dân bản
+Tình nguyện / nông trại
+Lễ hội địa phương
+Khách sạn, motel…
+Quán ăn, nhà hàng…
+Tự tạo lịch trình chuyến đi (ghé qua địa điểm nào, mặc định đi xe máy) với api link tới google maps để người dùng tự chọn loại phương tiện và tự xem tổng thời gian đi.
+Oanh 2
+PostGIS
+PostgreSQL vốn là hệ quản trị cơ sở dữ liệu quan hệ (RDBMS).
+Khi cài thêm PostGIS, PostgreSQL trở thành một Spatial Database (cơ sở dữ liệu không gian) — có thể lưu trữ, truy vấn, và phân tích dữ liệu địa lý (geographic hoặc geometric).
+PostGIS thêm vào PostgreSQL:
+Kiểu dữ liệu không gian, ví dụ:
+GEOMETRY (hình học phẳng)
+GEOGRAPHY (dữ liệu theo kinh độ/vĩ độ)
+Hàm xử lý không gian, như:
+ST_Distance(a, b) — tính khoảng cách giữa hai điểm.
+ST_Area(polygon) — tính diện tích vùng.
+ST_Intersects(a, b) — kiểm tra hai vùng có giao nhau không.
+ST_Buffer(point, distance) — tạo vùng bao quanh điểm.
+PostGIS thường được dùng trong:
+Hệ thống bản đồ (GIS) — như QGIS, GeoServer, MapServer.
+Ứng dụng định vị (location-based apps): tìm quán gần nhất, khoảng cách giữa hai địa điểm.
+Phân tích địa lý: vùng phủ sóng, khu vực rủi ro, phân vùng dân cư.
+Quản lý hạ tầng: đường xá, mạng điện, cống rãnh, viễn thông.
+POI:
+POI là điểm quan tâm hoặc địa điểm đáng chú ý trên bản đồ, ví dụ: quán cà phê, trạm xăng, bệnh viện, trường học, nhà hàng, điểm du lịch, v.v.
+Mỗi POI có tọa độ không gian (latitude, longitude) và thông tin mô tả đi kèm.
+POI thường là một điểm (Point) trong dữ liệu GIS (Geographic Information System) hoặc PostGIS.
+Google Maps Directions API:
+Chức năng:
+Tính lộ trình theo nhiều phương tiện: ô tô (driving, có hỗ trợ kẹt xe), đi bộ, xe đạp, phương tiện công cộng (transit).
+Đi qua nhiều điểm dừng (waypoints) và chia lộ trình thành nhiều “legs”. (Lưu ý: waypoint áp dụng cho driving/walking/cycling — không áp dụng cho transit.)
+Tối ưu thứ tự điểm dừng (tự động sắp xếp route để tổng thời gian/độ dài tối ưu) — hiện làm qua Routes API với optimizeWaypointOrder=true.
+ETAs có xét giao thông thực tế: đặt departure_time (hiện tại hoặc tương lai) + traffic_model để nhận duration_in_traffic cho chế độ lái xe.
+Nhiều cách chỉ định điểm: địa chỉ văn bản, Place ID, hoặc tọa độ lat/lng.
+Tham số điều chỉnh lộ trình: tránh cao tốc/thu phí/phà (avoid=highways|tolls|ferries), chọn ngôn ngữ/đơn vị, lấy đường polyline để vẽ route trên bản đồ, kèm steps (hướng rẽ) và fare cho transit.
+Nhiều phương án tuyến (alternatives) để người dùng so sánh.
+1. Kết hợp điểm hội nghị / công việc vào lịch trình
+Dùng PostGIS để lưu và truy vấn dữ liệu POI, tính khoảng cách từ điểm hội nghị hoặc công việc đến các địa điểm xung quanh bằng ST_Distance hoặc ST_DWithin.
+Dùng Google Maps Directions API để tạo lộ trình di chuyển giữa các điểm (origin → hội nghị → POI → khách sạn).
+Dùng PostGIS để lọc POI theo bán kính (ví dụ 2 km quanh địa điểm hội nghị), sau đó gửi danh sách đó vào Directions API để tính tuyến tối ưu.
+2. Tối ưu thời gian di chuyển và tránh giờ cao điểm
+Dùng Google Maps Directions API (hoặc Routes API) với departure_time và traffic_model để tính ETA có xét đến giao thông thực tế (duration_in_traffic).
+Dùng optimizeWaypointOrder=true để sắp xếp thứ tự điểm dừng hợp lý, giảm tổng thời gian di chuyển.
+Dùng PostGIS để xác định các POI gần nhất trước khi gửi yêu cầu đến API, giúp giảm chi phí tính toán.
+3. Gợi ý lịch trình theo mùa
+Lưu thêm thuộc tính mùa hoặc điều kiện thời tiết cho từng POI (ví dụ: summer_only, indoor, outdoor) hoặc thêm cột best_months hoặc season trong bảng địa điểm.
+Logic: Khi người dùng chọn “I will travel in March – May”, hệ thống ưu tiên địa điểm có best_months chứa khoảng thời gian này.
+Có thể hiển thị thêm “Lý do gợi ý” (ví dụ: “Mùa hoa tam giác mạch ở Hà Giang” hoặc “Thời điểm lặn biển đẹp ở Phú Quốc”).
+Dùng PostGIS để lọc POI phù hợp theo mùa và khu vực.
+Dùng Directions API để tính tuyến di chuyển giữa các POI được chọn (ví dụ: chọn điểm trong nhà vào mùa mưa, điểm ngoài trời vào mùa khô).
+4. Gợi ý ba gói lịch trình (Tiết kiệm – Tiêu chuẩn – Nâng cao trải nghiệm)
+Dùng Google Maps Directions API với alternatives=true để lấy nhiều tuyến khả thi.
+Áp dụng tham số avoid=tolls cho gói tiết kiệm, avoid=highways cho gói trải nghiệm.
+4.1. Mục tiêu sản phẩm
+Đa dạng hóa lựa chọn theo ngân sách và khẩu vị trải nghiệm.
+Duy trì cấu trúc lịch trình nhất quán (buổi sáng – trưa – chiều – tối) nhưng thay đổi “chất lượng” điểm đến, dịch vụ, và chi phí.
+Cho phép người dùng chuyển cấp độ tức thì mà không phải nhập lại thông tin.
+4.2. Định nghĩa 3 cấp độ
+Tiết kiệm: chỗ ở bình dân, ăn uống bình dân/quán địa phương, ưu tiên điểm miễn phí hoặc phí thấp, di chuyển công cộng/đi bộ, tối đa hóa số điểm trong ngày nhưng khoảng cách ngắn.
+Tiêu chuẩn: khách sạn tầm trung, nhà hàng phổ thông–khá, kết hợp điểm nổi tiếng và một vài trải nghiệm trả phí, cân bằng giữa số điểm và thời gian nghỉ.
+Nâng cao trải nghiệm: lưu trú boutique/đặc sắc, nhà hàng/đầu bếp địa phương, workshop thủ công/ẩm thực, tour riêng/nhỏ, ưu tiên “ít nhưng chất”.
+4.3. Chuẩn hoá khái niệm ngân sách ???
+Mọi giá lưu trong cơ sở dữ liệu theo VND, có bảng tỷ giá để hiển thị đa tiền tệ.
+Trên mỗi thành phố hoặc khu vực, khai báo “band chi phí” tham khảo theo ngày/người, ví dụ:
+Tiết kiệm: ví dụ 400k–800k VND/ngày
+Tiêu chuẩn: 800k–1.8M VND/ngày
+Nâng cao: 1.8M–5M+ VND/ngày
+Phân loại vùng, mỗi cấp một vùng một khoảng chi phí => khảo sát mức sống bình quân từng vùng
+4.4. Chọn lịch trình theo cấp độ => suy nghĩ thuật toán (xem lại)
+Tiết kiệm:
+Lưu trú: price_level=1; distance đến trung tâm ≤ 3–5 km để giảm chi phí di chuyển.
+Ăn uống: price_level=1; ưu tiên quán địa phương.
+Hoạt động: miễn phí/thấp phí; tối đa 4–5 mục/ngày, tổng thời gian di chuyển ≤ 90 phút/ngày.
+Tiêu chuẩn:
+Lưu trú: price_level=2; vị trí thuận tiện.
+Ăn uống: price_level=1–2; một bữa “đặc sản có đặt chỗ”.
+Hoạt động: vé vào cửa phổ biến; 3–4 mục/ngày; tổng di chuyển ≤ 120 phút.
+Nâng cao trải nghiệm:
+Lưu trú: price_level=3 hoặc class=boutique.
+Ăn uống: 1 bữa “signature”/fine-local; có workshop/tour riêng.
+Hoạt động: 2–3 mục trọng tâm; tổng di chuyển ≤ 90 phút; tránh giờ cao điểm nhiều hơn.
+5. Map có hỗ trợ phương tiện di chuyển
+Routes API và Directions API cung cấp dữ liệu chi tiết cho các phương tiện: ô tô, đi bộ, xe đạp, phương tiện công cộng (mode=driving|walking|bicycling|transit).
+Khi người dùng mở lịch trình, hệ thống hiển thị thông tin phương tiện di chuyển (ví dụ: tuyến xe buýt, tàu điện ngầm, thời gian chuyển trạm, khoảng cách đi bộ giữa các chặng).
+PostgreSQL lưu loại phương tiện (transport_mode) cho từng chặng, giúp hiển thị đồng nhất giữa hệ thống nội bộ và Google Maps.
+6. Hiển thị thông tin y tế và đại sứ quán khi xem bản đồ
+Ở mỗi điểm trong lịch trình (hotel, hội nghị, POI), hiển thị nút: “Xem xung quanh”.
+Khi bấm, mở bottom sheet với hai tab: “Y tế” và “Đại sứ quán”.
+Mỗi tab liệt kê các điểm gần nhất theo bán kính cấu hình (ví dụ 1–3 km), xếp theo khoảng cách và trạng thái mở cửa.
+Mỗi item có các hành động: Gọi/Website, Xem chi tiết, Chỉ đường (mở Google Maps deeplink).
+Có nút “Mở cả lớp trên bản đồ” để bật overlay tất cả điểm Y tế/Đại sứ quán gần điểm đó trong chế độ Overview của app.
+Công nghệ:
+Bước 1: Lưu và truy vấn dữ liệu
+Dùng PostgreSQL + PostGIS để lưu dữ liệu y tế và đại sứ quán
+Dùng ST_DWithin để lọc điểm gần, ST_Distance để tính khoảng cách và sắp xếp.
+Bước 2: Bổ sung thông tin chi tiết (giờ mở cửa, liên hệ, website)
+Dùng Google Places API (Nearby Search / Place Details) để lấy hoặc đối chiếu dữ liệu thực tế theo Place ID.
+Bước 3: Hiển thị danh sách và bản đồ trong app
+Dùng Google Maps JavaScript API (hoặc Maps SDK for Android/iOS) để hiển thị marker và overlay layer (GeoJSON).
+Dùng React / Android BottomSheet / iOS Sheet để hiển thị danh sách (bottom sheet) theo tab “Y tế” và “Đại sứ quán”.
+Bước 4: Chỉ đường từ điểm hiện tại đến địa điểm được chọn
+Dùng Google Maps Directions API hoặc deeplink (https://www.google.com/maps/dir/?api=1&destination=lat,lng) để mở lộ trình điều hướng.
+Bước 5: Mở lớp bản đồ tổng quan (Overview)
+Dùng GeoJSON layer từ API nội bộ (PostGIS → GeoJSON) để overlay các điểm y tế/đại sứ quán lên bản đồ.
+Refs:
+https://developers.google.com/maps/documentation/directions/overview
+Phúc 2
+Mục tiêu
+Xin phép người dùng xóa các dữ liệu cá nhân đã dùng cho cá nhân hóa và AI sau khi kết thúc lịch trình.
+Minh bạch nội dung xóa.
+Thời điểm kích hoạt
+Sau khi lịch trình kết thúc.
+Kích hoạt một lần cho mỗi Plan.
+Nội dung thông báo
+Tiêu đề: Bảo vệ quyền riêng tư sau chuyến đi
+Thông điệp: “Bạn có muốn xóa một số dữ liệu cá nhân đã dùng cho gợi ý và AI trong chuyến đi vừa rồi không?”
+Các thông tin sẽ xóa:
+Sở thích dùng cho gợi ý (Favorites)
+Hình ảnh đã gửi cho AI (Ảnh gốc)
+Lịch trình đã trải nghiệm (Kế hoạch và các hạng mục trong chuyến)
+Nút: Xóa ngay | Giữ lại
+Phạm vi dữ liệu sẽ xóa khi người dùng đồng ý
+Sở thích dùng cho gợi ý
+Toàn bộ mục yêu thích gắn với Plan hoặc phát sinh trong chuyến.
+Tác động:
+Gợi ý cá nhân hóa trở về mặc định.
+Hình ảnh đã gửi cho AI
+Tệp ảnh do người dùng tải lên trong chuyến.
+Tác động:
+Ảnh bị xóa khỏi kho lưu trữ.
+Lịch trình đã trải nghiệm
+Bản ghi chuyến đi đã hoàn tất.
+Các hạng mục, điểm đến, ngày-giờ trong chuyến.
+Tác động:
+Mục “Lịch trình của tôi” không còn chuyến đó.
+Dòng thời gian, bản đồ hành trình không còn hiển thị.
+Trình bày “Chi tiết dữ liệu sẽ xóa”
+Sở thích dùng cho gợi ý
+Gồm các địa điểm đã thích, các đánh giá và phản hồi được dùng để cá nhân hóa đề xuất.
+Hình ảnh AI
+Gồm ảnh bạn đã tải lên để nhận diện và mọi kết quả phân tích từ các ảnh đó.
+Lịch trình đã trải nghiệm
+Gồm tên chuyến, ngày đi, danh sách điểm đến và hoạt động trong chuyến.
+Ảnh hưởng tới tính năng sau khi xóa
+Trang đề xuất địa điểm, lộ trình gợi ý: hiển thị kết quả mặc định theo khu vực thay vì cá nhân hóa.
+Lịch sử AI: trống, không thể xem lại ảnh/nhãn cũ.
+Lối tắt trong Cài đặt
+Mục Quyền riêng tư có nút “Xóa dữ liệu sau chuyến” với cùng 2 tùy chọn.
+Có công tắc bật/tắt “Luôn nhắc tôi xóa sau chuyến đi”.
+Thái 2
+Đức Anh 2
+THÔNG BÁO
+Voucher Available (Sử dụng dữ liệu trên bảng nào, được sd ntn)
+Mục tiêu: Báo có voucher mới.
+Thời điểm kích hoạt: Gán voucher cho user.
+Nội dung thông báo
+Tiêu đề: Bạn có voucher mới
+Thông điệp: “Nhấn để xem và áp dụng.”
+Deeplink: hvn://voucher/<voucher_id>
+Nút: Xem voucher | Bỏ qua
+Premium Expiry Warning
+Mục tiêu: Nhắc gia hạn gói.
+Thời điểm kích hoạt: expiry_date - 3 ngày.
+Nội dung thông báo
+Tiêu đề: Premium sắp hết hạn
+Thông điệp: “Gia hạn để không gián đoạn quyền lợi.”
+Deeplink: hvn://billing
+Nút: Gia hạn | Bỏ qua
+Forum Interaction
+Mục tiêu: Báo reply/mention/topic theo dõi.
+Thời điểm kích hoạt: Có bài trả lời/mention mới liên quan user.
+Nội dung thông báo
+Tiêu đề: Có hoạt động mới trong chủ đề bạn theo dõi
+Deeplink: hvn://forum/topic/<id>
+Nút: Xem bài viết.
+Post-trip Review Prompt
+Mục tiêu: Thu thập đánh giá sau chuyến đi..
+Thời điểm kích hoạt: plan.end_at + 1 ngày.
+Nội dung thông báo
+Tiêu đề: Đánh giá trải nghiệm sau chuyến đi
+Thông điệp: “Nhấn để đánh giá các điểm đã ghé.”
+Deeplink: hvn://plan/<plan_id>/review
+Nút: Đánh giá ngay | Để sau..
+Oanh 3
+4. Gợi ý ba gói lịch trình (Tiết kiệm – Tiêu chuẩn – Nâng cao trải nghiệm)
+Dùng Google Maps Directions API với alternatives=true để lấy nhiều tuyến khả thi.
+Áp dụng tham số avoid=tolls cho gói tiết kiệm, avoid=highways cho gói trải nghiệm.
+4.1. Mục tiêu sản phẩm
+Đa dạng hóa lựa chọn theo ngân sách và khẩu vị trải nghiệm.
+Duy trì cấu trúc lịch trình nhất quán (buổi sáng – trưa – chiều – tối) nhưng thay đổi “chất lượng” điểm đến, dịch vụ, và chi phí.
+Cho phép người dùng chuyển cấp độ tức thì mà không phải nhập lại thông tin.
+4.2. Định nghĩa 3 cấp độ
+Tiết kiệm: chỗ ở bình dân, ăn uống bình dân/quán địa phương, ưu tiên điểm miễn phí hoặc phí thấp, di chuyển công cộng/đi bộ, tối đa hóa số điểm trong ngày nhưng khoảng cách ngắn.
+Tiêu chuẩn: khách sạn tầm trung, nhà hàng phổ thông–khá, kết hợp điểm nổi tiếng và một vài trải nghiệm trả phí, cân bằng giữa số điểm và thời gian nghỉ.
+Nâng cao trải nghiệm: lưu trú boutique/đặc sắc, nhà hàng/đầu bếp địa phương, workshop thủ công/ẩm thực, tour riêng/nhỏ, ưu tiên “ít nhưng chất”.
+4.3. Chuẩn hoá khái niệm ngân sách ???
+Mọi giá lưu trong cơ sở dữ liệu theo VND, có bảng tỷ giá để hiển thị đa tiền tệ.
+Trên mỗi thành phố hoặc khu vực, khai báo “band chi phí” tham khảo theo ngày/người, ví dụ:
+Tiết kiệm: ví dụ 400k–800k VND/ngày
+Tiêu chuẩn: 800k–1.8M VND/ngày
+Nâng cao: 1.8M–5M+ VND/ngày
+Phân loại vùng, mỗi cấp một vùng một khoảng chi phí => khảo sát mức sống bình quân từng vùng
+4.4. Chọn lịch trình theo cấp độ => suy nghĩ thuật toán (xem lại)
+Tiết kiệm:
+Lưu trú: price_level=1; distance đến trung tâm ≤ 3–5 km để giảm chi phí di chuyển.
+Ăn uống: price_level=1; ưu tiên quán địa phương.
+Hoạt động: miễn phí/thấp phí; tối đa 4–5 mục/ngày, tổng thời gian di chuyển ≤ 90 phút/ngày.
+Tiêu chuẩn:
+Lưu trú: price_level=2; vị trí thuận tiện.
+Ăn uống: price_level=1–2; một bữa “đặc sản có đặt chỗ”.
+Hoạt động: vé vào cửa phổ biến; 3–4 mục/ngày; tổng di chuyển ≤ 120 phút.
+Nâng cao trải nghiệm:
+Lưu trú: price_level=3 hoặc class=boutique.
+Ăn uống: 1 bữa “signature”/fine-local; có workshop/tour riêng.
+Hoạt động: 2–3 mục trọng tâm; tổng di chuyển ≤ 90 phút; tránh giờ cao điểm nhiều hơn.
+Tiêu chuẩn chi phí:
+Những cái có trong tính toán của mình
+Rating
+Số lượt check-in, review
+Độ phù hợp mùa/điều kiện thời tiết.
+Fav list
+Category
+Group type ?
+Giá món ăn, giá vé tham gia các trò chơi, giá thuê phòng…
+Khảo sát mức sống (chi tiêu và tiêu dùng lương thực, thực phẩm)
+Ref: https://www.nso.gov.vn/tin-tuc-thong-ke/2025/05/thong-cao-bao-chi-ket-qua-khao-sat-muc-song-dan-cu-nam-2024/
+Phân cấp đô thị:
+Loại đặc biệt: TP Hà Nội, TP HCM
+Loại I: TP Hải Phòng, TP Đà Nẵng, TP Cần Thơ, TP Huế.
+Loại II:
+Loại III:
+Level 1 (nông thôn): 2.5M 1ng/1 tháng
+Gồm các tỉnh thành:
+Level 2 (thành thị): 3.8M 1ng/1 tháng
+Gồm các tỉnh thành:
+Phân loại vùng, gán giá trị cho từng mức. Ví dụ thành phố/ tỉnh nào có cấp 1 2 3 thì mỗi cấp sẽ có 1 khoảng chi phí tương ứng.
+Level 1:
+Tiết kiệm:
+Tiêu chuẩn:
+Nâng cao
+Level 2:
+Tiết kiệm:
+Tiêu chuẩn:
+Nâng cao:
+Level 3:
+Tiết kiệm:
+Tiêu chuẩn:
+Nâng cao:
+Xem xét bỏ nó vào tính toán thế nào
+Flow code
+Phúc
+Đăng nhập/Đăng ký - Homepage - recommendation - đăng xuất
+Đăng nhập/Đăng ký - Homepage - explore culture - đăng xuất
+Đăng nhập/Đăng ký - Homepage - Wishlist - đăng xuất
+Đăng nhập/Đăng ký - Homepage - feedback - đăng xuất
+Sau khi người dùng hoàn thành trip planner → Delete personal data
+Thái:
+Đức Anh:
+Đăng nhập/Đăng ký - Homepage - Voucher
+Đăng nhập/Đăng ký -
+Oanh:
+User:
+Đăng nhập - Popular Apps - Chi tiết App Guide (dạng post) - đăng xuất
+Đăng nhập - Trip Planner (9 screens) - đăng xuất
+Admin:
+Đăng nhập - Popular Apps - CRUD từng post - đăng xuất
+Ưu tiên làm:
+Đăng ký, đăng nhập, quên mk, đăng xuất 0
+Profile 2 P
+Noti 3 P
+Explore 1 ĐA
+Recommend 1 O
+Plan trip 1 ĐA
+Wish list 3 P
+App guide 2 O
+AI 2
+Delete data 2
+Feedback 0
+Hỗ trợ dịch 3
+Dashboard 1
+Reward voucher 2
+Management 1
+Forum 1
+Upgrade account 2
+Tab 14
+Thuật toán
+Các cột data cần dùng cho thuật toán
+place:
+Id_place
+osm_id
+name
+description
+place_subcategory
+timeopen (xem loại nào, vd ks mở 24/24… => cài ràng buộc)
+Timeclose
+is_24h
+rating_avg
+Rating_count
+price_level
+Jsonb (chứa ảnh)
+updated_by
+updated_at
+status (còn hoạt động/ngừng hoạt động)
+Từ hệ thống:
+Từ user cung cấp:
+Địa điểm cá nhân hóa phù hợp sở thích:
+Hệ thống tính điểm cho từng điểm đến dựa trên nhiều tiêu chí:
+x2: Chuẩn hóa từ rating thực (1–5 sao). => lọc trước với ngưỡng
+x3: Số lượt check-in, review (log scale).  => lọc trước với ngưỡng
+x5: Độ phù hợp mùa/điều kiện thời tiết. => lọc trước
+x1: Mức độ khớp giữa sở thích người dùng, loại du lịch và category/tags của điểm đến.
+Lọc thông tin input
+Thuật toán gợi ý: (gợi ý dựa trên nội dung, dựa trên lọc cộng tác)
+Dựa trên tt user
+Dựa trên lịch sử trải nghiệm của user (rate, like)
+Score = a.x1 + b.x2 + c.x3 + e.x5
+x4: Độ phù hợp với mốc giờ (sáng/chiều/tối).
+Áp dụng Trip package để tối ưu hóa thuật toán:

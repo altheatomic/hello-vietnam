@@ -1,0 +1,1043 @@
+TRNG I HC KHOA HC T NHIN
+KHOA CNG NGH THNG TIN
+TRN NGC LAM  NGUYN PHNG VY
+TRIU MINH DNG  NGUYN KIM TH T NGA
+PHM ON NGC TRINH  TNG GIA QUYN
+NG DNG GI  LCH TRNH
+CHO NGI DU LCH T TC
+THC TP D N TT NGHIP C NHN CNTT
+CHNG TRNH CHT LNG CAO
+Thnh ph H Ch Minh, 2023
+T
+TRNG I HC KHOA HC T NHIN
+KHOA CNG NGH THNG TIN
+TRN NGC LAM19127040
+NGUYN PHNG VY19127088
+TRIU MINH DNG19127127
+NGUYN KIM TH T NGA19127219
+PHM ON NGC TRINH19127302
+TNG GIA QUYN19127648
+NG DNG GI  LCH TRNH
+CHO NGI DU LCH T TC
+THC TP D N TT NGHIP C NHN CNTT
+CHNG TRNH CHT LNG CAO
+GING VIN HNG DN
+THS. TIT GIA HNG
+Thnh ph H Ch Minh, 2023
+Li cm n
+Thc tp d n tt nghip chuyn ngnh H thng thng tin vi  ti: ng dng gi  lch trnh cho ngi du lch t tc Trip Package l thnh qu ca qu trnh nghin cu nghim tc cng s h tr tch cc ca cc Thy, C, bn b v ngi thn.
+Li u tin, nhm by t lng bit n chn thnh v su sc nht n Thc s Tit Gia Hng. S d nhm c c kt qu nh ngy hm nay l nh s dn dt tn tm, nhit tnh ch bo, nh hng v nh gi ca C trong sut qu trnh thc hin  ti.
+Nhm xin chn thnh cm n qu Lnh o Trng i hc Khoa hc T nhin, i hc Quc gia TP.HCM, khoa Cng ngh thng tin cng cc Thy, C b mn  to iu kin cho nhm nng cao trnh  v hon thin cng vic ca mnh.
+Cui cng, nhm cm n gia nh, bn b v ngi thn  lun ng vin v a ra cc gp  a chiu gip nhm pht trin ng dng cch hiu qu.
+D  c nhiu c gng, tuy nhin vi qu thi gian c hn nn  n kh trnh khi nhng thiu st. Rt mong nhn c s gp , nhn xt, xy dng ca Thy, C v bn c   ti c hon chnh hn.
+TP. H Ch Minh, ngy 18 thng 07 nm 2023
+Nhm tc gi
+[TABLE]
+TRNG I HC KHOA HC T NHIN | KHOA CNG NGH THNG TIN
+[/TABLE]
+ CNG THC TP D N TT NGHIP
+NG DNG GI  LCH TRNH
+CHO NGI DU LCH T TC
+1.  THNG TIN CHUNG
+Ngi hng dn:
+   ThS. Tit Gia Hng
+Nhm sinh vin thc hin:
+Trn Ngc Lam (MSSV: 19127040)
+Nguyn Phng Vy (MSSV: 19127088)
+Triu Minh Dng (MSSV: 19127127)
+Nguyn Kim Th T Nga (MSSV: 19127219)
+Phm on Ngc Trinh (MSSV: 19127302)
+Tng Gia Quyn (MSSV: 19127648)
+Loi  ti: ng dng
+Thi gian thc hin: T 01/2023 n 07/2023
+2.  NI DUNG THC HIN
+2.1 Gii thiu v  ti
+Du lch l mt ngnh kinh t si ni, ng thi l nhu cu v s thch ca nhiu c nhn. Theo kho st t Booking.com (10/2022), 72% ngi tham gia cho bit du lch lun l mt tri nghim xng ng d tnh hnh th gii cn nhiu bt n [1]. T chc Du lch th gii (UNWTO) nhn nh du lch ni a vn l xu hng ch o. Trong , loi hnh FIT (vit tt ca free independent traveller, frequent independent traveller, fully independent traveller, foreign independent traveller... ty t chc) - tm dch: khch du lch t do - chim n 90% [2].
+u im ln ca loi hnh ny l s linh hot: gip du khch thm ch ng thi gian, tit kim chi ph v a dng im tham quan. Mi ngi c th tham kho thng tin, cht lng im tham quan, ni , ... trn cc knh truyn thng hoc t ngi  tham quan. Tuy nhin, vic c qu nhiu ngun thng tin, trong  c mt s ngun tin sai lch, c th khin du khch tn khng t thi gian tm hiu v chun b.
+ gii quyt vn  trn, nhm thc hin  ti ng dng gi  lch trnh cho ngi du lch t tc h tr du khch ln lch trnh. T thng tin u vo khch cung cp, thng qua cc thut ton gi , ng dng s cho ra lch trnh nhanh, hp l v ph hp vi s thch ca du khch.
+2.2 Mc tiu  ti
+Nh a  cp  phn 2.1, vn  du khch thng gp phi khi du lch t tc chnh l vic phi chn ra cc a im tham quan a thch, ph hp vi s thch v nhu cu ca bn thn, ng thi tm hiu thng tin v gi c. Sau khi c c danh sch a im, du khach cn tip tc phn b chng vo cc ngy, sp xp th t sao cho thi gian di chuyn hp l. Qu trnh ny c th tn nhiu thi gian i vi nhng du khach khng co nhiu kinh nghim du lich.
+Muc tiu cua  tai nhm gop phn gim thiu thi gian v cng sc trong vic tm hiu v ln k hoch du lich, ng thi vn p ng y  cc nhu cu tham quan, n ung v gii tr ca h.
+2.3 Phm vi ca  ti
+ thc hin c nhng mc tiu t ra, i tng nghin cu thc t chnh ca  ti bao gm hot ng du lch t tc ca du khch  cc tnh thnh ti Vit Nam, cc l trnh du lch theo on v t tc, tp d liu cc a im du lch, n ung, tham quan, mua sm  cc tnh, thnh ti Vit Nam. Ngoi ra  xy dng ng dng nhm cn phi nghin cu cc thc th lin quan nh cc API Google h tr, cc thut ton to lch trnh da trn ta  im, h thng c s d liu lu tr ph hp, framework pht trin ng dng di ng ph hp.
+Hin ti  ti nghin cu vi mc ch pht trin ng dng h tr du lch t tc ti Vit Nam, v vy gii hn ca ng dng ch bao gm d liu v kh nng ln lch trnh trong phm vi lnh th Vit Nam. H thng mong mun co th phat trin  phc v cho vic ln k hoch du lch t tc  cc tnh thnh Vit Nam.
+2.4 Cch tip cn d kin
+Trong nhng nm gn y, h thng gi  c s dng  phc v cho khch du lch  ti a ha gi tr gii tr khi tham quan du lch. Cch tip cn l to mt h thng gi  lch trnh, khm ph ra lch trnh tt nht  ti u vic i tham quan nhiu a im du lch (Place of Interest - POI) nht c th trong thi gian c sn ca khch du lch [3]. Mt s thut ton nh branch-and-cut v greedy c th c p dng trong cc h thng gi  lch trnh ny [4]. Tuy nhin, cc kt qu tr v khng p ng c cc tiu ch m  ti t ra nh phn cm theo cc ngy trong lch trnh da theo khong cch cc a im, hoc kh nng sp xp lch trnh da theo gi m ca cng nh l thi gian a ra mt lch trnh hon chnh.
+i vi nhu cu cng nh mc ch ca d n, nhm nhn nh hng nghin cu quan trng hng u ca  ti l xy dng mt kho d liu cc a im, ci t thut ton ln lch trnh hiu qu gip ngi dng c tri nghim tt khi du lch t tc, thit k ng dng thn thin sao cho ngi dng d dng thao tc trong qu trnh di chuyn, du lch. Do  h thng ca  ti s da vo 2 thut ton  pht trin  l: k-means v Genetic.
+K-means dng  phn cm cc a im tham quan vo tng ngy  c th cn bng c ti nguyn v yu cu ca bi ton.
+Genetic s sp xp v cho ra kt qu lch trnh mt cch nhanh chng ph hp vi nhu cu thc t ca ngi dng.
+H thng s c pht trin trn nn tng di ng. Cc stack chnh bao gm:
+Frontend: Flutter
+Backend: Python
+Database: PostgreSQL
+Testing: Postman
+ ti c thc hin theo m hnh pht trin phn mm linh hot Agile Scrum vi 1 Sprint di 2 tun.
+2.5 Kt qu d kin ca  ti
+ chinh xac:  chinh xac cua lich trinh c anh gia da trn s hai long cua ngi dung khi trai nghim lich trinh, bao gm cac khia canh:
+Mc  ph bin cua cac ia im: cac ia im phai ni ting va ph bin trn mng x hi.
+Mc  phu hp cua ia im: cac ia im du lich c gi y bi h thng phu hp vi s thich cua ngi dung.
+S lng ia im tham quan: du khach co th tham quan nhiu ia im nht co th.
+Thi gian: h thng gi y lich trinh vi mc thi gian phu hp trong thc t.
+San phm u ra: San phm d kin u ra cua  tai la mt ng dung di dng h tr vic ln lich trinh du lich t ng cho cac du khach khi ho n mt thanh ph mi. Cac chc nng d kin se hoan thanh bao gm:
+Ngi dung cha co tai khoan:
+ng ki
+Tim kim, xem thng tin cac ia im
+Xem lich trinh c tao bi ngi dung khac trong h thng
+Ngi dung a c ti khon ( ng nhp):
+ng nhp
+t lai mt khu khi qun
+Thay i mt khu
+Chinh sa thng tin ca nhn
+Tim kim, xem thng tin ia im
+anh gia ia im
+Lu ia im vao b su tp
+Tao b su tp mi
+Xem/xoa/sa b su tp
+Xem lich trinh c tao bi ngi dung khac trong h thng
+Lu lich trinh cua ngi dung khac trong h thng
+Tao lich trinh t ng
+Chinh sa thng tin lich trinh
+Thm ia im vao lich trinh t b su tp hoc thanh tim kim
+Xoa ia im trong lich trinh cua ngi dung
+Xem chi ng gia hai ia im trong lich trinh
+2.6 K hoch thc hin
+2.6.1 Vai tr ca cc thnh vin
+[TABLE]
+MSSV || H tn || Vai tr
+19127040 || Trn Ngc Lam || Frontend Developer | Backend Developer
+19127088 || Nguyn Phng Vy || Frontend Developer | UI Designer | Project Manager
+19127127 || Triu Minh Dng || Frontend Developer | Data Analyst
+19127219 || Nguyn Kim Th T Nga || Frontend Developer | Database Administrator
+19127302 || Phm on Ngc Trinh || Backend Developer | Business Analyst
+19127648 || Tng Gia Quyn || Frontend Developer | Backend Developer
+[/TABLE]
+2.6.2 K hoch thc hin
+[TABLE]
+T ngy || n ngy || Hot ng
+02/01/2023 || 13/02/2023 || Lp k hoch tng qut. Lp danh sch chc nng c bn ca ng dng. Tm hiu cu trc v cng ngh trong vic xy dng ng dng v c s d liu.
+16/01/2023 || 10/02/2023 || Sng lc v thng nht danh sch chc nng ca ng dng. Tm hiu v pht trin thut ton.
+13/02/2023 || 03/03/2023 || Thu thp v lm sch d liu. Thit k c s d liu. Phc tho giao din cho ng dng.
+06/03/2023 || 28/04/2023 || Hon thnh phn lp trnh ng dng.
+03/05/2023 || 09/06/2023 || Thc hin kim th trc khi trin khai ng dng.
+12/06/2023 || 31/07/2023 || Trin khai ng dng v sa li.
+02/08/2023 || 13/08/2023 || Gp ging vin phn bin.
+14/08/2023 || 19/08/2023 || Bo v trc hi ng H thng thng tin.
+[/TABLE]
+Ti liu tham kho
+[1]Booking, Booking.coms Seven Predictions for the Creative Reimagination of Travel in 2023.  https://globalnews.booking.com/bookingcoms-seven-predictions-for-the-creative-reimagination-of-travel-in-2023/
+[2]VnEconomy, Tro lu du lch t tc ph bin hu i dch.  https://vneconomy.vn/trao-luu-du-lich-tu-tuc-pho-bien-hau-dai-dich.htm/
+[3] M. Tenemaza, S. Lujn-Mora, A. De Antonio and J. Ramrez, "Improving Itinerary Recommendations for Tourists Through Metaheuristic Algorithms: An Optimization Proposal," in IEEE Access, vol. 8, pp. 79003-79023, 2020, doi: 10.1109/ACCESS.2020.2990348.
+[4] S. Choachaicharoenkul, D. Coit and N. Wattanapongsakorn, "Multi-Objective Trip Planning With Solution Ranking Based on User Preference and Restaurant Selection," in IEEE Access, vol. 10, pp. 10688-10705, 2022, doi: 10.1109/ACCESS.2022.3144855.
+[TABLE]
+XC NHN | GING VIN HNG DN | (K v ghi r H tn) || TP.HCM, ngy 30 thng 03 nm 2023 | NHM SINH VIN THC HIN | (K v ghi r h tn)
+[/TABLE]
+Mc lc
+Danh sch bng
+Bng 2.1.1: So snh cc ng dng ln lch trnh t ng7
+Bng 2.2.1: So snh k-means, k-medoids v CLARA13
+Bng 2.2.2: So snh Hamilton, Permutation, B&P v Genetic16
+Bng 3.1.1: Lch trnh du lch 3 ngy ti Thnh ph H Ch Minh26
+Bng 4.4.1: a im gi  v a im lin quan i vi ngi dng khi du lch  Nng84
+Bng 4.4.2: Kt qu thng k Precision, Recall v F1-score ca  Nng85
+Bng 4.4.3: a im gi  v a im lin quan i vi ngi dng khi du lch Hu86
+Bng 4.4.4: Kt qu thng k Precision, Recall v F1-score ca Hu87
+Bng 4.4.5: a im gi  v a im lin quan i vi ngi dng khi du lch Khnh Ha88
+Bng 4.4.6: Kt qu thng k Precision, Recall v F1-score ca Khnh Ha89
+Danh sch hnh
+Hnh 2.1.1: ng dng Roadtrippers4
+Hnh 2.1.2: ng dng TripHobo5
+Hnh 2.1.3: ng dng Trip Hunter6
+Hnh 2.2.1: Minh ha thut ton k-means11
+Hnh 3.1.1: Quy trnh hot ng ca H thng gi  lch trnh17
+Hnh 3.1.2: Cc a im tham quan c chn sau khi p dng Module I19
+Hnh 3.1.3: Cc a im c chia vo 3 ngy du lch sau khi p dng Module II (phn cm bng k-means vi k=3)20
+Hnh 3.1.4: Cc bc thc hin ca thut ton Genetic20
+Hnh 3.1.5: Dataframe ca mt cluster21
+Hnh 3.1.6: Hai nhim sc th tng ng vi hai cch sp xp lch trnh21
+Hnh 3.1.7: Qu trnh bt cho gen25
+Hnh 3.2.1: S  kin trc27
+Hnh 3.3.2.1: S  use-case28
+Hnh 3.3.3.1: Lc  c s d liu44
+Hnh 4.1.1: Hng dn ci t ng dng t Google Play Store45
+Hnh 4.1.2: Hng dn bt cho php ci t ng dng t bn th ba46
+Hnh 4.1.3: Hng dn ci t ng dng t file .apk48
+Hnh 4.2.1: Giao din mn hnh ng nhp49
+Hnh 4.2.2: Giao din tab C nhn (tri) v Giao din mn hnh ng nhp (phi)50
+Hnh 4.2.3: Giao din mn hnh ng k51
+Hnh 4.2.4: Giao din mn hnh nhp email (tri) v m OTP (phi)52
+Hnh 4.2.5: Giao din mn hnh t li mt khu53
+Hnh 4.2.6: Giao din mn hnh Trang ch54
+Hnh 4.2.7: Giao din Trang c nhn (tri) v Chnh sa trang c nhn (phi)55
+Hnh 4.2.8: Giao din mn hnh i mt khu khi tt c trng thng tin u tha (tri) v khi c trng vi phm (phi)56
+Hnh 4.2.9: Giao din Tm kim chnh (tri) v Tm kim theo danh mc (phi)57
+Hnh 4.2.10: Giao din Tm kim bng t kha khi cha nhp t kha (tri) v khi  nhp t kha (phi)58
+Hnh 4.2.11: Giao din Kt qu tm kim a im (tri) v Kt qu tm kim lch trnh (phi)59
+Hnh 4.2.12: Giao din Lc a im khi cha chn b lc (tri) v khi  chn b lc (phi)60
+Hnh 4.2.13: Giao din xem chi tit lch trnh61
+Hnh 4.2.14: Giao din xem chi tit tng ngy ca lch trnh (tri) v ch ng gia hai a im trong lch trnh (phi)62
+Hnh 4.2.15: Giao din Chi tit lch trnh khi cha yu thch (tri) v khi  bm yu thch (phi)63
+Hnh 4.2.16: Giao din To lch trnh mi65
+Hnh 4.2.17: Giao din chnh sa ngy i-v trong To lch trnh mi (tri) v nhc nh ca h thng nu ngi dng chn thi gian du lch vt qu 7 ngy (phi)66
+Hnh 4.2.18: Giao din la chn im n cho lch trnh (tri) v giao din thm a im du lch ty chn (phi)67
+Hnh 4.2.19: Giao din nt bm  c nhn ha lch trnh68
+Hnh 4.2.20: Giao din sau khi bm c nhn ha lch trnh 69
+Hnh 4.2.21: Giao din khi thm a im mi vo lch trnh70
+Hnh 4.2.22: Giao din xc nhn c nhn ha vo lch trnh71
+Hnh 4.2.23: Giao din chnh sa thng tin lch trnh72
+Hnh 4.2.24: Giao din Chi tit a im73
+Hnh 4.2.25: Giao din nh gi a im (tri) v Chi tit a im c hin th nh gi va ng (phi)74
+Hnh 4.2.26: Giao din Lu a im vo b su tp75
+Hnh 4.2.27: Giao din Chi tit a im khi cha thm vo b su tp (tri) v khi  thm vo b su tp (phi)76
+Hnh 4.2.28: Pop-up To b su tp (tri) v Giao din mn hnh a im yu thch sau khi b su tp mi c to (phi)77
+Hnh 4.2.29: Mn hnh a im yu thch  ch  xem (tri) v ch  chnh sa (phi)78
+Hnh 4.2.30: Pop-up xc nhn xa b su tp79
+Hnh 4.3.1: Thi gian phn hi trung bnh ca API80
+Hnh 4.4.1: Minh ha Precision v Recall82
+Hnh 4.5.1:  sn sng s dng ng dng ca ngi dng da trn  tui90
+Hnh 4.5.2:  hu ch ca ng dng i vi ngi dng91
+Danh sch t vit tt v thut ng
+[TABLE]
+STT || Vit tt || Vit y 
+1 || API || Application programming interface
+2 || AWS || Amazon Web Services
+3 || BLOC || Business logic components
+4 || B&P || Branch-and-Price
+5 || CLARA || Clustering Large Applications
+6 || FIT || Free independent traveller
+7 || GA || Genetic algorithm
+8 || OTP || One-time password
+9 || TDTSP || Time-Dependent Traveling Salesman Problem
+10 || TTDP || Tourist Trip Design Problem
+11 || UNWTO || World Tourism Organization
+[/TABLE]
+TM TT
+Ngnh du lch hin nay ang pht trin mnh m, c bit l loi hnh du lch t tc. Tuy nhin, vic t ln k hoch du lch i hi nhiu thi gian v cng sc  chn lc v sp xp thng tin. Do , cng c thit k lch trnh du lch t tc l rt cn thit nhm pht trin ngnh du lch Vit Nam ni ring v ton cu ni chung.
+ ti ny nghin cu v pht trin ng dng h tr ln lch trnh du lch t tc ti Vit Nam. ng dng nhm mc ch cung cp cho ngi dng thng tin du lch hu ch ng thi h tr ngi dng trong vic ln k hoch di chuyn v tham quan.
+T tp d liu a im ti Vit Nam, h thng gi  lch trnh s gii quyt bi ton Vn  thit k lch trnh du lch (Tourist Trip Design Problem  TTDP) bng gii thut k-means (chn im tham quan cho cc ngy trong lch trnh) v gii thut Genetic (sp xp th t tham quan cc a im trong ngy).
+Kt qu cui cng ca  ti l Trip Package - ng dng di ng h tr ln lch trnh du lch t tc, d ci t v s dng, ph hp cho nhiu tnh hung. ng dng tp trung vo cc tnh nng lin quan n a im du lch v to lch trnh t ng cho nhiu ngy du lch da trn nhu cu ca ngi dng.
+Chng 1:GII THIU
+t vn 
+Hin nay, du lch t tc c a chung nh vo tnh linh hot, c o v tit kim. Theo kho st t Booking.com (10/2022), 72% ngi tham gia cho bit du lch lun l tri nghim xng ng d tnh hnh th gii cn nhiu bt n [1]. T chc Du lch th gii (UNWTO) nhn nh du lch ni a vn l xu hng ch o. Trong , loi hnh FIT (vit tt ca free independent traveller, frequent independent traveller, fully independent traveller... ty t chc) - tm dch: khch du lch t do - chim n 90% [2].
+V mi du khch c s thch khc nhau khi la chn im tham quan (phiu lu, mua sm, vn ha lch s...), ta khng th rng buc h vo mt tour du lch duy nht. D vy, vic ln k hoch c nhn vi chi ph v thi gian ph hp i hi s hiu bit v kinh nghim du lch nht nh, v d nh tm kim v cht lc thng tin im tham quan t nhiu ngun (ngi tham quan trc, Internet, bo i...) hay sp xp th t tham quan sao cho thi gian di chuyn hp l.
+Nhn thy c nhu cu trn, ng dng Gi  lch trnh cho ngi du lch t tc Trip Package ra i, gip du khch ln lch trnh d dng vi ba tiu ch: ph hp vi s thch c nhn, gh thm c cc im n hng u ti thnh ph du lch trong thi gian c sn, v k hoch tham quan ring bit cho mi ngy.
+Mc tiu v hng tip cn
+Mc tiu ca  ti l xy dng ng dng gi  lch trnh t ng gip cho du khch tit kim c thi gian tm hiu v ln k hoch du lich, ng thi vn p ng y  cc nhu cu tham quan v s thch c nhn ca h.
+Do , nhm xc nh ba im then cht nhm trin khai ng dng mt cch hiu qu nh sau: Mt, thu thp v xy dng c s d liu a im; Hai, ci t thut ton c kh nng lp lch trnh tt v nhanh chng cho nhiu ngy; Ba, thit k giao din thn thin, tng tc thun tin vi ngi dng, c bit trong qu trnh di chuyn v du lch.
+Theo l thuyt, ng dng c th ln lch trnh khp cc tnh thnh Vit Nam. Tuy nhin, iu ny cn ph thuc nhiu vo ngun d liu nh tnh chnh xc, s lng im tham quan, lng nh gi t ngi dng. Nhm t mc tiu ng dng s hot ng tt i vi cc tnh v thnh ph ni bt nh Thnh ph H Ch Minh, H Ni,  Nng, Hu,  Lt, Vng Tu, ...
+Vic chn la a im cho lch trnh s da trn v tr a l - a im thuc thnh ph du lch, cc im gn nhau c tham quan trong cng mt ngy - v mc  hi lng ca ngi tri nghim trc  da vo im s v s lng nh gi. ng dng cung cp chi tit thng tin a im, v d nh hnh nh, s in thoi lin h v gi hot ng  h tham kho nu c k hoch ring.
+Thng tin chi tit v y  v im tham quan l iu quan trng trc nht  ln lch trnh du lch. C hai gii php: (1) T xy dng C s d liu bao gm tt c thng tin ca tng im n hoc (2) Tn dng d liu c sn trn Internet  ly ra thng tin cn thit. Gii php (1) rt kh  thc hin v yu cu v thi gian, kinh ph, ngun lc v khi lng cng vic u rt ln. Trong h thng ca nhm, nhm chn s dng gii php (2).
+ gi  lch trnh du lch, Trip Package da trn cc yu cu v rng buc ca du khch bao gm thnh ph, s ngy tham quan, s thch du lch (tn gio, khm ph, sinh thi...). Trong trng hp du khch mun gh thm mt hoc vi im tham quan c th, h cn cung cp  h thng c th b sung v sp xp im tham quan  vo lch trnh mt cch hp l. Lch trnh c hin th trn giao din  du khch c th chnh sa (thm hoc xa a im khi lch trnh) cho ph hp hn vi nhu cu ca h.
+H thng gi  lch trnh c xy dng da trn bi ton TTDP (Tourist Trip Design Problem  tm dch: Vn  Thit k Lch trnh Du lch), ngha l gii quyt vn  lp k hoch du lch cho nhiu a im tham quan vi mc tiu l ti a ha li ch du lch, trong  li ch du lch c th k n nh thi gian di chuyn ngn nht v s im tham quan nhiu nht. Mt s thut ton  gii quyt bi ton TTDP nh branch and cut v greedy c th c p dng trong cc h thng ny [3]. Tuy nhin, kt qu tr v l mt lch trnh n (cho 1 ngy) vi nhiu im tham quan nht c th, khng p ng c tiu ch m  ti ca nhm t ra  l: lch trnh chi tit cho nhiu ngy da trn s ngy du lch. Sau khi nghin cu, nhm chn pht trin tnh nng ln lch trnh da trn hai thut ton k-means v Genetic nh p ng tt yu cu bi ton, tnh hung thc t, cn bng chi ph. u tin, k-means phn cm cc im tham quan vo tng ngy, sau  Genetic sp xp th t im tham quan trong mi ngy . Gii thch c th cho thut ton s c lm r  Mc 3: ng dng Gi  lch trnh cho ngi du lch t tc Trip Package.
+Cui cng, Trip Package cn mt giao din thn thin, r rng gip du khch d s dng. Do , nhm la chn pht trin ng dng di ng  phc v tt nhu cu di chuyn c th: du khch tm kim thng tin a im, xem lch trnh, ch ng,... thun tin. Giao din chi tit s c trnh by  Mc 4: Ci t v nh gi. Ngoi ra, bn cnh tnh nng chnh, ng dng cn p ng c cc tnh nng c bn khc nh tm kim, nh gi im tham quan, c nhn ha lch trnh, ch ng gia hai a im trong lch trnh,..
+Chng 2:CC H THNG VCNG NGH LIN QUAN
+Cc h thng ln lch trnh t ng
+Nhm thc hin tm hiu mt s ng dng ln lch trnh t ng ang c mt trn th trng nh sau:
+Roadtrippers
+Hnh 2.1.1 - ng dng Roadtrippers
+Roadtrippers (xem Hnh 2.1.1) l ng dng du lch t tc bng ng b ti M. T thng tin im xut pht v im n, Roadtrippers  xut cc a im ln cn trn tuyn ng di chuyn. V u im, Roadtrippers gi  a dng loi hnh a im, bao gm im tham quan, mua sm, n ung, lu tr,...; c tch hp ch ng cho phng tin  t v tnh ton chi ph cho hnh trnh (thu xe, xng du, lu tr,...). Tuy nhin, ng dng khng chia theo ngy du lch; khng c mc thi gian c th gia cc a im v ch h tr ln lch trnh  cc bang ca M.
+TripHobo
+Hnh 2.1.2 - ng dng TripHobo
+Da vo s ngy du lch, ngn sch,  tui, TripHobo (xem Hnh 2.1.2) ln lch trnh chi tit vi a im lu tr, a im tham quan v phng tin di chuyn gia cc a im. Ngi dng c th chnh sa th t v thi gian dng chn ti mi a im. Ngoi ra, TripHobo c h tr t phng khch sn qua ng dng.
+So vi Roadtrippers, TripHobo c hng tip cn gn hn vi Trip Package: ln lch trnh du lch da trn cc rng buc u vo, theo tng ngy v ti mt thnh ph. ng dng h tr hu ht cc thnh ph ph bin ti Vit Nam ni ring v th gii ni chung, ng thi cho php thm hoc xa a im sau khi to.
+Trip Hunter
+Hnh 2.1.3 - ng dng Trip Hunter
+Trip Hunter (xem Hnh 2.1.3) l ng dng ln lch trnh du lch t tc hng n th trng Vit Nam da trn im i, im n, s ngy, s ngi. im tin li  Trip Hunter l c c tnh chi ph u ngi cho chuyn i; c danh sch tng hp chuyn bay v khch sn ph hp ngy-gi du lch. V lch trnh, Trip Hunter hin thng tin di chuyn gia cc a im (v d: i t Lng chi Rch Vm n Vn tiu Khu Tng mt 11.85km, 28 pht) nhng li khng h tr ch ng. Theo tri nghim ca nhm, a s lch trnh di ngy (trn 5 ngy) u s c t 1-2 ngy trng m khng tham quan bt c a im no (xem Ngy 5, Hnh 2.1.3); khi chnh sa lch trnh, ng dng ch thm-xa a im m khng sp xp li th t cho hp l.
+Bng 2.1.1 so snh cc ng dng gi  lch trnh bao gm Roadtrippers, TripHobo, Trip Hunter v ng dng Trip Package ca nhm (ng khung ). Roadtrippers khng c k hoch tham quan theo tng ngy nh ba ng dng cn li. Mc d u cho ra kt qu l lch trnh du lch chi tit cho nhiu ngy (tr Roadtrippers), cc ng dng u c s khc bit trong vic khai thc thng tin t ngi dng  to lch trnh.
+[TABLE]
+c im || Trip Package | (ng dng ca nhm) || Roadtrippers || TripHobo || Trip Hunter
+To lch trnh | da trn || Thnh ph, s ngy, s thch, im tham quan ty chn || im xut pht, im n || Thnh ph, s ngy, s ngi, ngn sch, ngi du lch cng || Thnh ph, s ngy, s ngi
+Chnh sa lch trnh || C || C || C || C
+Sp xp li lch trnh sau khi ngi dng chnh sa || C || C || Khng || Khng
+K hoch tham quan theo ngy || C || Khng || C || C
+Thi gian dng chn ti mi a im || C || Khng || C || C
+Da trn s thch ngi dng || C || Khng || C || Khng
+i tng hng n || Ngi dng mun du lch mt thnh ph vi lch trnh chi tit. || Ngi dng c chuyn i lin bang bng ng b mun kt hp du lch. || Ngi dng mun du lch mt thnh ph vi lch trnh chi tit. || Ngi dng mun du lch mt thnh ph vi lch trnh chi tit.
+Th trng || Vit Nam || M || Ton cu || Vit Nam
+[/TABLE]
+Bng 2.1.1: So snh cc ng dng ln lch trnh t ng
+Cc cng ngh c p dng  gii quyt bi ton ln lch trnh t ng
+ c th la chn ra phng php ci t thut ton ph hp cho tnh nng ln lch trnh du lch t tc ca ng dng, nhm  tin hnh nghin cu cc phng php  c s dng  gii quyt bi ton TTDP, bao gm:
+Brute Force
+y l thut ton n gin nht, Brute Force s tin hnh lit k ht tt c lch trnh c th to ra, sau  tin hnh loi tr  tm kim c lch trnh ti u nht theo tiu ch t ra v d nh tng thi gian di chuyn gian di chuyn gia cc a im.
+u im: n gin, d ci t, d hiu.
+Khuyt im: Rt km hiu qu khi s lng a im trong lch trnh tng ln.
+Greedy
+Thut ton hot ng bng cch bt u vi mt im n u tin da trn cc tiu ch c a ra (khong cch, thi gian i li, chi ph), sau  s tip tc chn im n tip theo da trn cc tiu ch so vi im  chn trc  v lp li qu trnh chn im n cho n khi tt c cc im n c chn.
+u im: Hot ng tt vi lng d liu ln.
+Khuyt im: V im tip theo c chn ch l ti u so vi im trc  nhng cha chc l ti u vi ton b lch trnh nn kt qu cho ra c th khng ti u.
+Dynamic Programming
+Thut ton ny tm lch trnh du lch t ng bng cch chia bi ton lp lch du lch thnh cc bi ton con nh hn (v d nh lp lch cho mt phn ca hnh trnh), sau  thut ton s tnh ton v lu tr kt qu ca cc bi ton nh ny vo mt bng phng n (solution table) v tip tc tnh ton gii php ti u cho bi ton bng cc kt qu  c trong solution table.
+u im: Gim thiu thi gian tnh ton, c th ci t n gin
+Khuyt im: Yu cu b nh ln  lin tc lu tr cc lch s ca solution table, cn xc nh c bi ton con v c th khng hiu qu trong mt s trng hp.
+Simulated Annealing
+Simulated Annealing s bt u bng cch khi to mt lch trnh ban u, sau  s dng cc php bin i ngu nhin nh thay i th t cc im n hoc thay i s lng im n  mi ngy  tm kim cc lch trnh mi, sau  s so snh lch trnh mi vi lch trnh hin ti. Nu lch trnh mi tt hn lch trnh hin ti, thut ton s chp nhn lch trnh mi lm lch trnh hin ti. Thut ton s lp li qu trnh trn n khi khng c lch trnh mi c chp nhn.
+u im: Thut ton c kh nng tm thy c phng n ti u trn ton lch trnh, gim thi gian tnh ton ng k v cng tng i d ci t.
+Khuyt im: C th b kt trong cc cc tiu a phng do chn tham s u vo khng tt, ngoi ra vic xc nh hm mc tiu  nh gi  tt cng c nhiu thch thc.
+Nhn chung vic s dng mt thut ton  gii quyt ton b bi ton lp lch trnh t ng, t bit phi p ng nhiu tiu ch ca ngi dng s rt kh  t c kt qu ti u, nh trong ng dng TripHobo th thut ton lp lch trnh t ng ca h cng l mt gii php kt hp gia thut ton Greedy v thut ton Dynamic Programming.
+V vy nhm quyt nh chia nh bi ton lp lch trnh t ng ra tng bi ton nh  s dng cc thut ton ph hp gii quyt tng vn  tng ng, bao gm:
+Chia nh cc a im vo cc nhm theo tng ngy: nhng a im  gn nhau c sp xp tham quan trong cng ngy s tit kim c nhiu chi ph v thi gian di chuyn, v vy ty vo s ngy ca lch trnh ta s chia cc a im vo cc nhm da trn khong cch gia chng.
+Sp xp lch trnh cho mi mt ngy: da trn cc a im  chia vo mi ngy, ta c th sp xp th t di chuyn cho tng a im sao cho tng chi ph di chuyn gia cc a im l ti u.
+Chia nh cc a im vo cc nhm theo tng ngy
+Mc tiu ca nhm khi s dng thut ton phn cm l c th chia cc a im trong tp a im vo N cm c nh tng ng vi N ngy du lch sao cho nhng a im gn nhau s  cng mt cm.
+C rt nhiu thut ton phn cm  v ang c nghin cu p dng, tuy nhin ta c th chia thnh bn hng phn cm chnh [4]:
+Density-based (phn cm da trn mt  im): chia im d liu thnh hai loi: im ct li c mt  d liu ln hn ngng c xc nh trc; im bin c mt  d liu thp hn nhng vn thuc vo nhm. Qu trnh phn cm bt u t mt im ct li, tm tt c cc im d liu nm trong bn knh ca n v thuc vo cng mt nhm.
+Distribution-based (da trn phn phi, tnh xc sut thuc v cm): chia nhm cc d liu vo cc loi da trn cc c tnh tng ng ca cc im d liu. Thut ton ny gi nh rng cc im d liu trong mt nhm phn phi theo mt phn phi xc nh v khng phn loi cc im d liu da trn khong cch gia chng.
+Hierarchical-based (phn cm da trn th bc): phn cm da trn cu trc phn cp, phn chia cc im d liu thnh cc cm nh hn v kt hp chng li thnh cc cm ln hn  to thnh cy phn cp. Kt qu ca thut ton hierarchical-based clustering thng c biu din di dng cy phn cp (dendrogram)  th hin mi quan h gia cc cm con v cc cm ln hn.
+Centroid-based (phn cm da trn trng tm): phn loi cc im d liu da trn khong cch gia chng v trng tm ca cc nhm. Thut ton ny c gng tm ra cc nhm sao cho khong cch gia cc im d liu trong cng mt nhm l nh nht, v khong cch gia cc trng tm ca cc nhm l ln nht. Thut ton bt u bng cch chn ngu nhin mt s lng trng tm v gn tng im gn nht v mt khong cch vi trng tm tng ng. Sau , trng tm c cp nht bng cch tnh li trung bnh cc im trong cm v qu trnh ny c lp li cho n khi khng cn s thay i no trong vic phn chia cc im d liu.
+T cc loi thut ton phn cm trn c th thy cc thut ton hng centroid-based clustering s ph hp yu cu ca bi ton phn chia cc a im tham quan vo N nhm tng ng vi N ngy trong lch trnh. Mi nhm a im cn phi xc nh c trng tm, sau  tp hp cc im gn vi trng tm , kt qu nhn c l cc im trong mi nhm s l nhng im gn nhau. Mt s thut ton centroid-based clustering thng c s dng bao gm:
+K-means
+Hnh 2.2.1 - Minh ha thut ton k-means. Ngun: geeksforgeeks.org
+Thut ton k-means bt u bng cch chn ngu nhin mt s lng trng tm (centroid) v gn tng im d liu gn nht v mt khong cch vi trng tm tng ng (xem Hnh 2.2.1), s lng trng tm c th c ci t c nh. Sau , cc trng tm c cp nht bng cch tnh li trung bnh cc im trong cm  v qu trnh ny c lp li cho n khi khng cn s thay i no trong vic phn chia cc im d liu. [5]
+y l m hnh hc khng gim st n gin nht, l thut ton ph hp cho tp d liu nh v t outlier, trong  trc khi a vo phn cm nhm  lc ra s lng d liu nht nh. S lng d liu nh (n<=1000 v k<10).
+K-medoids
+Qu trnh hot ng ca thut ton k-medoids tng t nh k-means. Trong k-medoids, ngi dng cn xc nh trc s lng medoids c s dng  thit lp s lng cm. Tuy nhin, nu s lng medoids qu t hay qu nhiu, phn cm c th tr nn tn km hoc khng hiu qu. Trong khi  vi k-means, s lng cm c thit lp trc v c s dng  tnh ton trng tm ca cc cm. Trng tm ny s c ti u ha trong qu trnh phn cm. Vic thit lp s lng cm trong k-means khng nh hng n hiu qu ca thut ton v c th c thc hin mt cch linh hot hn.
+K-medoids c li ch l t b nh hng bi cc outlier v cng c th thc hin vi d liu ln, tuy nhin khuyt im l hiu sut ca k-medoids km hn, ngoi ra khi cn thit lp s lng cm, k-medoids c th km hiu qu hn k-means.
+CLARA
+Thut ton CLARA (Clustering Large Applications) bt u vi vic chn mt mu con ngu nhin ca d liu ban u, sau  p dng thut ton k-medoids  phn cm cc mu trong mu con, s dng cc trung bnh khong cch gia cc im d liu v medoids trong mi cm  nh gi hiu sut ca cc cm. Thut ton lp li cc bc trn  to ra nhiu mu con v nh gi hiu sut ca cc cm trn mi mu con  chn ra cm tt nht t cc mu con  lm kt qu phn cm cui cng.
+CLARA c kh nng hot ng tt vi s lng d liu ln nhng li khng hiu qu trn d liu nh v vic chn mu con ngu nhin  phn cm c th khng  i din cho ton b b d liu.
+Bng 2.2.1 trnh by kt qu so snh cc thut ton bao gm: k-means, k-medoids v CLARA. T kt qu so snh cho thy k-means ph hp nht vi nhu cu phn chia tp a im c khi lng d liu nh vo nhiu ngy, trong , cc a im du lch trong mt ngy phi gn nhau.
+[TABLE]
+Kh nng || k-means || k-medoids || CLARA
+Phn cm da trn khong cch cc im || Tt || Tt || Tt
+Lm vic vi nhiu d liu (n<200, k<10) || Tt || Trung bnh || Khng tt
+Kim sot c kch thc ca cluster || Tt || Trung bnh || Khng tt
+nh hng bi outlier || Nhiu || Trung bnh || t
+ kh thi khi ci t || Cao || Trung bnh || Thp
+[/TABLE]
+Bng 2.2.1 - So snh k-means, k-medoids v CLARA
+Sp xp lch trnh cho mi mt ngy
+i vi vic sp xp lch trnh cho mt ngy, h thng yu cu mt thut ton nhn vo cc im cng chi ph di chuyn gia cc im v cho kt qu l th t i n cc a im sao cho ti u nht, tc l tng chi ph di chuyn nh nht c th. Ngoi ra, mi a im u c mt thi gian m v ng ca nht nh v vy cn phi sp xp lch trnh sao cho thi gian tham quan a im c trng khp vi thi gian m ca.
+Ta c th xt n hng gii quyt cho mt bi ton tng t  l Time-Dependent Traveling Salesman Problem (TDTSP). Mc tiu ca bi ton TDTSP l tm ra mt chu trnh Hamilton (i qua tt c cc thnh ph mt ln) vi chi ph nh nht, trong  chi ph l tng thi gian  i t thnh ph ny n thnh ph khc v chi ph  di chuyn c th thay i theo thi gian. C th thy bi ton TDTSP cng tng t vi yu cu sp xp lch trnh cho mi ngy ca ng dng, v mt s gii thut c hng ti  gii quyt:
+Chu trnh Hamilton: Vi  tng ln mt lch trnh i qua cc im th gii thut n gin v d tip cn nht l Hamilton. Tuy nhin bi ton t ra cn tm ng i c tng chi ph di chuyn ngn nht v thi gian n mi a im cn ng vo thi gian m ca (hay thi gian v th t n cc a im s nh hng n tng chi ph ca lch trnh) th gii thut hamilton n gin khng th p ng  yu cu ca nhm.
+Permutations: Phng php n gin v thiu hiu qu nht  l th tt c cc t hp v tm ra phng php hp l nht, tuy nhin vi lch trnh mt ngy c ti a 8 a im th  phc tp thut ton ln n khong O(n!) th my tnh phi thc hin n 40320 ln, v ci t thc t nhm cng nhn thy thi gian khi chy mt nhiu hn so vi gii thut khc.
+Thut ton Branch-and-Price (B&P): y l phng php ci tin ca Permutations, c la chn ch yu khi gii quyt cc bi ton TSP (Traveling Salesman Problem) v cc bin th, trong  cc  cc t hp c kt qu khng tha s c chn v ct trc, tuy nhin trong trng hp xu nht th  phc tp vn s ngang vi Permutations, ngoi ra so vi TSP th dng B&P gii quyt bi ton TDTSP cn phi xt n chi ph s thay i khi th t v thi gian thm cc Node thay i s khin thut ton ny c  phc tp vt xa so vi Permutations.
+Thut ton Genetic (Gii thut di truyn): y l mt thut ton c ly cm hng th qu trnh tin ha v chn lc t nhin. Thut ton ny thng c s dng  tm ra gii php cho cc bi ton ti u t hp thng qua cc giai on mutation, crossover v selection. Cc bc ca genetic c thc hin nh sau:
+Khi to qun th: To ra mt tp hp cc li gii kh thi bng cch la chn mt s lng ln cc chu trnh Hamilton ngu nhin.
+Chn cc c th tt nht: S dng mt hm mc tiu  nh gi  tt ca mi chu trnh trong qun th. Chn ra mt s lng cc chu trnh tt nht  s dng lm cha m cho th h tip theo.
+To th h mi: S dng cc ton t di truyn nh lai ghp (crossover) v t bin (mutation)  to ra cc chu trnh mi t cc chu trnh cha m c chn  bc trc .
+nh gi v chn lc: S dng hm mc tiu  nh gi  tt ca cc chu trnh mi. Chn ra mt s lng cc chu trnh tt nht  s dng lm cha m cho th h tip theo (selection).
+Lp li qu trnh: Lp li cc bc 3-4 cho n khi t c tiu chun dng hoc t n s lng th h ti a.
+Trong TDTSP, hm mc tiu c s dng  nh gi  tt ca mt chu trnh bao gm tng thi gian i li v thi gian ch i. Gii thut ny t ph hn cc gii thut  th truyn thng  nhng im nh: ph hp vi nhiu bi ton tm kim khng gian, yu cu t thng tin  tm kim, c th tnh ton song song tng tc  x l, c th cho ra nhiu kt qu gn vi ti u, c th x l  th ln
+Bng 2.2.2 trnh by kt qu so snh gia cc thut ton Hamilton, Permutation, B&P v Genetic. Mc d Permutation v B&P c th to c lch trnh vi thi gian di chuyn gia cc a im nh nht v thi im tham quan hp l nhng thi gian lp lch khng tt. Trong khi  thut ton Genetic tm ra c lch trnh ph hp v mt thi gian v thi gian sp xp t hiu qu cao.
+[TABLE]
+Kh nng || Hamilton || Permutation || B&P || Genetic
+Tm ra th t tham quan || C || C || C || C
+Cho ra thi gian di chuyn nh nht || Khng || C || C || C
+p ng thi gian m ca ca a im || Khng || C || C || C
+Thi gian thc hin || Nhanh || Trung Bnh || Chm || Nhanh
+[/TABLE]
+Bng 2.2.2 - So snh Hamilton, Permutation, B&P v Genetic
+Chng 3:NG DNG GI  LCH TRNHCHO NGI DU LCH T TCTRIP PACKAGE
+Thut ton gi  lch trnh
+Da vo kt qu so snh  phn 2.2, h thng gi  lch trnh c thit k da trn hai phng php chnh l: (a) Thut ton k-means dng  phn cm cc a im da trn s ngy du lch; (b) Thut ton GA (Genetic Algorithm) dng  ti u ha lch trnh (sp xp th t tham quan cc a im trong ngy cho ph hp). Trong , thut ton GA s s dng mt s hm c lp trnh ring  x l cho bi ton TTDP, da trn gi  t bi nghin cu v Pht trin h thng gi  lch trnh [6]. H thng s lp k hoch du lch cho nhiu ngy da vo cc thng tin m ngi dng  cung cp: thnh ph du lch; s ngy du lch; tri nghim yu thch (tn gio, lch s, du lch sinh thi, ); a im mun c trong lch trnh da theo thnh ph du lch  chn.
+Hnh 3.1.1 - Quy trnh hot ng ca H thng gi  lch trnhH thng gi  lch trnh gm ba module chnh (xem Hnh 3.1.1): Module I ng vai tr tm tp a im cn tham quan cho lch trnh; Module II phn chia tp a im vo cc ngy du lch (thut ton k-means); v Module III s sp xp cc a im du lch trong ngy (thut ton GA).
+Module I: To tp a im du lch cn tham quan trong lch trnh.
+Quy trnh c thc hin theo cc bc sau: (a) Lc tp d liu cc a im thuc thnh ph du lch c chn; (b) Lc tp d liu da theo th loi (tri nghim yu thch) v cc a im mun c trong lch trnh; (c) Lc tp d liu da trn score (im s ca mi a im) da trn cng thc 3.1.1. im s ca mi a im s phn nh  ph bin ca a im ,  ph bin c tnh ton da trn rating v s lt nh gi.
+[TABLE]
+score = rating + log2(total reviews +1) || (3.1.1)
+[/TABLE]
+Trong , ham log2 c s dng  thc hin thu nho min gia tri cua s lt anh gia a im do co min gia tri cua lt anh gia kha cao (>1000). iu nay co th lam cho gia tri cua s lt anh gia ln at gia tri cua rating trong tinh toan score (rating co min gia tri nho t 1 n 5), lam cho  quan trong cua gia tri rating bi giam xung trong khi rating co  quan trong nhiu hn lt anh gia. [7][8]
+Module II: Phn chia tp a im vo cc ngy trong lch trnh
+Tp a im tham quan ca c lch trnh (kt qu c c t module I) s bao gm hai phn ba a im nm trong cc th loi c chn v mt phn ba cn li s gm cc a im thuc cc th loi khc, nhm to  a dng cho lch trnh. T tp a im ny, tin hnh phn chia tp a im vo tng ngy du lch.
+Nu s ngy du lch l mt: Chon ra 5 a im co score cao nht va khoang cach gn nhau nht (c tinh theo khoang cach Euclid). Khng cn thc hin k-means cho trng hp ny do thi gian du lch ch c mt ngy nn khng cn chia tp a im thnh nhiu ngy khc nhau. Ngoi ra, do thi gian du lch c gii hn nn cc a im cn phi gn nhau  ti u ha thi gian di chuyn.
+Nu s ngy du lch ln hn 1: Theo tham kho t cc tour du lch trong nc, a phn cc tour c ti a 5 a im (khng tnh cc a im n sng, n tra, n ti) cho mt ngy tham quan ca khch du lch, do , nhm s chn ra ti a 5 a im cho mi ngy. S dung k-means  phn cac a im vao tng ngay trong lich trinh. Lu  rng bc nay chi ap dung khi s ngay du lich ln hn mt. S cum (cluster) c s dung trong k-means se bng s ngay du lich cua lich trinh. K-means se tin hanh phn cum da trn khoang cach ia ly cua cac a im (kinh  va vi ), khoang cach nay c tinh toan da trn khong cch Euclid.
+Thc hin chon nha hang n tra cho mi ngy: Nha hang n tra phu hp vi tng ngay c chn la da theo cac tiu chi: (a) Chon cac nha hang trong vong ban kinh ca cluster ; (b) Loc cac nha hang co thi gian hoat ng nm trong khong t 11 gi ti 15 gi (do thi gian n tra mc nh ca lch trnh l t 12 gi n 13 gi, tuy nhin thi gian tham quan thc t c th khin cho thi im n tra b sm hoc tr hn so vi d kin nn cn chn nhng nh hng c khong thi gian m ca ph hp);  (c) T tp d liu trn, chon ra nha hang co score cao nht.
+Hnh 3.1.2 - Cc a im tham quan c chn sau khi p dng Module I
+Hnh 3.1.2 cho thy cc a im sau khi c chn lc t Module I v Hnh 3.1.3 l kt qu sau khi p dng Module II (k-means)  phn cm. Kt qu cho thy cc a im c phn vo 3 cm tng ng vi 3 ngy ca lch trnh: mu hng (ngy 1); mu xanh (ngy 2) v mu  (ngy 3).
+Hnh 3.1.3  Cc a im c chia vo 3 ngy du lch sau khi p dng Module II (phn cm bng k-means vi k=3)
+Module III: S dng GA  cho ra lich trinh cui cung a c sp xp
+Sau khi  c y  tp a im tham quan v nh hng cho mi ngy, ta s s dng Goong api  ly thi gian v khong cch di chuyn gia cac a im vi nhau.
+Thut ton GA nhn cc thng tin chnh sau: (a) Tp a im tng ng cho mi cluster; (b) Tp nh hng n tra tng ng vi mi cluster; (c) Ma trn thi gian di chuyn gia cc a im. Cc bc c thc hin chi tit nh Hnh 3.1.4.
+Hnh 3.1.4  Cc bc thc hin ca thut ton Genetic
+Bc 1: Tao tp cac hoan vi vi tri cua cac ia im trong cluster
+Mi cluster s c biu din di dng mt dataframe (xem Hnh 3.1.5), trong  cha tt c thng tin ca cc a im trong cluster .
+Hnh 3.1.5 - Dataframe ca mt cluster
+Mi a im c i din bi ch s (Index) trong dataframe. Thc hin to tp hon v cc ch s . Tp hon v ny tng ng vi tp hp cc cch sp xp v tr ca cc a im trong mt cluster, c gi l Population. Mi cach sp xp vi tri ca cc a im trong cluster se tng ng vi mt nhim sc th (Chromosome) trong Population o (xem Hnh 3.1.6)
+Hnh 3.1.6 - Hai nhim sc th tng ng vi hai cch sp xp lch trnh
+Bc 2: Tinh toan  phu hp (Fitness) cho mi chromosome
+Hm Fitness ng vai tr l mt hm mc tiu  nh gi cht lng mi nhim sc th ca GA. Hm fitness c thit k  nh gi s chnh lch gia thi gian mc nh ca lch trnh so vi thi gian du lch thc t, nh  cho thy c nhim sc th tt nht (lch trnh tt nht) trong tt c cc gii php c th tn ti (Population).
+Ham se tinh toan tng thi gian du khach cn  tham quan ht cac ia im trong ngay va sau o so sanh no vi thi gian mc inh cua lich trinh (t 8h ti 18h), c tm tt trong cng thc 3.1.2.
+[TABLE]
+Fitness = (Thi gian bt u mc inh - Thi gian kt thuc mc inh) | Tng thi gian lu tru tai mi POI | Tng thi gian di chuyn gia cac POI | Thi gian n tra | Thi gian trung nhau | Tng thi gian pht || (3.1.2)
+[/TABLE]
+Trong :
+Tng thi gian pht c ngha l thi gian du khch phi ch mt a im m ca hoc thi im kt thc tham quan ln hn thi im ng ca ca a im .
+Thi gian trung nhau ngha l thi gian m thi im tham quan ln sang thi im n tra. V d thi gian n tra bt u t 13:00 n 14:00, v nu thi im kt thc ca a im tham quan l 13:20 (ngha l bt u n tra sau 13:20), th Thi gian trung nhau s l 20 pht + (thi gian di chuyn gia im tham quan v im n tra).
+Nhim sc th nao co gia tri fitness nh nht thi la cach sp xp phu hp nht do tng thi gian tham quan ln sang thi gian n tra, thi gian ch va thi gian di chuyn se nho nht.
+Hm Fitness c ci t chi tit nh sau:
+Fitness Function
+[TABLE]
+getFitness(chromosome, cluster, timeMatrix, lunch_poi): | availableTime = tourScheduleEnd - tourScheduleStart | lengthOfRoute = chromosome.length | i = 0 | found_lunch = 0 | currentTime = tourScheduleStart | investedTime = travelTime = poi_to_lunch_time =  0 | currentHour = currentTime + travelTime | time_penalty = total_penalty_invaded = total_travel = 0 | while i < lengthOfRoute: | currentPOI = cluster[chromosome[i]] | visitTime = currentPOI.Duration | if found_lunch == 0: | preHour = currentTime | preToLunchHour = poi_to_lunch_time | poi_to_lunch_time,lunch_to_poi_time = getTravelTime(lunch_poi,currentPOI) | durationOfVisit, currentTime, check, time_penalty, invaded_time = run_event(currentHour, visitTime,poi_to_lunch_time,preHour, | preToLunchHour,lunch_to_poi_time,found_lunch, currentPOI, lunch_poi) | # Thi gian tham quan khng trng thi gian n tra | if check == 0: | durationTravel = travelTime | total_travel = total_travel + travelTime | if i != lengthOfRoute - 1: | travelTime = timeMatrix[chromosome[i]][chromosome[i + 1]] | time_penalty = calculateTimePenalties(currentPOI,currentHour, currentTime) | # Thi im n tra din ra trc thi im tham quan | elif check == 1: | if i != lengthOfRoute - 1: | travelTime = timeMatrix[chromosome[i]][chromosome[i + 1]] | total_travel = total_travel + preToLunchHour + lunch_to_poi_time | durationTravel = 0 | lunch_index = i - 1 | found_lunch = 1 | # Thi im tham quan din ra trc thi im n tra | elif check == 2: | total_travel = total_travel + travelTime + poi_to_lunch_time | if i != lengthOfRoute - 1: | travelTime = timeMatrix[lengthOfRoute][chromosome[i + 1]] | durationTravel = 0 | found_lunch = 1 | lunch_index = i | currentHour = currentTime + travelTime | investedTime = investedTime + durationOfVisit + durationTravel +  time_penalty | i = i + 1 | total_penalty_invaded = total_penalty_invaded + time_penalty | if currentTime > tourScheduleEnd: | investedTime = investedTime + (currentTime - tourScheduleEnd) | total_penalty_invaded = total_penalty_invaded +(currentTime-tourScheduleEnd) | res = abs(availableTime - investedTime) | return res, total_travel, total_penalty_invaded
+[/TABLE]
+Run Event Function: Tnh ton thi gian tham quan ti mt a im v thi gian n tra.
+[TABLE]
+run_event(currentHour, eventTime, poi_to_lunch_time,preHour, preToLunchHour, lunch_to_poi_time, found_lunch, current_poi, lunch_poi): | totalTime = eventTime | nextHour = currentHour + eventTime | check = 0 | time_penalties =0 | invadedTime = 0 | # Nu gi n tra ri vao gia thi gian tham quan | if (found_lunch == 0) and ((currentHour <= startOfLunch <= nextHour + poi_to_lunch_time)or (currentHour > startOfLunch)): | # Xet thi gian n sm hay thi gian n tr nho hn | if (abs(startOfLunch - (preHour + preToLunchHour))) < (abs(nextHour + poi_to_lunch_time - startOfLunch)): | # Thi im n tra din ra trc thi im tham quan | invadedTime = startOfLunch - (preHour + preToLunchHour) | currentHour = preHour + preToLunchHour + lunchTime + lunch_to_poi_time + eventTime | totalTime = preToLunchHour + lunchTime + lunch_to_poi_time + eventTime + invadedTime | check = 1 | # lunch penalty | time_penalties += calculateTimePenalties(lunch_poi, preHour + preToLunchHour, preHour + preToLunchHour + lunchTime) | # place penalty | time_penalties += calculateTimePenalties(current_poi, preHour + preToLunchHour + lunchTime + lunch_to_poi_time, currentHour) | else: | # Thi im tham quan din ra trc thi im n tra | # place penalty | time_penalties += calculateTimePenalties(current_poi, currentHour, nextHour) | invadedTime = nextHour + poi_to_lunch_time - startOfLunch | # Thi im chi ri n xong | currentHour = nextHour + poi_to_lunch_time + lunchTime | totalTime = totalTime + poi_to_lunch_time + lunchTime + invadedTime | check = 2 | # lunch penalty | time_penalties += calculateTimePenalties(lunch_poi, nextHour + poi_to_lunch_time, currentHour) | else: | currentHour = nextHour | return totalTime, currentHour, check, time_penalties, invadedTime
+[/TABLE]
+Bc 3: Giai oan chon loc gen (Selection): Chon ra 2 cp cha me nhim sc th c ch s fitness nh nht bng phng php Roulette Wheel selection.
+y l giai on quan trng trong thut ton GA bi v n c nh hng rt ln n  hi t ca kt qu cui cng [9]. Giai on chn lc gen s chu trch nhim trong vic chn la nhim sc th cha m  c th sn sinh ra i con c c im ging vi c im ca cha m chng. Phng php la chn Roulette Wheel s hot ng vi nguyn tc: nhim sc th c  ph hp cng cao th xc sut c la chn cng cao, c ngha l lch trnh no c ch s fitness cng nh s c xc sut c chn cng ln.
+Bc 4: Giai oan bt cheo gen (Crossover): S dung ki thut bt cheo mt phn (Partially mapped crossover)  tai t hp hai nhim sc th  sinh ra th h mi.
+Hnh 3.1.7 minh ha cho qu trnh bt cho gen bng phng php bt cho mt phn. Qa trnh bt u bng vic chn ngu nhin hai im ct trn hai nhim sc th, sau  hon i hai on c ct vi nhau. Cc v tr nm ngoi on b hon i s c chnh sa cho ph hp  khng gy ra s trng lp trong v gen (Index/a im) trong nhim sc th (lch trnh) .
+Hnh 3.1.7 - Qu trnh bt cho gen
+Bc 5: Giai oan t bin gen (Mutation): i vi tri cua hai a im bt k trong nhim sc th. Giai on ny ng vai tr trong vic duy tr tnh a dng cho qun th (Population) v khm ph ra gii php mi nm ngoi khng gian li gii.
+Lu : Cc bc 2, 3, 4, 5 c lp li 10 ln (V cc gi tr fitness c xu hng gim v hi t v mt gi tr fitness nh nht khi lp li n ht ln th 10, nhng sau  s tng tr li trong khi kt qu yu cu nhim sc th c fitness nh nht).
+Bc 6: Chon ra nhim sc th co ch s fitness thp nht: nghia la cach sp xp vi tri cac a im co  phu hp nht vi thi gian cua lich trinh.
+Bng 3.1.1 l v d v kt qu ca h thng gi  lch trnh t ng. Kt qu cho ra lch trnh du lch chi tit trong 3 ngy ti Thnh ph H Ch Minh.
+[TABLE]
+Thi gian || S kin
+Ngy 1
+07:30 - 09:30 || Dinh c Lp
+09:30 - 09:33 || Di chuyn
+09:33 - 11:31 || Ch Bn Thnh
+11:31 - 11:35 || Di chuyn
+11:35 - 12:35 || Chi Village (n tra)
+12:35 - 12:41 || Di chuyn
+12:41 - 13:41 || Nh th c B
+13:41 - 13:47 || Di chuyn
+13:47 - 15:47 || Bo tng Chng tch chin tranh
+Ngy 2
+09:00 - 12:00 || Khu di tch Lch s a o C Chi
+12:00 - 12:46 || Di chuyn
+12:46 - 13:46 || Bn mc Bo Phc (n tra)
+13:46 - 16:20 || Di chuyn
+16:20 - 17:20 || Cha Hong Php
+Ngy 3
+07:00 - 09:00 || ng sch Nguyn Vn Bnh
+09:00 - 09:13 || Di chuyn
+09:13 - 11:13 || Vinhomes Central Park
+11:13 - 11:31 || Di chuyn
+11:31 - 12:31 || Sushi Tei (n tra)
+12:31 - 12:41 || Di chuyn
+12:41 - 15:41 || Tho Cm Vin
+15:41 - 16:33 || Di chuyn
+16:33 - 17:33 || Cha Bu Long
+[/TABLE]
+Bng 3.1.1 - Lch trnh du lch 3 ngy ti Thnh ph H Ch Minh
+Kin trc
+Hnh 3.2.1 - S  kin trc
+(Lu : Hnh nh ch th hin kin trc ca chc nng to v chnh sa lch trnh, cc tnh nng khc cng c cu trc tng t)
+Hnh 3.2.1 trnh by s  kin trc ca chc nng to v chnh sa lch trnh. Kin trc bao gm cc thnh phn chnh sau:
+Flutter (Client): Trong Client, View s dng cc Widget  hin th d liu v tng tc ngi dng. BLOC (Business Logic Components) c s dng  qun l cc logic nghip v v phn phi cc s kin. Cc BLOC cng nhn cc kt qu c tr v t my ch v phn hi cho s kin ca ngi dng.
+Python + Render (Server): Server s tip nhn v x l cc yu cu c gi t ng dng khch. i vi chc nng to lch trnh, server s gi API (Application Programming Interface) n Goong.io  ly thng tin v khong cch v thi gian di chuyn gia cc a im. ng thi, server s thc hin cc thao tc truy vn, cp nht, xa, thm mi vo C s d liu i vi cc yu cu ring bit c nhn.
+Goong.io (Third-party API): Goong.io cung cp cc API cho vic ly cc thng tin v khong cch v thi gian di chuyn gia cc a im.
+PostgreSQL + Amazon Web Services (Database): C s d liu lu tr cc thng tin v ngi dng, a im, cc lch trnh c to v cc b su tp.
+Thit k cc thnh phn
+D liu
+D liu v a im, nh gi  phc v vic gi  lch trnh ca ng dng s c ly t ngun Foody.vn. V phn hnh nh hin th cho cc a im s c ly t Google Search Image v lu tr bng URL.
+S  use-case
+Hnh 3.3.2.1 trnh by s  Use-case ca h thng gi  lch trnh.
+Hnh 3.3.2.1 - S  use-case
+Tm kim a im v lch trnh
+[TABLE]
+Tn | use-case || Tm kim a im v lch trnh
+Tm tt || Cho php ngi dng tm kim a im v lch trnh bng cch nhp t kha.
+Tc nhn || Ngi dng
+Use-case lin quan || Extends: Lc a im | Extends: Xem chi tit a im | Extends: Xem chi tit lch trnh v ch ng
+iu kin tin quyt || Khng
+Hu iu kin || Khng
+Dng s kin chnh || H thng || Ngi dng
+1. Nhn icon Tm kim t thanh iu hng
+2. iu hng n mn hnh Tm kim 1 cha thanh tm kim v 6 danh mc.
+3. Nhn vo thanh tm kim
+4. iu hng n mn hnh Tm kim 2
+5. Nhp t kha
+6. Nhn Enter
+7. Hin th kt qu tm kim
+Dng s kin ph || A2: Nu ngi dng nhn vo mt trong su danh mc, b qua bc 3. Kt qu tm kim hin th  bc 7 ch cha cc a im thuc danh mc  chn. | A5: Nu ngi dng nhn chn Tm kim lch trnh, kt qu tm kim hin th  bc 7 l lch trnh. | A6: Nu t kha ngi dng nhp khng c trong C s d liu, thng bo khng c kt qu tm kim ph hp, kt thc use-case. | A6: Nu ngi dng nhp khong trng hoc khng nhp, kt qu tm kim hin th  bc 7 l cc a im hng u (c s sao v lng nh gi nhiu). | A6: Nu ngi dng khng nhn Enter, kt thc use-case. | A7: Nu ngi dng mun lc kt qu tm kim theo tiu ch, thc hin use-case Lc a im. | A7: Nu ngi dng xem chi tit a im/lch trnh, thc hin use-case Xem chi tit a im/Xem chi tit lch trnh v ch ng.
+[/TABLE]
+To mi lch trnh
+[TABLE]
+Tn | use-case || To mi lch trnh
+Tm tt || Ngi dng to mi lch trnh da vo cc tiu ch
+Tc nhn || Ngi dng
+Use-case lin quan || Extends: Tm kim a im | Extends: ng nhp | Extends: Xem thng tin, chi tit lch trnh v ch ng
+iu kin tin quyt || Ngi dng ng nhp thnh cng
+Hu iu kin || Mt lch trnh mi c to cho ngi dng
+Dng s kin chnh || H thng || Ngi dng
+1. Nhn chn thm mt lch trnh mi
+2. iu hng n mn hnh To lch trnh mi
+3. Chn im n (thnh ph)
+4. Chn cc tiu ch khc nh ngy i, ngy v, tri nghim du lch yu thch, t ch  cng khai/ring t cho lch trnh, tn ca lch trnh
+5. Thm vo lch trnh a im du lch ty chn
+6. Hin th la chn cho php thm a im t B su tp ca bn hoc Thanh tm kim
+7. Nhn chn B su tp ca bn
+8. Hin th danh sch a im yu thch gm cc b su tp
+9. Nhp t kha tm kim a im trong cc b su tp
+10. Hin th danh sch a im ph hp vi yu cu
+11. Nhn vo du +  thm a im vo danh sch a im du lch ty chn
+12. Quay tr v mn hnh to lch trnh, cp nht vo danh sch a im du lch ty chn a im va c thm
+13. Nhn chn Bt u hnh trnh no
+14. To lch trnh t ng da vo cc thng tin  nhp
+15. iu hng n use-case Xem thng tin, chi tit lch trnh v ch ng
+Dng s kin ph || A4: Nu ngi dng chn s ngy cho lch trnh vt qu 7 ngy th h thng hin th hp thoi thng bo s ngy vt qu 7 ngy v yu cu chn li. Quay li bc 4. | A5: Nu ngi dng khng chn thm a im du lch ty chn th b qua cc bc t 6-12, n bc 13. | A5.1: Nu ngi dng chn thm a im du lch ty chn: | A5.1.1.1: Nu ngi cha ng nhp th hin hp thoi bn cha ng nhp  yu cu ng nhp, ngi dng la chn ng nhp th iu hng sang use-case ng nhp. | A5.1.1.2: Nu ngi dng  ng nhp nhng cha chn im n th hin th hp thoi yu cu chn im n. | A5.1.2: Quay li bc 5. | A7: Nu ngi dng chn thm a im t Thanh tm kim th iu hng n use-case Tm kim a im. | A12.1: Nu ngi dng tip tc chn thm a im vo danh sch a im du lch ty chn | A12.1.1: nu danh sch  thm c s lng nh hn 6 a im, h thng hin th nt thm, quay li bc 5. | A12.1.2: Nu danh sch  thm c s lng bng 6 a im, h thng khng hin th nt thm a im. | A12.2: Nu ngi dng bm nt x xa a im trong danh sch a im du lch ty chn, cp nht danh sch a im, quay li bc 12. | A13: | A13.1.1: Nu ngi cha ng nhp th hin hp thoi bn cha ng nhp  yu cu ng nhp, ngi dng la chn ng nhp th iu hng sang use-case ng nhp. | A13.1.2: Nu ngi dng  ng nhp nhng cha chn im n th hin th hp thoi yu cu chn im n. | A13.2: Quay li bc 13.
+[/TABLE]
+Xem thng tin, chi tit lch trnh v ch ng
+[TABLE]
+Tn | use-case || Xem thng tin, chi tit lch trnh v ch ng
+Tm tt || Ngi dng xem cc thng tin ca lch trnh, truy cp tnh nng ch ng gia hai a im bn trong chi tit lch trnh
+Tc nhn || Ngi dng
+Use-case lin quan || Extends: C nhn ha lch trnh | Extends: Chnh sa thng tin tng quan lch trnh | Extends: Hy yu thch/yu thch lch trnh | Extends: Xem chi tit a im | Extends: ng nhp
+iu kin tin quyt || Khng
+Hu iu kin || Hin th thng tin lch trnh
+Dng s kin chnh || H thng || Ngi dng
+1. H thng hin th thng tin tng quan lch trnh bao gm tn, thi gian, s lt chnh sa v yu thch, thng tin ngi to lch trnh, s lc lch trnh
+2. Ngi dng bm xem chi tit lch trnh
+3. H thng hin th cc thng tin chi tit bao gm lch trnh v th t cc a im tham quan, thi gian tham quan chi tit, thi gian di chuyn
+4. Ngi dng bm xem a im bn trong lch trnh
+5. Thc hin use-case Xem chi tit a im
+6. Ngi dng bm xem ch ng gia hai a im trong lch trnh
+7. H thng hin th mn hnh ch ng
+8. Ngi dng bm nt quay li mn hnh chi tit lch trnh
+9. H thng quay li hin th thng tin chi tit lch trnh
+10. Ngi dng bm nt quay li mn hnh thng tin tng quan lch trnh
+11. H thng quay li mn hnh hin th tng quan thng tin lch trnh
+12. Ngi dng bm nt chnh sa/c nhn ha lch trnh
+13. Thc hin use-case C nhn ha lch trnh.
+14. Ngi dng bm yu thch lch trnh
+15. Thc hin use-case Yu thch/hy yu thch lch trnh
+16. Ngi dng bm chnh sa thng tin tng quan lch trnh
+17. Thc hin use-case Chnh sa thng tin tng quan lch trnh
+Dng s kin ph || A2: Nu ngi dng khng thc hin bc ny th b qua bc 3-11, n bc 12. | A4. Nu ngi dng khng thc hin bc ny, b qua bc 5, thc hin bc 6. | A6: Nu ngi dng khng thc hin bc ny, b qua bc 7-8, thc hin bc 9. | A8: Nu ngi dng khng thc hin bc ny, quay li bc 7. | A10: Nu ngi dng khng thc hin bc ny, quay li bc 3. | A12: Nu ngi dng khng thc hin bc ny, b qua bc 13, ti bc 14. | A13: Nu ngi cha ng nhp th hin hp thoi bn cha ng nhp  yu cu ng nhp, ngi dng la chn ng nhp th iu hng sang use-case ng nhp. | A14: Nu ngi dng khng thc hin bc ny, b qua bc 15, thc hin bc 16. | A15: Nu ngi cha ng nhp th hin hp thoi bn cha ng nhp  yu cu ng nhp, ngi dng la chn ng nhp th iu hng sang use-case ng nhp. | A.16.1: Nu ngi dng khng ng nhp v khng phi l ngi dng to ra lch trnh ny, kt thc use-case. | A.16.2: Nu ngi dng  ng nhp v l ngi dng to ra lch trnh ang hin th nhng khng thc hin bc ny, kt thc use-case.
+[/TABLE]
+C nhn ha lch trnh
+[TABLE]
+Tn | use-case || C nhn ha lch trnh
+Tm tt || Cho php ngi dng chnh sa lch trnh ca bn thn hoc ca ngi dng khc.
+Tc nhn || Ngi dng
+Use-case lin quan || Extends: Tm kim a im
+iu kin tin quyt || Ngi dng ng nhp thnh cng
+Hu iu kin || Lch trnh c chnh sa v lu mi
+Dng s kin chnh || H thng || Ngi dng
+1. Ngi dng bm chn lch trnh mun thay i (c th chn lch trnh ca bn thn hoc ca ngi dng khc).
+2. Hin th lch trnh.
+3. Ngi dng chn k hiu chnh sa k bn Lch trnh chi tit.
+4. Hin th lch trnh chi tit qua tng ngy.
+5. Ngi dng chn thm + ti gc phi trn mn hnh.
+6. Hin th lu  v vic thm a im vo lch trnh c th lm thay i th t v s lng cc im tham quan ca tng ngy.
+7. Nhn chn Tip tc.
+8. Hin th la chn thm a im t b su tp hoc thanh tm kim.
+9. Chn B su tp ca bn.
+10. Hin th cc b su tp a im ca ngi dng.
+11. Nhn chn +  a im mun thm vo lch trnh.
+12. Hin th mn hnh chi tit lch trnh vi danh sch cc a im c thm vo bn di mn hnh.
+13. Nhn chn Lu thay i.
+14. Hin th lu  v vic thm a im vo lch trnh c th lm thay i th t v s lng cc im tham quan ca tng ngy.
+15. Nhn chn Tip tc.
+16. Thc hin sp xp li lch trnh vi nhng thay i  thc hin.
+17. Hin th lch trnh sau khi thay i.
+Dng s kin ph || A5: Ngi dng c th nhn chn x  a im mun xa khi lch trnh. H thng s hin th thng bo cho php ngi dng hon tc vic xa a im. | A5.1: Nu ngi dng nhn chn Hon tc, a im va xa s c thm li vo lch trnh. | A5.2: Nu ngi dng khng chn Hon tc th a im s c xa hon ton khi lch trnh. | A7: Nu ngi dng nhn Hy th quay li mn hnh trc. | A9: Nu ngi dng chn Thanh tm kim, thc hin use-case Tm kim a im v lch trnh. Ngi dng nhn chn + ti a im mun thm vo lch trnh. | A11: Nu a im c chn thm vo  c trong lch trnh, h thng s hin th thng bo a im  c trong lch trnh. | A15: Nu ngi dng nhn Hy th quay li mn hnh trc.
+[/TABLE]
+Chnh sa thng tin lch trnh
+[TABLE]
+Tn | use-case || Chnh sa thng tin lch trnh
+Tm tt || Chnh sa cc thng tin tng quan ca lch trnh hoc c th xa lch trnh
+Tc nhn || Ngi dng
+Use-case lin quan
+iu kin tin quyt || Khng
+Hu iu kin || Thng tin lch trnh c cp nht, nu xa lch trnh th lch trnh s c xa
+Dng s kin chnh || H thng || Ngi dng
+1. H thng hin th thng tin tng quan lch trnh  ngi dng chnh sa bao gm tn, thi gian du lch, ch  chia s lch trnh
+2. Chnh tn lch trnh
+3. Chnh ngy i du lch
+4. H thng hin th giao din chn ngy
+5. Ngi dng bm nt xc nhn
+6. Ngi dng chnh ch  Chia s lch trnh
+7. Ngi dng bm Xa chuyn i ny
+8. H thng hin th hp thoi nhc nh C mun xa vnh vin
+9. Ngi dng chn nt Xa
+10. H thng xa lch trnh, kt thc use-case, quay v use-case trc .
+Dng s kin ph || A2: Nu ngi dng chnh sa tn khng hp l, h thng hin th cnh bo v nt Lu thay i s khng sng ln, quay li bc 1. | A5.0. Nu ngi dng chn ngy du lch khng c s ngy khp lch trnh ban u, h thng hin th hp thoi cnh bo, quay v bc 4. | A5.1 Nu ngi dng bm tt giao din chnh ngy, thay i v ngy s khng c lu, quay li bc 1. | A7.1: Nu ngi dng chn nt Lu thay i, h thng lu cc chnh sa ngi dng  thc hin, kt thc use-case, quay v use-case trc . | A7.2: Nu ngi dng chn nt X, kt thc use-case, quay li use-case trc . | A9: Nu ngi dng chn nt hy, quay v bc 1.
+[/TABLE]
+* c t ca cc use-case cn li s c trnh by  phn Ph lc.
+Lc  c s d liu
+Hnh 3.3.3.1 trnh by s  lc  c s d liu ca ng dng.
+Hnh 3.3.3.1 - Lc  c s d liu
+Lc  c s d liu gm su bng sau:
+USER_INFO: Mi dng trong bng USER_INFO l th hin ca mt ngi dng, bao gm m ngi dng l kha chnh, email, mt khu, tn hin th. Ngoi ra, danh sch lch trnh yu thch v lch trnh  to c nhu cu truy xut cao c lu tr  dng mng.
+ITINERARY: Mi dng trong bng ITINERARY l th hin ca mt lch trnh, bao gm m lch trnh l kha chnh, tn, thnh ph tham quan, ngy i, ngy v, ngy to lch trnh, URL nh minh ha cho lch trnh, s lng ngi dng yu thch lch trnh, ngi to lch trnh l kha ngoi tham chiu n bng USER_INFO. V s lng a im thuc lch trnh kh nhiu (trung bnh 4-5 im/ngy), danh sch a im c lu tr  dng jsonb (kh dng t PostgreSQL 9.4) gip truy xut nhanh m khng cn join vi bng PLACE.
+PLACE: Mi dng trong bng PLACE l th hin ca mt a im, bao gm m a im l kha chnh, tn, m t, phn loi (Category, l mt trong hai: im n hoc im tham quan), loi a im (Subcategory, c th l nh hng cao cp, qun chay, cafe,... i vi im n; di tch lch s, du lch sinh thi,... i vi im tham quan) l kha ngoi tham chiu n bng PLACE TYPE, kinh , v , a ch, gi cao nht, gi thp nht, s in thoi, s sao (AvgRating, l s thc thuc [1,5]), s lng nh gi, tng lt yu thch, gi m ca, gi ng ca, tnh, thnh ph trc thuc, danh sch URL hnh nh ca a im, danh sch ngi dng yu thch a im. Trng Score phc v cho thut ton v khng c hin th trn ng dng.
+PLACE TYPE: Mi dng trong bng PLACE TYPE l th hin ca mt loi a im c m loi a im l kha chnh, tn loi v thi gian tham quan c tnh.
+REVIEW: Mi dng trong bng REVIEW l th hin ca mt nh gi a im, vi b ba m a im, loi nh gi (l mt trong hai: nh gi ca Foody hay ca ngi dng Trip Package), m nh gi l kha chnh. Cc thng tin cn li gm ni dung nh gi, s sao v m ngi dng nh gi l kha ngoi tham chiu n bng USER_INFO.
+COLLECTION: Mi dng trong bng COLLECTION l th hin ca mt b su tp a im, c m b su tp l kha chnh. Cc thng tin cn li gm tn, ngy cp nht, danh sch a im thuc b su tp lu tr  dng mng v m ngi dng l kha ngoi tham chiu n bng USER_INFO.
+Chng 4:CI T V NH GI
+Hng dn ci t
+Lu : ng dng hin ti ch h tr ci t trn cc thit b in t s dng h iu hnh Android. Ngi dng khng c thit Android c th tham kho cch to my o Android qua ng dn bn di:
+https://www.youtube.com/watch?v=GhuiNcOEv1A.
+Cch 1: Ci t t kho ng dng Google Play
+(1) T thit b Android, ngi dng truy cp vo Play Store; (2) Tm kim ng dng vi t kha trip package; (3) Nhn chn ng dng Trip Package; (4) Nhn chn Install ti trang thng tin ca ng dng. (5) ng dng sau khi ci t thnh cng s c giao din nh Hnh 4.1.1.
+Hnh 4.1.1 - Hng dn ci t ng dng t Google Play Store
+Cch 2: Dng ng dng t source code  np
+Ngoi cch ti ng dng t Google Play Store, ngi dng c th ci t ng dng thng qua file .apk c nhm dng t source code.
+Lu : Thit b cn cp php ci t ng dng t bn th ba (trong trng hp ny l Google Drive). Ngi dng kim tra theo cc bc sau: Truy cp Settings  Apps  Special app access  Install unknown apps  Drive v bt trng Allow from this source (xem Hnh 4.1.2).
+Hnh 4.1.2 - Hng dn bt cho php ci t ng dng t bn th ba
+Ngi dng s dng thit b android mun ci t v truy cp vo ng dn sau  ti file .apk v thit b ti ng dn sau.
+https://drive.google.com/file/d/1huJOb8eUcB-XjAhiSLJaV2G8hHr4ei0x/view
+Sau khi truy cp ng dn, file ci t s t ng c ti v v ci t, ngi dng cn nhn chn Install cho php ci t ng dng (xem Hnh 4.1.3).
+Hnh 4.1.3 - Hng dn ci t ng dng t file .apk
+i vi ngi dng s dng my o android, ngi dng c th ti file ci t v my tnh v thc hin ko th file ci t vo my o, ng dng s t ng c ci t.
+Ci t cc mn hnh
+ng nhp
+Hnh 4.2.1: Giao din mn hnh ng nhp
+ ng nhp, cn nhp ng v  hai trng: tn ng nhp (email) v mt khu. Ti mi phn nhp, ngi dng c th nhn vo icon   xa nhanh ton b ni dung  nhp, hoc icon   hin mt khu.
+Mt khu hp l khng c cha khong trng, c t nht 8 k t, bao gm c ch v s. Nu ngi dng nhp tn ng nhp (email) khng hp l, mt khu khng hp l, ng dng s hin th thng bo v v hiu ha nt ng nhp (xem Hnh 4.2.1). Ngi dng cn nhn nt ng nhp  ng nhp vo h thng.
+ng k
+Hnh 4.2.2: Giao din tab C nhn (tri) v Giao din mn hnh ng nhp (phi)
+ ng k ti khon, ngi dng chn tab C nhn di thanh iu hng, sau  nhn nt ng k hoc nhn chn ch ng k bn di mn hnh ng nhp (xem Hnh 4.2.2). Ngi dng cn nhp cc y  cc trng d liu email ng nhp, tn hin th, mt khu v xc nhn mt khu.
+Hnh 4.2.3: Giao din mn hnh ng k
+Mt khu hp l khng c cha khong trng, c t nht 8 k t, bao gm c ch v s. Nu ngi dng nhp email khng hp l,  trng tn hin th,  trng mt khu, mt khu khng hp l, xc nhn mt khu mi khng khp, ng dng s hin th thng bo v v hiu ha nt ng k (xem Hnh 4.2.3). Ngi dng cn nhn nt ng k  ng k ti khon mi. Tt c cc thao tc khc nh nhn nt Quay li, chuyn sang mn hnh khc... u s hy b thao tc ng k.
+t li mt khu
+ ng k ti khon, ngi dng chn tab C nhn di thanh iu hng, sau  nhn nt ng k hoc nhn chn ch Bn qun mt khu? bn di mn hnh ng nhp (xem Hnh 4.2.2).
+Hnh 4.2.4: Giao din mn hnh nhp email (tri) v m OTP (phi)
+Ngi dng cn nhp chnh xc email  s dng khi ng k ti khon v bm xc nhn. Nu email c nhp cha c s dng  ng k ti khon, h thng s thng bo li n ngi dng. Ngc li h thng s gi m OTP (One-time Password) xc nhn thng qua email v ngi dng cn nhp m OTP  nhn c  mn hnh k tip. Nu nh vn cha nhn c m OTP, ngi dng c th nhn chn gi li sau mi 60 giy (xem Hnh 4.2.4).
+Hnh 4.2.5: Giao din mn hnh t li mt khu
+Sau khi xc nhn m OTP chnh xc, h thng s chuyn sang mn hnh cho php ngi dng t li mt khu. Ngi dng cn in mt khu hp l vo hai trng d liu mt khu v xc nhn mt khu. Mt khu hp l khng c cha khong trng, c t nht 8 k t, bao gm c ch v s. Ngi dng cn nhn t li mt khu  t li mt khu cho ti khon (xem Hnh 4.2.5). Tt c cc thao tc khc nh nhn nt Quay li hoc chuyn sang mn hnh khc u s hy b thao tc t li mt khu.
+Trang ch
+Hnh 4.2.6: Giao din mn hnh Trang ch
+Trang ch Trip Package (xem Hnh 4.2.6) gii thiu cc ni dung ni bt nht n ngi dng theo ba  mc: Xuyn Vit cng Trip Package ( xut im tham quan theo tnh thnh); im n c sc ( xut im tham quan theo s sao v lng nh gi) v Bt u hnh trnh mi ( xut lch trnh). Ti mi  mc, ngi dng c th lt hoc nhn vo icon     xem tt c a im hoc lch trnh c  xut, hoc tm kim thng qua thanh tm kim bn di banner.
+Thng tin ti Trang ch c trnh by sc tch v y , bao gm tn, a ch, nh gi i vi th a im; tnh thnh, thi gian du lch v s lng im n i vi th lch trnh. Ngi dng c th nhn vo th a im/lch trnh  xem thng tin chi tit, hoc nhn chn icon   lu li a im/lch trnh.
+Chnh sa thng tin c nhn
+Hnh 4.2.7: Giao din Trang c nhn (tri) v Chnh sa trang c nhn (phi)
+ chnh sa thng tin c nhn, ngi dng chn tab C nhn di thanh iu hng, sau  nhn nt Chnh sa. Cc mc c chnh sa bao gm tn hin th, nh i din v mt khu. Khng c sa email ng nhp (xem Hnh 4.2.7).
+Ngi dng nhn vo Tn hin th  i tn (tn khng  trng hoc ch cha khong trng).  i nh i din, nhn chn icon   c iu hng sang th vin nh ca thit b di ng.  i mt khu, nhn chn Mt khu hin ti  c iu hng sang mn hnh i mt khu (xem Hnh 4.2.7).
+Ngi dng cn nhn nt Lu thay i  cp nht mi thng tin. Tt c cc thao tc khc nh nhn nt Quay li hoc chuyn sang mn hnh khc u s hy b thng tin mi chnh sa.
+i mt khu
+Hnh 4.2.8: Giao din mn hnh i mt khu khi tt c trng thng tin u tha (tri) v khi c trng vi phm (phi)
+ i mt khu, cn nhp ng v  ba trng: mt khu hin ti, mt khu mi v xc nhn mt khu mi. Ti mi hp vn bn, ngi dng c th nhn vo icon   xa nhanh ton b ni dung, hoc icon   hin mt khu.
+Mt khu hp l khng c cha khong trng, c t nht 8 k t, bao gm c ch v s. Nu ngi dng nhp sai hoc  trng mt khu hin ti, mt khu khng hp l, xc nhn mt khu mi khng khp, ng dng s hin th thng bo v v hiu ha nt Lu thay i (xem Hnh 4.2.8). Ngi dng cn nhn nt Lu thay i  cp nht mt khu mi. Tt c cc thao tc khc nh nhn nt Quay li hoc chuyn sang mn hnh khc u s hy b mt khu mi chnh sa.
+Tm kim
+Hnh 4.2.9: Giao din Tm kim chnh (tri) v Tm kim theo danh mc (phi)
+ tm kim a im hoc lch trnh, ngi dng chn tab Tm kim di thanh iu hng hoc nhn vo thanh tm kim  Trang ch. Trang u ca mn hnh Tm kim cha thanh tm kim v su nt i din cho su danh mc a im, bao gm: n ung, Du lch sinh thi, Mua sm, Bo tng, Tham quan v Tn gio.
+Nu ngi dng nhn chn mt trong su nt, ng dng s hin th danh sch a im thuc danh mc tng ng (xem Hnh 4.2.9).
+Bn cnh , ngi dng c th tm kim bng cch nhn vo thanh tm kim  u trang. ng dng s iu hng ngi dng sang mn hnh Tm kim bng t kha (xem Hnh 4.2.10).
+Hnh 4.2.10: Giao din Tm kim bng t kha khi cha nhp t kha (tri) v khi  nhp t kha (phi)
+Khi ngi dng nhn vo thanh tm kim v cha nhp t kha, ng dng s hin th lch s tm kim ca ngi dng (xem Hnh 4.2.10). Khi nhn chn mt lch s tm kim bt k, ng dng hin danh sch a im hoc lch trnh tng ng vi t kha .
+Khi ngi dng nhp t kha tm kim, ng dng hin th hai la chn l Tm kim a im v Tm kim lch trnh (xem Hnh 4.2.10). Ti phn nhp ni dung Bn cn tm g?, ngi dng c th nhn vo icon   xa nhanh ton b ni dung  nhp.
+Hnh 4.2.11: Giao din Kt qu tm kim a im (tri) v Kt qu tm kim lch trnh (phi)
+Ty vo la chn ca ngi dng  mn hnh Tm kim bng t kha m ng dng s hin th danh sch a im hoc danh sch lch trnh da vo t kha  nhp (xem Hnh 4.2.11).
+Thng tin trn trang kt qu hin th ngn gn bao gm tn, a ch, nh gi i vi th a im; tnh thnh, thi gian du lch, s lng im n, s lng ngi chnh sa v s lng lt yu thch i vi th lch trnh. Ngi dng c th nhn vo th a im/lch trnh  xem thng tin chi tit, hoc nhn chn icon   lu li a im/lch trnh. Ngoi ra khi tm kim a im, ngi dng c th bm vo biu tng slider  bn cnh thanh tm kim  lc a im theo nh gi v th loi. Tnh nng ny khng p dng cho tm kim lch trnh.
+Lc a im
+Hnh 4.2.12: Giao din Lc a im khi cha chn b lc (tri) v khi  chn b lc (phi)
+ lc a im, ngi dng truy cp vo mn hnh Tm kim v thc hin thao tc tm kim a im, sau  nhn vo biu tng slider  hin th b lc. C hai tiu ch  ngi dng lc a im: theo im nh gi ca a im v loi hnh a im (xem Hnh 4.2.12).
+Ty vo nhu cu, ngi dng chn hoc b chn cc b lc ph hp v nhn vo nt p dng  thc hin vic lc. C th nhn vo nt Xa b lc  xa nhanh tt c b lc ang c. Sau khi p dng b lc, ng dng s thay i kt qu tm kim tha mn cc b lc  chn. Cn lu  b lc s c gi nguyn gia cc ln tm kim.
+Xem chi tit lch trnh v ch ng
+Hnh 4.2.13: Giao din xem chi tit lch trnh
+ xem thng tin chi tit ca mt lch trnh, ngi dng cn vo th lch trnh t Trang ch, trang Tm kim hoc Lch trnh ca ti. Giao din u tin ca lch trnh s hin th cc thng tin tng qut ca lch trnh gm: tn lch trnh, s ngy, thnh ph du lch. Sau khi ngi dng thc hin ko mn hnh s thy c tm tt ni dung tham quan ca cc ngy trong hnh trnh du lch.  xem chi tit tng ngy trong lch trnh, ta chn ch Xem chi tit  mi ngy (xem Hnh 4.2.13).
+Hnh 4.2.14: Giao din xem chi tit tng ngy ca lch trnh (tri) v ch ng gia hai a im trong lch trnh (phi)
+Giao din trn th hin lch trnh du lch tng ngy ca lch trnh vi cc thng tin sau: th t ngy du lch, cc a im du lch trong tng ngy, thi gian tham quan  mi a im, thi gian di chuyn gia hai a im v khong cch di chuyn gia hai a im.
+ xem ch ng gia hai a im, ngi dng nhn chn vo nt    khung khong cch gia hai a im. Giao din ch ng gm c bn  ng i di chuyn gia hai a im c chn (xem Hnh 4.2.14).
+Yu thch v hy yu thch lch trnh
+Hnh 4.2.15: Giao din Chi tit lch trnh khi cha yu thch (tri) v khi  bm yu thch (phi)
+Ngi dng c th yu thch hoc hy yu thch mt lch trnh bng hai cch: tm kim lch trnh v bm vo biu tng  trn th lch trnh, hoc truy cp vo mn hnh Chi tit lch trnh v bm vo biu tng . Nu lch trnh  c yu thch, biu tng  s c t mu , ngc li  s c mu trng vin en (xem Hnh 4.2.15).
+To lch trnh mi
+Hnh 4.2.16: Giao din To lch trnh mi
+Lu  rng ngi dng phi ng nhp thnh cng  to lch trnh. Ngi dng cn cung cp thng tin bt buc l thnh ph mun du lch. Ngoi ra, ngi dng c th ty chn cc thng tin khc nh ngy i, ngy v (lin quan trc tip n s ngy tri nghim ca lch trnh), tri nghim yu thch, im du lch ty chn, tn lch trnh (xem Hnh 4.2.16).
+Mi lch trnh c to mc nh s  ch  cng khai, hin th vi ngi dng khc ca Trip Package. Ngi dng c th gt tt  a lch trnh v ch  ring t.
+Hnh 4.2.17: Giao din chnh sa ngy i-v trong To lch trnh mi (tri) v nhc nh ca h thng nu ngi dng chn thi gian du lch vt qu 7 ngy (phi)
+Mc nh, ngy i ca lch trnh l ngy hin ti v ngy v l 4 ngy sau . Ngi dng c th chnh sa ngy i v v ca lch trnh  ph hp vi k hoch c nhn. H thng cho php to lch trnh ti a 7 ngy. Nu vt qu gii hn, h thng s hin thng bo yu cu ngi dng chn li (xem Hnh 4.2.17).
+Hnh 4.2.18: Giao din la chn im n cho lch trnh (tri) v giao din thm a im du lch ty chn (phi)
+Ngi dng c th ty  thm cc a im mun gh thm (a im phi nm trong thnh ph du lch  chn)  mc im du lch ty chn. a im c th c chn theo hai cch: t thanh tm kim v t b su tp (xem Hnh 4.2.18).
+C nhn ha lch trnh
+Hnh 4.2.19: Giao din nt bm  c nhn ha lch trnh
+ c nhn ha lch trnh, ngi dng nhn chn biu tng  Hnh 4.2.19. Sau khi bm, giao din c nhn ha s hin th nh Hnh 4.2.20.
+Hnh 4.2.20: Giao din sau khi bm c nhn ha lch trnh
+Nu ngi dng mun xa a im khi lch trnh th bm icon   mi th a im  xa.
+Hnh 4.2.21: Giao din khi thm a im mi vo lch trnh
+Nu ngi dng mun thm a im mi vo lch trnh, nhn chn biu tng  gc phi mn hnh  thm a im t mc Tm kim hoc a im  c trong B su tp. a im c thm s hin th di  phn di cng ca mn hnh (xem Hnh 4.2.21).
+Hnh 4.2.22: Giao din xc nhn c nhn ha vo lch trnh
+Sau khi  xa hoc thm a im mi vo lch trnh, ngi dng nhn chn nt Lu thay i  cui mn hnh. H thng s mt ln na hin th thng bo cho ngi dng v vic c th thay i th t cng nh s lng cc im tham quan ca tng ngy trong lch trnh (xem Hnh 4.2.22). Nu ngi dng ng , h thng s tin hnh sp xp li cc a im trong ngy cho ph hp. Nu ngi dng khng mun thay i lch trnh ban u na th nhn chn Hy  tr v trng thi ban u.
+Chnh sa thng tin lch trnh
+Hnh 4.2.23: Giao din chnh sa thng tin lch trnh
+Khi truy cp vo giao din xem lch trnh, nu ngi dng ang ng nhp vo ti khon to ra lch trnh  th h thng s cho php ngi dng truy cp vo giao din chnh sa thng tin lch trnh.  y ngi dng s c th thay i cc thng tin tng quan ca lch trnh nh tn lch trnh, ngy i - v, ch  chia s lch trnh. Khi cp nht xong ton b thng tin, ngi dng nhn Hon thnh  lu cc thay i. Ngoi ra  y ngi dng cng c th xa lch trnh hin ang truy cp (xem Hnh 4.2.23).
+Xem chi tit a im
+Hnh 4.2.24: Giao din Chi tit a im
+ xem y  chi tit ca mt a im, ngi dng cn vo th a im mong mun ti cc mn hnh nh Trang ch, Chi tit lch trnh, Tm kim.
+Thng tin ti mn hnh Chi tit a im r rng v y  gip ngi dng nm c cc thng tin ca a im gm tn, tnh thnh, s lng nhn xt, im nh gi trung bnh, hnh nh, m t, thi gian ng - m ca, s in thoi, a ch v nhng nh gi ca ngi dng ti a im ny (xem Hnh 4.2.24). Ngi dng c th nhn vo dng ch Xem ton b  hin th ton b nh gi. Ngoi ra ngi dng cn c th ng gp nh gi ca mnh khi nhn nt Vit nh gi.
+nh gi a im
+Hnh 4.2.25: Giao din nh gi a im (tri) v Chi tit a im c hin th nh gi va ng (phi)
+Ngi dng c th vit nh gi a im khi nhn nt Vit nh gi ti mn hnh Chi tit a im ca a im mun nh gi. Mn hnh nh gi a im s hin th a im mun nh gi, ng thi cho php ngi dng la chn im s v nhp nhn xt cho a im (xem Hnh 4.2.25). Thang im ca nh gi l t 1 n 5, vi im 1 l Rt khng hi lng! v im 5 l Rt hi lng!. Ngi dng c th ch nh gi im s m khng bt buc phi nhp nhn xt. Ngi dng cn nhn nt ng nhn xt  hon tt phn nh gi ca mnh.
+Lu a im vo b su tp
+Hnh 4.2.26: Giao din Lu a im vo b su tp
+ thm mt a im vo b su tp, ngi dng c th tm kim a im v nhn vo biu tng  trn th a im hoc truy cp vo mn hnh Chi tit a im v nhn vo biu tng .
+ng dng s hin th danh sch cc b su tp (xem Hnh 4.2.26)  ngi dng thm a im vo. Ngoi ra,  bc ny ngi dng c th to b su tp mi bng cch nhn nt To mi. Mt a im c th c thm vo nhiu b su tp khc nhau. Ngi dng cn nhn nt Hon tt  hon tt phn nh gi ca mnh.
+Hnh 4.2.27: Giao din Chi tit a im khi cha thm vo b su tp (tri) v khi  thm vo b su tp (phi)
+Nu a im  c thm vo b su tp th biu tng  s t mu , ngc li  s c mu trng vin en (xem Hnh 4.2.27).
+To b su tp mi
+Hnh 4.2.28: Pop-up To b su tp (tri) v Giao din mn hnh a im yu thch sau khi b su tp mi c to (phi)
+Ngi dng c th to b su tp mi trong lc thm a im vo b su tp hoc c th to b su tp bng cch vo tab C nhn ri vo mc a im yu thch. Ngi dng nhn nt +  hin ca s pop-up To tp a im. Ngi dng in tn b su tp v chn vo nt To  hon tt to b su tp (xem Hnh 4.2.28).
+Xa b su tp
+Hnh 4.2.29: Mn hnh a im yu thch  ch  xem (tri) v ch  chnh sa (phi)
+Khi mun xa mt b su tp, ngi dng c th chn vo nt Chnh sa  gc phi trn ca mn hnh a im yu thch  vo ch  chnh sa, cc icon  s xut hin  gc phi trn ca cc b su tp, nhn chn  thc hin xa b su tp tng ng (xem Hnh 4.2.29).
+Hnh 4.2.30: Pop-up xc nhn xa b su tp
+Ca s xc nhn s xut hin. Nu ngi dng chn Xa, b su tp s b xa vnh vin, nu ngi dng chn Thot s khng c thay i xy ra. Khi ngi dng  hon tt chnh sa, chn nt Xong  quay tr li ch  xem (xem Hnh 4.2.30).
+nh gi hiu nng
+Thi gian phn hi API
+Nhm thc hin kim th API bng cng c Postman Collection v s dng 20 user o gi request cng 1 lc trong 2 pht. V cc API c chn l nhng API s dng thng xuyn nht trong ng dng: Tm kim cc a im (Search Places API) v truy xut thng tin a im (Get Place Detail API), Tm kim cc lch trnh (Search Itineraries API) v truy xut thng tin lch trnh (Get Itinerary Detail API) (xem Hnh 4.3.1).
+Hnh 4.3.1. Thi gian phn hi trung bnh ca API
+Thi gian phn hi trung bnh ca Search Places API v Get Itinerary Detail API lu hn ng k so vi Get Place Detail API v Search Itineraries API. iu ny l d hiu bi vic truy xut thng tin lch trnh chi tit bao gm thng tin v lch trnh v thng tin v tt c a im trong lch trnh nn lng d liu c truyn ti l kh ln khin cho thi gian nhn c ton b d liu c phn lu hn so vi cc API khc. i vi Search Places API, vic tm v lc ra tt c cc a im c lin quan n t kha tm kim trn ton b d liu v a im c th lm nh hng n thi gian nhn phn hi t my ch.
+ tng thch ca ng dng
+H iu hnh: Android 5.0 tr ln.
+Thit b tng thch: in thoi di ng, my tnh bng.
+Phm vi a l: ng dng s dng d liu cc a im  Vit Nam, nn phm vi s dng l trn ton lnh th Vit Nam.
+nh gi thut ton
+Nhm xc nh mc  lin quan ca cc a im c  xut trong lch trnh  nh gi  hiu qu ca thut ton thng qua ba ch s: Precision, Recall v F1-score. Hnh 4.4.1 m t nh ngha Precision v Recall.
+Hnh 4.4.1. Minh ha Precision v Recall. Ngun: caihuuthuc.wordpress.com
+Trong bi cnh ca ng dng, cc tnh cht trn c din gii nh sau:
+T (True): a im c gi /a vo lch trnh.
+F (False): a im khng c gi /a vo lch trnh.
+P (Positive): a im lin quan vi ngi dng/c score cao.
+N (Negative): a im khng lin quan vi ngi dng /c score thp.
+Vy, Precision l t l a im lin quan c gi  (true positive) trn tng s a im c gi  (true positive + false positive). Precision cng cao th cc a im c cho l lin quan c gi  cng nhiu. Khi Precision = 1, khng c a im no c cho l lin quan m khng c gi /c score thp.
+Recall l t l a im lin quan c gi  (true positive) trn tng s a im thc s lin quan (true positive + false negative). Recall cng cao th a im c gi  cng thc s lin quan vi ngi dng. Khi Recall = 1, tt c a im thc s lin quan u c gi /c score cao.
+Ch da vo mt trong hai ch s trn l khng   nh gi khch quan  hiu qu thut ton. V vy, ta s dng thm F1-score nhm nh gi  chnh xc da trn c Precision v Recall. F1-score c bit hu dng khi c s chnh lch ln gia Precision v Recall. Mt ch s ph bin khc gip nh gi  chnh xc l Accuracy. Tuy nhin, Accuracy c tnh ton trn c nhm a im lin quan (positive) v khng lin quan (negative). F1-score ph hp hn v ch tnh ton da trn nhm a im lin quan (positive) - l nhm ta mong mun nh gi hn.
+Nhm tin hnh kho st 165 ngi (Link kho st: https://form-survey-coral.vercel.app/). Mi ngi tham gia cn chn mt tnh thnh h mong mun du lch; v (cc) loi hnh du lch a thch. Sau , nhm trch xut danh sch a im tha vi cc la chn trn t C s d liu ca Trip Package. Cc a im ny s c a vo lch trnh thc t nu ngi tham gia trc tip s dng ng dng.
+Ngi tham gia cn tr li cu hi: Da trn suy ngh v tri nghim ca h, h s tham quan hoc gii thiu cho ngi khc a im no trong cc a im c  xut? Mc tiu ca kho st nhm tm ra  lin quan ca a im gi  i vi ngi dng thc t.
+V s lng ngi tham gia kho st khng nhiu, mi ngi tham gia c th chn cc thnh ph du lch khc nhau, thm ch c cc thnh ph c rt t/khng c bt c ngi tham gia no chn (v d: Qung Ninh ch c 3 ngi chn nh gi, Cn Th khng c bt c ngi no chn, ). Trong phm vi  ti, nhm ch ly ra ba thnh ph c nhiu ngi dng la chn nht, bao gm  Nng, Hu, Khnh Ha v i chiu vi d liu a im ca Trip Package (xem Bng 4.4.1, Bng 4.4.3 v Bng 4.4.5 tng ng).
+[TABLE]
+a im gi  || a im lin quan (i vi ngi tham gia kho st) || a im gi  | a im lin quan
+ Asia Park - Cng vin Chu  |  Bo Tng iu Khc Chm  Nng |  Bin M Kh |  Cha Nam Sn |  Cng Vin Bin ng |  Bo Tng  Nng |  Bo Tng M Thut  Nng |  H Xanh  Nng |  Ghnh Bng |  Cha Php Lm |  Hi ng Tin Sa |  Bo Tng ng nh |  Bi Tm Phc M |  Bi Rng |  Ng Hnh Sn |  Khu Du Lch Sinh Thi Sui Hoa |  Tng C Chp Ha Rng |  Sui Khong Nng Ni Thn Ti |  Bi a - Sn Tr |  Cy a Sn Tr ||  Bin M Kh |  Bi Bin Non Nc |  Bi Bt Sn Tr - Du Lch Sinh Thi |  Bi Rng |  Bi Tm Phc M |  Bo Tng M Thut  Nng |  Bo Tng iu Khc Chm  Nng |  Bo Tng  Nng |  Bo Tng ng nh |  Cha Nam Sn |  Cha Php Lm |  Cy a Sn Tr |  Cng Vin Bin ng |  Cu Rng |  Cu Tu Tnh Yu |  Du Lch Sinh Thi Bi Ct Vng |  Ghnh Bng |  Hi ng Tin Sa |  H Xanh  Nng |  Khu Du Lch Sinh Thi Sui Hoa |  Ng Hnh Sn |  Asia Park - Cng vin Chu  |  Sui Khong Nng Ni Thn Ti |  Tng C Chp Ha Rng ||  Bin M Kh |  H Xanh  Nng |  Cha Nam Sn |  Ghnh Bng |  Bo Tng iu Khc Chm  Nng |  Khu Du Lch Sinh Thi Sui Hoa |  Bi Rng |  Bi Tm Phc M |  Tng C Chp Ha Rng |  Sui Khong Nng Ni Thn Ti |  Cng Vin Bin ng |  Cha Php Lm |  Ng Hnh Sn |  Asia Park - Cng vin Chu  |  Cy a Sn Tr |  Bo Tng ng nh |  Bo Tng  Nng |  Bo Tng M Thut  Nng
+[/TABLE]
+Bng 4.4.1: a im gi  v a im lin quan i vi ngi dng
+khi du lch  Nng
+Kt qu tnh ton Precision, Recall v F1-score ca  Nng c ghi di Bng 4.4.2.
+[TABLE]
+Thnh ph || a im | gi  || a im gi   a im lin quan || a im | lin quan || Precision || Recall || F1-score
+ Nng || 20 || 18 || 24 || 90% || 75% || 82%
+[/TABLE]
+Bng 4.4.2: Kt qu thng k Precision, Recall v F1-score ca  Nng
+i vi  Nng, ch s F1-score tt nm  mc 82%. Precision ln n 90% ngha l cc a im c cho l lin quan ti y cng c a nhiu vo lch trnh. Tuy nhin, trong bi cnh ca  ti, Recall c nh gi cao hn Precision v n i din cho s lin quan gia a im gi  v ngi dng thc t. D Recall kh cao (75%) nhng vn thp hn so vi Precision (90%), th hin cc a im nhm cho l lin quan cha thc s ph hp vi du khch v cn phi ci thin thm.
+[TABLE]
+a im gi  || a im lin quan (i vi ngi tham gia kho st) || a im gi  | a im lin quan
+ i Ni - Hong Thnh Hu |  Cha Thin M |  Lng Khi nh |  Lng T c |  Lng Minh Mng |  o Hi Vn |  m Lp An |  i Vng Cnh |  Cung An nh |  Cha T Hiu |  Huyn Khng Sn Thng |  Ph i B Nguyn nh Chiu |  Bo Tng C Vt Cung nh Hu |  Cha Ty Thin |  Cha T m |  Vnh Lng C |  Lng Gia Long |  an Vin Thin An |  Thin Vin Trc Lm Bch M |  Cha Huyn Khng ||  Bin Lc Bnh |  Bi Bin Thun An |  Bo Tng C Vt Cung nh Hu |  Cha Thin M |  Cha T Hiu |  Cung An nh |  Cng Vin H Thy Tin |  Huyn Khng Sn Thng |  H Thy Tin |  Lng Khi nh |  Lng Minh Mng |  Lng T c |  Ph Tam Giang |  Ph i B Nguyn nh Chiu |  Vnh Lng C |  an Vin Thin An |  o Hi Vn |  m Lp An |  i Vng Cnh |  i Ni - Hong Thnh Hu ||  Ph i B Nguyn nh Chiu |  Cung An nh |  i Vng Cnh |  Cha T Hiu |  m Lp An |  Lng Khi nh |  i Ni - Hong Thnh Hu |  o Hi Vn |  Lng T c |  Cha Thin M |  Bo Tng C Vt Cung nh Hu |  Lng Minh Mng |  Vnh Lng C |  an Vin Thin An
+[/TABLE]
+Bng 4.4.3: a im gi  v a im lin quan i vi ngi dng
+khi du lch Hu
+Kt qu tnh ton Precision, Recall v F1-score ca Hu c ghi di Bng 4.4.4.
+[TABLE]
+Thnh ph || a im | gi  || a im gi   a im lin quan || a im | lin quan || Precision || Recall || F1-score
+Hu || 20 || 14 || 20 || 70% || 70% || 70%
+[/TABLE]
+Bng 4.4.4: Kt qu thng k Precision, Recall v F1-score ca Hu
+Khng c s chnh lch gia Precision v Recall  Hu (cng bng 70%). Ni cch khc, c n 70% a im lin quan c a vo lch trnh, v 70% kh nng a im  thc s ph hp vi ngi dng thc t. Vi thng tin trn, nhm nhn nh thut ton gi  hot ng tt v cn bng c gia hai yu cu:  chnh xc v  ph hp vi ngi dng.
+[TABLE]
+a im gi  || a im lin quan (i vi ngi tham gia kho st) || a im gi  | a im lin quan
+ Thp B Ponagar |  Bi Chng |  Du Lch Sinh Thi m Thc o Bnh Ba |  Bi Nm - o Bnh Ba |  Bi Bin Nh Tin |  Khu Du Lch Con S Tre |  Khu Du Lch Hn Chng |  o Bnh Hng |  Bi B Bng - o Bnh Hng |  Bi  Trng - o Bnh Hng |  Khu D Ngoi Lng Ct - Hn Thm |  Thc T G |  Bi Tm Nh C - o Bnh Ba |  Hn Tm Island |  Hn Tm Eco Green Resort |  Tri Nui Cy Ngc Trai Hn Tm Nha Trang |  Sui Ba H |  Khu Bo Tn Bin Hn Mun - Nha Trang |  Khu Du Lch Hn B - Yersin |  Bi Tranh ||  Bi Bin Nh Tin |  Bi B Bng - o Bnh Hng |  Bi Chng |  Bi Nm - o Bnh Ba |  Bi  Trng - o Bnh Hng |  Du Lch Sinh Thi m Thc o Bnh Ba |  Khu Du Lch Ba H |  Khu Du Lch Con S Tre |  Khu Du Lch Hn Chng |  Khu D Ngoi Lng Ct - Hn Thm |  Nh Th Cy Vong |  Nh Th H Da |  Thy Cung Tr Nguyn |  o Bnh Hng |  Cha Sui  |  Thp B Ponagar ||  Bi B Bng - o Bnh Hng |  Thp B Ponagar |  Khu D Ngoi Lng Ct - Hn Thm |  o Bnh Hng |  Bi  Trng - o Bnh Hng |  Bi Nm - o Bnh Ba |  Bi Bin Nh Tin |  Khu Du Lch Hn Chng |  Du Lch Sinh Thi m Thc o Bnh Ba |  Bi Chng |  Khu Du Lch Con S Tre
+[/TABLE]
+Bng 4.4.5: a im gi  v a im lin quan i vi ngi dng
+khi du lch Khnh Ha
+Kt qu tnh ton Precision, Recall v F1-score ca Khnh Ha c ghi di Bng 4.4.6.
+[TABLE]
+Tnh || a im | gi  || a im gi   a im lin quan || a im | lin quan || Precision || Recall || F1-score
+Khnh Ha || 20 || 11 || 16 || 55% || 69% || 61%
+[/TABLE]
+Bng 4.4.6: Kt qu thng k Precision, Recall v F1-score ca Khnh Ha
+Ch s F1-score  Khnh Ha  mc kh vi 61%. L gii cho iu ny, nhm cho rng Khnh Ha l mt tnh c phm vi du lch rng. Khi xt trong phm vi ton tnh, cc im tham quan ng dng gi  c th xa l hn vi a s du khch  vn thng ch tham quan mt thnh ph hoc khu vc ca Khnh Ha (v d nh Nha Trang). Nh   cp, Recall c nh gi cao hn Precision trong bi cnh ca  ti. Trong trng hp ca Khnh Ha, d  chnh xc thp (Precision bng 55%) nhng ngi tham gia hi lng vi cc a im h c gi  (Recall bng 69%). Vy nn ch s trn l chp nhn c cho thut ton gi .
+Tip theo, nhm nh gi thut ton da trn c tnh thnh v loi hnh du lch. Khi tham quan mt tnh thnh, bn thn mi du khch c th yu thch nhiu loi hnh du lch. iu ny tuy ph hp vi thc t nhng s to ra nhiu t hp tnh thnh  loi hnh du lch khc nhau. Vy s dng Precision, Recall v F1-score cho trng hp ny l khng kh thi.
+Nu p ng ng tnh thnh du lch v tt c cc loi hnh du lch, trung bnh c 10 a im ng dng gi  th c 6.3 a im ngi tham gia kho st cm thy hi lng (h s gh thm hoc s gii thiu cho ngi khc gh thm nu du lch ti tnh thnh ). Theo thut ton gi  ca Trip Package, mi ngy du khch tham quan ti a 5 a im, 10 a im ng vi ti a 2 ngy. Vy con s 6.3 thng k c t kho st c nhm nh gi l kh.
+nh gi  hu ch
+Nhm thc hin kho st 165 ngi dng v vic tnh hu ch ca ng dng gi  lch trnh Trip Package (Link kho st: https://form-survey-coral.vercel.app/).
+Kho st s dng thang o Likert gm 5 mc ; mc 1 thp nht ng vi trng thi khng sn lng/khng ph hp v mc 5 cao nht ng vi rt sn lng/rt ph hp.
+Hnh 4.5.1:  sn sng s dng ng dng ca ngi dng da trn  tui
+Vi cu hi Da vo tri nghim t ng dng v video demo, bn c sn lng s dng Trip Package  tham kho im tham quan v lch trnh du lch?, a s ngi tham gia sn sng s dng ng dng ( mc 4 v 5), chim khong 123 ngi trn tng s 165, tng ng vi 75%.  Ngoi ra, 58 ngi tr thuc  tui 18-29 (chim khong 35%) cho bit h sn lng ti v dng th ng dng (xem Hnh 4.5.1). iu ny c th gii thch bi phn ln ngi du lch t tc s c  tui dao ng trong khong t 18 n 35.
+Hnh 4.5.2:  hu ch ca ng dng i vi ngi dng
+Hnh 4.5.2 trnh by kt qu kho st  hu ch ca ng dng gi  lch trnh du lch cho ngi dng da trn cu hi Bn nh gi th no v  hu ch ca ng dng vi cng ng du lch t tc?. Kt qu cho thy 25% v 60% ngi c kho st cho rng ng dng tht s hu ch  mc 4 v mc 5. Tuy nhin, c 9% ngi dng lng l la chn v 6% ngi dng khng cm thy ng dng c li trong vic du lch. i vi vn  ny, nhm cn pht trin nhiu hn cc tnh nng lin quan n lch trnh nh gi  nhiu a im v chnh sa lch trnh theo  ngi dng hn, gip ngi dng c th s dng trong nhiu trng hp.
+Chng 5:KT LUN
+Kin thc
+Qua qu trnh thc hin  n, nhm tip thu v trau di c cc kin thc, k nng sau:
+Cc gii thut lin quan n Data Mining, Machine Learning nhm gii quyt bi ton NP-Hard/bi ton lp lch.
+Lp trnh client s dng framework Flutter.
+Lm vic trn mi trng Python  crawl d liu, lm sch d liu v lp trnh server.
+Thit k C s d liu da trn nhu cu thc t; thao tc trn H qun tr PostgreSQL  lu tr, m ha v truy xut d liu.
+S dng cc cng c xy dng server v C s d liu m my: Neon Serverless PostgreSQL, Cloud Computing Services - Amazon Web Services (AWS).
+Kh khn trong qu trnh thc hin
+Ngoi ra, trong qu trnh thc hin c nhng kh khn nhm tn nhiu thi gian v cng sc  nghin cu hng gii quyt:
+Thu thp v x l d liu:  m bo  chnh xc ca thut ton, d liu cn c y  thng tin nh a ch, thi gian hot ng, loi a im Tuy nhin, d liu ban u c thu thp cn phi tri qua qu trnh x l v lm sch  c th a vo c s d liu. Vic thu thp y  thng tin v thng nht d liu t cc ngun ng tin cy i hi kh nhiu thi gian, cng sc ca nhm  tm hiu, nghin cu v hon thnh.
+ hiu qu thut ton: Vic xy dng thut ton lp lch trnh du lch t ng i hi nhm phi tm hiu v kim tra rt nhiu trng hp thc t c th xy ra nh n trc thi gian m ca, a im tham quan k tip qu xa so vi a im hin ti,... Ngoi ra, tc  ca thut ton cn ph thuc vo c s d liu cng nh thi gian gi api, nn nhm cn ci thin thut ton nhiu ln  thi gian sp xp lch trnh ngn nht c th v p ng c cc kt qu mong mun trong thc t.
+Kinh ph:  pht trin c ng dng v a ng dng n nhiu ngi dng, vic ng dng cng ngh in ton m my  pht trin c s d liu v my ch l iu cn thit. Tuy nhin hu ht cc cng ngh ny u s mt mt khon ti chnh nht nh. Trc mt, nhm s dng c s d liu v server min ph nn c th xy ra mt vi trng hp khng mong mun nh thi gian phn hi chm.
+Sn phm t c
+Kt qu nhm t c bao gm:
+Xy dng server m my Render c th kt ni vi h thng c s d liu m my trn nn tng Amazon Web Services v cc API ca bn th ba  thc hin cc yu cu x l ca ng dng.
+Xy dng ng dng di ng Trip Package ( c ng ti trn Google Play Store) gip ngi dng to lch trnh du lch t tc, xem thng tin a im du lch cng nh truy cp v tng tc vi cc thng tin ca h thng cch d dng v thun tin.
+Chng 6:HNG PHT TRIN
+ng dng Trip Package vn cn mt s vn  cn ci thin trong cc bn cp nht sau, ng thi d kin trin khai thm nhiu tnh nng trong tng lai.
+Cc im cn ci thin:
+Ci thin thut ton, tng  chnh xc ca lch trnh.
+Thu thp v x l thm d liu a im, tng tnh a dng cho C s d liu.
+Cho php ngi dng ty chnh thi gian tham quan  mi a im v thm thi gian ngh ty chn.
+Gi  cc a im c v tr a l gn vi cc a im trong lch trnh hoc gn vi v tr hin ti ca ngi dng khi ngi dng chnh sa lch trnh.
+B sung b lc a im theo thnh ph, khong cch, gi c.
+Gia c h thng, tng  n nh cho kt ni h thng.
+Thm ni dung cho Trang ch nhm tng kh nng thu ht ngi dng.
+Cc tnh nng mi d kin s pht trin:
+Thm mt s tnh nng h tr tin ch cho ngi du lch nh: t phng khch sn v phng tin di chuyn (v my bay, v tu, xe cng ngh); thng bo khi hnh khi n ngy du lch.
+B sung vo lch trnh thng tin khch sn v phng tin di chuyn.
+Cho php thit k lch trnh ph hp vi chi ph mong mun/tnh ton v a ra tng chi ph cn thit.
+Cho php ngi dng ghi ch lch trnh v cc a im bn trong lch trnh.
+Cp nht tnh nng ch ng: hin th tuyn ng i qua ton b cc a im trong ngy.
+Thm tnh nng bo co v chnh sa a im.
+Thm ty chn ngn ng ting Anh.
+TI LIU THAM KHO
+[1]Booking, Booking.coms Seven Predictions for the Creative Reimagination of Travel in 2023.  https://globalnews.booking.com/bookingcoms-seven-predictions-for-the-creative-reimagination-of-travel-in-2023/
+[2]VnEconomy, Tro lu du lch t tc ph bin hu i dch.  https://vneconomy.vn/trao-luu-du-lich-tu-tuc-pho-bien-hau-dai-dich.htm
+[3]S. Choachaicharoenkul, D. Coit and N. Wattanapongsakorn, "Multi-Objective Trip Planning with Solution Ranking Based on User Preference and Restaurant Selection," in IEEE Access, vol. 10, pp. 10688-10705, 2022, doi: 10.1109/ACCESS.2022.3144855.
+[4]Surya Priy, Different Types of Clustering Algorithm https://www.geeksforgeeks.org/different-types-clustering-algorithm/
+[5]Savyakhosla, ML | K-means++ Algorithm https://www.geeksforgeeks.org/ml-k-means-algorithm/
+[6] M. Tenemaza, S. Lujn-Mora, A. De Antonio and J. Ramrez, "Improving Itinerary Recommendations for Tourists Through Metaheuristic Algorithms: An Optimization Proposal," in IEEE Access, vol. 8, pp. 79003-79023, 2020, doi: 10.1109/ACCESS.2020.2990348.
+[7] IBM, Logarithmic scale https://www.ibm.com/docs/en/cognos-analytics/11.1.0?topic=visualizations-logarithmic-scale
+[8] Wolfgang Wrndl, Alexander Hefele & Daniel Herzog, Recommending a sequence of interesting places for tourist trips
+[9] A. Lipowski and D. Lipowska, Roulette-wheel selection via stochastic acceptance, Phys. A Stat. Mech. Appl., vol. 391, no. 6, pp. 21932196, Mar. 2012
+PH LC
+c t use-case
+ng k
+[TABLE]
+Tn use-case || ng k
+Tm tt || Cho php ngi dng ng k mt ti khon mi phc v cho cc chc nng mang tnh c nhn ha.
+Tc nhn || Ngi dng
+Use case lin quan || Khng
+iu kin tin quyt || Khng
+Hu iu kin || Ti khon ngi dng mi
+Dng s kin chnh || H thng || Ngi dng
+1. Nhn chn nt ng k.
+2. Hin th form ng k ti khon cho php ngi dng nhp cc thng tin cn thit.
+3. Ngi dng nhp cc thng tin cn thit v bm ng k.
+4. Nu ng k thnh cng, h thng s hin th mn hnh ng nhp cho php ngi dng ng nhp vi ti khon mi to.
+Dng s kin ph || A4: Nu email ng nhp  tn ti trong h thng th h thng s thng bo Tn ng nhp  tn ti. Bn vui lng th li v ngi dng cn nhp mt email khc  thc hin ng k.
+[/TABLE]
+ng nhp
+[TABLE]
+Tn use-case || ng nhp
+Tm tt || Cho php ngi dng ng nhp vo ti khon  to  thc hin cc chc nng mang tnh c nhn ha.
+Tc nhn || Ngi dng
+Use case lin quan || Khng
+iu kin tin quyt || Khng
+Hu iu kin || ng nhp vo h thng thnh cng
+Dng s kin chnh || H thng || Ngi dng
+1. Nhn chn nt ng nhp.
+2. Hin th form ng nhp.
+3. Nhp thng tin ng nhp bao gm email ng nhp v mt khu. Sau  nhn chn ng nhp.
+4. Chuyn hng mn hnh n mn hnh Trang ch ca ng dng.
+Dng s kin ph || A4: Nu ng nhp khng thnh cng, h thng s thng bo Tn ng nhp hoc mt khu khng chnh xc. Bn vui lng th li. v khng chuyn hng mn hnh.
+[/TABLE]
+t li mt khu
+[TABLE]
+Tn use-case || t li mt khu
+Tm tt || Cho php ngi dng t li mt khu ti khon khi qun mt khu.
+Tc nhn || Ngi dng
+Use case lin quan || Khng
+iu kin tin quyt || Khng
+Hu iu kin || i mt khu cho ngi dng qun mt khu
+Dng s kin chnh || H thng || Ngi dng
+1. Nhn chn nt Bn qun mt khu? ti trang ng nhp.
+2. Hin th mn hnh cho php ngi dng nhp email ng nhp.
+3. Nhp email dng  ng nhp ti khon v bm Xc nhn.
+4. H thng gi m OTP xc nhn cho ngi dng thng qua email  nhp.
+5. Hin th mn hnh cho php ngi dng nhp m OTP.
+6. Nhp m OTP c gi bi h thng qua ti khon email.
+7. Hin th form  ngi dng nhp mt khu mi v xc nhn mt khu mi.
+8. Nhp mt khu mi v xc nhn mt khu mi v nhn t li mt khu.
+9. Hin th trang ng nhp cho php ngi dng ng nhp vi mt khu mi.
+Dng s kin ph || A1: Nu ng nhp khng thnh cng, h thng s thng bo Tn ng nhp hoc mt khu khng chnh xc. Bn vui lng th li. v khng chuyn hng mn hnh. | A6: Nu ngi dng khng nhn c m OTP, ngi dng c th nhn Gi li sau mi 60 giy. | A7: Nu m OTP khng chnh xc, h thng s thng bo li trn mn hnh v ngi dng cn nhp li m OTP.
+[/TABLE]
+i mt khu
+[TABLE]
+Tn use-case || i mt khu
+Tm tt || Cho php ngi dng i mt khu khi vn cn truy cp c vo ti khon
+Tc nhn || Ngi dng
+Use case lin quan || Extends: Chnh sa thng tin c nhn
+iu kin tin quyt || Ngi dng ng nhp thnh cng
+Hu iu kin || Mt khu c cp nht mi
+Dng s kin chnh || H thng || Ngi dng
+1. Nhn chn Chnh sa thng tin c nhn
+2. iu hng n mn hnh Chnh sa thng tin c nhn
+3. Nhn chn mc Mt khu
+4. iu hng n mn hnh i mt khu
+5. Nhp mt khu hin ti, mt khu mi v xc nhn mt khu mi
+6. Nhn Lu thay i
+7. Thng bo i mt khu thnh cng
+8. Quay li mn hnh Chnh sa thng tin c nhn
+Dng s kin ph || A3: Nu ngi dng chnh sa cc thng tin khc, kt thc use-case v thc hin use-case Chnh sa thng tin c nhn. | A5: Nu ngi dng vi phm mt trong cc trng hp sau, quay li bc 5. | Khng nhp hoc nhp sai mt khu c. | Mt khu mi khng hp l (khng  8 k t, khng c c ch v s, c khong trng). | Mt khu mi v xc nhn mt khu mi khng khp. | A6: Nu ngi dng khng xc nhn lu, b qua bc 7 v khng cp nht mt khu mi. | A8: Nu ngi dng mun chnh sa cc thng tin khc, thc hin use-case Chnh sa thng tin c nhn.
+[/TABLE]
+Chnh sa thng tin c nhn
+[TABLE]
+Tn use-case || Chnh sa thng tin c nhn
+Tm tt || Cho php ngi dng thay i tn v nh i din khi vn cn truy cp c vo ti khon
+Tc nhn || Ngi dng
+Use case lin quan || Extends: i mt khu
+iu kin tin quyt || Ngi dng ng nhp thnh cng
+Hu iu kin || Tn ngi dng v nh i din c cp nht mi.
+Dng s kin chnh || H thng || Ngi dng
+1. Nhn chn Chnh sa thng tin c nhn
+2. iu hng n mn hnh Chnh sa thng tin c nhn
+Dng s kin con 1 (i tn) || S1. Nhp tn ngi dng mi
+S2.  Hin du tick xanh  cui hp thoi nhm thng bo tn ngi dng hp l
+Dng s kin con 2 (i nh) || S1. Nhn vo nh i din
+S2. iu hng n th vin nh ca thit b mobile
+S3. Nhn chn nh i din mi
+S4. Quay li mn hnh Chnh sa thng tin c nhn
+S5. Hin th nh i din mi.
+Dng s kin chnh || 3. Nhn Lu thay i
+4. Quay li mn hnh Trang c nhn
+5. Hin th tn v nh i din mi.
+Dng s kin ph || A2: Nu ngi dng chn i mt khu, kt thc use-case v thc hin use-case i mt khu. | AS1: Nu ngi dng  trng tn, hoc tn ch cha khong trng, quay li bc 3. | AS3: Nu ngi dng bm nt Quay li m khng chn nh, b qua bc S5. | A3: Nu ngi dng khng xc nhn lu, b qua bc 5 v khng cp nht tn, nh i din mi.
+[/TABLE]
+Lc a im
+[TABLE]
+Tn use-case || Lc a im
+Tm tt || Cho php ngi dng lc a im theo s sao v th loi
+Tc nhn || Ngi dng
+Use case lin quan || Extends: Tm kim a im v lch trnh | Extends: Xem chi tit a im
+iu kin tin quyt || Khng
+Hu iu kin || Khng
+Dng s kin chnh || H thng || Ngi dng
+1. Nhn icon Tm kim t thanh iu hng
+2. iu hng n mn hnh Tm kim 1 cha thanh tm kim v 6 danh mc.
+3. Nhn vo thanh tm kim
+4. iu hng n mn hnh Tm kim 2
+5. Nhn chn icon b lc
+6. Nhn chn (cc) b lc mong mun
+7. Nhn Xc nhn
+8. Hin th kt qu ph hp vi b lc  chn.
+Dng s kin ph || A2: Nu ngi dng nhn vo mt trong su danh mc, b qua bc 3. Kt qu tm kim hin th  bc 7 ch cha cc a im thuc danh mc  chn. | A4: Nu ngi dng tm kim bng t kha, thc hin use-case Tm kim a im v lch trnh. | A7: Nu ngi dng khng nhn xc nhn, kt thc use-case. | A8: Nu ngi dng mun b sung hoc xa bt b lc, quay li bc 5. | A8: Nu cc b lc ngi dng chn khng tha d liu trong C s d liu, thng bo khng c kt qu tm kim ph hp. | A8: Nu ngi dng xem chi tit a im, thc hin use-case Xem chi tit a im.
+[/TABLE]
+Xem chi tit a im
+[TABLE]
+Tn use-case || Xem chi tit a im
+Tm tt || Cho php ngi dng xem thng tin chi tit ca a im nh tn, a ch, gi ng m ca, khong gi cng nh l cc nh gi v a im 
+Tc nhn || Ngi dng
+Use case lin quan || Extends: nh gi a im | Extends: Lu a im vo b su tp
+iu kin tin quyt || Khng
+Hu iu kin || Khng
+Dng s kin chnh || H thng || Ngi dng
+1. Ngi dng bm chn vo mt a im.
+2. Hin th mn chi tit a im.
+3. Ngi dng s xem c thng tin chi tit ca a im .
+Dng s kin ph || A3.1: Nu ngi dng chn nh gi chuyn ti use-case nh gi a im | A3.2: Nu ngi dng chn nt Yu thch chuyn ti use-case Lu a im vo b su tp
+[/TABLE]
+nh gi a im
+[TABLE]
+Tn use-case || nh gi a im
+Tm tt || Cho php ngi dng thc hin nh gi cc a im trong ng dng
+Tc nhn || Ngi dng
+iu kin tin quyt || Ngi dng ng nhp thnh cng
+Hu iu kin || Thm nh gi ca ngi dng v a im
+Dng s kin chnh || H thng || Ngi dng
+1. Ti mn xem chi tit ca a im chn Vit bnh lun
+2. Hin th giao din nh gi a im, mc nh s l nh gi 5 sao
+3. in nh gi v nh gi a im theo sao.
+4. Bm Hon tt  hon thnh nh gi a im
+5. H thng thng bo thm nh gi thnh cng v thm nh gi vo phn bnh lun ca a im.
+Dng s kin ph || A3: Nu ngi dng cha nh gi sao hoc cha bnh lun m vn bm Hon tt th h thng s xem nh l mc nh (5 sao v khng c bnh lun) v tip tc bc 5
+[/TABLE]
+Lu a im vo b su tp
+[TABLE]
+Tn use-case || Lu a im vo b su tp
+Tm tt || Ngi dng lu a im vo b su tp, nhng a im  lu c th dng  thm vo lch trnh
+Tc nhn || Ngi dng
+Use case lin quan || Extends: To b su tp
+iu kin tin quyt || Ngi dng ng nhp thnh cng
+Hu iu kin || Thm a im vo b su tp ca ngi dng trn h thng
+Dng s kin chnh || H thng || Ngi dng
+1. Ngi dng nhn nt tri tim c hin th cng vi a im
+2. H thng hin pop-up b su tp ca ngi dng  lu a im vo.
+3. Ngi dng chn b su tp mun lu vo v bm Hon tt
+4. H thng thng bo a im  c thm vo b su tp
+Dng s kin ph || A3: Nu ngi dng chn To mi b su tp, chuyn n use-case To b su tp mi
+[/TABLE]
+Chnh sa danh sch lch trnh ca ti
+[TABLE]
+Tn use-case || Chnh sa danh sch lch trnh ca ti
+Tm tt || Chnh sa bao gm thm v xa cc lch trnh do chnh ngi dng to ra hoc ngi dng yu thch trong danh sch lch trnh ca ngi dng
+Tc nhn || Ngi dng
+Use case lin quan
+iu kin tin quyt || Ngi dng ng nhp thnh cng
+Hu iu kin || Cp nht danh sch lch trnh  to hoc  lu ca h thng, ng thi cp nht lch trnh tng ng
+Dng s kin chnh || H thng || Ngi dng
+1. H thng hin th danh sch cc lch trnh  to v  thch chia lm hai tab tng ng
+2. Bm nt chnh sa danh sch
+3.H thng hin th k hiu xa  trc mi th lch trnh cho php ngi dng xa
+4. Ngi dng bm xa lch trnh  to
+5. H thng hin th hp thoi nhc nh ngi dng
+6. Ngi dng chn xc nhn xa lch trnh  to
+7. H thng xa lch trnh ca ngi dng khi ng dng
+8. Ngi dng bm xa lch trnh  thch
+9. H thng hin th hp thoi nhc nh ngi dng
+10. Ngi dng chn xc nhn xa lch trnh  thch khi danh sch
+11. Cp nht tnh trng hy yu thch ca ngi dng vi lch trnh, xa lch trnh khi danh sch yu thch ca ngi dng.
+12.Ngi dng bm nt Xong
+13. H thng n cc k hiu cho php xa lch trnh, kt thc use-case.
+Dng s kin ph || A2: Nu ngi dng khng thc hin bc ny, b qua bc 3-12, n bc 13. | A4: Nu ngi dng khng thc hin bc ny, b qua bc 5- 7, n bc 8 | A6: Nu ngi dng chn Hy, quay li bc 1 | A8: Nu ngi dng khng thc hin bc ny, b qua bc 9-11, n bc 12 | A10: Nu ngi dng chn Hy, quay li bc 1 | A12: Nu ngi dng khng thc hin bc ny, quay li bc 1.
+[/TABLE]
+Yu thch v hy yu thch lch trnh
+[TABLE]
+Tn use-case || Yu thch v hy yu thch lch trnh
+Tm tt || Ngi dng yu thch/hy yu thch lch trnh ca ngi khc
+Tc nhn || Ngi dng
+Use case lin quan || Khng
+iu kin tin quyt || Ngi dng ng nhp thnh cng
+Hu iu kin || Cp nht danh sch lch trnh yu thch ca ngi dng
+Dng s kin chnh || H thng || Ngi dng
+1. Hin th lch trnh km button tri tim  trng thi  yu thch  cc lch trnh m ngi dng  yu thch trc .
+2. Ngi dng bm button tri tim
+3. Xa lch trnh yu thch vo danh sch lch trnh yu thch ca ngi dng v load li nt yu thch thnh trng thi cha yu thch
+Dng s kin ph || A1: Nu ngi dng cha yu thch lch trnh  th button tri tim  trng thi cha yu thch lch trnh. | A3: Nu ngi dng cha yu thch lch trnh th khi bm button h thng thm lch trnh  khi danh sch lch trnh yu thch v load li nt yu thch thnh trng thi  yu thch. | A3.1: Nu server ang bo tr hoc thit b ang khng kt ni mng th hin thng bo li v kt thc use-case.
+[/TABLE]
+To b su tp mi
+[TABLE]
+Tn use-case || To b su tp mi
+Tm tt || Ngi dng to b su tp mi  lu cc a im yu thch.
+Tc nhn || Ngi dng
+Use case lin quan || Khng
+iu kin tin quyt || Ngi dng ng nhp thnh cng
+Hu iu kin || Mt b su tp mi c to cho ngi dng.
+Dng s kin chnh || H thng || Ngi dng
+1. Nhn chn nt To mi.
+2. Hin th form nhp tn b su tp.
+3. in tn b su tp mi.
+4. Kim tra  hp l ca tn.
+5. Nhn chn nt To.
+6. Quay li mn hnh trc.
+7. Hin th danh sch b su tp bao gm b su tp mi to.
+Dng s kin ph || A3: Nu ngi dng nhn Hy th quay li mn hnh trc v kt thc use-case. | A4: Nu ngi dng  trng tn, hoc tn ch cha khong trng th thng bo li v quay li bc 3. | A5: Nu ngi dng nhn Hy th quay li mn hnh trc v kt thc use-case. | A6: Nu server ang bo tr hoc thit b ang khng kt ni mng th hin thng bo li, quay li mn hnh trc v kt thc use-case.
+[/TABLE]
+Xa b su tp
+[TABLE]
+Tn use-case || Xa b su tp
+Tm tt || Cho php ngi dng xa cc b su tp ca mnh khi vn cn truy cp c vo ti khon.
+Tc nhn || Ngi dng
+Use case lin quan || Khng
+iu kin tin quyt || Ngi dng ng nhp thnh cng
+Hu iu kin || Danh sch b su tp c cp nht mi.
+Dng s kin chnh || H thng || Ngi dng
+1. Nhn chn a im yu thch.
+2. iu hng n mn hnh a im yu thch.
+3. Nhn chn biu tng cy vit.
+4. Hin biu tng x  mi b su tp.
+5. Nhn chn biu tng x  b su tp cn xa.
+6. Hin pop-up xc nhn xa.
+7. Nhn chn nt Xa.
+8. Cp nht li danh sch b su tp.
+9. Nhn chn nt Xong.
+10. n biu tng x  mi b su tp.
+Dng s kin ph || A7: Nu ngi dng chn nt Thot th b su tp khng b xa. | A9: Nu ngi dng khng nhn chn nt Xong m mun xa tip cc b su tp khc th quay li bc S3.
+[/TABLE]
+Sa b su tp
+[TABLE]
+Tn use-case || Sa b su tp
+Tm tt || Cho php ngi dng sa cc b su tp ca mnh khi vn cn truy cp c vo ti khon.
+Tc nhn || Ngi dng
+Use case lin quan || Khng
+iu kin tin quyt || Ngi dng ng nhp thnh cng
+Hu iu kin || Danh sch a im trong b su tp c cp nht mi.
+Dng s kin chnh || H thng || Ngi dng
+1. Nhn chn a im yu thch.
+2. iu hng n mn hnh a im yu thch.
+3. Nhn vo b su tp cn chnh sa
+4. iu hng n mn hnh hin th danh sch a im trong b su tp.
+5. Nhn chn biu tng cy vit.
+6. Hin biu tng x  mi a im.
+7. Nhn chn biu tng x  a im cn xa.
+8. Hin pop-up xc nhn xa.
+9. Nhn chn nt Xa.
+10. Cp nht li danh sch a im trong b su tp.
+11. Nhn chn nt Xong.
+12. n biu tng x  mi a im.
+Dng s kin ph || A9: Nu ngi dng chn nt Thot th a im khng b xa. | A11: Nu ngi dng khng nhn chn nt Xong m mun xa tip cc b su tp khc th quay li bc S5.
+[/TABLE]

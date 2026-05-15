@@ -1,16 +1,31 @@
-# hellovietnam
+# HelloVietnam Monorepo
 
-A new Flutter project.
+This repository is split into separate frontend and backend workspaces.
 
-## Getting Started
+## Structure
 
-This project is a starting point for a Flutter application.
+- `frontend/`: Flutter application
+- `backend/`: Supabase backend, schema, functions, and backend docs
+- `docs/legacy-extracts/`: archived extracted text files kept for reference only
 
-A few resources to get you started if this is your first Flutter project:
+## Common workflows
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Frontend:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```powershell
+cd frontend
+flutter pub get
+flutter run
+```
+
+Backend:
+
+```powershell
+cd backend/supabase
+supabase start
+```
+
+## Notes
+
+- Git stays at the repository root.
+- Flutter IDE launch configs at the repo root should target files under `frontend/`.

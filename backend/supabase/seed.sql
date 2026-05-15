@@ -1,0 +1,11 @@
+-- Seed data should stay lightweight and safe to re-run.
+-- Start with reference data only, such as:
+-- - city_province
+-- - place_subcategory
+-- - phrases
+-- - subscription_plan
+
+-- Example:
+-- insert into subscription_plan (code, name, duration_days, price_minor, status)
+-- values ('trial_7d', 'Trial 7 Days', 7, 0, 'active')
+-- on conflict (code) do nothing;

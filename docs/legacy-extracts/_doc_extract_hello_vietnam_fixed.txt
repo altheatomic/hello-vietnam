@@ -1,0 +1,1291 @@
+Report v0.1
+Bng chia vic - thi gian thc hin: 2 ngy (deadline: 5h chiu th by 28/6)
+[TABLE]
+Task || Ni dung c th || Ngi thc hin || Deadline || nh gi  hon thnh
+Task 1: R sot cc chc nng   xut trong  ti || c li ton b phn chc nng  c, trch xut cc tnh nng nh || Kim Oanh || 08:00 th su 27/6
+Task 2: Vit m t ngn cho mi chc nng || Gm: Mc ch  u vo  Kt qu u ra  V d s dng || Phc || 20:00 th su 27/6
+Task 3:  xut chc nng m rng || Vit ngn gn 35 tnh nng c th b sung sau: AR, Booking, Lch offline... || Thi || 08:00 th by 28/6
+Task 4: Bin son report hon chnh || Trnh by logic, r rng tng phn: m u, chc nng, m rng, s  || Kim Oanh || 17:00 th by 28/6
+[/TABLE]
+Hello Vietnam - Project Report
+1. Tm tt  chnh ca  ti Hello Vietnam
+Mc tiu chnh:To mt ng dng a nn tng (iOS, Android, Windows, macOS) gip:
+C nhn ha tri nghim du lch ti Vit Nam.
+Kt ni khch du lch v ngi a phng.
+Qung b vn ha, sn phm, dch v Vit Nam ra quc t.
+Vn  thc t:
+Vit Nam c t l khch quay li <10%, trong khi Thi Lan t 60%.
+Nhn din thng hiu du lch Vit cn yu, thiu tri nghim c nhn ha.
+2. Tip cn nhu cu ca du khch
+Bn l ai v bn ang  u?
+Ti ang:
+1.1)  Vit Nam1.2)  ngoi Vit Nam
+Ti mun bit thm v:
+Nu ang  Vit Nam (1.1):
+1.1.1) Nhng hot ng th v gn ti1.1.2) a im tip theo nn gh thm
+Nu ang  nc ngoi (1.2):
+1.2.1) Tm hiu iu g lm Vit Nam tr nn c bit1.2.2) Tm  tng v a im v thi im nn i du lch1.2.3) Ti  t v v ang ln k hoch chuyn i
+Thi gian ti d nh i du lch:
+1 tun hoc t hn (ph hp  khm ph 13 a im)
+2 tun (  khm ph ni, bin v vn ha)
+Hn 2 tun (thc s hiu v tri nghim Vit Nam)
+Ti s i du lch vo thi im:
+Thng 12  Thng 2
+Thng 3  Thng 5
+Thng 6  Thng 8
+Thng 9  Thng 11
+Ti ch yu i du lch v l do g? (c th chn nhiu l do)
+m thc
+Vn ha truyn thng
+Vn ha biu din / ngh thut
+Thin nhin
+Tic tng / si ng
+Khm ph / phiu lu
+3. Cc chc nng chnh cn c
+1. Cng c h tr du khch
+Gi  thi im & a im du lch theo thi tit, s thch, thi gian rnh.
+Gi  hot ng gn v tr hin ti.
+Gii thiu vn ha, mn n, sn phm bn a theo khu vc.
+Gii thch cch s dng cc ng dng ph bin ti Vit Nam (Zalo, Grab)
+T in nh (image-based translator) dng AI  nhn din mn n,  vt
+Cung cp t vng mu, phin m, h tr luyn pht m
+Lch trnh gi  da theo s thch c nhn (m thc, thin nhin, vn ha)
+To nht k hnh trnh (timeline)  lu gi v chia s tri nghim
+Lu a im, mn n, ngi dn vo danh sch yu thch
+2. Cng c h tr ngi bn a
+To gian hng mini  gii thiu sn phm/dch v (a ngn ng: Vit, Anh, Php, c)
+S dng mu c sn  ng sn phm d dng (form khai bo: loi hnh, ngun gc, mc  cay)
+Gn b lc tm kim: mn chay,  cay, th cng, c sn vng min
+T ng nh v trn bn  (Google Maps + OSM)
+Nhn compliment t du khch (nt Cm n/Bn tht tuyt)
+Qun l lt tng tc, bnh lun t ngi dng
+3. Chc nng x hi v tng tc
+Nt Compliment to kt ni tch cc gia khch v dn a phng
+Chia s nht k hnh trnh ln mng x hi hoc vi bn b.
+H thng yu thch (favorites) cho ngi dng lu li mi tri nghim
+Gi  bn ng hnh hoc nhm i cng (nu c m rng sau)
+nh gi/quay li tri nghim sau khi kt thc hnh trnh.
+4. K thut
+Frontend: Flutter (a nn tng: mobile, desktop)
+Backend: Supabase
+Xc thc: Open-source OAuth (Google, Facebook, email)
+UI/UX: Penpot hoc Figma
+Qun l d n: Trello
+4. K hoch kho st & tm hiu
+1. Kho st ngi dng mc tiu
+Khch du lch nc ngoi: Dng Google Forms hi v thi quen, nhu cu, app ang dng khi du lch.
+Ngi bn a: (ch qun n, homestay...) phng vn qua Zalo, Facebook.
+2. Nghin cu i th
+Phn tch cc ng dng: Klook, KKDay, Airbnb Experiences, Culture Trip hay nhng app gn vi app ca mnh/ app ni ting v hi ging m bn bit.
+So snh chc nng, UI, im mnh/yu.
+3. Tm hiu k thut
+Th nghim Flutter (cross-platform).
+Khi to Supabase DB (users, places, foods).
+Tm hiu xc thc OAuth (Firebase Auth vs Supabase Auth vs NextAuth).
+5. Kt lun
+"Hello Vietnam" nhm mang li tri nghim du lch c nhn ha, kt ni vn ha bn a vi du khch quc t, ng gp vo vic nng cao hnh nh du lch Vit Nam trn bn  quc t.
+M t chc nng
+Cng c h tr khch du lch
+Gi  thi im & a im du lch theo thi tit, s thch, thi gian rnh.
+Mc ch: Gip du khch la chn thi gian v a im ph hp  c tri nghim trn vn, trnh thi tit xu hoc khng ng ma du lch.
+u vo: Thi gian d kin i du lch, s thch c nhn (m thc, thin nhin, khm ph,...), v tr hin ti (nu c), s ngy lu tr.
+Kt qu u ra: Danh sch gi  im n ph hp theo ma, km l do  xut v cc mo nh nn mang g, nn trnh g.
+V d s dng: Nu ngi dng chn i vo thng 12, ng dng gi  nn n Sa Pa hoc H Ni, v thi tit lnh thch hp thng thc ph v tham quan ma l hi, ng thi  xut mang theo o khoc v khn m.
+Gi  hot ng gn v tr hin ti.
+Mc ch: Gip du khch tn dng thi gian rnh hiu qu bng cch khm ph cc hot ng, im n th v quanh h trong bn knh gn.
+u vo: V tr GPS hin ti ca ngi dng; tu chn bn knh tm kim v loi hnh hot ng mong mun.
+Kt qu u ra: Danh sch hot ng gi  c sp xp theo khong cch v mc  ph bin, bao gm hnh nh, m t ngn v ch ng.
+V d s dng: Ngi dng ang  TP. H Ch Minh m ng dng vo bui ti s c gi  n khuya  ch H Th K  1.2km hoc i do ph i b Nguyn Hu  800m.
+Gii thiu vn ha, mn n, sn phm bn a theo khu vc.
+Mc ch: Gip khch hiu su hn v vng t mnh gh thm, tng s gn kt v hng th vi vn ha Vit.
+u vo: Khu vc hin ti hoc khu vc ang tm kim.
+Kt qu u ra: Thng tin chi tit v cc mn n, trang phc, tp tc, sn phm th cng, c trnh by sinh ng vi hnh nh, phin m, gii thch ngn gn.
+V d s dng: Khi n Hu, ng dng gii thiu cc mn n c trng ca Hu, nu ngi dng bm vo mn Bnh bo th s c km hnh nh v video ngn v mn n, gi  a im n uy tn v nh gi ca ngi dng khc.
+Gii thch cch s dng cc ng dng ph bin ti Vit Nam (Zalo, Grab)
+Mc ch: Gim b ng cho du khch khi s dng cc dch v s ph bin  Vit Nam.
+u vo: La chn ng dng hoc nhu cu (v d: Ti mun t xe  gi  Grab).
+Kt qu u ra: Hng dn bng hnh nh v video minh ha tng bc, c bn dch nhiu ngn ng.
+V d s dng: Du khch cha bit cch t xe qua Grab c hng dn bng nh: chn im n, chn hnh thc thanh ton, lu  v gi cc gi cao im.
+T in nh (image-based translator) dng AI  nhn din mn n,  vt
+Mc ch: Gip ngi dng nhn din nhanh mn n hoc vt dng bng hnh nh, ngay c khi khng bit ting Vit.
+u vo: nh chp trc tip t camera hoc ti t th vin nh.
+Kt qu u ra: Tn mn/vt th + thnh phn chnh + vng min ph bin + gi  a im mua/thng thc.
+V d s dng: Du khch chp nh mn bnh c hnh hoa, app tr v: Bnh in Hu  lm t bt np, ng v u xanh  c bn ti ch ng Ba.
+Cung cp t vng mu, phin m, h tr luyn pht m
+Mc ch: Tng kh nng giao tip c bn bng ting Vit, h tr tng tc nh nhng vi ngi a phng.
+u vo: Ch  cn luyn (n ung, hi ng, cho hi,...).
+Kt qu u ra: Danh sch t/cu mu c phin m quc t, pht m ging chun.
+V d s dng: Chn ch  hi gi, ngi dng c hc cm t Ci ny bao nhiu tin?  phin m: cch c ra m tng t trong ngn ng ca h, ging c i km + nt ghi m li  so snh.
+Lch trnh gi  da theo s thch c nhn (m thc, thin nhin, vn ha)
+Mc ch: T ng to lch trnh theo nhu cu v thi gian ca ngi dng.
+u vo: Thi gian lu tr, a im mong mun, s thch c nhn (c th chn nhiu: m thc, khm ph, ngh dng).
+Kt qu u ra: Lch trnh gi  tng ngy (sng  tra  chiu  ti), tch hp bn  ch ng v mo tri nghim.
+V d s dng: Ngi dng chn Khm ph kt hp vn ha  m thc trong 2 ngy ti  Nng  Hi An, h thng gi :
+Ngy 1  Khm ph  Nng
+Sng: Tham quan cha Linh ng  Bn o Sn Tr
+Tra: n m Qung B Mua
+Chiu: Tham quan Bo tng Chm  ngm cu Rng
+Ti: i ch m n vt, xem trnh din ngh thut ng ph
+Ngy 2  i v trong ngy n Hi An (30km)
+Sng: Di chuyn t  Nng n ph c Hi An, tham quan Cha Cu, nh c
+Tra: Thng thc cao lu
+Chiu: i thuyn trn sng Hoi
+Ti: Th hoa ng, v li  Nng
+To nht k hnh trnh (timeline)  lu gi v chia s tri nghim
+Mc ch: Gip ngi dng ghi li k nim, lu gi tri nghim, d dng chia s vi bn b.
+u vo: nh, m t, a im  gh thm (ghi li t ng hoc do ngi dng nhp).
+Kt qu u ra: Dng thi gian hnh trnh hin th theo th t ngy/thi gian, c th chnh sa hoc chia s.
+V d s dng: Sau 3 ngy du lch, timeline hin th: Ngy 1  Tham quan  nng, n m qung, i ch m; Ngy 2  Khm ph Hi An, n cao lu, th hoa ng, ...
+Lu a im, mn n, ngi dn vo danh sch yu thch
+Mc ch: Tng tri nghim c nhn ha, gip ngi dng d quay li ni  yu thch hoc gi  cho ngi khc.
+u vo: Nt Thm vo yu thch khi xem thng tin chi tit v mn n, a im, ngi dn hoc hot ng.
+Kt qu u ra: Mt danh sch c nhn ha c th truy cp mi lc, chia s hoc dng  xy dng lch trnh sau ny.
+V d s dng: Ngi dng sau khi n tim bnh Ci Xay Gi   Lt bm Yu thch  chia s cho bn b ln sau n.
+Cng c h tr ngi bn a
+To gian hng mini  gii thiu sn phm/dch v (a ngn ng: Vit, Anh, Php, c)
+Gip ngi dn, tiu thng d dng tip cn du khch quc t bng cch gii thiu sn phm bng nhiu ngn ng.
+u vo: Thng tin c bn ca sn phm/dch v (tn, hnh nh, m t, gi, ngn ng).
+Kt qu u ra: Mt gian hng s hin th trong app, c th truy cp cng khai, vi giao din dch sn sang Anh, Php, c.
+V d s dng: Ch Lan bn tranh thu tay nhp m t bng ting Vit, h thng t to bn dch sang ting Anh: Hand-embroidered painting  Hue style  100% silk.
+S dng mu c sn  ng sn phm d dng (form khai bo: loi hnh, ngun gc, mc  cay)
+Mc ch: Gip ngi dn ng thng tin sn phm nhanh chng, y  m khng cn hiu v cng ngh.
+u vo: Chn loi sn phm  in theo form c sn: mn n, dch v,  lu nim, chn ngun gc, c im (cay/khng cay, vng min,...).
+Kt qu u ra: Trang thng tin sn phm c to chun ha, d c, d hin th trong app, c kh nng gi  cho du khch ng mc tiu.
+V d s dng: Ch Ba bn mm nhp thng tin qua form: Loi hnh: Thc phm  Ngun gc: Bn Tre  c im: cay nh  th cng. H thng t sinh trang sn phm.
+Gn b lc tm kim: mn chay,  cay, th cng, c sn vng min
+Mc ch: Tng kh nng tip cn khch hng mc tiu bng cch cho php ngi dng lc theo nhu cu c th.
+u vo: Thng tin sn phm c gn tag ph hp lc ng.
+Kt qu u ra: Khi khch tm kim, cc sn phm s c gi  theo ng b lc (VD: ch hin mn chay, hoc sn phm th cng min Trung).
+V d s dng: Du khch n chay tm kim vegetarian food  app tr v Bnh t trn chay  Bn Tre ca ch Ba.
+T ng nh v trn bn  (Google Maps + OSM)
+Mc ch: Gip khch d tm n a im kinh doanh, trnh b lc hoc b qua cc gian hng nh.
+u vo: Ngi bn xc nhn v tr hin ti hoc nhp a ch.
+Kt qu u ra: Gian hng hin th ng trn bn , km hng dn ng i.
+V d s dng: Ch Nm bn bn b Hu c nh v chnh xc trn bn  Hi An. Du khch dng app c th i b 5 pht l n.
+Nhn compliment t du khch (nt Cm n/Bn tht tuyt)
+Mc ch: Tng s khch l, tng tc tch cc t khch du lch i vi ngi bn a.
+u vo: Khch hng nhn nt cm n sau khi tri nghim sn phm/dch v.
+Kt qu u ra: Ngi bn nhn c thng bo v li khen ca du khch
+V d s dng: Anh bn nc ma c 7 li khen t khch nc ngoi sau 1 ngy bn, c th dng  to uy tn v qung b thm.
+Qun l lt tng tc, bnh lun t ngi dng
+Mc ch: Gip ngi bn hiu r mc  quan tm, phn hi v nhu cu t khch hng.
+u vo: Hnh ng ca khch nh xem, thch, bnh lun, chia s.
+Kt qu u ra: Bng thng k n gin: bao nhiu lt xem, bao nhiu lt thch, bnh lun no ni bt. C th phn hi bnh lun.
+V d s dng: Ch Su bn nn l thy sn phm c 250 lt xem trong tun qua, c 12 ngi th tim v 3 bnh lun tch cc. Ch tr li cm n tng ngi  tng kt ni.
+Chc nng x hi v tng tc
+Nt Compliment to kt ni tch cc gia khch v dn a phng
+Mc ch: Khuyn khch s cng nhn, to ng lc tinh thn cho ngi dn phc v tt hn v xy dng bu khng kh du lch tch cc.
+u vo: Du khch nhn nt Cm n hoc Bn tht tuyt sau khi dng sn phm/dch v hoc gp ngi thn thin.
+Kt qu u ra: Ngi a phng nhn c thng bo li khen km ngi gi v l do (nu c).
+V d s dng: Du khch n bnh m thy c bn hng d thng, nhn Cm n  C nhn c: Bn va c khen bi Marie (France): Mn n ca c rt ngon
+Chia s nht k hnh trnh ln mng x hi hoc vi bn b.
+Mc ch: Gip ngi dng lu gi v chia s tri nghim vi bn b, ng thi lan ta hnh nh tch cc v Vit Nam.
+u vo: nh, ghi ch hnh trnh, a im, nh gi c nhn c ngi dng ghi li.
+Kt qu u ra: Link chia s trn mng x hi hoc gi qua email/messenger, km hnh nh v ng dn timeline.
+V d s dng: Bn Linh va kt thc chuyn i  Lt 3 ngy, chia s nht k qua Facebook vi caption: Mt hnh trnh tuyt vi.
+H thng yu thch (favorites) cho ngi dng lu li mi tri nghim
+Mc ch: Cho php ngi dng lu li nhng tri nghim ng nh  d quay li hoc gi  cho ngi khc.
+u vo: Nt Yu thch ti mi im n, mn n, ngi bn a, hot ng,...
+Kt qu u ra: Danh sch c nhn ha c th xem li mi lc, c th dng  ln lch trnh mi hoc chia s.
+V d s dng: Bn Hi lu Ph Thn  H Ni v C Hng bn ch sen vo mc yu thch  gh li ln sau hoc gii thiu cho bn mnh.
+Gi  bn ng hnh hoc nhm i cng (nu c m rng sau)
+Mc ch: Gip ngi du lch mt mnh tm c bn ng hnh an ton, c cng s thch, hoc nhm du lch cng tuyn.
+u vo: Ngi dng chn bt ch  Tm bn ng hnh + cung cp lch trnh d kin, s thch v gii tnh nu mun.
+Kt qu u ra: Danh sch nhng ngi c lch trnh tng t, c th gi li mi tr chuyn hoc to nhm.
+V d s dng: Bn Tom (M) mun khm ph Hi An vo ngy 12/7, c gi  bn Trang (Vit Nam) cng i ngy , cng s thch chp nh v n chay  ghp nhm i cng.
+nh gi/quay li tri nghim sau khi kt thc hnh trnh.
+Mc ch: Thu thp phn hi  ci thin dch v, ng thi gip ngi dng nh li hnh trnh v ng gp cho cng ng.
+u vo: Sau khi kt thc mi hot ng hoc chuyn i, ngi dng c nhc nh gi.
+Kt qu u ra: Sao, nhn xt, hnh nh nh km s hin th cho nhng ngi dng khc tham kho.
+V d s dng: Bn Ngc nh gi 5 sao cho Homestay My Ni sau chuyn i Sapa: Ch ch thn thin, cnh cc chill!
+ xut chc nng m rng
+CHC NNG M RNG  XUT
+1. t dch v ni a (In-app Booking)
+Mc ch: Gip du khch t cc dch v nh tour tri nghim, lp hc nu n, thu xe my, v tham quan... ngay trong app m khng cn dng app ngoi.
+u vo: a im, thi gian mong mun, loi hnh dch v (tour, v, lp hc,...)
+Kt qu u ra: Danh sch dch v c th t, km gi, thi gian, thng tin ngi t chc, v nt thanh ton.
+V d s dng: Du khch  Hi An c th t Tour lm n lng 2 gi t ngi dn a phng.
+2. Ch  s dng offline (Offline Mode)
+Mc ch: H tr du khch khi mt kt ni mng (vng su, tu xe, nc ngoi)
+u vo: Cc mc c ngi dng chn ti v (bn , lch trnh, t in, timeline,)
+Kt qu u ra: App hot ng c cc tnh nng c bn m khng cn mng.
+V d s dng: Du khch  Sapa ti trc lch trnh + bn  i b, vn xem c thng tin khi  bn lng khng c sng.
+3. Tch hp AR ti im du lch (Augmented Reality)
+Mc ch: Tng tnh tng tc v hiu bit bng cch chiu thng tin o ti cc im tham quan.
+u vo: V tr GPS v camera.
+Kt qu u ra: Khi gi camera ti di tch, app hin th hnh nh, li k, video hng dn, lch s a im.
+V d s dng: Gi my ti Cha Cu  Hi An  hin thng tin lch s, hnh nh phc dng qua cc thi k.
+4. Tch im i qu (Reward & Loyalty System)
+Mc ch: Khuyn khch ngi dng tng tc nhiu hn, quay li app thng xuyn.
+u vo: Hnh ng ngi dng: check-in, nh gi, chia s, tng compliment,...
+Kt qu u ra: im thng tch ly, c th i ly voucher n ung, v vo cng, mn qu lu nim.
+V d s dng: Sau 10 ln check-in, ngi dng nhn c m gim gi 50.000 khi t lp hc nu n truyn thng.
+5. T ng nhn din lch trnh t nh v/m QR (Smart Scan)
+Mc ch: Gip ngi dng tit kim thi gian ln lch trnh, ng b nhanh vi lch c nhn.
+u vo: nh v my bay, v tu, email xc nhn t phng/tour.
+Kt qu u ra: App t ng  xut khung lch trnh ph hp vi thi gian v a im.
+V d s dng: Ngi dng chp nh v my bay ti Hu vo ngy 20/8  app gi  hnh trnh khm ph Hu trong 3 ngy.
+Report v0.2
+Hello Vietnam - Project Report
+[TABLE]
+Gio vin hng dn
+MsC. Tit Gia Hng
+Nhm sinh vin
+22127319 - L Trn Kim Oanh
+22127331 - Nguyn Gia Phc
+22127382 - Cao Phm Hong Thi
+Thnh ph H Ch Minh, 01/07/2025
+[/TABLE]
+Khoa Cng Ngh Thng Tin
+B mn H thng thng tin
+Trng i hc Khoa Hc T Nhin
+Mc lc
+Phn cng cng vic
+[TABLE]
+Task || Ni dung c th || Ngi thc hin || nh gi
+Task 1: Vit report c bn + phn cng || Lm report v0.1 c cc chc nng chnh cn c, chia vic v gi  cch lm || Oanh || 100%
+Task 2: Vit m t ngn cho mi chc nng || Gm: Mc ch  u vo  Kt qu u ra  V d s dng || Phc || 100%
+Task 3:  xut chc nng m rng || Vit ngn gn 35 tnh nng c th b sung sau: AR, Booking, Lch offline... || Thi || 100%
+Task 4: Bin son report hon chnh || Tng hp bng chc nng + trnh by logic, r rng tng phn || Oanh || 100%
+[/TABLE]
+Tm tt  chnh ca  ti Hello Vietnam
+Mc tiu chnh:To mt ng dng a nn tng (iOS, Android, Windows) gip:
+C nhn ha tri nghim du lch ti Vit Nam.
+Kt ni khch du lch v ngi a phng.
+Qung b vn ha, sn phm, dch v Vit Nam ra quc t.
+Vn  thc t:
+Vit Nam c t l khch quay li <10%, trong khi Thi Lan t 60%.
+Nhn din thng hiu du lch Vit cn yu, thiu tri nghim c nhn ha.
+Tip cn nhu cu ca du khch
+Bn l ai v bn ang  u?
+Ti ang:
+ Vit Nam
+ ngoi Vit Nam
+Ti mun bit thm v:
+Nu ang  Vit Nam (a):
+Nhng hot ng th v gn ti
+a im tip theo nn gh thm
+Nu ang  nc ngoi (b):
+Tm hiu iu g lm Vit Nam tr nn c bit
+Tm  tng v a im v thi im nn i du lch
+Ti  t v v ang ln k hoch chuyn i
+Thi gian ti d nh i du lch:
+1 tun hoc t hn (ph hp  khm ph 13 a im)
+2 tun (  khm ph ni, bin v vn ha)
+Hn 2 tun (thc s hiu v tri nghim Vit Nam)
+Ti s i du lch vo thi im:
+Thng 12  Thng 2
+Thng 3  Thng 5
+Thng 6  Thng 8
+Thng 9  Thng 11
+Ti ch yu i du lch v l do g? (c th chn nhiu l do)
+m thc
+Vn ha truyn thng
+Vn ha biu din / ngh thut
+Thin nhin
+Tic tng / si ng
+Khm ph / phiu lu
+Cc chc nng chnh cn c
+Cng c h tr du khch
+Gi  thi im & a im du lch theo thi tit, s thch, thi gian rnh.
+Gi  hot ng gn v tr hin ti.
+Gii thiu vn ha, mn n, sn phm bn a theo khu vc.
+Gii thch cch s dng cc ng dng ph bin ti Vit Nam (Zalo, Grab)
+T in nh (image-based translator) dng AI  nhn din mn n,  vt
+Cung cp t vng mu, phin m, h tr luyn pht m
+Lch trnh gi  da theo s thch c nhn (m thc, thin nhin, vn ha)
+To nht k hnh trnh (timeline)  lu gi v chia s tri nghim
+Lu a im, mn n, ngi dn vo danh sch yu thch
+Cng c h tr ngi bn a
+To gian hng mini  gii thiu sn phm/dch v (a ngn ng: Vit, Anh, Php, c)
+S dng mu c sn  ng sn phm d dng (form khai bo: loi hnh, ngun gc, mc  cay)
+Gn b lc tm kim: mn chay,  cay, th cng, c sn vng min
+T ng nh v trn bn  (Google Maps + OSM)
+Nhn compliment t du khch (nt Cm n/Bn tht tuyt)
+Qun l lt tng tc, bnh lun t ngi dng
+Chc nng x hi v tng tc
+Nt Compliment to kt ni tch cc gia khch v dn a phng
+Chia s nht k hnh trnh ln mng x hi hoc vi bn b.
+H thng yu thch (favorites) cho ngi dng lu li mi tri nghim
+Gi  bn ng hnh hoc nhm i cng (nu c m rng sau)
+nh gi/quay li tri nghim sau khi kt thc hnh trnh.
+M t chi tit chc nng
+Cng c h tr khch du lch
+Gi  thi im & a im du lch theo thi tit, s thch, thi gian rnh.
+Mc ch: Gip du khch la chn thi gian v a im ph hp  c tri nghim trn vn, trnh thi tit xu hoc khng ng ma du lch.
+u vo: Thi gian d kin i du lch, s thch c nhn (m thc, thin nhin, khm ph,...), v tr, s ngy lu tr.
+Kt qu u ra: Danh sch gi  im n ph hp theo ma, km l do  xut v cc mo nh nn mang g, nn trnh g.
+V d s dng: Nu ngi dng chn i vo thng 12, ng dng gi  nn n Sa Pa hoc H Ni, v thi tit lnh thch hp thng thc ph v tham quan ma l hi, ng thi  xut mang theo o khoc v khn m.
+Gi  hot ng gn v tr hin ti.
+Mc ch: Gip du khch tn dng thi gian rnh hiu qu bng cch khm ph cc hot ng, im n th v quanh h trong bn knh gn.
+u vo: V tr GPS hin ti ca ngi dng; tu chn bn knh tm kim v loi hnh hot ng mong mun.
+Kt qu u ra: Danh sch hot ng gi  c sp xp theo khong cch v mc  ph bin, bao gm hnh nh, m t ngn v ch ng.
+V d s dng: Ngi dng ang  TP. H Ch Minh m ng dng vo bui ti s c gi  n khuya  ch H Th K  1.2km hoc i do ph i b Nguyn Hu  800m.
+Gii thiu vn ha, mn n, sn phm bn a theo khu vc.
+Mc ch: Gip khch hiu su hn v vng t mnh gh thm, tng s gn kt v hng th vi vn ha Vit.
+u vo: Khu vc hin ti hoc khu vc ang tm kim.
+Kt qu u ra: Thng tin chi tit v cc mn n, trang phc, tp tc, sn phm th cng, c trnh by sinh ng vi hnh nh, phin m, gii thch ngn gn.
+V d s dng: Khi n Hu, ng dng gii thiu cc mn n c trng ca Hu, nu ngi dng bm vo mn Bnh bo th s c km hnh nh v video ngn v mn n, gi  a im n uy tn v nh gi ca ngi dng khc.
+Gii thch cch s dng cc ng dng ph bin ti Vit Nam (Zalo, Grab)
+Mc ch: Gim b ng cho du khch khi s dng cc dch v s ph bin  Vit Nam.
+u vo: La chn ng dng hoc nhu cu (v d: Ti mun t xe  gi  Grab).
+Kt qu u ra: Hng dn bng hnh nh v video minh ha tng bc, c bn dch nhiu ngn ng.
+V d s dng: Du khch cha bit cch t xe qua Grab c hng dn bng nh: chn im n, chn hnh thc thanh ton, lu  v gi cc gi cao im.
+T in nh (image-based translator) dng AI  nhn din mn n,  vt
+Mc ch: Gip ngi dng nhn din nhanh mn n hoc vt dng bng hnh nh, ngay c khi khng bit ting Vit.
+u vo: nh chp trc tip t camera hoc ti t th vin nh.
+Kt qu u ra: Tn mn/vt th + thnh phn chnh + vng min ph bin + gi  a im mua/thng thc.
+V d s dng: Du khch chp nh mn bnh c hnh hoa, app tr v: Bnh in Hu  lm t bt np, ng v u xanh  c bn ti ch ng Ba.
+Cung cp t vng mu, phin m, h tr luyn pht m
+Mc ch: Tng kh nng giao tip c bn bng ting Vit, h tr tng tc nh nhng vi ngi a phng.
+u vo: Ch  cn luyn (n ung, hi ng, cho hi,...).
+Kt qu u ra: Danh sch t/cu mu c phin m quc t, pht m ging chun.
+V d s dng: Chn ch  hi gi, ngi dng c hc cm t Ci ny bao nhiu tin?  phin m: cch c ra m tng t trong ngn ng ca h, ging c i km + nt ghi m li  so snh.
+Lch trnh gi  da theo s thch c nhn (m thc, thin nhin, vn ha)
+Mc ch: T ng to lch trnh theo nhu cu v thi gian ca ngi dng.
+u vo: Thi gian lu tr, a im mong mun, s thch c nhn (c th chn nhiu: m thc, khm ph, ngh dng).
+Kt qu u ra: Lch trnh gi  tng ngy (sng  tra  chiu  ti), tch hp bn  ch ng v mo tri nghim.
+V d s dng: Ngi dng chn Khm ph kt hp vn ha  m thc trong 2 ngy ti  Nng  Hi An, h thng gi :
+Ngy 1  Khm ph  Nng
+Sng: Tham quan cha Linh ng  Bn o Sn Tr
+Tra: n m Qung B Mua
+Chiu: Tham quan Bo tng Chm  ngm cu Rng
+Ti: i ch m n vt, xem trnh din ngh thut ng ph
+Ngy 2  i v trong ngy n Hi An (30km)
+Sng: Di chuyn t  Nng n ph c Hi An, tham quan Cha Cu, nh c
+Tra: Thng thc cao lu
+Chiu: i thuyn trn sng Hoi
+Ti: Th hoa ng, v li  Nng
+To nht k hnh trnh (timeline)  lu gi v chia s tri nghim
+Mc ch: Gip ngi dng ghi li k nim, lu gi tri nghim, d dng chia s vi bn b.
+u vo: nh, m t, a im  gh thm (ghi li t ng hoc do ngi dng nhp).
+Kt qu u ra: Dng thi gian hnh trnh hin th theo th t ngy/thi gian, c th chnh sa hoc chia s.
+V d s dng: Sau 3 ngy du lch, timeline hin th: Ngy 1  Tham quan  nng, n m qung, i ch m; Ngy 2  Khm ph Hi An, n cao lu, th hoa ng, ...
+Lu a im, mn n, ngi dn vo danh sch yu thch
+Mc ch: Tng tri nghim c nhn ha, gip ngi dng d quay li ni  yu thch hoc gi  cho ngi khc.
+u vo: Nt Thm vo yu thch khi xem thng tin chi tit v mn n, a im, ngi dn hoc hot ng.
+Kt qu u ra: Mt danh sch c nhn ha c th truy cp mi lc, chia s hoc dng  xy dng lch trnh sau ny.
+V d s dng: Ngi dng sau khi n tim bnh Ci Xay Gi   Lt bm Yu thch  chia s cho bn b ln sau n.
+Cng c h tr ngi bn a
+To gian hng mini  gii thiu sn phm/dch v
+Gip ngi dn, tiu thng d dng tip cn du khch quc t bng cch gii thiu sn phm bng nhiu ngn ng.
+u vo: Thng tin c bn ca ca hng/dch v (tn, hnh nh, m t, mc gi, ngn ng gc).
+Kt qu u ra: Mt gian hng s hin th trong app, c th truy cp cng khai.
+V d s dng: Ch Lan bn tranh thu tay nhp m t bng ting Vit, h thng t to bn dch sang ting Anh: Hand-embroidered painting  Hue style  100% silk.
+S dng mu c sn  ng sn phm d dng (form khai bo: loi hnh, ngun gc, mc  cay)
+Mc ch: Gip ngi dn ng thng tin sn phm nhanh chng, y  m khng cn hiu v cng ngh.
+u vo: Chn loi sn phm  in theo form c sn: mn n, dch v,  lu nim, chn ngun gc, c im (cay/khng cay, vng min,...).
+Kt qu u ra: Trang thng tin sn phm c to chun ha, d c, d hin th trong app, c kh nng gi  cho du khch ng mc tiu.
+V d s dng: Ch Ba bn mm nhp thng tin qua form: Loi hnh: Thc phm  Ngun gc: Bn Tre  c im: cay nh  th cng. H thng t sinh trang sn phm.
+Gn b lc tm kim: mn chay,  cay, th cng, c sn vng min
+Mc ch: Tng kh nng tip cn khch hng mc tiu bng cch cho php ngi dng lc theo nhu cu c th.
+u vo: Thng tin sn phm c gn tag ph hp lc ng.
+Kt qu u ra: Khi khch tm kim, cc sn phm s c gi  theo ng b lc (VD: ch hin mn chay, hoc sn phm th cng min Trung).
+V d s dng: Du khch n chay tm kim vegetarian food  app tr v Bnh t trn chay  Bn Tre ca ch Ba.
+T ng nh v trn bn  (Google Maps + OSM)
+Mc ch: Gip khch d tm n a im kinh doanh, trnh b lc hoc b qua cc gian hng nh.
+u vo: Ngi bn xc nhn v tr hin ti hoc nhp a ch.
+Kt qu u ra: Gian hng hin th ng trn bn , km hng dn ng i.
+V d s dng: Ch Nm bn bn b Hu c nh v chnh xc trn bn  Hi An. Du khch dng app c th i b 5 pht l n.
+Tr li nh gi ca du khch
+Mc ch: Gip ngi bn xem nh gi ca du khch ri tr li
+u vo: nh gi ca khch hng.
+Kt qu u ra: Ngi bn tr li nh gi ca khch hng
+V d s dng: Anh bn nc ma c 7 li khen t khch nc ngoi sau 1 ngy bn, c th c th tr li nh gi ca du khch (h thng c th gi  cu tr li mu nh Cm n bn hoc ngi bn c th ci t sn cu tr li mu).
+Qun l lt tng tc, bnh lun t ngi dng
+Mc ch: Gip ngi bn hiu r mc  quan tm, phn hi v nhu cu t khch hng.
+u vo: Hnh ng ca khch nh xem, thch, bnh lun, chia s.
+Kt qu u ra: Bng thng k n gin: bao nhiu lt xem, bao nhiu lt thch, bnh lun no ni bt. C th phn hi bnh lun.
+V d s dng: Ch Su bn nn l thy sn phm c 250 lt xem trong tun qua, c 12 ngi th tim v 3 bnh lun tch cc. Ch tr li cm n tng ngi  tng kt ni.
+Chc nng x hi v tng tc
+Nt Compliment to kt ni tch cc gia khch v dn a phng -> Mu to sn cho user click d dng
+Mc ch: Khuyn khch s cng nhn, to ng lc tinh thn cho ngi dn phc v tt hn v xy dng bu khng kh du lch tch cc.
+u vo: Du khch nhn nt Cm n hoc Bn tht tuyt sau khi dng sn phm/dch v hoc gp ngi thn thin.
+Kt qu u ra: Ngi a phng nhn c thng bo li khen km ngi gi v l do (nu c).
+V d s dng: Du khch n bnh m thy c bn hng d thng, nhn Cm n  C nhn c: Bn va c khen bi Marie (France): Mn n ca c rt ngon
+Chia s nht k hnh trnh ln mng x hi hoc vi bn b.
+Mc ch: Gip ngi dng lu gi v chia s tri nghim vi bn b, ng thi lan ta hnh nh tch cc v Vit Nam.
+u vo: nh, ghi ch hnh trnh, a im, nh gi c nhn c ngi dng ghi li.
+Kt qu u ra: Link chia s trn mng x hi hoc gi qua email/messenger, km hnh nh v ng dn timeline.
+V d s dng: Bn Linh va kt thc chuyn i  Lt 3 ngy, chia s nht k qua Facebook vi caption: Mt hnh trnh tuyt vi!.
+H thng yu thch (favorites) cho ngi dng lu li mi tri nghim
+Mc ch: Cho php ngi dng lu li nhng tri nghim ng nh  d quay li hoc gi  cho ngi khc.
+u vo: Nt Yu thch ti mi im n, mn n, ngi bn a, hot ng,...
+Kt qu u ra: Danh sch c nhn ha c th xem li mi lc, c th dng  ln lch trnh mi hoc chia s.
+V d s dng: Bn Hi lu Ph Thn  H Ni v C Hng bn ch sen vo mc yu thch  gh li ln sau hoc gii thiu cho bn mnh.
+Gi  bn ng hnh hoc nhm i cng (nu c m rng sau)
+Mc ch: Gip ngi du lch mt mnh tm c bn ng hnh an ton, c cng s thch, hoc nhm du lch cng tuyn.
+u vo: Ngi dng chn bt ch  Tm bn ng hnh + cung cp lch trnh d kin, s thch v gii tnh nu mun.
+Kt qu u ra: Danh sch nhng ngi c lch trnh tng t, c th gi li mi tr chuyn hoc to nhm.
+V d s dng: Bn Tom (M) mun khm ph Hi An vo ngy 12/7, c gi  bn Trang (Vit Nam) cng i ngy , cng s thch chp nh v n chay  ghp nhm i cng.
+nh gi/quay li tri nghim sau khi kt thc hnh trnh.
+Mc ch: Thu thp phn hi  ci thin dch v, ng thi gip ngi dng nh li hnh trnh v ng gp cho cng ng.
+u vo: Sau khi kt thc mi hot ng hoc chuyn i, ngi dng c nhc nh gi.
+Kt qu u ra: Sao, nhn xt, hnh nh nh km s hin th cho nhng ngi dng khc tham kho.
+V d s dng: Bn Ngc nh gi 5 sao cho Homestay My Ni sau chuyn i Sapa: Ch ch thn thin, cnh cc chill!
+Lu  phn bit 2 chc nng Gi  thi im v a im du lch theo thi tit, s thch, thi gian rnh v Lch trnh gi  da theo s thch c nhn (m thc, thin nhin, vn ha):
+Gi  thi im v a im du lch theo thi tit, s thch, thi gian rnh
+Mc ch: H tr ngi dng cha bit i u, khi no.
+Thi im s dng: Trc chuyn i.
+C ch: Phn tch s thch + thi gian ngh + ma/thi tit  a ra  xut a im + thi im ph hp.
+V d:
+Bn thch l hi + c 1 tun rnh vo thng 4  Gi  n Hu dp Festival.
+Bn thch trnh nng + du lch thin nhin  Gi  i  Lt vo thng 7.
+Lch trnh gi  da theo s thch c nhn (m thc, thin nhin, vn ha)
+Mc ch: H tr ngi dng  chn ni n, cn ln k hoch chi tit tng ngy.
+Thi im s dng: Trong hoc ngay trc chuyn i.
+C ch: To lch trnh ngy 1, ngy 2, ngy 3 theo s thch ca ngi dng.
+V d:
+Bn n Hi An v thch m thc  Lch trnh c tour nu n, ch m, c sn a phng.
+Bn thch khm ph  Lch trnh gm p xe ra lng gm, do thuyn sng Thu Bn.
+ xut chc nng m rng
+t dch v ni a (In-app Booking)
+Mc ch: Gip du khch t cc dch v nh tour tri nghim, lp hc nu n, thu xe my, v tham quan... ngay trong app m khng cn dng app ngoi.
+u vo: a im, thi gian mong mun, loi hnh dch v (tour, v, lp hc,...)
+Kt qu u ra: Danh sch dch v c th t, km gi, thi gian, thng tin ngi t chc, v nt thanh ton.
+V d s dng: Du khch  Hi An c th t Tour lm n lng 2 gi t ngi dn a phng.
+Ch  s dng offline (Offline Mode)
+Mc ch: H tr du khch khi mt kt ni mng (vng su, tu xe, nc ngoi)
+u vo: Cc mc c ngi dng chn ti v (bn , lch trnh, t in, timeline,)
+Kt qu u ra: App hot ng c cc tnh nng c bn m khng cn mng.
+V d s dng: Du khch  Sapa ti trc lch trnh + bn  i b, vn xem c thng tin khi  bn lng khng c sng.
+Tch hp AR ti im du lch (Augmented Reality)
+Mc ch: Tng tnh tng tc v hiu bit bng cch chiu thng tin o ti cc im tham quan.
+u vo: V tr GPS v camera.
+Kt qu u ra: Khi gi camera ti di tch, app hin th hnh nh, li k, video hng dn, lch s a im.
+V d s dng: Gi my ti Cha Cu  Hi An  hin thng tin lch s, hnh nh phc dng qua cc thi k.
+Tch im i qu (Reward & Loyalty System)
+Mc ch: Khuyn khch ngi dng tng tc nhiu hn, quay li app thng xuyn.
+u vo: Hnh ng ngi dng: check-in, nh gi, chia s, tng compliment,...
+Kt qu u ra: im thng tch ly, c th i ly voucher n ung, v vo cng, mn qu lu nim.
+V d s dng: Sau 10 ln check-in, ngi dng nhn c m gim gi 50.000 khi t lp hc nu n truyn thng.
+T ng nhn din lch trnh t nh v/m QR (Smart Scan)
+Mc ch: Gip ngi dng tit kim thi gian ln lch trnh, ng b nhanh vi lch c nhn.
+u vo: nh v my bay, v tu, email xc nhn t phng/tour.
+Kt qu u ra: App t ng  xut khung lch trnh ph hp vi thi gian v a im.
+V d s dng: Ngi dng chp nh v my bay ti Hu vo ngy 20/8  app gi  hnh trnh khm ph Hu trong 3 ngy.
+Bng tng hp chc nng (cha c cc chc nng m rng)
+[TABLE]
+STT || Tn chc nng || Nhm ngi dng || M t || Mc  u tin
+1 || Gi  thi im & a im theo thi tit, s thch || Du khch ||  xut ni v thi gian ph hp da trn s thch v thi tit. || Cao
+2 || Gi  hot ng gn v tr hin ti || Du khch || Hin th cc im n/hot ng th v gn v tr ngi dng. || Cao
+3 || Gii thiu vn ha, mn n, sn phm theo khu vc || Du khch || Cung cp thng tin vn ha v c sn theo tng vng min. || Trung bnh
+4 || Hng dn s dng app ph bin (Zalo, Grab...) || Du khch || Video, hnh nh hng dn cc ng dng ph bin ti VN. || Trung bnh
+5 || T in nh AI (Image-based Translator) || Du khch || Nhn din mn n,  vt qua nh, cung cp thng tin. || Cao
+6 || Cung cp t vng, phin m, luyn pht m || Du khch || Gip ngi dng hc giao tip ting Vit c bn. || Trung bnh
+7 || Lch trnh gi  theo s thch c nhn || Du khch || To lch trnh t ng theo thi gian v s thch ngi dng. || Cao
+8 || To nht k hnh trnh (timeline) || Du khch || Lu gi v chia s hnh trnh, nh, a im. || Trung bnh
+9 || Lu yu thch (mn n, a im, ngi dn...) || Du khch || Cho php lu li cc a im hoc tri nghim yu thch. || Cao
+10 || To gian hng mini a ngn ng || Ngi bn a || Ngi dn ng sn phm/dch v  gii thiu n khch. || Cao
+11 || Mu ng sn phm theo form || Ngi bn a || ng sn phm theo mu sn, d thao tc, c y  thng tin. || Cao
+12 || B lc tm kim thng minh || Ngi bn a || Cho php gn tag  khch d tm sn phm ph hp (chay, cay...) || Trung bnh
+13 || T ng nh v trn bn  || Ngi bn a || Xc nh v tr qun hng trn Google Maps/OSM. || Cao
+14 || Nhn compliment t du khch || Ngi bn a || To ng lc v uy tn cho ngi dn nh li khen t du khch. || Trung bnh
+15 || Thng k lt tng tc v bnh lun || Ngi bn a || Hin th s lt xem, th tim, bnh lun  ngi bn theo di. || Thp
+16 || Nt compliment (tng tc tch cc) || Chung || Cho php ngi dng gi li khen n ngi dn. || Cao
+17 || Chia s nht k hnh trnh || Chung || Cho php ngi dng chia s hnh trnh qua mng x hi. || Trung bnh
+18 || Gi  bn ng hnh || Chung || Gi  kt ni du khch cng lch trnh, s thch. || Thp
+19 || nh gi sau hnh trnh || Chung || Cho php ngi dng nh gi im n/sn phm/dch v. || Trung bnh
+[/TABLE]
+K thut
+Frontend: Flutter (a nn tng: mobile, desktop)
+Backend: Supabase
+Xc thc: Open-source OAuth (Google, Facebook, email)
+UI/UX: Penpot hoc Figma
+Qun l d n: Trello
+K hoch kho st & tm hiu
+Kho st ngi dng mc tiu
+Khch du lch nc ngoi: Dng Google Forms hi v thi quen, nhu cu, app ang dng khi du lch.
+Ngi bn a: (ch qun n, homestay...) phng vn qua Zalo, Facebook.
+Nghin cu i th
+Phn tch cc ng dng: Klook, KKDay, Airbnb Experiences, Culture Trip hay nhng app gn vi app ca mnh/ app ni ting v hi ging m bn bit.
+So snh chc nng, UI, im mnh/yu.
+Tm hiu k thut
+Th nghim Flutter (cross-platform).
+Khi to Supabase DB (users, places, foods).
+Tm hiu xc thc OAuth (Firebase Auth vs Supabase Auth vs NextAuth).
+Kt lun
+"Hello Vietnam" nhm mang li tri nghim du lch c nhn ha, kt ni vn ha bn a vi du khch quc t, ng gp vo vic nng cao hnh nh du lch Vit Nam trn bn  quc t.
+Phc
+Get Travel Recommendations  Gi  thi im & a im du lch
+Tri nghim khch hng & Ci t h thng
+1. Nhp thng tin c bn
+Tri nghim: Ngi dng m tnh nng, chn t nht mt trong hai:
+Thi gian i du lch
+a im mong mun
+H thng:
+Nu c a im  backend chun ha a im (geocoding  ta , vng).
+Nu c thi gian  backend ghi nhn  tnh ton thi tit/ma.
+Nu khng chn g  hin th li: Vui lng chn t nht thi gian hoc a im.
+Nu offline  hin th thng bo: Cn kt ni mng  dng tnh nng ny.
+2. Nhp thm thng tin ty chn
+Tri nghim: Ngi dng c th nhp s ngy lu tr v chn s thch c nhn (m thc, thin nhin, l hi).  H thng:
+Lu li thng tin vo b nh tm..
+Gi ton b input (bt buc + ty chn) ln backend qua API.
+3. Phn tch thi tit & ma du lch
+Tri nghim: Ngi dng bm Xem gi , h thng hin th trng thi ang x l. H thng:
+Backend gi Weather API  ly d liu d bo (16 ngy) hoc climatology (nu xa hn).
+Tnh WeatherScore t cc ch s (nhit , ma, m, UV).
+Kt qu c lu vo cache  trnh gi API nhiu ln.
+4. C nhn ha theo s thch & s kin
+Tri nghim: Ngi dng chn m thc hoc L hi trong phn s thch. H thng:
+Backend so khp interests ca ngi dng vi tags ca destinations v events.
+Nu c s kin trng thi gian + s thch  cng thm im u tin.
+Nu khng c d liu s kin  ch da vo tag chung ca im n.
+5. Xp hng & chn gi  ti u
+Tri nghim: Ngi dng thy danh sch im n xp hng theo mc  ph hp. H thng:
+Backend tnh tng im = Weather + Season + Interest + Duration + EventBonus.
+Chun ha thang im (0100).
+Chn top 510 im n c im cao nht.
+7. Hin th l do v tips
+Tri nghim: Trn mi card gi , ngi dng thy: Thi tit p, C Festival Hu, Ph hp vi 7 ngy lu tr. H thng:
+Ly tips (v d: nhit  < 15C  gi  mang o khoc).
+Hin th tips km biu tng, c th m rng.
+8. Tng tc sau khi nhn gi 
+Tri nghim: Ngi dng chn Thm vo yu thch. H thng:
+ng b d liu lu vo server khi c mng.
+Cc lu  khi ci t h thng
+Tch hp dch v ngoi
+Phi c API key Weather/Geocoding.
+Cn c ch bo mt, khng hardcode API key trong ng dng.
+t gii hn retry v x l khi API ngoi b timeout hoc quota ht.
+Cache d liu
+Cache kt qu Weather API trong 2472 gi  tit kim chi ph v tng tc.
+Cache geocoding (ta  cho a danh)  trnh gi API lp li.
+Qun l d liu ni b
+To bng destinations vi metadata (best_months, min_days, tags).
+To bng events  qun l s kin du lch theo a phng.
+C th seed d liu ban u th cng cho cc im n ln (Hu,  Nng,  Lt, H Long).
+Tri nghim offline
+Nu khng c mng: thng bo r rng Cn kt ni Internet  dng tnh nng ny.
+Cho php lu trc mt s gi d liu offline c bn (top 10 im n).
+Hiu nng & phn hi
+Thi gian tr kt qu ti a: 1.5 giy (c cache), 3 giy (khi gi API).
+a ngn ng & UX
+Tips, l do v thng bo nn c song ng (Ting Vit + Ting Anh).
+UI cn n gin: 2 input bt buc, 2 input ty chn trong phn Nng cao.
+Phn tch d liu v la chn im n
+1. Xc nh tiu ch nh gi gi 
+Mi gi  (a im hoc thi gian, ty input) c tnh mt im tng hp da trn:
+Ph hp thi im (TimeFit Score): 0100, da vo d bo thi tit hoc d liu climatology (nhit , ma, UV,  m).
+Ph hp a im (DestinationFit Score): nu ngi dng chn a im  h thng so khp thi im i vi best_months, ma cao im, l hi.
+Ph hp thi gian (DurationFit Score): nu ngi dng nhp s ngy  so snh vi min_days hoc recommended_days ca im n.
+Ph hp s thch (InterestMatch Score): nu ngi dng c nhp s thch  tnh % trng gia s thch v tags ca im n/s kin.
+im s kin (EventBonus Score): cng thm im nu trong thi gian  c l hi hoc s kin c bit.
+ ph bin (Popularity Score): da trn s lt chn trc , hoc s ln lu gi .
+2. Cng thc tnh im tng hp
+Dng m hnh chm im tuyn tnh:
+FinalScore=w1  TimeFit + w2  DestinationFit + w3  DurationFit + w4  InterestMatch + w5   EventBonus + w6  Popularity + w7  Feasibility
+Cc trng s (w1w7) c iu chnh ty thuc vo d liu kho st v mc  quan trng.
+V d:
+w1 (TimeFit) = 0.30
+w2 (DestinationFit) = 0.20
+w3 (DurationFit) = 0.20
+w4 (InterestMatch) = 0.15
+w5 (EventBonus) = 0.05
+w6 (Popularity) = 0.05
+Nu ngi dng khng nhp s thch hoc khng c s ngy  h thng loi b thnh phn  khi cng thc v chun ha li trng s.
+3. D liu khch quan
+Weather: t API cng khai (OpenWeather, Meteostat)
+Destination metadata: best_months, min_days, recommended_days, tags.
+Events: c s d liu s kin theo vng/thi gian.
+Popularity: thng k t h thng (s lt ngi dng chn, lu gi ).
+Feasibility: tnh ton thi gian di chuyn t bn  (Google Maps, OpenStreetMap).
+4. Trnh ch quan
+Khng ch vit thi im ny p  i  phi chng minh bng d liu thi tit (nhit , ma, UV).
+Khng ch vit a im ny ni ting  phi c s liu rating, s lt chn, hoc nh gi t h thng.
+Phi m t r  hiu qu: bao nhiu % ngi dng chp nhn gi ,  chnh xc so vi la chn cui cng.
+Thi
+Explore Local Culture & Cuisine
+Tri nghim khch hng & Ci t h thng
+M mc Khm ph vn ha & m thc Tri nghim: Ngi dng vo tab Explore. H thng: Hin th 3 li vo chnh: Danh mc ch , Bn , Gi  gn ti. Option c bn c np sn t b d liu offline.
+Chn gc nhn khm ph Tri nghim: Ngi dng chn theo Ch  (Vn ha, L hi, ng x, m thc), theo Khu vc, hoc Gn ti. H thng:
+Nu c mng: gi API tr v danh sch im/ bi vit theo b lc, km xp hng v nh ba.
+Nu offline: dng gi micro-guide  cache trong SQLite hoc JSON.
+Xem th ni dung vn ha hoc mn n Tri nghim: Mn hnh chi tit gm m t ngn, Nn lm v Trnh lm, nh minh ha, cu Vit n gin c phin m, mn tiu biu, khung gi gi . Th item gm cc ni dung: phin m, m t, gi  a im, video, bn . H thng:
+Render ni dung text v nh t cache trc, sau  lazy-load nh HD nu c mng.
+Hin th nt Nghe cho tn mn v cu mu bng audio TTS hoc file thu m  cache.
+Gi  gn v tr hin ti Tri nghim:  tab Bn  hoc Gn ti, app gi  mn c trng, ch m, ph m thc, bo tng, l hi gn ngi dng. H thng:
+Xin quyn GPS. Nu ngi dng cha cho php GPS  chuyn sang khm ph theo ch .
+Tnh khong cch v thi gian di chuyn, u tin im m ca, ph hp thi im ngy.
+Nu offline: hin th lp bn  n gin v danh sch gi  tnh.
+Quy tc ng x v mo n ung Tri nghim: Ngi dng xem Do & Dont, quy trnh gi mn, tip vn ha tr tin, chia s mn. H thng:
+Hin th checklist, cu mu km audio, link sang Practice Phrases.
+Cache ni dung  xem offline.
+Lu, nh du, v chia s Tri nghim: Lu danh sch mn, qun, mo; chia s th ni dung. H thng:
+Lu cc b ngay.
+ng b server khi c mng. Xut nh th ni dung nh  chia s.
+Gi  theo ng cnh thi gian  v tr Tri nghim: Gn gi n ti, app nhc nh mn a phng xung quanh. H thng:
+Ch kch hot nu ngi dng bt cho php.
+Dng geofence n gin, tn sut hp l  tit kim pin.
+Fallback tt nhc nu offline lu.
+Dng thay th
+A2: Khng c v tr hoc ngi dng t chi GPS  chuyn sang khm ph theo ch . A3: Thiu mng v cha c bundle offline  hin th Ti gi ni dung trc chuyn i. A4: im n ng ca hoc qu xa   xut la chn thay th gn hn.
+A5: Nu d liu khu vc cha c  hin th thng bo ang cp nht v gi  khu vc ln cn. A6: Lu trng  hp nht danh sch yu thch. Nu offline  hin th danh sch  lu.
+Tng kt
+Nhng phn ch cn hin th
+Danh mc ch , bi vit vn ha, mn tiu biu, mo ng x, hnh nh minh ha.
+Nhng phn tng tc vi thit b
+GPS  Gn ti v Bn .
+Loa  pht audio tn mn v cu mu.
+Nhng phn tng tc vi API
+Truy vn danh sch im vn ha, mn n, qun gi .
+Xp hng theo mc  ph hp, gi m ca, khong cch.
+ng b danh sch yu thch.
+Ni dung cn chun b
+Vn bn
+Ch  vn ha: ng x bn n, trang phc, cho hi, mc c, tip.
+m thc: mn c trng, m t ngn, gi tham kho, khu vc ph bin, cu gi mn.
+Bn dch a ngn ng. Cu Vit c phin m n gin  c.
+Hnh nh
+nh mn, khng gian n ung, biu tng vn ha. Dung lng  nn.
+m thanh
+Audio tn mn v cu mu. u tin ging bn a, c th TTS cho phn t quan trng.
+Rating,  ph bin
+Metadata v cu trc qun l
+Place: id, tn, loi, ta , gi m ca, gi, ph hp sng tra chiu ti, rating, vng.
+Dish: id, tn_vi, tn_en, phin m, m t, nguyn liu chnh, vng, dp l, mc cay, mc ph bin.
+CultureCard: id, ch , do_list, dont_list, cu mu, link audio, nh.
+Quan h: Place  Dish, Region  CultureCard.
+Local cache: SQLite cc bng chnh, TTL cho nh v audio.
+Lu  khi ci t
+Offline-first: gi ni dung ct li theo thnh ph.
+Quyn ring t: xin quyn v tr r rng, c ch  ch dng khi m app.
+Hiu nng: phn trang, lazy-load nh, nn audio.
+Cht lng ni dung: chun ha ging audio, thng nht phin m.
+Kh dng: h tr color-blind cho bn  heat im n ung, c ch ln.
+Identify Dish or Item via AI
+Tri nghim khch hng & Ci t h thng
+Chn Nhn din mn hoc vt dng Tri nghim: Ngi dng m camera trong app hoc chn nh t th vin. H thng:
+Xin quyn Camera v nh.
+Hin th khung chp, gi  chp r,  nh sng.
+Chp nh hoc ti nh Tri nghim: Ngi dng chp nh mn n, menu,  vt vn ha. H thng:
+Tin x l nh trn thit b: crop, resize, nn.
+Nu c mng: gi nh  nn ti API AI nhn din.
+Nhn din v phn tch Tri nghim: App hin th kt qu chnh v 2 n 3 gi  thay th vi  tin cy. H thng:
+Pipeline model:
+Food detection hoc object detection.
+Classification theo danh mc mn hoc  vt.
+Kt hp v tr hin ti v ngn ng thit b  u tin kt qu ph hp vng.
+Th kt qu Tri nghim: Th gm tn mn/ vt, m t ngn, nguyn liu chnh hoc cht liu, d ng ph bin, vng xut x, cu gi mn bng ting Vit km audio, ni gn nht c mn  hoc ni thng gp  vt ny. H thng:
+Ly metadata t DB, audio t cache hoc TTS.
+Nu c mng: gi  qun gn ti c mn tng t.
+Nu offline: hin th ni dung c sn, n phn gn ti.
+Hnh ng tip theo
+Tri nghim:
+Nghe cch gi mn.
+Thm vo lch trnh n hoc Lu vo yu thch.
+Xem mn tng t.
+Xem hng dn n / s dng  vt
+H thng:
+Ghi log s kin, ng b khi online.
+Lin kt sang Practice Phrases  luyn nhanh.
+Dng thay th
+A2: nh m hoc thiu sng  nhc chp li, bt n flash. A3:  tin cy thp  hi ngi dng chn mt trong 3 gi  hoc thm ng cnh ang  qun, nh hng. A4: Khng tm thy metadata  hin th khung Gi phn hi  cp nht sau.
+Tng kt
+Nhng phn ch cn hin th
+Th kt qu: tn, m t, nh mu, nguyn liu, d ng, cu gi mn, tng t.
+Nhng phn tng tc vi thit b
+Camera, Th vin nh, Flash, Loa  pht audio, GPS  u tin theo vng.
+Nhng phn tng tc vi API
+API nhn din nh.
+API gi  qun gn ti.
+ng b yu thch v lch s nhn din.
+Ni dung cn chun b
+Vn bn
+T in mn n theo vng: tn a ngn ng, phin m, m t, d ng, nguyn liu ni bt, mc cay, cch n.
+ vt vn ha: tn, m t, cht liu, bi cnh s dng, bo tng hoc khu ph lin quan.
+Cu gi mn ngn gn km phin m.
+Hnh nh
+nh mu chun ha cho mi mn v  vt, nhiu gc .
+nh mu thc a  tng  robust.
+m thanh
+Audio tn mn v cu gi mn.
+C th TTS cho phin bn multi-language.
+Metadata v cu trc qun l
+Dish: id, tn_vi, tn_en, phin m, m t, nguyn liu, d ng, vng, mc cay, nh_ids, audio_id.
+FoodAlias: dish_id, alias theo vng, theo menu.
+Object: id, tn, m t, cht liu, vng, l hi lin quan, nh_ids.
+MenuLexicon: t vng thng gp, vit tt, li chnh t ph bin.
+ModelHints: tag hnh nh, bi cnh, ma v, thi im trong ngy  rerank.
+Mapping theo vng  u tin kt qu.
+Lu  khi ci t
+Quyn ring t: x l nh cc b khi c th, ch ti ln server khi ngi dng ng . C ty chn ng gp nh  ci thin AI.
+Hiu nng: gii hn kch thc nh gi ln, hin th skeleton trong lc ch, timeout hp l, retry vi cht lng thp hn nu mng yu.
+Cht lng nhn din: hin th  tin cy, lun cho php ngi dng chn gi  khc, lu phn hi  fine-tune.
+Kh dng: cnh bo d ng r rng, biu tng d hiu, text ln.
+Oanh
+Practice Essential Vietnamese Phrases
+Tri nghim khch hng & Ci t h thng
+1. Chn ch  cm t
+Tri nghim: Ngi dng m ng dng, chn ch  nh Cho hi hoc n ung.
+H thng: ng dng gi API c s d liu  ly danh sch cm t theo ch .
+Nu c mng: gi request n server/database.
+Nu offline: c d liu t b nh cc b (SQLite hoc file JSON  cache).
+2. Xem cm t v nghe pht m
+Tri nghim: Ngi dng thy cm t Xin cho v nhn nt loa  nghe audio.
+H thng:
+ng dng pht file audio qua trnh pht m thanh trn thit b.
+Nu audio cha ti v: ng dng kt ni API file server  ti file .mp3/.wav.
+Nu audio  cache: pht trc tip t b nh cc b.
+3. Luyn pht m (speech-to-text)
+Tri nghim: Ngi dng nhn nt micro, c Xin cho, v ch phn hi.
+H thng:
+ng dng yu cu quyn microphone ca thit b.
+m thanh thu c gi vo engine nhn din ging ni c sn trn thit b (Google Speech API trn Android, Apple Speech Recognition trn iOS).
+Kt qu text tr v t API ca h iu hnh.
+H thng so snh text  vi cm t gc trong c s d liu v phn hi ngay.
+4. Lu cm t yu thch v tin trnh hc
+Tri nghim: Ngi dng nh du Xin cho l cm t yu thch.
+H thng:
+Thao tc ny c ghi vo b nh cc b  m bo offline vn hot ng.
+Khi c kt ni mng, ng dng ng b vi API backend  lu tin trnh ln server.
+5. Quiz v flashcard
+Tri nghim: Ngi dng lm quiz: h thng hi How to say Hello in Vietnamese? v ch ngi dng chn hoc c ra.
+H thng:
+ng dng ly cu hi t c s d liu.
+Nu quiz yu cu ni: li kch hot microphone + speech recognition API.
+Kt qu c x l v hin th ngay trn app.
+6. Tng kt
+Nhng phn ch cn hin th
+Bao gm danh sch cm t, bn dch.
+D liu c th c ly t server hoc c trc tip t b nh cc b nu  cache/offline.
+Nhng phn tng tc vi thit b
+Nghe pht m: khi ngi dng nhn nt loa, ng dng pht audio bng loa ca thit b; ngun audio c th t file server hoc t cache trong b nh.
+Luyn pht m: khi ngi dng nhn nt micro, ng dng kch hot engine nhn din ging ni (speech recognition) c sn trn thit b  ghi m v x l.
+Nhng phn tng tc vi API
+Ly d liu: ng dng gi yu cu n API  ly danh sch cm t theo ch .
+Ti file audio/hnh nh: nu cha c trong cache, ng dng s kt ni n file server  ti.
+ng b tin trnh hc: khi ngi dng lu cm t yu thch hoc lm quiz, d liu c ghi tm vo b nh cc b v ng b ln server qua API khi c kt ni mng.
+Ni dung cn chun b cho chc nng
+1. Vn bn (Text)
+Cm t ting Vit: danh sch cu ngn, d dng trong tnh hung thc t (cho hi, hi ng, mua sm, khn cp).
+Bn dch: t nht l ting Anh; c th b sung ting Php, ting c, ting Trung ty i tng khch du lch.
+Cch lu:
+Lu trong c s d liu chnh (server).
+Vi ch  offline: xut ra file JSON/SQLite ng gi trong ng dng  ti sn.
+2. m thanh (Audio)
+Audio mu: file pht m chun cho tng cm t. C th:
+Thu m ging bn x  to tri nghim t nhin.
+Hoc s dng cng c Text-to-Speech (TTS)  to file mp3/wav.
+Cch lu:
+Trn server lu tr file (CDN, cloud storage).
+Trong ng dng, khi ln u ti s cache vo b nh cc b.
+3. Hnh nh minh ha (Image)
+Hnh nh h tr show & tell: minh ha cho cc cm t thng dng (v d: hnh bt ph, chai nc, taxi).
+Gip ngi dng a in thoi cho ngi a phng xem nu khng ni c.
+Cch lu:
+B hnh nh chun ha (PNG/JPG dung lng nh) c ng gi trong ng dng.
+C th b sung nh mi t server qua cp nht, nhng cn ti u dung lng.
+Cc lu  khi ci t h thng
+1. Kt ni API (server, c s d liu, file audio)
+ tr v tc  ti:Khi ngi dng gi API ly cm t hoc audio, cn ti u  hin th nhanh (cache d liu, nn file audio).
+Quyn truy cp v bo mt:Khng nn a kha API dch v backend trc tip trong app (d b l). Cn phn tch kha cng khai (anon key) cho client v kha ring cho qun tr.
+Hot ng offline:Ngi dng du lch c th khng c mng, nn cn c ch ti sn d liu v fallback v d liu cc b.
+2. Engine nhn din ging ni trn in thoi (speech-to-text)
+Quyn truy cp:Bt buc xin quyn microphone v speech recognition. Nu ngi dng t chi, cn c thng bo gii thch cho ngi dng.
+ chnh xc:Engine ca Google/Apple hot ng tt, nhng ting Vit c du nn vn c kh nng nhn sai  ch nn dng  phn hi c bn, khng chm im tuyt i.
+S khc bit gia nn tng: Android d dng Google Speech API, iOS cn thm khai bo quyn trong Info.plist. Cn test trn c hai h iu hnh.
+3. Lu tr d liu (text, audio, hnh nh)
+Trn server:
+D liu text trong c s d liu (d m rng).
+File audio/hnh nh trn dch v lu tr (CDN hoc cloud storage)  truy cp nhanh.
+Trong ng dng (offline mode):
+D liu quan trng (cm t + audio c bn) nn ng gi sn trong app hoc cho php ti v trc chuyn i.
+Dng SQLite hoc JSON  lu cm t, folder ring  cache audio/hnh nh.
+Dung lng:Ti u kch thc file audio v hnh nh (nn, chn nh dng nh)  app khng qu nng khi ti offline.
+4. ng b d liu ngi dng (yu thch, tin trnh hc)
+Offline-first:Lu tm vo b nh cc b, sau  ng b ln server khi c internet.
+Xung t d liu:Nu ngi dng hc trn nhiu thit b, cn c ch ng b u tin theo timestamp hoc cho php merge d liu.
+5. Chc nng luyn m:
+S dng thut ton Levenshtein Distance  o  tng ng gia 2 chui
+=> Khng ch tr kt qu ng sai m cn c t l %.
+Cho ngi dng lm quiz, sau mi quiz, hi ngi dng nh gi (15 sao) v s r rng v hu ch ca phn luyn pht m.
+6. C nhng thut ton hin th  ti u hiu qu hc tp sau:
+6.1. Thut ton da trn Spaced Repetition (n tp ngt qung)
+S dng m hnh nh SM-2 (Anki) hoc bin th:
+Quiz s lp li cc t/cu ngi hc sai nhiu, nhng theo khong cch thi gian tng dn.
+Cu no  tr li ng nhiu ln -> hin th t hn.
+=> Tng kh nng ghi nh di hn, trnh hc vt.
+6.2. Adaptive Learning (iu chnh theo nng lc)
+Da trn mc  thnh tho:
+Nu user sai nhiu -> quiz gim  kh, nhiu gi  hn.
+Nu user ng lin tc -> quiz nng cp  kh (tc  nhanh hn, cu di hn).
+C th dng Item Response Theory (IRT)  chn cu hi ph hp nng lc.
+6.3. Thut ton xen k (Interleaving Practice)
+Thay v hc 1 loi quiz lin tc, trn ln:
+Nghe  ni  c  vit.
+Trc nghim t vng xen vi hon thnh cu, chn pht m ng.
+Gip no kh on, tng kh nng ng dng linh hot.
+6.4. Gamification + Randomization
+Quiz shuffle  trnh hc thuc v tr p n.
+Thm boss level hoc checkpoint (v d: 5 cu ng lin tip  qua mn).
+Dng h thng XP/coin/badge  duy tr ng lc.
+6.5. Da vo d liu hnh vi (Learning Analytics)
+Ghi log thi gian lm quiz, s ln tr li sai/ng, pht m b li.
+Thut ton chn quiz u tin cc t hay qun hoc pht m sai.
+p dng machine learning  d on im yu v gi  luyn tp.
+Generate Personalized Itinerary
+Tri nghim khch hng & Ci t h thng
+1. Chn mc Lch trnh gi 
+Tri nghim: Ngi dng m ng dng v chn mc Lch trnh gi .H thng: ng dng hin th giao din la chn thng tin c bn (thi gian lu tr, khu vc, s thch). Khng cn kt ni mng  bc ny v d liu option c np sn t h thng.
+2. Chn thng tin chuyn i
+Tri nghim: Ngi dng chn t danh sch c sn: thi gian lu tr (1 tun, 2 tun), khu vc (H Ni,  Nng, TP.HCM), s thch (m thc, thin nhin, vn ha, ngh dng).H thng:
+ng dng ghi nhn cc la chn.
+Nu c mng: gi thng tin qua API n server  phn tch.
+Nu offline: gi  mt s lch trnh mu c sn trong app.
+3. H thng gi  im n theo mc thi gian
+Tri nghim: Ngi dng thy h thng gi  nhiu im n/hot ng ph hp cho tng mc thi gian (sng  tra  chiu  ti). V d: sng  tham quan H Gm, tra  n ph, chiu  tham quan Vn Miu.H thng:
+Server phn tch d liu u vo.
+Truy vn c s d liu  ly danh sch im n/hot ng ph hp vi s thch v thi gian.
+Tr v danh sch gi  c chia theo tng khung gi.
+4. Ngi dng chn im yu thch
+Tri nghim: Ngi dng t chn nhng im gi  m mnh thch cho tng mc thi gian.H thng:
+ng dng lu li danh sch la chn ca ngi dng.
+Nu c mng: ng b vi server  chun b sinh lch trnh.
+Nu offline: lu tm trong b nh cc b.
+5. Sinh lch trnh chi tit
+Tri nghim: Sau khi ngi dng xc nhn la chn, ng dng hin th lch trnh chi tit theo tng ngy, tng mc thi gian da trn cc im  chn.H thng:
+API server tng hp la chn, to lch trnh cui cng (timeline sng  tra  chiu  ti).
+ng dng hin th lch trnh dng timeline km bn , gi  mn n, mo tri nghim.
+Nu offline: sinh lch trnh da trn d liu mu  c trong app.
+6. Lu lch trnh
+Tri nghim: Ngi dng c th share lch trnh ny ln trang c nhn hoc ti v di dng PDF/nh.H thng:
+Nu c mng: lu lch trnh vo c s d liu c nhn ca ngi dng.
+Nu offline: lu tm vo b nh cc b v ng b khi c kt ni.
+Tng kt
+Nhng phn ch cn hin th
+Danh sch option (thi gian, khu vc, s thch).
+Gi  im n theo khung gi.
+Lch trnh chi tit sau khi ngi dng chn.
+Nhng phn tng tc vi thit b
+GPS: hin th v tr v ch ng.
+Bn : dng dch v bn  (Google Maps hoc OpenStreetMap).
+Nhng phn tng tc vi API
+Phn tch d liu u vo  gi  im n.
+Ly danh sch gi  im n, hot ng, mn n, mo.
+Sinh lch trnh chi tit sau khi ngi dng chn.
+ng b lch trnh  lu ca ngi dng.
+Ni dung cn chun b
+Vn bn (Text)
+Danh sch im n/hot ng chia theo loi hnh (m thc, vn ha, thin nhin).
+M t ngn, thi gian gi .
+Gi  mn n v mo tri nghim.
+Hnh nh (Image)
+Hnh nh im n, mn n, hot ng.
+Dung lng ti u  hin th nhanh.
+Metadata v cu trc qun l
+Tag cho im n: loi hnh, khu vc, ph hp thi gian no (sng, tra, chiu, ti).
+Lin kt vi bn  (ta  GPS).
+Cc lu  khi ci t h thng
+Tch hp bn /GPS
+Phi xin quyn truy cp v tr.
+Nn c bn  offline c bn cho du khch.
+ng b d liu ngi dng
+Offline-first: lu tm la chn, ng b khi c internet.
+Gii quyt xung t nu ngi dng chnh sa lch trnh trn nhiu thit b.
+Cch h thng phn tch d liu v la chn im n
+Thu thp d liu u vo
+User input: ngy lu tr, khu vc, loi du lch, s thch.
+Contextual data: thi tit, gi m ca, ma v.
+Lch s s dng: cc lch trnh trc, hnh vi chn/b.
+Lc im n theo iu kin c bn
+Ch chn nhng im ph hp logic (cng thnh ph, m ca, hp ma).
+Lc theo loi hnh:
+Gia nh -> u tin cc a im an ton, ph hp tr em (cng vin, bo tng, khu vui chi, bi bin c dch v).
+Cp i -> gi  im lng mn (cnh p ngm hong hn, resort yn tnh, tri nghim ring t).
+Nhm bn -> gi  hot ng nhiu ngi tham gia (team-building, bar/pub, trekking nhm, th thao di nc).
+C nhn -> gi  tri nghim t do, d di chuyn mt mnh (walking tour, caf c o, homestay).
+Loi b im khng kh thi (qu xa > X km so vi timeline, ng ca ngy ).
+nh gi v xp hng im nH thng tnh im cho tng im n da trn nhiu tiu ch:
+x2: Chun ha t rating thc (15 sao). => lc trc vi ngng
+x3: S lt check-in, review (log scale).  => lc trc vi ngng
+x5:  ph hp ma/iu kin thi tit. => lc trc
+x1: Mc  khp gia s thch ngi dng, loi du lch v category/tags ca im n.
+Lc thng tin input
+Thut ton gi : (gi  da trn ni dung, da trn lc cng tc)
+Da trn tt user
+Da trn lch s tri nghim ca user (rate, like)
+Score = a.x1 + b.x2 + c.x3 + e.x5
+x4:  ph hp vi mc gi (sng/chiu/ti).
+Lu :
+Khi phn tch d liu hnh vi, h thng c th kim tra: Khch la chn s thch c nhiu tng ng vi loi hnh gia nh khng, t  tinh chnh trng s f  gi  cng chnh xc.
+Sp xp:
+Chn top-N im c im s cao nht cho tng mc thi gian.
+Gi log tnh im (feature contribution) -> explainability: h thng c th gii thch v sao  xut (v d: Gi  H Gm v ph hp s thch thin nhin)
+Ti u ha timeline: => phi kho st ngta da trn tui hay g (tour, app)
+Gia nh: trnh lch dy, u tin ngh tra di.
+Nhm bn: timeline c th dy hn, nhiu hot ng ban m.
+Cp i: timeline c thm khong thi gian trng (khng b nhi nht).
+C nhn: c th linh hot, nhiu tri nghim c nhn.
+Sinh lch trnh chi tit cui cng
+H thng tng hp cc la chn, sp xp vo timeline tng ngy.
+Km bn  ch ng, gi  mn n c trng v mo tri nghim.
+Nhng nhm attribute quan trng:
+1 object a im gm:
+Thng tin c bn: id, tn, m t, a ch, ta  (dng  lin kt link ti map).
+Phn loi: category, subCategory, tags.
+Chi ph: priceRange, estimatedCost.
+Thi gian: openHours, seasonality, recommendedTimeSlots, durationMinutes.
+nh lng khch quan: rating, ratingCount, popularityScore.
+Khng gian: coords, region, city.
+Ni dung ph tr: images, relatedFoods, transport.
+Metadata qun tr: ngun, cp nht cui.
+User input:
+S ngy lu tr (Duration options)
+1 ngy (day trip)
+2 ngy 1 m
+3 ngy 2 m
+5 ngy 4 m
+7 ngy (1 tun)
+10 ngy
+14 ngy (2 tun)
+21 ngy (3 tun)
+Loi hnh du lch (Travel type)
+C nhn (Solo travel)
+Gia nh (Family trip, c tr nh)
+Nhm bn (Group travel, 36 ngi)
+Cp i (Couple / Honeymoon)
+S thch (Preferences / Categories)
+Vn ha  Lch s (Culture & History)
+Bo tng, di tch, cha n
+Lng ngh truyn thng
+Kin trc (nh c, ph c, cung nh)
+Thin nhin  Ngoi tri (Nature & Outdoor)
+Leo ni, trekking
+Tham quan hang ng
+Bi bin, ln ngm san h
+Cng vin quc gia
+Ngh dng (Relaxation & Wellness)
+Resort bin
+Spa, massage
+Tm khong nng, sui nc nng
+Khm ph  Phiu lu (Adventure)
+Th thao di nc (kayak, lt sng)
+Motorbike tour / off-road
+Zipline, d ln
+Gii tr  Mua sm (Entertainment & Shopping)
+Ch m, trung tm thng mi
+Qun bar, pub, caf c o
+Cng vin gii tr
+Tham quan ch m / street food
+Tri nghim cng ng (Community & Local life)
+Homestay cng dn bn
+Tnh nguyn / nng tri
+L hi a phng
+Khch sn, motel
+Qun n, nh hng
+T to lch trnh chuyn i (gh qua a im no, mc nh i xe my) vi api link ti google maps  ngi dng t chn loi phng tin v t xem tng thi gian i.
+Oanh 2
+PostGIS
+PostgreSQL vn l h qun tr c s d liu quan h (RDBMS).
+Khi ci thm PostGIS, PostgreSQL tr thnh mt Spatial Database (c s d liu khng gian)  c th lu tr, truy vn, v phn tch d liu a l (geographic hoc geometric).
+PostGIS thm vo PostgreSQL:
+Kiu d liu khng gian, v d:
+GEOMETRY (hnh hc phng)
+GEOGRAPHY (d liu theo kinh /v )
+Hm x l khng gian, nh:
+ST_Distance(a, b)  tnh khong cch gia hai im.
+ST_Area(polygon)  tnh din tch vng.
+ST_Intersects(a, b)  kim tra hai vng c giao nhau khng.
+ST_Buffer(point, distance)  to vng bao quanh im.
+PostGIS thng c dng trong:
+H thng bn  (GIS)  nh QGIS, GeoServer, MapServer.
+ng dng nh v (location-based apps): tm qun gn nht, khong cch gia hai a im.
+Phn tch a l: vng ph sng, khu vc ri ro, phn vng dn c.
+Qun l h tng: ng x, mng in, cng rnh, vin thng.
+POI:
+POI l im quan tm hoc a im ng ch  trn bn , v d: qun c ph, trm xng, bnh vin, trng hc, nh hng, im du lch, v.v.
+Mi POI c ta  khng gian (latitude, longitude) v thng tin m t i km.
+POI thng l mt im (Point) trong d liu GIS (Geographic Information System) hoc PostGIS.
+Google Maps Directions API:
+Chc nng:
+Tnh l trnh theo nhiu phng tin:  t (driving, c h tr kt xe), i b, xe p, phng tin cng cng (transit).
+i qua nhiu im dng (waypoints) v chia l trnh thnh nhiu legs. (Lu : waypoint p dng cho driving/walking/cycling  khng p dng cho transit.)
+Ti u th t im dng (t ng sp xp route  tng thi gian/ di ti u)  hin lm qua Routes API vi optimizeWaypointOrder=true.
+ETAs c xt giao thng thc t: t departure_time (hin ti hoc tng lai) + traffic_model  nhn duration_in_traffic cho ch  li xe.
+Nhiu cch ch nh im: a ch vn bn, Place ID, hoc ta  lat/lng.
+Tham s iu chnh l trnh: trnh cao tc/thu ph/ph (avoid=highways|tolls|ferries), chn ngn ng/n v, ly ng polyline  v route trn bn , km steps (hng r) v fare cho transit.
+Nhiu phng n tuyn (alternatives)  ngi dng so snh.
+1. Kt hp im hi ngh / cng vic vo lch trnh
+Dng PostGIS  lu v truy vn d liu POI, tnh khong cch t im hi ngh hoc cng vic n cc a im xung quanh bng ST_Distance hoc ST_DWithin.
+Dng Google Maps Directions API  to l trnh di chuyn gia cc im (origin  hi ngh  POI  khch sn).
+Dng PostGIS  lc POI theo bn knh (v d 2 km quanh a im hi ngh), sau  gi danh sch  vo Directions API  tnh tuyn ti u.
+2. Ti u thi gian di chuyn v trnh gi cao im
+Dng Google Maps Directions API (hoc Routes API) vi departure_time v traffic_model  tnh ETA c xt n giao thng thc t (duration_in_traffic).
+Dng optimizeWaypointOrder=true  sp xp th t im dng hp l, gim tng thi gian di chuyn.
+Dng PostGIS  xc nh cc POI gn nht trc khi gi yu cu n API, gip gim chi ph tnh ton.
+3. Gi  lch trnh theo ma
+Lu thm thuc tnh ma hoc iu kin thi tit cho tng POI (v d: summer_only, indoor, outdoor) hoc thm ct best_months hoc season trong bng a im.
+Logic: Khi ngi dng chn I will travel in March  May, h thng u tin a im c best_months cha khong thi gian ny.
+C th hin th thm L do gi  (v d: Ma hoa tam gic mch  H Giang hoc Thi im ln bin p  Ph Quc).
+Dng PostGIS  lc POI ph hp theo ma v khu vc.
+Dng Directions API  tnh tuyn di chuyn gia cc POI c chn (v d: chn im trong nh vo ma ma, im ngoi tri vo ma kh).
+4. Gi  ba gi lch trnh (Tit kim  Tiu chun  Nng cao tri nghim)
+Dng Google Maps Directions API vi alternatives=true  ly nhiu tuyn kh thi.
+p dng tham s avoid=tolls cho gi tit kim, avoid=highways cho gi tri nghim.
+4.1. Mc tiu sn phm
+a dng ha la chn theo ngn sch v khu v tri nghim.
+Duy tr cu trc lch trnh nht qun (bui sng  tra  chiu  ti) nhng thay i cht lng im n, dch v, v chi ph.
+Cho php ngi dng chuyn cp  tc th m khng phi nhp li thng tin.
+4.2. nh ngha 3 cp 
+Tit kim: ch  bnh dn, n ung bnh dn/qun a phng, u tin im min ph hoc ph thp, di chuyn cng cng/i b, ti a ha s im trong ngy nhng khong cch ngn.
+Tiu chun: khch sn tm trung, nh hng ph thngkh, kt hp im ni ting v mt vi tri nghim tr ph, cn bng gia s im v thi gian ngh.
+Nng cao tri nghim: lu tr boutique/c sc, nh hng/u bp a phng, workshop th cng/m thc, tour ring/nh, u tin t nhng cht.
+4.3. Chun ho khi nim ngn sch ???
+Mi gi lu trong c s d liu theo VND, c bng t gi  hin th a tin t.
+Trn mi thnh ph hoc khu vc, khai bo band chi ph tham kho theo ngy/ngi, v d:
+Tit kim: v d 400k800k VND/ngy
+Tiu chun: 800k1.8M VND/ngy
+Nng cao: 1.8M5M+ VND/ngy
+Phn loi vng, mi cp mt vng mt khong chi ph => kho st mc sng bnh qun tng vng
+4.4. Chn lch trnh theo cp  => suy ngh thut ton (xem li)
+Tit kim:
+Lu tr: price_level=1; distance n trung tm  35 km  gim chi ph di chuyn.
+n ung: price_level=1; u tin qun a phng.
+Hot ng: min ph/thp ph; ti a 45 mc/ngy, tng thi gian di chuyn  90 pht/ngy.
+Tiu chun:
+Lu tr: price_level=2; v tr thun tin.
+n ung: price_level=12; mt ba c sn c t ch.
+Hot ng: v vo ca ph bin; 34 mc/ngy; tng di chuyn  120 pht.
+Nng cao tri nghim:
+Lu tr: price_level=3 hoc class=boutique.
+n ung: 1 ba signature/fine-local; c workshop/tour ring.
+Hot ng: 23 mc trng tm; tng di chuyn  90 pht; trnh gi cao im nhiu hn.
+5. Map c h tr phng tin di chuyn
+Routes API v Directions API cung cp d liu chi tit cho cc phng tin:  t, i b, xe p, phng tin cng cng (mode=driving|walking|bicycling|transit).
+Khi ngi dng m lch trnh, h thng hin th thng tin phng tin di chuyn (v d: tuyn xe but, tu in ngm, thi gian chuyn trm, khong cch i b gia cc chng).
+PostgreSQL lu loi phng tin (transport_mode) cho tng chng, gip hin th ng nht gia h thng ni b v Google Maps.
+6. Hin th thng tin y t v i s qun khi xem bn 
+ mi im trong lch trnh (hotel, hi ngh, POI), hin th nt: Xem xung quanh.
+Khi bm, m bottom sheet vi hai tab: Y t v i s qun.
+Mi tab lit k cc im gn nht theo bn knh cu hnh (v d 13 km), xp theo khong cch v trng thi m ca.
+Mi item c cc hnh ng: Gi/Website, Xem chi tit, Ch ng (m Google Maps deeplink).
+C nt M c lp trn bn   bt overlay tt c im Y t/i s qun gn im  trong ch  Overview ca app.
+Cng ngh:
+Bc 1: Lu v truy vn d liu
+Dng PostgreSQL + PostGIS  lu d liu y t v i s qun
+Dng ST_DWithin  lc im gn, ST_Distance  tnh khong cch v sp xp.
+Bc 2: B sung thng tin chi tit (gi m ca, lin h, website)
+Dng Google Places API (Nearby Search / Place Details)  ly hoc i chiu d liu thc t theo Place ID.
+Bc 3: Hin th danh sch v bn  trong app
+Dng Google Maps JavaScript API (hoc Maps SDK for Android/iOS)  hin th marker v overlay layer (GeoJSON).
+Dng React / Android BottomSheet / iOS Sheet  hin th danh sch (bottom sheet) theo tab Y t v i s qun.
+Bc 4: Ch ng t im hin ti n a im c chn
+Dng Google Maps Directions API hoc deeplink (https://www.google.com/maps/dir/?api=1&destination=lat,lng)  m l trnh iu hng.
+Bc 5: M lp bn  tng quan (Overview)
+Dng GeoJSON layer t API ni b (PostGIS  GeoJSON)  overlay cc im y t/i s qun ln bn .
+Refs:
+https://developers.google.com/maps/documentation/directions/overview
+Phc 2
+Mc tiu
+Xin php ngi dng xa cc d liu c nhn  dng cho c nhn ha v AI sau khi kt thc lch trnh.
+Minh bch ni dung xa.
+Thi im kch hot
+Sau khi lch trnh kt thc.
+Kch hot mt ln cho mi Plan.
+Ni dung thng bo
+Tiu : Bo v quyn ring t sau chuyn i
+Thng ip: Bn c mun xa mt s d liu c nhn  dng cho gi  v AI trong chuyn i va ri khng?
+Cc thng tin s xa:
+S thch dng cho gi  (Favorites)
+Hnh nh  gi cho AI (nh gc)
+Lch trnh  tri nghim (K hoch v cc hng mc trong chuyn)
+Nt: Xa ngay | Gi li
+Phm vi d liu s xa khi ngi dng ng 
+S thch dng cho gi 
+Ton b mc yu thch gn vi Plan hoc pht sinh trong chuyn.
+Tc ng:
+Gi  c nhn ha tr v mc nh.
+Hnh nh  gi cho AI
+Tp nh do ngi dng ti ln trong chuyn.
+Tc ng:
+nh b xa khi kho lu tr.
+Lch trnh  tri nghim
+Bn ghi chuyn i  hon tt.
+Cc hng mc, im n, ngy-gi trong chuyn.
+Tc ng:
+Mc Lch trnh ca ti khng cn chuyn .
+Dng thi gian, bn  hnh trnh khng cn hin th.
+Trnh by Chi tit d liu s xa
+S thch dng cho gi 
+Gm cc a im  thch, cc nh gi v phn hi c dng  c nhn ha  xut.
+Hnh nh AI
+Gm nh bn  ti ln  nhn din v mi kt qu phn tch t cc nh .
+Lch trnh  tri nghim
+Gm tn chuyn, ngy i, danh sch im n v hot ng trong chuyn.
+nh hng ti tnh nng sau khi xa
+Trang  xut a im, l trnh gi : hin th kt qu mc nh theo khu vc thay v c nhn ha.
+Lch s AI: trng, khng th xem li nh/nhn c.
+Li tt trong Ci t
+Mc Quyn ring t c nt Xa d liu sau chuyn vi cng 2 ty chn.
+C cng tc bt/tt Lun nhc ti xa sau chuyn i.
+Thi 2
+c Anh 2
+THNG BO
+Voucher Available (S dng d liu trn bng no, c sd ntn)
+Mc tiu: Bo c voucher mi.
+Thi im kch hot: Gn voucher cho user.
+Ni dung thng bo
+Tiu : Bn c voucher mi
+Thng ip: Nhn  xem v p dng.
+Deeplink: hvn://voucher/<voucher_id>
+Nt: Xem voucher | B qua
+Premium Expiry Warning
+Mc tiu: Nhc gia hn gi.
+Thi im kch hot: expiry_date - 3 ngy.
+Ni dung thng bo
+Tiu : Premium sp ht hn
+Thng ip: Gia hn  khng gin on quyn li.
+Deeplink: hvn://billing
+Nt: Gia hn | B qua
+Forum Interaction
+Mc tiu: Bo reply/mention/topic theo di.
+Thi im kch hot: C bi tr li/mention mi lin quan user.
+Ni dung thng bo
+Tiu : C hot ng mi trong ch  bn theo di
+Deeplink: hvn://forum/topic/<id>
+Nt: Xem bi vit.
+Post-trip Review Prompt
+Mc tiu: Thu thp nh gi sau chuyn i..
+Thi im kch hot: plan.end_at + 1 ngy.
+Ni dung thng bo
+Tiu : nh gi tri nghim sau chuyn i
+Thng ip: Nhn  nh gi cc im  gh.
+Deeplink: hvn://plan/<plan_id>/review
+Nt: nh gi ngay |  sau..
+Oanh 3
+4. Gi  ba gi lch trnh (Tit kim  Tiu chun  Nng cao tri nghim)
+Dng Google Maps Directions API vi alternatives=true  ly nhiu tuyn kh thi.
+p dng tham s avoid=tolls cho gi tit kim, avoid=highways cho gi tri nghim.
+4.1. Mc tiu sn phm
+a dng ha la chn theo ngn sch v khu v tri nghim.
+Duy tr cu trc lch trnh nht qun (bui sng  tra  chiu  ti) nhng thay i cht lng im n, dch v, v chi ph.
+Cho php ngi dng chuyn cp  tc th m khng phi nhp li thng tin.
+4.2. nh ngha 3 cp 
+Tit kim: ch  bnh dn, n ung bnh dn/qun a phng, u tin im min ph hoc ph thp, di chuyn cng cng/i b, ti a ha s im trong ngy nhng khong cch ngn.
+Tiu chun: khch sn tm trung, nh hng ph thngkh, kt hp im ni ting v mt vi tri nghim tr ph, cn bng gia s im v thi gian ngh.
+Nng cao tri nghim: lu tr boutique/c sc, nh hng/u bp a phng, workshop th cng/m thc, tour ring/nh, u tin t nhng cht.
+4.3. Chun ho khi nim ngn sch ???
+Mi gi lu trong c s d liu theo VND, c bng t gi  hin th a tin t.
+Trn mi thnh ph hoc khu vc, khai bo band chi ph tham kho theo ngy/ngi, v d:
+Tit kim: v d 400k800k VND/ngy
+Tiu chun: 800k1.8M VND/ngy
+Nng cao: 1.8M5M+ VND/ngy
+Phn loi vng, mi cp mt vng mt khong chi ph => kho st mc sng bnh qun tng vng
+4.4. Chn lch trnh theo cp  => suy ngh thut ton (xem li)
+Tit kim:
+Lu tr: price_level=1; distance n trung tm  35 km  gim chi ph di chuyn.
+n ung: price_level=1; u tin qun a phng.
+Hot ng: min ph/thp ph; ti a 45 mc/ngy, tng thi gian di chuyn  90 pht/ngy.
+Tiu chun:
+Lu tr: price_level=2; v tr thun tin.
+n ung: price_level=12; mt ba c sn c t ch.
+Hot ng: v vo ca ph bin; 34 mc/ngy; tng di chuyn  120 pht.
+Nng cao tri nghim:
+Lu tr: price_level=3 hoc class=boutique.
+n ung: 1 ba signature/fine-local; c workshop/tour ring.
+Hot ng: 23 mc trng tm; tng di chuyn  90 pht; trnh gi cao im nhiu hn.
+Tiu chun chi ph:
+Nhng ci c trong tnh ton ca mnh
+Rating
+S lt check-in, review
+ ph hp ma/iu kin thi tit.
+Fav list
+Category
+Group type ?
+Gi mn n, gi v tham gia cc tr chi, gi thu phng
+Kho st mc sng (chi tiu v tiu dng lng thc, thc phm)
+Ref: https://www.nso.gov.vn/tin-tuc-thong-ke/2025/05/thong-cao-bao-chi-ket-qua-khao-sat-muc-song-dan-cu-nam-2024/
+Phn cp  th:
+Loi c bit: TP H Ni, TP HCM
+Loi I: TP Hi Phng, TP  Nng, TP Cn Th, TP Hu.
+Loi II:
+Loi III:
+Level 1 (nng thn): 2.5M 1ng/1 thng
+Gm cc tnh thnh:
+Level 2 (thnh th): 3.8M 1ng/1 thng
+Gm cc tnh thnh:
+Phn loi vng, gn gi tr cho tng mc. V d thnh ph/ tnh no c cp 1 2 3 th mi cp s c 1 khong chi ph tng ng.
+Level 1:
+Tit kim:
+Tiu chun:
+Nng cao
+Level 2:
+Tit kim:
+Tiu chun:
+Nng cao:
+Level 3:
+Tit kim:
+Tiu chun:
+Nng cao:
+Xem xt b n vo tnh ton th no
+Flow code
+Phc
+ng nhp/ng k - Homepage - recommendation - ng xut
+ng nhp/ng k - Homepage - explore culture - ng xut
+ng nhp/ng k - Homepage - Wishlist - ng xut
+ng nhp/ng k - Homepage - feedback - ng xut
+Sau khi ngi dng hon thnh trip planner  Delete personal data
+Thi:
+c Anh:
+ng nhp/ng k - Homepage - Voucher
+ng nhp/ng k -
+Oanh:
+User:
+ng nhp - Popular Apps - Chi tit App Guide (dng post) - ng xut
+ng nhp - Trip Planner (9 screens) - ng xut
+Admin:
+ng nhp - Popular Apps - CRUD tng post - ng xut
+u tin lm:
+ng k, ng nhp, qun mk, ng xut 0
+Profile 2 P
+Noti 3 P
+Explore 1 A
+Recommend 1 O
+Plan trip 1 A
+Wish list 3 P
+App guide 2 O
+AI 2
+Delete data 2
+Feedback 0
+H tr dch 3
+Dashboard 1
+Reward voucher 2
+Management 1
+Forum 1
+Upgrade account 2
+Tab 14
+Thut ton
+Cc ct data cn dng cho thut ton
+place:
+Id_place
+osm_id
+name
+description
+place_subcategory
+timeopen (xem loi no, vd ks m 24/24 => ci rng buc)
+Timeclose
+is_24h
+rating_avg
+Rating_count
+price_level
+Jsonb (cha nh)
+updated_by
+updated_at
+status (cn hot ng/ngng hot ng)
+T h thng:
+T user cung cp:
+a im c nhn ha ph hp s thch:
+H thng tnh im cho tng im n da trn nhiu tiu ch:
+x2: Chun ha t rating thc (15 sao). => lc trc vi ngng
+x3: S lt check-in, review (log scale).  => lc trc vi ngng
+x5:  ph hp ma/iu kin thi tit. => lc trc
+x1: Mc  khp gia s thch ngi dng, loi du lch v category/tags ca im n.
+Lc thng tin input
+Thut ton gi : (gi  da trn ni dung, da trn lc cng tc)
+Da trn tt user
+Da trn lch s tri nghim ca user (rate, like)
+Score = a.x1 + b.x2 + c.x3 + e.x5
+x4:  ph hp vi mc gi (sng/chiu/ti).
+p dng Trip package  ti u ha thut ton:

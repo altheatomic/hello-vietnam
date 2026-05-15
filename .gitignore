@@ -31,8 +31,14 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
-/coverage/
+coverage/
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.pub-cache/
+frontend/.pub/
+frontend/build/
+frontend/coverage/
 
 # Symbolication related
 app.*.symbols
@@ -41,15 +47,15 @@ app.*.symbols
 app.*.map.json
 
 # Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-/android/gradle.properties
+frontend/android/app/debug
+frontend/android/app/profile
+frontend/android/app/release
+frontend/android/gradle.properties
 
 # Not used platforms
-windows/
-macos/
-linux/
+frontend/windows/
+frontend/macos/
+frontend/linux/
 
 claude.md
 tree.txt

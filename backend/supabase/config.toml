@@ -1,0 +1,15 @@
+# Supabase CLI config for this backend workspace.
+# Keep function naming stable for the frontend:
+# frontend invokes "admin-food" at /functions/v1/admin-food
+
+[functions.admin-food]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/admin/admin-food/index.ts"
+import_map = "./functions/admin/admin-food/deno.json"
+
+[functions.wishlist]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/users/wishlist/index.ts"
+import_map = "./functions/users/wishlist/deno.json"

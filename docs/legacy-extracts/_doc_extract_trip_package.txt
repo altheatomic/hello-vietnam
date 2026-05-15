@@ -1,0 +1,1043 @@
+TRƯỜNG ĐẠI HỌC KHOA HỌC TỰ NHIÊN
+KHOA CÔNG NGHỆ THÔNG TIN
+TRẦN NGỌC LAM – NGUYỄN PHƯƠNG VY
+TRIỀU MINH DŨNG – NGUYỄN KIM THỊ TỐ NGA
+PHẠM ĐOÀN NGỌC TRINH – TĂNG GIA QUYỀN
+ỨNG DỤNG GỢI Ý LỊCH TRÌNH
+CHO NGƯỜI DU LỊCH TỰ TÚC
+THỰC TẬP DỰ ÁN TỐT NGHIỆP CỬ NHÂN CNTT
+CHƯƠNG TRÌNH CHẤT LƯỢNG CAO
+Thành phố Hồ Chí Minh, 2023
+T
+TRƯỜNG ĐẠI HỌC KHOA HỌC TỰ NHIÊN
+KHOA CÔNG NGHỆ THÔNG TIN
+TRẦN NGỌC LAM19127040
+NGUYỄN PHƯƠNG VY19127088
+TRIỀU MINH DŨNG19127127
+NGUYỄN KIM THỊ TỐ NGA19127219
+PHẠM ĐOÀN NGỌC TRINH19127302
+TĂNG GIA QUYỀN19127648
+ỨNG DỤNG GỢI Ý LỊCH TRÌNH
+CHO NGƯỜI DU LỊCH TỰ TÚC
+THỰC TẬP DỰ ÁN TỐT NGHIỆP CỬ NHÂN CNTT
+CHƯƠNG TRÌNH CHẤT LƯỢNG CAO
+GIẢNG VIÊN HƯỚNG DẪN
+THS. TIẾT GIA HỒNG
+Thành phố Hồ Chí Minh, 2023
+Lời cảm ơn
+Thực tập dự án tốt nghiệp chuyên ngành Hệ thống thông tin với đề tài: “Ứng dụng gợi ý lịch trình cho người du lịch tự túc” Trip Package là thành quả của quá trình nghiên cứu nghiêm túc cùng sự hỗ trợ tích cực của các Thầy, Cô, bạn bè và người thân.
+Lời đầu tiên, nhóm bày tỏ lòng biết ơn chân thành và sâu sắc nhất đến Thạc sỹ Tiết Gia Hồng. Sở dĩ nhóm có được kết quả như ngày hôm nay là nhờ sự dẫn dắt tận tâm, nhiệt tình chỉ bảo, định hướng và đánh giá của Cô trong suốt quá trình thực hiện đề tài.
+Nhóm xin chân thành cảm ơn quý Lãnh đạo Trường Đại học Khoa học Tự nhiên, Đại học Quốc gia TP.HCM, khoa Công nghệ thông tin cùng các Thầy, Cô bộ môn đã tạo điều kiện cho nhóm nâng cao trình độ và hoàn thiện công việc của mình.
+Cuối cùng, nhóm cám ơn gia đình, bạn bè và người thân đã luôn động viên và đưa ra các góp ý đa chiều giúp nhóm phát triển ứng dụng cách hiệu quả.
+Dù đã có nhiều cố gắng, tuy nhiên với quỹ thời gian có hạn nên đồ án khó tránh khỏi những thiếu sót. Rất mong nhận được sự góp ý, nhận xét, xây dựng của Thầy, Cô và bạn đọc để đề tài được hoàn chỉnh hơn.
+TP. Hồ Chí Minh, ngày 18 tháng 07 năm 2023
+Nhóm tác giả
+[TABLE]
+TRƯỜNG ĐẠI HỌC KHOA HỌC TỰ NHIÊN | KHOA CÔNG NGHỆ THÔNG TIN
+[/TABLE]
+ĐỀ CƯƠNG THỰC TẬP DỰ ÁN TỐT NGHIỆP
+ỨNG DỤNG GỢI Ý LỊCH TRÌNH
+CHO NGƯỜI DU LỊCH TỰ TÚC
+1.  THÔNG TIN CHUNG
+Người hướng dẫn:
+–   ThS. Tiết Gia Hồng
+Nhóm sinh viên thực hiện:
+Trần Ngọc Lam (MSSV: 19127040)
+Nguyễn Phương Vy (MSSV: 19127088)
+Triều Minh Dũng (MSSV: 19127127)
+Nguyễn Kim Thị Tố Nga (MSSV: 19127219)
+Phạm Đoàn Ngọc Trinh (MSSV: 19127302)
+Tăng Gia Quyền (MSSV: 19127648)
+Loại đề tài: Ứng dụng
+Thời gian thực hiện: Từ 01/2023 đến 07/2023
+2.  NỘI DUNG THỰC HIỆN
+2.1 Giới thiệu về đề tài
+Du lịch là một ngành kinh tế sôi nổi, đồng thời là nhu cầu và sở thích của nhiều cá nhân. Theo khảo sát từ Booking.com (10/2022), 72% người tham gia cho biết du lịch luôn là một trải nghiệm xứng đáng dù tình hình thế giới còn nhiều bất ổn [1]. Tổ chức Du lịch thế giới (UNWTO) nhận định du lịch nội địa vẫn là xu hướng chủ đạo. Trong đó, loại hình FIT (viết tắt của free independent traveller, frequent independent traveller, fully independent traveller, foreign independent traveller... tùy tổ chức) - tạm dịch: khách du lịch tự do - chiếm đến 90% [2].
+Ưu điểm lớn của loại hình này là sự linh hoạt: giúp du khách thêm chủ động thời gian, tiết kiệm chi phí và đa dạng điểm tham quan. Mọi người có thể tham khảo thông tin, chất lượng điểm tham quan, nơi ở, ... trên các kênh truyền thông hoặc từ người đã tham quan. Tuy nhiên, việc có quá nhiều nguồn thông tin, trong đó có một số nguồn tin sai lệch, có thể khiến du khách tốn không ít thời gian tìm hiểu và chuẩn bị.
+Để giải quyết vấn đề trên, nhóm thực hiện đề tài Ứng dụng gợi ý lịch trình cho người du lịch tự túc hỗ trợ du khách lên lịch trình. Từ thông tin đầu vào khách cung cấp, thông qua các thuật toán gợi ý, ứng dụng sẽ cho ra lịch trình nhanh, hợp lý và phù hợp với sở thích của du khách.
+2.2 Mục tiêu đề tài
+Như đã đề cập ở phần 2.1, vấn đề du khách thường gặp phải khi du lịch tự túc chính là việc phải chọn ra các địa điểm tham quan ưa thích, phù hợp với sở thích và nhu cầu của bản thân, đồng thời tìm hiểu thông tin và giá cả. Sau khi có được danh sách địa điểm, du khách cần tiếp tục phân bổ chúng vào các ngày, sắp xếp thứ tự sao cho thời gian di chuyển hợp lý. Quá trình này có thể tốn nhiều thời gian đối với những du khách không có nhiều kinh nghiệm du lịch.
+Mục tiêu của đề tài nhằm góp phần giảm thiểu thời gian và công sức trong việc tìm hiểu và lên kế hoạch du lịch, đồng thời vẫn đáp ứng đầy đủ các nhu cầu tham quan, ăn uống và giải trí của họ.
+2.3 Phạm vi của đề tài
+Để thực hiện được những mục tiêu đặt ra, đối tượng nghiên cứu thực tế chính của đề tài bao gồm hoạt động du lịch tự túc của du khách ở các tỉnh thành tại Việt Nam, các lộ trình du lịch theo đoàn và tự túc, tập dữ liệu các địa điểm du lịch, ăn uống, tham quan, mua sắm… ở các tỉnh, thành tại Việt Nam. Ngoài ra để xây dựng ứng dụng nhóm còn phải nghiên cứu các thực thể liên quan như các API Google hỗ trợ, các thuật toán tạo lịch trình dựa trên tọa độ điểm, hệ thống cơ sở dữ liệu lưu trữ phù hợp, framework phát triển ứng dụng di động phù hợp.
+Hiện tại đề tài nghiên cứu với mục đích phát triển ứng dụng hỗ trợ du lịch tự túc tại Việt Nam, vì vậy giới hạn của ứng dụng chỉ bao gồm dữ liệu và khả năng lên lịch trình trong phạm vi lãnh thổ Việt Nam. Hệ thống mong muốn có thể phát triển để phục vụ cho việc lên kế hoạch du lịch tự túc ở các tỉnh thành Việt Nam.
+2.4 Cách tiếp cận dự kiến
+Trong những năm gần đây, hệ thống gợi ý được sử dụng để phục vụ cho khách du lịch để tối đa hóa giá trị giải trí khi tham quan du lịch. Cách tiếp cận là tạo một hệ thống gợi ý lịch trình, khám phá ra lịch trình tốt nhất để tối ưu việc đi tham quan nhiều địa điểm du lịch (Place of Interest - POI) nhất có thể trong thời gian có sẵn của khách du lịch [3]. Một số thuật toán như branch-and-cut và greedy có thể được áp dụng trong các hệ thống gợi ý lịch trình này [4]. Tuy nhiên, các kết quả trả về không đáp ứng được các tiêu chí mà đề tài đặt ra như phân cụm theo các ngày trong lịch trình dựa theo khoảng cách các địa điểm, hoặc khả năng sắp xếp lịch trình dựa theo giờ mở cửa cũng như là thời gian đưa ra một lịch trình hoàn chỉnh.
+Đối với nhu cầu cũng như mục đích của dự án, nhóm nhận định hướng nghiên cứu quan trọng hàng đầu của đề tài là xây dựng một kho dữ liệu các địa điểm, cài đặt thuật toán lên lịch trình hiệu quả giúp người dùng có trải nghiệm tốt khi du lịch tự túc, thiết kế ứng dụng thân thiện sao cho người dùng dễ dàng thao tác trong quá trình di chuyển, du lịch. Do đó hệ thống của đề tài sẽ dựa vào 2 thuật toán để phát triển đó là: k-means và Genetic.
+K-means dùng để phân cụm các địa điểm tham quan vào từng ngày để có thể cân bằng được tài nguyên và yêu cầu của bài toán.
+Genetic sẽ sắp xếp và cho ra kết quả lịch trình một cách nhanh chóng phù hợp với nhu cầu thực tế của người dùng.
+Hệ thống sẽ được phát triển trên nền tảng di động. Các stack chính bao gồm:
+Frontend: Flutter
+Backend: Python
+Database: PostgreSQL
+Testing: Postman
+Đề tài được thực hiện theo mô hình phát triển phần mềm linh hoạt Agile Scrum với 1 Sprint dài 2 tuần.
+2.5 Kết quả dự kiến của đề tài
+Độ chính xác: Độ chính xác của lịch trình được đánh giá dựa trên sự hài lòng của người dùng khi trải nghiệm lịch trình, bao gồm các khía cạnh:
+Mức độ phổ biến của các địa điểm: các địa điểm phải nổi tiếng và phổ biến trên mạng xã hội.
+Mức độ phù hợp của địa điểm: các địa điểm du lịch được gợi ý bởi hệ thống phù hợp với sở thích của người dùng.
+Số lượng địa điểm tham quan: du khách có thể tham quan nhiều địa điểm nhất có thể.
+Thời gian: hệ thống gợi ý lịch trình với mốc thời gian phù hợp trong thực tế.
+Sản phẩm đầu ra: Sản phẩm dự kiến đầu ra của đề tài là một ứng dụng di dộng hỗ trợ việc lên lịch trình du lịch tự động cho các du khách khi họ đến một thành phố mới. Các chức năng dự kiến sẽ hoàn thành bao gồm:
+Người dùng chưa có tài khoản:
+Đăng kí
+Tìm kiếm, xem thông tin các địa điểm
+Xem lịch trình được tạo bởi người dùng khác trong hệ thống
+Người dùng đã có tài khoản (đã đăng nhập):
+Đăng nhập
+Đặt lại mật khẩu khi quên
+Thay đổi mật khẩu
+Chỉnh sửa thông tin cá nhân
+Tìm kiếm, xem thông tin địa điểm
+Đánh giá địa điểm
+Lưu địa điểm vào bộ sưu tập
+Tạo bộ sưu tập mới
+Xem/xóa/sửa bộ sưu tập
+Xem lịch trình được tạo bởi người dùng khác trong hệ thống
+Lưu lịch trình của người dùng khác trong hệ thống
+Tạo lịch trình tự động
+Chỉnh sửa thông tin lịch trình
+Thêm địa điểm vào lịch trình từ bộ sưu tập hoặc thanh tìm kiếm
+Xóa địa điểm trong lịch trình của người dùng
+Xem chỉ đường giữa hai địa điểm trong lịch trình
+2.6 Kế hoạch thực hiện
+2.6.1 Vai trò của các thành viên
+[TABLE]
+MSSV || Họ tên || Vai trò
+19127040 || Trần Ngọc Lam || Frontend Developer | Backend Developer
+19127088 || Nguyễn Phương Vy || Frontend Developer | UI Designer | Project Manager
+19127127 || Triều Minh Dũng || Frontend Developer | Data Analyst
+19127219 || Nguyễn Kim Thị Tố Nga || Frontend Developer | Database Administrator
+19127302 || Phạm Đoàn Ngọc Trinh || Backend Developer | Business Analyst
+19127648 || Tăng Gia Quyền || Frontend Developer | Backend Developer
+[/TABLE]
+2.6.2 Kế hoạch thực hiện
+[TABLE]
+Từ ngày || Đến ngày || Hoạt động
+02/01/2023 || 13/02/2023 || Lập kế hoạch tổng quát. Lập danh sách chức năng cơ bản của ứng dụng. Tìm hiểu cấu trúc và công nghệ trong việc xây dựng ứng dụng và cơ sở dữ liệu.
+16/01/2023 || 10/02/2023 || Sàng lọc và thống nhất danh sách chức năng của ứng dụng. Tìm hiểu và phát triển thuật toán.
+13/02/2023 || 03/03/2023 || Thu thập và làm sạch dữ liệu. Thiết kế cơ sở dữ liệu. Phác thảo giao diện cho ứng dụng.
+06/03/2023 || 28/04/2023 || Hoàn thành phần lập trình ứng dụng.
+03/05/2023 || 09/06/2023 || Thực hiện kiểm thử trước khi triển khai ứng dụng.
+12/06/2023 || 31/07/2023 || Triển khai ứng dụng và sửa lỗi.
+02/08/2023 || 13/08/2023 || Gặp giảng viên phản biện.
+14/08/2023 || 19/08/2023 || Bảo vệ trước hội đồng Hệ thống thông tin.
+[/TABLE]
+Tài liệu tham khảo
+[1]Booking, “Booking.com’s Seven Predictions for the Creative Reimagination of Travel in 2023.”  https://globalnews.booking.com/bookingcoms-seven-predictions-for-the-creative-reimagination-of-travel-in-2023/
+[2]VnEconomy, “Trào lưu du lịch tự túc phổ biến hậu đại dịch.”  https://vneconomy.vn/trao-luu-du-lich-tu-tuc-pho-bien-hau-dai-dich.htm/
+[3] M. Tenemaza, S. Luján-Mora, A. De Antonio and J. Ramírez, "Improving Itinerary Recommendations for Tourists Through Metaheuristic Algorithms: An Optimization Proposal," in IEEE Access, vol. 8, pp. 79003-79023, 2020, doi: 10.1109/ACCESS.2020.2990348.
+[4] S. Choachaicharoenkul, D. Coit and N. Wattanapongsakorn, "Multi-Objective Trip Planning With Solution Ranking Based on User Preference and Restaurant Selection," in IEEE Access, vol. 10, pp. 10688-10705, 2022, doi: 10.1109/ACCESS.2022.3144855.
+[TABLE]
+XÁC NHẬN | GIẢNG VIÊN HƯỚNG DẪN | (Ký và ghi rõ Họ tên) || TP.HCM, ngày 30 tháng 03 năm 2023 | NHÓM SINH VIÊN THỰC HIỆN | (Ký và ghi rõ họ tên)
+[/TABLE]
+Mục lục
+Danh sách bảng
+Bảng 2.1.1: So sánh các ứng dụng lên lịch trình tự động7
+Bảng 2.2.1: So sánh k-means, k-medoids và CLARA13
+Bảng 2.2.2: So sánh Hamilton, Permutation, B&P và Genetic16
+Bảng 3.1.1: Lịch trình du lịch 3 ngày tại Thành phố Hồ Chí Minh26
+Bảng 4.4.1: Địa điểm gợi ý và địa điểm liên quan đối với người dùng khi du lịch Đà Nẵng84
+Bảng 4.4.2: Kết quả thống kê Precision, Recall và F1-score của Đà Nẵng85
+Bảng 4.4.3: Địa điểm gợi ý và địa điểm liên quan đối với người dùng khi du lịch Huế86
+Bảng 4.4.4: Kết quả thống kê Precision, Recall và F1-score của Huế87
+Bảng 4.4.5: Địa điểm gợi ý và địa điểm liên quan đối với người dùng khi du lịch Khánh Hòa88
+Bảng 4.4.6: Kết quả thống kê Precision, Recall và F1-score của Khánh Hòa89
+Danh sách hình
+Hình 2.1.1: Ứng dụng Roadtrippers4
+Hình 2.1.2: Ứng dụng TripHobo5
+Hình 2.1.3: Ứng dụng Trip Hunter6
+Hình 2.2.1: Minh họa thuật toán k-means11
+Hình 3.1.1: Quy trình hoạt động của Hệ thống gợi ý lịch trình17
+Hình 3.1.2: Các địa điểm tham quan được chọn sau khi áp dụng Module I19
+Hình 3.1.3: Các địa điểm được chia vào 3 ngày du lịch sau khi áp dụng Module II (phân cụm bằng k-means với k=3)20
+Hình 3.1.4: Các bước thực hiện của thuật toán Genetic20
+Hình 3.1.5: Dataframe của một cluster21
+Hình 3.1.6: Hai nhiễm sắc thể tương ứng với hai cách sắp xếp lịch trình21
+Hình 3.1.7: Quá trình bắt chéo gen25
+Hình 3.2.1: Sơ đồ kiến trúc27
+Hình 3.3.2.1: Sơ đồ use-case28
+Hình 3.3.3.1: Lược đồ cơ sở dữ liệu44
+Hình 4.1.1: Hướng dẫn cài đặt ứng dụng từ Google Play Store45
+Hình 4.1.2: Hướng dẫn bật cho phép cài đặt ứng dụng từ bên thứ ba46
+Hình 4.1.3: Hướng dẫn cài đặt ứng dụng từ file .apk48
+Hình 4.2.1: Giao diện màn hình Đăng nhập49
+Hình 4.2.2: Giao diện tab Cá nhân (trái) và Giao diện màn hình Đăng nhập (phải)50
+Hình 4.2.3: Giao diện màn hình Đăng ký51
+Hình 4.2.4: Giao diện màn hình nhập email (trái) và mã OTP (phải)52
+Hình 4.2.5: Giao diện màn hình đặt lại mật khẩu53
+Hình 4.2.6: Giao diện màn hình Trang chủ54
+Hình 4.2.7: Giao diện Trang cá nhân (trái) và Chỉnh sửa trang cá nhân (phải)55
+Hình 4.2.8: Giao diện màn hình Đổi mật khẩu khi tất cả trường thông tin đều thỏa (trái) và khi có trường vi phạm (phải)56
+Hình 4.2.9: Giao diện Tìm kiếm chính (trái) và Tìm kiếm theo danh mục (phải)57
+Hình 4.2.10: Giao diện Tìm kiếm bằng từ khóa khi chưa nhập từ khóa (trái) và khi đã nhập từ khóa (phải)58
+Hình 4.2.11: Giao diện Kết quả tìm kiếm địa điểm (trái) và Kết quả tìm kiếm lịch trình (phải)59
+Hình 4.2.12: Giao diện Lọc địa điểm khi chưa chọn bộ lọc (trái) và khi đã chọn bộ lọc (phải)60
+Hình 4.2.13: Giao diện xem chi tiết lịch trình61
+Hình 4.2.14: Giao diện xem chi tiết từng ngày của lịch trình (trái) và chỉ đường giữa hai địa điểm trong lịch trình (phải)62
+Hình 4.2.15: Giao diện Chi tiết lịch trình khi chưa yêu thích (trái) và khi đã bấm yêu thích (phải)63
+Hình 4.2.16: Giao diện Tạo lịch trình mới65
+Hình 4.2.17: Giao diện chỉnh sửa ngày đi-về trong Tạo lịch trình mới (trái) và nhắc nhở của hệ thống nếu người dùng chọn thời gian du lịch vượt quá 7 ngày (phải)66
+Hình 4.2.18: Giao diện lựa chọn điểm đến cho lịch trình (trái) và giao diện thêm địa điểm du lịch tùy chọn (phải)67
+Hình 4.2.19: Giao diện nút bấm để cá nhân hóa lịch trình68
+Hình 4.2.20: Giao diện sau khi bấm cá nhân hóa lịch trình 69
+Hình 4.2.21: Giao diện khi thêm địa điểm mới vào lịch trình70
+Hình 4.2.22: Giao diện xác nhận cá nhân hóa vào lịch trình71
+Hình 4.2.23: Giao diện chỉnh sửa thông tin lịch trình72
+Hình 4.2.24: Giao diện Chi tiết địa điểm73
+Hình 4.2.25: Giao diện Đánh giá địa điểm (trái) và Chi tiết địa điểm có hiển thị đánh giá vừa đăng (phải)74
+Hình 4.2.26: Giao diện Lưu địa điểm vào bộ sưu tập75
+Hình 4.2.27: Giao diện Chi tiết địa điểm khi chưa thêm vào bộ sưu tập (trái) và khi đã thêm vào bộ sưu tập (phải)76
+Hình 4.2.28: Pop-up Tạo bộ sưu tập (trái) và Giao diện màn hình Địa điểm yêu thích sau khi bộ sưu tập mới được tạo (phải)77
+Hình 4.2.29: Màn hình Địa điểm yêu thích ở chế độ xem (trái) và chế độ chỉnh sửa (phải)78
+Hình 4.2.30: Pop-up xác nhận xóa bộ sưu tập79
+Hình 4.3.1: Thời gian phản hồi trung bình của API80
+Hình 4.4.1: Minh họa Precision và Recall82
+Hình 4.5.1: Độ sẵn sàng sử dụng ứng dụng của người dùng dựa trên độ tuổi90
+Hình 4.5.2: Độ hữu ích của ứng dụng đối với người dùng91
+Danh sách từ viết tắt và thuật ngữ
+[TABLE]
+STT || Viết tắt || Viết đầy đủ
+1 || API || Application programming interface
+2 || AWS || Amazon Web Services
+3 || BLOC || Business logic components
+4 || B&P || Branch-and-Price
+5 || CLARA || Clustering Large Applications
+6 || FIT || Free independent traveller
+7 || GA || Genetic algorithm
+8 || OTP || One-time password
+9 || TDTSP || Time-Dependent Traveling Salesman Problem
+10 || TTDP || Tourist Trip Design Problem
+11 || UNWTO || World Tourism Organization
+[/TABLE]
+TÓM TẮT
+Ngành du lịch hiện nay đang phát triển mạnh mẽ, đặc biệt là loại hình du lịch tự túc. Tuy nhiên, việc tự lên kế hoạch du lịch đòi hỏi nhiều thời gian và công sức để chọn lọc và sắp xếp thông tin. Do đó, công cụ thiết kế lịch trình du lịch tự túc là rất cần thiết nhằm phát triển ngành du lịch Việt Nam nói riêng và toàn cầu nói chung.
+Đề tài này nghiên cứu và phát triển ứng dụng hỗ trợ lên lịch trình du lịch tự túc tại Việt Nam. Ứng dụng nhằm mục đích cung cấp cho người dùng thông tin du lịch hữu ích đồng thời hỗ trợ người dùng trong việc lên kế hoạch di chuyển và tham quan.
+Từ tập dữ liệu địa điểm tại Việt Nam, hệ thống gợi ý lịch trình sẽ giải quyết bài toán Vấn đề thiết kế lịch trình du lịch (Tourist Trip Design Problem – TTDP) bằng giải thuật k-means (chọn điểm tham quan cho các ngày trong lịch trình) và giải thuật Genetic (sắp xếp thứ tự tham quan các địa điểm trong ngày).
+Kết quả cuối cùng của đề tài là Trip Package - ứng dụng di động hỗ trợ lên lịch trình du lịch tự túc, dễ cài đặt và sử dụng, phù hợp cho nhiều tình huống. Ứng dụng tập trung vào các tính năng liên quan đến địa điểm du lịch và tạo lịch trình tự động cho nhiều ngày du lịch dựa trên nhu cầu của người dùng.
+Chương 1:GIỚI THIỆU
+Đặt vấn đề
+Hiện nay, du lịch tự túc được ưa chuộng nhờ vào tính linh hoạt, độc đáo và tiết kiệm. Theo khảo sát từ Booking.com (10/2022), 72% người tham gia cho biết du lịch luôn là trải nghiệm xứng đáng dù tình hình thế giới còn nhiều bất ổn [1]. Tổ chức Du lịch thế giới (UNWTO) nhận định du lịch nội địa vẫn là xu hướng chủ đạo. Trong đó, loại hình FIT (viết tắt của free independent traveller, frequent independent traveller, fully independent traveller... tùy tổ chức) - tạm dịch: khách du lịch tự do - chiếm đến 90% [2].
+Vì mỗi du khách có sở thích khác nhau khi lựa chọn điểm tham quan (phiêu lưu, mua sắm, văn hóa lịch sử...), ta không thể ràng buộc họ vào một tour du lịch duy nhất. Dù vậy, việc lên kế hoạch cá nhân với chi phí và thời gian phù hợp đòi hỏi sự hiểu biết và kinh nghiệm du lịch nhất định, ví dụ như tìm kiếm và chắt lọc thông tin điểm tham quan từ nhiều nguồn (người tham quan trước, Internet, báo đài...) hay sắp xếp thứ tự tham quan sao cho thời gian di chuyển hợp lý.
+Nhận thấy được nhu cầu trên, ứng dụng “Gợi ý lịch trình cho người du lịch tự túc” Trip Package ra đời, giúp du khách lên lịch trình dễ dàng với ba tiêu chí: phù hợp với sở thích cá nhân, ghé thăm được các điểm đến hàng đầu tại thành phố du lịch trong thời gian có sẵn, và kế hoạch tham quan riêng biệt cho mỗi ngày.
+Mục tiêu và hướng tiếp cận
+Mục tiêu của đề tài là xây dựng ứng dụng gợi ý lịch trình tự động giúp cho du khách tiết kiệm được thời gian tìm hiểu và lên kế hoạch du lịch, đồng thời vẫn đáp ứng đầy đủ các nhu cầu tham quan và sở thích cá nhân của họ.
+Do đó, nhóm xác định ba điểm then chốt nhằm triển khai ứng dụng một cách hiệu quả như sau: Một, thu thập và xây dựng cơ sở dữ liệu địa điểm; Hai, cài đặt thuật toán có khả năng lập lịch trình tốt và nhanh chóng cho nhiều ngày; Ba, thiết kế giao diện thân thiện, tương tác thuận tiện với người dùng, đặc biệt trong quá trình di chuyển và du lịch.
+Theo lý thuyết, ứng dụng có thể lên lịch trình khắp các tỉnh thành Việt Nam. Tuy nhiên, điều này còn phụ thuộc nhiều vào nguồn dữ liệu như tính chính xác, số lượng điểm tham quan, lượng đánh giá từ người dùng. Nhóm đặt mục tiêu ứng dụng sẽ hoạt động tốt đối với các tỉnh và thành phố nổi bật như Thành phố Hồ Chí Minh, Hà Nội, Đà Nẵng, Huế, Đà Lạt, Vũng Tàu, ...
+Việc chọn lựa địa điểm cho lịch trình sẽ dựa trên vị trí địa lý - địa điểm thuộc thành phố du lịch, các điểm gần nhau được tham quan trong cùng một ngày - và mức độ hài lòng của người trải nghiệm trước đó dựa vào điểm số và số lượng đánh giá. Ứng dụng cung cấp chi tiết thông tin địa điểm, ví dụ như hình ảnh, số điện thoại liên hệ và giờ hoạt động để họ tham khảo nếu có kế hoạch riêng.
+Thông tin chi tiết và đầy đủ về điểm tham quan là điều quan trọng trước nhất để lên lịch trình du lịch. Có hai giải pháp: (1) Tự xây dựng Cơ sở dữ liệu bao gồm tất cả thông tin của từng điểm đến hoặc (2) Tận dụng dữ liệu có sẵn trên Internet để lấy ra thông tin cần thiết. Giải pháp (1) rất khó để thực hiện vì yêu cầu về thời gian, kinh phí, nguồn lực và khối lượng công việc đều rất lớn. Trong hệ thống của nhóm, nhóm chọn sử dụng giải pháp (2).
+Để gợi ý lịch trình du lịch, Trip Package dựa trên các yêu cầu và ràng buộc của du khách bao gồm thành phố, số ngày tham quan, sở thích du lịch (tôn giáo, khám phá, sinh thái...). Trong trường hợp du khách muốn ghé thăm một hoặc vài điểm tham quan cụ thể, họ cần cung cấp để hệ thống có thể bổ sung và sắp xếp điểm tham quan đó vào lịch trình một cách hợp lý. Lịch trình được hiển thị trên giao diện để du khách có thể chỉnh sửa (thêm hoặc xóa địa điểm khỏi lịch trình) cho phù hợp hơn với nhu cầu của họ.
+Hệ thống gợi ý lịch trình được xây dựng dựa trên bài toán TTDP (Tourist Trip Design Problem – tạm dịch: Vấn đề Thiết kế Lịch trình Du lịch), nghĩa là giải quyết vấn đề lập kế hoạch du lịch cho nhiều địa điểm tham quan với mục tiêu là tối đa hóa lợi ích du lịch, trong đó lợi ích du lịch có thể kể đến như thời gian di chuyển ngắn nhất và số điểm tham quan nhiều nhất. Một số thuật toán để giải quyết bài toán TTDP như branch and cut và greedy có thể được áp dụng trong các hệ thống này [3]. Tuy nhiên, kết quả trả về là một lịch trình đơn (cho 1 ngày) với nhiều điểm tham quan nhất có thể, không đáp ứng được tiêu chí mà đề tài của nhóm đặt ra đó là: lịch trình chi tiết cho nhiều ngày dựa trên số ngày du lịch. Sau khi nghiên cứu, nhóm chọn phát triển tính năng lên lịch trình dựa trên hai thuật toán k-means và Genetic nhờ đáp ứng tốt yêu cầu bài toán, tình huống thực tế, cân bằng chi phí. Đầu tiên, k-means phân cụm các điểm tham quan vào từng ngày, sau đó Genetic sắp xếp thứ tự điểm tham quan trong mỗi ngày đó. Giải thích cụ thể cho thuật toán sẽ được làm rõ ở Mục 3: Ứng dụng “Gợi ý lịch trình cho người du lịch tự túc” Trip Package.
+Cuối cùng, Trip Package cần một giao diện thân thiện, rõ ràng giúp du khách dễ sử dụng. Do đó, nhóm lựa chọn phát triển ứng dụng di động để phục vụ tốt nhu cầu di chuyển đặc thù: du khách tìm kiếm thông tin địa điểm, xem lịch trình, chỉ đường,... thuận tiện. Giao diện chi tiết sẽ được trình bày ở Mục 4: Cài đặt và Đánh giá. Ngoài ra, bên cạnh tính năng chính, ứng dụng cần đáp ứng được các tính năng cơ bản khác như tìm kiếm, đánh giá điểm tham quan, cá nhân hóa lịch trình, chỉ đường giữa hai địa điểm trong lịch trình,..
+Chương 2:CÁC HỆ THỐNG VÀCÔNG NGHỆ LIÊN QUAN
+Các hệ thống lên lịch trình tự động
+Nhóm thực hiện tìm hiểu một số ứng dụng lên lịch trình tự động đang có mặt trên thị trường như sau:
+Roadtrippers
+Hình 2.1.1 - Ứng dụng Roadtrippers
+Roadtrippers (xem Hình 2.1.1) là ứng dụng du lịch tự túc bằng đường bộ tại Mỹ. Từ thông tin điểm xuất phát và điểm đến, Roadtrippers đề xuất các địa điểm lân cận trên tuyến đường di chuyển. Về ưu điểm, Roadtrippers gợi ý đa dạng loại hình địa điểm, bao gồm điểm tham quan, mua sắm, ăn uống, lưu trú,...; có tích hợp chỉ đường cho phương tiện ô tô và tính toán chi phí cho hành trình (thuê xe, xăng dầu, lưu trú,...). Tuy nhiên, ứng dụng không chia theo ngày du lịch; không có mốc thời gian cụ thể giữa các địa điểm và chỉ hỗ trợ lên lịch trình ở các bang của Mỹ.
+TripHobo
+Hình 2.1.2 - Ứng dụng TripHobo
+Dựa vào số ngày du lịch, ngân sách, độ tuổi, TripHobo (xem Hình 2.1.2) lên lịch trình chi tiết với địa điểm lưu trú, địa điểm tham quan và phương tiện di chuyển giữa các địa điểm. Người dùng có thể chỉnh sửa thứ tự và thời gian dừng chân tại mỗi địa điểm. Ngoài ra, TripHobo có hỗ trợ đặt phòng khách sạn qua ứng dụng.
+So với Roadtrippers, TripHobo có hướng tiếp cận gần hơn với Trip Package: lên lịch trình du lịch dựa trên các ràng buộc đầu vào, theo từng ngày và tại một thành phố. Ứng dụng hỗ trợ hầu hết các thành phố phổ biến tại Việt Nam nói riêng và thế giới nói chung, đồng thời cho phép thêm hoặc xóa địa điểm sau khi tạo.
+Trip Hunter
+Hình 2.1.3 - Ứng dụng Trip Hunter
+Trip Hunter (xem Hình 2.1.3) là ứng dụng lên lịch trình du lịch tự túc hướng đến thị trường Việt Nam dựa trên điểm đi, điểm đến, số ngày, số người. Điểm tiện lợi ở Trip Hunter là có ước tính chi phí đầu người cho chuyến đi; có danh sách tổng hợp chuyến bay và khách sạn phù hợp ngày-giờ du lịch. Về lịch trình, Trip Hunter hiện thông tin di chuyển giữa các địa điểm (ví dụ: đi từ Làng chài Rạch Vẹm đến Vườn tiêu Khu Tượng mất 11.85km, 28 phút) nhưng lại không hỗ trợ chỉ đường. Theo trải nghiệm của nhóm, đa số lịch trình dài ngày (trên 5 ngày) đều sẽ có từ 1-2 ngày trống mà không tham quan bất cứ địa điểm nào (xem Ngày 5, Hình 2.1.3); khi chỉnh sửa lịch trình, ứng dụng chỉ thêm-xóa địa điểm mà không sắp xếp lại thứ tự cho hợp lý.
+Bảng 2.1.1 so sánh các ứng dụng gợi ý lịch trình bao gồm Roadtrippers, TripHobo, Trip Hunter và ứng dụng Trip Package của nhóm (đóng khung đỏ). Roadtrippers không có kế hoạch tham quan theo từng ngày như ba ứng dụng còn lại. Mặc dù đều cho ra kết quả là lịch trình du lịch chi tiết cho nhiều ngày (trừ Roadtrippers), các ứng dụng đều có sự khác biệt trong việc khai thác thông tin từ người dùng để tạo lịch trình.
+[TABLE]
+Đặc điểm || Trip Package | (ứng dụng của nhóm) || Roadtrippers || TripHobo || Trip Hunter
+Tạo lịch trình | dựa trên || Thành phố, số ngày, sở thích, điểm tham quan tùy chọn || Điểm xuất phát, điểm đến || Thành phố, số ngày, số người, ngân sách, người du lịch cùng || Thành phố, số ngày, số người
+Chỉnh sửa lịch trình || Có || Có || Có || Có
+Sắp xếp lại lịch trình sau khi người dùng chỉnh sửa || Có || Có || Không || Không
+Kế hoạch tham quan theo ngày || Có || Không || Có || Có
+Thời gian dừng chân tại mỗi địa điểm || Có || Không || Có || Có
+Dựa trên sở thích người dùng || Có || Không || Có || Không
+Đối tượng hướng đến || Người dùng muốn du lịch một thành phố với lịch trình chi tiết. || Người dùng có chuyến đi liên bang bằng đường bộ muốn kết hợp du lịch. || Người dùng muốn du lịch một thành phố với lịch trình chi tiết. || Người dùng muốn du lịch một thành phố với lịch trình chi tiết.
+Thị trường || Việt Nam || Mỹ || Toàn cầu || Việt Nam
+[/TABLE]
+Bảng 2.1.1: So sánh các ứng dụng lên lịch trình tự động
+Các công nghệ được áp dụng để giải quyết bài toán lên lịch trình tự động
+Để có thể lựa chọn ra phương pháp cài đặt thuật toán phù hợp cho tính năng lên lịch trình du lịch tự túc của ứng dụng, nhóm đã tiến hành nghiên cứu các phương pháp đã được sử dụng để giải quyết bài toán TTDP, bao gồm:
+Brute Force
+Đây là thuật toán đơn giản nhất, Brute Force sẽ tiến hành liệt kê hết tất cả lịch trình có thể tạo ra, sau đó tiến hành loại trừ để tìm kiếm được lịch trình tối ưu nhất theo tiêu chí đặt ra ví dụ như tổng thời gian di chuyển gian di chuyển giữa các địa điểm.
+Ưu điểm: Đơn giản, dễ cài đặt, dễ hiểu.
+Khuyết điểm: Rất kém hiệu quả khi số lượng địa điểm trong lịch trình tăng lên.
+Greedy
+Thuật toán hoạt động bằng cách bắt đầu với một điểm đến đầu tiên dựa trên các tiêu chí được đưa ra (khoảng cách, thời gian đi lại, chi phí…), sau đó sẽ tiếp tục chọn điểm đến tiếp theo dựa trên các tiêu chí so với điểm đã chọn trước đó và lặp lại quá trình chọn điểm đến cho đến khi tất cả các điểm đến được chọn.
+Ưu điểm: Hoạt động tốt với lượng dữ liệu lớn.
+Khuyết điểm: Vì điểm tiếp theo được chọn chỉ là tối ưu so với điểm trước đó nhưng chưa chắc là tối ưu với toàn bộ lịch trình nên kết quả cho ra có thể không tối ưu.
+Dynamic Programming
+Thuật toán này tìm lịch trình du lịch tự động bằng cách chia bài toán lập lịch du lịch thành các bài toán con nhỏ hơn (ví dụ như lập lịch cho một phần của hành trình), sau đó thuật toán sẽ tính toán và lưu trữ kết quả của các bài toán nhỏ này vào một bảng phương án (solution table) và tiếp tục tính toán giải pháp tối ưu cho bài toán bằng các kết quả đã có trong solution table.
+Ưu điểm: Giảm thiểu thời gian tính toán, có thể cài đặt đơn giản
+Khuyết điểm: Yêu cầu bộ nhớ lớn để liên tục lưu trữ các lịch sử của solution table, cần xác định được bài toán con và có thể không hiệu quả trong một số trường hợp.
+Simulated Annealing
+Simulated Annealing sẽ bắt đầu bằng cách khởi tạo một lịch trình ban đầu, sau đó sử dụng các phép biến đổi ngẫu nhiên như thay đổi thứ tự các điểm đến hoặc thay đổi số lượng điểm đến ở mỗi ngày… để tìm kiếm các lịch trình mới, sau đó sẽ so sánh lịch trình mới với lịch trình hiện tại. Nếu lịch trình mới tốt hơn lịch trình hiện tại, thuật toán sẽ chấp nhận lịch trình mới làm lịch trình hiện tại. Thuật toán sẽ lặp lại quá trình trên đến khi không có lịch trình mới được chấp nhận.
+Ưu điểm: Thuật toán có khả năng tìm thấy được phương án tối ưu trên toàn lịch trình, giảm thời gian tính toán đáng kể và cũng tương đối dễ cài đặt.
+Khuyết điểm: Có thể bị kẹt trong các cực tiểu địa phương do chọn tham số đầu vào không tốt, ngoài ra việc xác định hàm mục tiêu để đánh giá độ tốt cũng có nhiều thách thức.
+Nhìn chung việc sử dụng một thuật toán để giải quyết toàn bộ bài toán lập lịch trình tự động, đặt biệt phải đáp ứng nhiều tiêu chí của người dùng sẽ rất khó để đạt được kết quả tối ưu, như trong ứng dụng TripHobo thì thuật toán lập lịch trình tự động của họ cũng là một giải pháp kết hợp giữa thuật toán Greedy và thuật toán Dynamic Programming.
+Vì vậy nhóm quyết định chia nhỏ bài toán lập lịch trình tự động ra từng bài toán nhỏ để sử dụng các thuật toán phù hợp giải quyết từng vấn đề tương ứng, bao gồm:
+Chia nhỏ các địa điểm vào các nhóm theo từng ngày: những địa điểm ở gần nhau được sắp xếp tham quan trong cùng ngày sẽ tiết kiệm được nhiều chi phí và thời gian di chuyển, vì vậy tùy vào số ngày của lịch trình ta sẽ chia các địa điểm vào các nhóm dựa trên khoảng cách giữa chúng.
+Sắp xếp lịch trình cho mỗi một ngày: dựa trên các địa điểm đã chia vào mỗi ngày, ta có thể sắp xếp thứ tự di chuyển cho từng địa điểm sao cho tổng chi phí di chuyển giữa các địa điểm là tối ưu.
+Chia nhỏ các địa điểm vào các nhóm theo từng ngày
+Mục tiêu của nhóm khi sử dụng thuật toán phân cụm là có thể chia các địa điểm trong tập địa điểm vào N cụm cố định tương đương với N ngày du lịch sao cho những địa điểm gần nhau sẽ ở cùng một cụm.
+Có rất nhiều thuật toán phân cụm đã và đang được nghiên cứu áp dụng, tuy nhiên ta có thể chia thành bốn hướng phân cụm chính [4]:
+Density-based (phân cụm dựa trên mật độ điểm): chia điểm dữ liệu thành hai loại: điểm cốt lõi có mật độ dữ liệu lớn hơn ngưỡng được xác định trước; điểm biên có mật độ dữ liệu thấp hơn nhưng vẫn thuộc vào nhóm. Quá trình phân cụm bắt đầu từ một điểm cốt lõi, tìm tất cả các điểm dữ liệu nằm trong bán kính của nó và thuộc vào cùng một nhóm.
+Distribution-based (dựa trên phân phối, tính xác suất thuộc về cụm): chia nhóm các dữ liệu vào các loại dựa trên các đặc tính tương đồng của các điểm dữ liệu. Thuật toán này giả định rằng các điểm dữ liệu trong một nhóm phân phối theo một phân phối xác định và không phân loại các điểm dữ liệu dựa trên khoảng cách giữa chúng.
+Hierarchical-based (phân cụm dựa trên thứ bậc): phân cụm dựa trên cấu trúc phân cấp, phân chia các điểm dữ liệu thành các cụm nhỏ hơn và kết hợp chúng lại thành các cụm lớn hơn để tạo thành cây phân cấp. Kết quả của thuật toán hierarchical-based clustering thường được biểu diễn dưới dạng cây phân cấp (dendrogram) để thể hiện mối quan hệ giữa các cụm con và các cụm lớn hơn.
+Centroid-based (phân cụm dựa trên trọng tâm): phân loại các điểm dữ liệu dựa trên khoảng cách giữa chúng và trọng tâm của các nhóm. Thuật toán này cố gắng tìm ra các nhóm sao cho khoảng cách giữa các điểm dữ liệu trong cùng một nhóm là nhỏ nhất, và khoảng cách giữa các trọng tâm của các nhóm là lớn nhất. Thuật toán bắt đầu bằng cách chọn ngẫu nhiên một số lượng trọng tâm và gán từng điểm gần nhất về mặt khoảng cách với trọng tâm tương ứng. Sau đó, trọng tâm được cập nhật bằng cách tính lại trung bình các điểm trong cụm và quá trình này được lặp lại cho đến khi không còn sự thay đổi nào trong việc phân chia các điểm dữ liệu.
+Từ các loại thuật toán phân cụm trên có thể thấy các thuật toán hướng centroid-based clustering sẽ phù hợp yêu cầu của bài toán phân chia các địa điểm tham quan vào N nhóm tương ứng với N ngày trong lịch trình. Mỗi nhóm địa điểm cần phải xác định được trọng tâm, sau đó tập hợp các điểm gần với trọng tâm đó, kết quả nhận được là các điểm trong mỗi nhóm sẽ là những điểm gần nhau. Một số thuật toán centroid-based clustering thường được sử dụng bao gồm:
+K-means
+Hình 2.2.1 - Minh họa thuật toán k-means. Nguồn: geeksforgeeks.org
+Thuật toán k-means bắt đầu bằng cách chọn ngẫu nhiên một số lượng trọng tâm (centroid) và gán từng điểm dữ liệu gần nhất về mặt khoảng cách với trọng tâm tương ứng (xem Hình 2.2.1), số lượng trọng tâm có thể được cài đặt cố định. Sau đó, các trọng tâm được cập nhật bằng cách tính lại trung bình các điểm trong cụm đó và quá trình này được lặp lại cho đến khi không còn sự thay đổi nào trong việc phân chia các điểm dữ liệu. [5]
+Đây là mô hình học không giám sát đơn giản nhất, là thuật toán phù hợp cho tập dữ liệu nhỏ và ít outlier, trong đó trước khi đưa vào phân cụm nhóm đã lọc ra số lượng dữ liệu nhất định. Số lượng dữ liệu nhỏ (n<=1000 và k<10).
+K-medoids
+Quá trình hoạt động của thuật toán k-medoids tương tự như k-means. Trong k-medoids, người dùng cần xác định trước số lượng medoids được sử dụng để thiết lập số lượng cụm. Tuy nhiên, nếu số lượng medoids quá ít hay quá nhiều, phân cụm có thể trở nên tốn kém hoặc không hiệu quả. Trong khi đó với k-means, số lượng cụm được thiết lập trước và được sử dụng để tính toán trọng tâm của các cụm. Trọng tâm này sẽ được tối ưu hóa trong quá trình phân cụm. Việc thiết lập số lượng cụm trong k-means không ảnh hưởng đến hiệu quả của thuật toán và có thể được thực hiện một cách linh hoạt hơn.
+K-medoids có lợi ích là ít bị ảnh hưởng bởi các outlier và cũng có thể thực hiện với dữ liệu lớn, tuy nhiên khuyết điểm là hiệu suất của k-medoids kém hơn, ngoài ra khi cần thiết lập số lượng cụm, k-medoids có thể kém hiệu quả hơn k-means.
+CLARA
+Thuật toán CLARA (Clustering Large Applications) bắt đầu với việc chọn một mẫu con ngẫu nhiên của dữ liệu ban đầu, sau đó áp dụng thuật toán k-medoids để phân cụm các mẫu trong mẫu con, sử dụng các trung bình khoảng cách giữa các điểm dữ liệu và medoids trong mỗi cụm để đánh giá hiệu suất của các cụm. Thuật toán lặp lại các bước trên để tạo ra nhiều mẫu con và đánh giá hiệu suất của các cụm trên mỗi mẫu con để chọn ra cụm tốt nhất từ các mẫu con để làm kết quả phân cụm cuối cùng.
+CLARA có khả năng hoạt động tốt với số lượng dữ liệu lớn nhưng lại không hiệu quả trên dữ liệu nhỏ vì việc chọn mẫu con ngẫu nhiên để phân cụm có thể không đủ đại diện cho toàn bộ bộ dữ liệu.
+Bảng 2.2.1 trình bày kết quả so sánh các thuật toán bao gồm: k-means, k-medoids và CLARA. Từ kết quả so sánh cho thấy k-means phù hợp nhất với nhu cầu phân chia tập địa điểm có khối lượng dữ liệu nhỏ vào nhiều ngày, trong đó, các địa điểm du lịch trong một ngày phải gần nhau.
+[TABLE]
+Khả năng || k-means || k-medoids || CLARA
+Phân cụm dựa trên khoảng cách các điểm || Tốt || Tốt || Tốt
+Làm việc với nhiều dữ liệu (n<200, k<10) || Tốt || Trung bình || Không tốt
+Kiểm soát được kích thước của cluster || Tốt || Trung bình || Không tốt
+Ảnh hưởng bởi outlier || Nhiều || Trung bình || Ít
+Độ khả thi khi cài đặt || Cao || Trung bình || Thấp
+[/TABLE]
+Bảng 2.2.1 - So sánh k-means, k-medoids và CLARA
+Sắp xếp lịch trình cho mỗi một ngày
+Đối với việc sắp xếp lịch trình cho một ngày, hệ thống yêu cầu một thuật toán nhận vào các điểm cùng chi phí di chuyển giữa các điểm và cho kết quả là thứ tự đi đến các địa điểm sao cho tối ưu nhất, tức là tổng chi phí di chuyển nhỏ nhất có thể. Ngoài ra, mỗi địa điểm đều có một thời gian mở và đóng cửa nhất định vì vậy cần phải sắp xếp lịch trình sao cho thời gian tham quan địa điểm được trùng khớp với thời gian mở cửa.
+Ta có thể xét đến hướng giải quyết cho một bài toán tương tự đó là Time-Dependent Traveling Salesman Problem (TDTSP). Mục tiêu của bài toán TDTSP là tìm ra một chu trình Hamilton (đi qua tất cả các thành phố một lần) với chi phí nhỏ nhất, trong đó chi phí là tổng thời gian để đi từ thành phố này đến thành phố khác và chi phí để di chuyển có thể thay đổi theo thời gian. Có thể thấy bài toán TDTSP cũng tương tự với yêu cầu sắp xếp lịch trình cho mỗi ngày của ứng dụng, và một số giải thuật được hướng tới để giải quyết:
+Chu trình Hamilton: Với ý tưởng lên một lịch trình đi qua các điểm thì giải thuật đơn giản và dễ tiếp cận nhất là Hamilton. Tuy nhiên bài toán đặt ra cần tìm đường đi có tổng chi phí di chuyển ngắn nhất và thời gian đến mọi địa điểm cần đúng vào thời gian mở cửa (hay thời gian và thứ tự đến các địa điểm sẽ ảnh hưởng đến tổng chi phí của lịch trình) thì giải thuật hamilton đơn giản không thể đáp ứng đủ yêu cầu của nhóm.
+Permutations: Phương pháp đơn giản và thiếu hiệu quả nhất đó là thử tất cả các tổ hợp và tìm ra phương pháp hợp lý nhất, tuy nhiên với lịch trình một ngày có tối đa 8 địa điểm thì độ phức tạp thuật toán lên đến khoảng O(n!) thì máy tính phải thực hiện đến 40320 lần, và cài đặt thực tế nhóm cũng nhận thấy thời gian khi chạy mất nhiều hơn so với giải thuật khác.
+Thuật toán Branch-and-Price (B&P): Đây là phương pháp cải tiến của Permutations, được lựa chọn chủ yếu khi giải quyết các bài toán TSP (Traveling Salesman Problem) và các biến thể, trong đó các ở các tổ hợp có kết quả không thỏa sẽ được chặn và cắt trước, tuy nhiên trong trường hợp xấu nhất thì độ phức tạp vẫn sẽ ngang với Permutations, ngoài ra so với TSP thì dùng B&P giải quyết bài toán TDTSP cần phải xét đến chi phí sẽ thay đổi khi thứ tự và thời gian thăm các Node thay đổi sẽ khiến thuật toán này có độ phức tạp vượt xa so với Permutations.
+Thuật toán Genetic (Giải thuật di truyền): Đây là một thuật toán được lấy cảm hứng thì quá trình tiến hóa và chọn lọc tự nhiên. Thuật toán này thường được sử dụng để tìm ra giải pháp cho các bài toán tối ưu tổ hợp thông qua các giai đoạn mutation, crossover và selection. Các bước của genetic được thực hiện như sau:
+Khởi tạo quần thể: Tạo ra một tập hợp các lời giải khả thi bằng cách lựa chọn một số lượng lớn các chu trình Hamilton ngẫu nhiên.
+Chọn các cá thể tốt nhất: Sử dụng một hàm mục tiêu để đánh giá độ tốt của mỗi chu trình trong quần thể. Chọn ra một số lượng các chu trình tốt nhất để sử dụng làm cha mẹ cho thế hệ tiếp theo.
+Tạo thế hệ mới: Sử dụng các toán tử di truyền như lai ghép (crossover) và đột biến (mutation) để tạo ra các chu trình mới từ các chu trình cha mẹ được chọn ở bước trước đó.
+Đánh giá và chọn lọc: Sử dụng hàm mục tiêu để đánh giá độ tốt của các chu trình mới. Chọn ra một số lượng các chu trình tốt nhất để sử dụng làm cha mẹ cho thế hệ tiếp theo (selection).
+Lặp lại quá trình: Lặp lại các bước 3-4 cho đến khi đạt được tiêu chuẩn dừng hoặc đạt đến số lượng thế hệ tối đa.
+Trong TDTSP, hàm mục tiêu được sử dụng để đánh giá độ tốt của một chu trình bao gồm tổng thời gian đi lại và thời gian chờ đợi. Giải thuật này đột phá hơn các giải thuật đồ thị truyền thống ở những điểm như: phù hợp với nhiều bài toán tìm kiếm không gian, yêu cầu ít thông tin để tìm kiếm, có thể tính toán song song tăng tốc độ xử lý, có thể cho ra nhiều kết quả gần với tối ưu, có thể xử lý đồ thị lớn…
+Bảng 2.2.2 trình bày kết quả so sánh giữa các thuật toán Hamilton, Permutation, B&P và Genetic. Mặc dù Permutation và B&P có thể tạo được lịch trình với thời gian di chuyển giữa các địa điểm nhỏ nhất và thời điểm tham quan hợp lý nhưng thời gian lập lịch không tốt. Trong khi đó thuật toán Genetic tìm ra được lịch trình phù hợp về mặt thời gian và thời gian sắp xếp đạt hiệu quả cao.
+[TABLE]
+Khả năng || Hamilton || Permutation || B&P || Genetic
+Tìm ra thứ tự tham quan || Có || Có || Có || Có
+Cho ra thời gian di chuyển nhỏ nhất || Không || Có || Có || Có
+Đáp ứng thời gian mở cửa của địa điểm || Không || Có || Có || Có
+Thời gian thực hiện || Nhanh || Trung Bình || Chậm || Nhanh
+[/TABLE]
+Bảng 2.2.2 - So sánh Hamilton, Permutation, B&P và Genetic
+Chương 3:ỨNG DỤNG “GỢI Ý LỊCH TRÌNHCHO NGƯỜI DU LỊCH TỰ TÚC”TRIP PACKAGE
+Thuật toán gợi ý lịch trình
+Dựa vào kết quả so sánh ở phần 2.2, hệ thống gợi ý lịch trình được thiết kế dựa trên hai phương pháp chính là: (a) Thuật toán k-means dùng để phân cụm các địa điểm dựa trên số ngày du lịch; (b) Thuật toán GA (Genetic Algorithm) dùng để tối ưu hóa lịch trình (sắp xếp thứ tự tham quan các địa điểm trong ngày cho phù hợp). Trong đó, thuật toán GA sẽ sử dụng một số hàm được lập trình riêng để xử lý cho bài toán TTDP, dựa trên gợi ý từ bài nghiên cứu về Phát triển hệ thống gợi ý lịch trình [6]. Hệ thống sẽ lập kế hoạch du lịch cho nhiều ngày dựa vào các thông tin mà người dùng đã cung cấp: thành phố du lịch; số ngày du lịch; trải nghiệm yêu thích (tôn giáo, lịch sử, du lịch sinh thái, …); địa điểm muốn có trong lịch trình dựa theo thành phố du lịch đã chọn.
+Hình 3.1.1 - Quy trình hoạt động của Hệ thống gợi ý lịch trìnhHệ thống gợi ý lịch trình gồm ba module chính (xem Hình 3.1.1): Module I đóng vai trò tìm tập địa điểm cần tham quan cho lịch trình; Module II phân chia tập địa điểm vào các ngày du lịch (thuật toán k-means); và Module III sẽ sắp xếp các địa điểm du lịch trong ngày (thuật toán GA).
+Module I: Tạo tập địa điểm du lịch cần tham quan trong lịch trình.
+Quy trình được thực hiện theo các bước sau: (a) Lọc tập dữ liệu các địa điểm thuộc thành phố du lịch được chọn; (b) Lọc tập dữ liệu dựa theo thể loại (trải nghiệm yêu thích) và các địa điểm muốn có trong lịch trình; (c) Lọc tập dữ liệu dựa trên score (điểm số của mỗi địa điểm) dựa trên công thức 3.1.1. Điểm số của mỗi địa điểm sẽ phản ánh độ phổ biến của địa điểm đó, độ phổ biến được tính toán dựa trên rating và số lượt đánh giá.
+[TABLE]
+score = rating + log2(total reviews +1) || (3.1.1)
+[/TABLE]
+Trong đó, hàm log2 được sử dụng để thực hiện thu nhỏ miền giá trị của số lượt đánh giá địa điểm do có miền giá trị của lượt đánh giá khá cao (>1000). Điều này có thể làm cho giá trị của số lượt đánh giá lấn át giá trị của rating trong tính toán score (rating có miền giá trị nhỏ từ 1 đến 5), làm cho độ quan trọng của giá trị rating bị giảm xuống trong khi rating có độ quan trọng nhiều hơn lượt đánh giá. [7][8]
+Module II: Phân chia tập địa điểm vào các ngày trong lịch trình
+Tập địa điểm tham quan của cả lịch trình (kết quả có được từ module I) sẽ bao gồm hai phần ba địa điểm nằm trong các thể loại được chọn và một phần ba còn lại sẽ gồm các địa điểm thuộc các thể loại khác, nhằm tạo độ đa dạng cho lịch trình. Từ tập địa điểm này, tiến hành phân chia tập địa điểm vào từng ngày du lịch.
+Nếu số ngày du lịch là một: Chọn ra 5 địa điểm có score cao nhất và khoảng cách gần nhau nhất (được tính theo khoảng cách Euclid). Không cần thực hiện k-means cho trường hợp này do thời gian du lịch chỉ có một ngày nên không cần chia tập địa điểm thành nhiều ngày khác nhau. Ngoài ra, do thời gian du lịch có giới hạn nên các địa điểm cần phải gần nhau để tối ưu hóa thời gian di chuyển.
+Nếu số ngày du lịch lớn hơn 1: Theo tham khảo từ các tour du lịch trong nước, đa phần các tour có tối đa 5 địa điểm (không tính các địa điểm ăn sáng, ăn trưa, ăn tối) cho một ngày tham quan của khách du lịch, do đó, nhóm sẽ chọn ra tối đa 5 địa điểm cho mỗi ngày. Sử dụng k-means để phân các địa điểm vào từng ngày trong lịch trình. Lưu ý rằng bước này chỉ áp dụng khi số ngày du lịch lớn hơn một. Số cụm (cluster) được sử dụng trong k-means sẽ bằng số ngày du lịch của lịch trình. K-means sẽ tiến hành phân cụm dựa trên khoảng cách địa lý của các địa điểm (kinh độ và vĩ độ), khoảng cách này được tính toán dựa trên khoảng cách Euclid.
+Thực hiện chọn nhà hàng ăn trưa cho mỗi ngày: Nhà hàng ăn trưa phù hợp với từng ngày được chọn lựa dựa theo các tiêu chí: (a) Chọn các nhà hàng trong vòng bán kính của cluster đó; (b) Lọc các nhà hàng có thời gian hoạt động nằm trong khoảng từ 11 giờ tới 15 giờ (do thời gian ăn trưa mặc định của lịch trình là từ 12 giờ đến 13 giờ, tuy nhiên thời gian tham quan thực tế có thể khiến cho thời điểm ăn trưa bị sớm hoặc trễ hơn so với dự kiến nên cần chọn những nhà hàng có khoảng thời gian mở cửa phù hợp);  (c) Từ tập dữ liệu trên, chọn ra nhà hàng có score cao nhất.
+Hình 3.1.2 - Các địa điểm tham quan được chọn sau khi áp dụng Module I
+Hình 3.1.2 cho thấy các địa điểm sau khi được chọn lọc từ Module I và Hình 3.1.3 là kết quả sau khi áp dụng Module II (k-means) để phân cụm. Kết quả cho thấy các địa điểm được phân vào 3 cụm tương ứng với 3 ngày của lịch trình: màu hồng (ngày 1); màu xanh (ngày 2) và màu đỏ (ngày 3).
+Hình 3.1.3 – Các địa điểm được chia vào 3 ngày du lịch sau khi áp dụng Module II (phân cụm bằng k-means với k=3)
+Module III: Sử dụng GA để cho ra lịch trình cuối cùng đã được sắp xếp
+Sau khi đã có đầy đủ tập địa điểm tham quan và nhà hàng cho mỗi ngày, ta sẽ sử dụng Goong api để lấy thời gian và khoảng cách di chuyển giữa các địa điểm với nhau.
+Thuật toán GA nhận các thông tin chính sau: (a) Tập địa điểm tương ứng cho mỗi cluster; (b) Tập nhà hàng ăn trưa tương ứng với mỗi cluster; (c) Ma trận thời gian di chuyển giữa các địa điểm. Các bước được thực hiện chi tiết như Hình 3.1.4.
+Hình 3.1.4 – Các bước thực hiện của thuật toán Genetic
+Bước 1: Tạo tập các hoán vị vị trí của các địa điểm trong cluster
+Mỗi cluster sẽ được biểu diễn dưới dạng một dataframe (xem Hình 3.1.5), trong đó chứa tất cả thông tin của các địa điểm trong cluster đó.
+Hình 3.1.5 - Dataframe của một cluster
+Mỗi địa điểm được đại diện bởi chỉ số (Index) trong dataframe. Thực hiện tạo tập hoán vị các chỉ số đó. Tập hoán vị này tương ứng với tập hợp các cách sắp xếp vị trí của các địa điểm trong một cluster, được gọi là Population. Mỗi cách sắp xếp vị trí của các địa điểm trong cluster sẽ tương ứng với một nhiễm sắc thể (Chromosome) trong Population đó (xem Hình 3.1.6)
+Hình 3.1.6 - Hai nhiễm sắc thể tương ứng với hai cách sắp xếp lịch trình
+Bước 2: Tính toán độ phù hợp (Fitness) cho mỗi chromosome
+Hàm Fitness đóng vai trò là một hàm mục tiêu để đánh giá chất lượng mỗi nhiễm sắc thể của GA. Hàm fitness được thiết kế để đánh giá sự chênh lệch giữa thời gian mặc định của lịch trình so với thời gian du lịch thực tế, nhờ đó cho thấy được nhiễm sắc thể tốt nhất (lịch trình tốt nhất) trong tất cả các giải pháp có thể tồn tại (Population).
+Hàm sẽ tính toán tổng thời gian du khách cần để tham quan hết các địa điểm trong ngày và sau đó so sánh nó với thời gian mặc định của lịch trình (từ 8h tới 18h), được tóm tắt trong công thức 3.1.2.
+[TABLE]
+Fitness = (Thời gian bắt đầu mặc định - Thời gian kết thúc mặc định) | Tổng thời gian lưu trú tại mỗi POI | Tổng thời gian di chuyễn giữa các POI | Thời gian ăn trưa | Thời gian trùng nhau | Tổng thời gian phạt || (3.1.2)
+[/TABLE]
+Trong đó:
+Tổng thời gian phạt có nghĩa là thời gian du khách phải chờ một địa điểm mở cửa hoặc thời điểm kết thúc tham quan lớn hơn thời điểm đóng cửa của địa điểm đó.
+Thời gian trùng nhau nghĩa là thời gian mà thời điểm tham quan lấn sang thời điểm ăn trưa. Ví dụ thời gian ăn trưa bắt đầu từ 13:00 đến 14:00, và nếu thời điểm kết thúc của địa điểm tham quan là 13:20 (nghĩa là bắt đầu ăn trưa sau 13:20), thì Thời gian trùng nhau sẽ là 20 phút + (thời gian di chuyển giữa điểm tham quan và điểm ăn trưa).
+Nhiễm sắc thể nào có giá trị fitness nhỏ nhất thì là cách sắp xếp phù hợp nhất do tổng thời gian tham quan lấn sang thời gian ăn trưa, thời gian chờ và thời gian di chuyển sẽ nhỏ nhất.
+Hàm Fitness được cài đặt chi tiết như sau:
+Fitness Function
+[TABLE]
+getFitness(chromosome, cluster, timeMatrix, lunch_poi): | availableTime = tourScheduleEnd - tourScheduleStart | lengthOfRoute = chromosome.length | i = 0 | found_lunch = 0 | currentTime = tourScheduleStart | investedTime = travelTime = poi_to_lunch_time =  0 | currentHour = currentTime + travelTime | time_penalty = total_penalty_invaded = total_travel = 0 | while i < lengthOfRoute: | currentPOI = cluster[chromosome[i]] | visitTime = currentPOI.Duration | if found_lunch == 0: | preHour = currentTime | preToLunchHour = poi_to_lunch_time | poi_to_lunch_time,lunch_to_poi_time = getTravelTime(lunch_poi,currentPOI) | durationOfVisit, currentTime, check, time_penalty, invaded_time = run_event(currentHour, visitTime,poi_to_lunch_time,preHour, | preToLunchHour,lunch_to_poi_time,found_lunch, currentPOI, lunch_poi) | # Thời gian tham quan không trùng thời gian ăn trưa | if check == 0: | durationTravel = travelTime | total_travel = total_travel + travelTime | if i != lengthOfRoute - 1: | travelTime = timeMatrix[chromosome[i]][chromosome[i + 1]] | time_penalty = calculateTimePenalties(currentPOI,currentHour, currentTime) | # Thời điểm ăn trưa diễn ra trước thời điểm tham quan | elif check == 1: | if i != lengthOfRoute - 1: | travelTime = timeMatrix[chromosome[i]][chromosome[i + 1]] | total_travel = total_travel + preToLunchHour + lunch_to_poi_time | durationTravel = 0 | lunch_index = i - 1 | found_lunch = 1 | # Thời điểm tham quan diễn ra trước thời điểm ăn trưa | elif check == 2: | total_travel = total_travel + travelTime + poi_to_lunch_time | if i != lengthOfRoute - 1: | travelTime = timeMatrix[lengthOfRoute][chromosome[i + 1]] | durationTravel = 0 | found_lunch = 1 | lunch_index = i | currentHour = currentTime + travelTime | investedTime = investedTime + durationOfVisit + durationTravel +  time_penalty | i = i + 1 | total_penalty_invaded = total_penalty_invaded + time_penalty | if currentTime > tourScheduleEnd: | investedTime = investedTime + (currentTime - tourScheduleEnd) | total_penalty_invaded = total_penalty_invaded +(currentTime-tourScheduleEnd) | res = abs(availableTime - investedTime) | return res, total_travel, total_penalty_invaded
+[/TABLE]
+Run Event Function: Tính toán thời gian tham quan tại một địa điểm và thời gian ăn trưa.
+[TABLE]
+run_event(currentHour, eventTime, poi_to_lunch_time,preHour, preToLunchHour, lunch_to_poi_time, found_lunch, current_poi, lunch_poi): | totalTime = eventTime | nextHour = currentHour + eventTime | check = 0 | time_penalties =0 | invadedTime = 0 | # Nếu giờ ăn trưa rơi vào giữa thời gian tham quan | if (found_lunch == 0) and ((currentHour <= startOfLunch <= nextHour + poi_to_lunch_time)or (currentHour > startOfLunch)): | # Xét thời gian ăn sớm hay thời gian ăn trễ nhỏ hơn | if (abs(startOfLunch - (preHour + preToLunchHour))) < (abs(nextHour + poi_to_lunch_time - startOfLunch)): | # Thời điểm ăn trưa diễn ra trước thời điểm tham quan | invadedTime = startOfLunch - (preHour + preToLunchHour) | currentHour = preHour + preToLunchHour + lunchTime + lunch_to_poi_time + eventTime | totalTime = preToLunchHour + lunchTime + lunch_to_poi_time + eventTime + invadedTime | check = 1 | # lunch penalty | time_penalties += calculateTimePenalties(lunch_poi, preHour + preToLunchHour, preHour + preToLunchHour + lunchTime) | # place penalty | time_penalties += calculateTimePenalties(current_poi, preHour + preToLunchHour + lunchTime + lunch_to_poi_time, currentHour) | else: | # Thời điểm tham quan diễn ra trước thời điểm ăn trưa | # place penalty | time_penalties += calculateTimePenalties(current_poi, currentHour, nextHour) | invadedTime = nextHour + poi_to_lunch_time - startOfLunch | # Thời điểm chơi rồi ăn xong | currentHour = nextHour + poi_to_lunch_time + lunchTime | totalTime = totalTime + poi_to_lunch_time + lunchTime + invadedTime | check = 2 | # lunch penalty | time_penalties += calculateTimePenalties(lunch_poi, nextHour + poi_to_lunch_time, currentHour) | else: | currentHour = nextHour | return totalTime, currentHour, check, time_penalties, invadedTime
+[/TABLE]
+Bước 3: Giai đoạn chọn lọc gen (Selection): Chọn ra 2 cặp cha mẹ nhiễm sắc thể có chỉ số fitness nhỏ nhất bằng phương pháp Roulette Wheel selection.
+Đây là giai đoạn quan trọng trong thuật toán GA bởi vì nó có ảnh hưởng rất lớn đến độ hội tụ của kết quả cuối cùng [9]. Giai đoạn chọn lọc gen sẽ chịu trách nhiệm trong việc chọn lựa nhiễm sắc thể cha mẹ để có thể sản sinh ra đời con có đặc điểm giống với đặc điểm của cha mẹ chúng. Phương pháp lựa chọn Roulette Wheel sẽ hoạt động với nguyên tắc: nhiễm sắc thể có độ phù hợp càng cao thì xác suất được lựa chọn càng cao, có nghĩa là lịch trình nào có chỉ số fitness càng nhỏ sẽ có xác suất được chọn càng lớn.
+Bước 4: Giai đoạn bắt chéo gen (Crossover): Sử dụng kĩ thuật bắt chéo một phần (Partially mapped crossover) để tái tổ hợp hai nhiễm sắc thể để sinh ra thế hệ mới.
+Hình 3.1.7 minh họa cho quá trình bắt chéo gen bằng phương pháp bắt chéo một phần. Qúa trình bắt đầu bằng việc chọn ngẫu nhiên hai điểm cắt trên hai nhiễm sắc thể, sau đó hoán đổi hai đoạn được cắt với nhau. Các vị trí nằm ngoài đoạn bị hoán đổi sẽ được chỉnh sửa cho phù hợp để không gây ra sự trùng lặp trong về gen (Index/địa điểm) trong nhiễm sắc thể (lịch trình) đó.
+Hình 3.1.7 - Quá trình bắt chéo gen
+Bước 5: Giai đoạn đột biến gen (Mutation): Đổi vị trí của hai địa điểm bất kì trong nhiễm sắc thể. Giai đoạn này đóng vai trò trong việc duy trì tính đa dạng cho quần thể (Population) và khám phá ra giải pháp mới nằm ngoài không gian lời giải.
+Lưu ý: Các bước 2, 3, 4, 5 được lặp lại 10 lần (Vì các giá trị fitness có xu hướng giảm và hội tụ về một giá trị fitness nhỏ nhất khi lặp lại đến hết lần thứ 10, nhưng sau đó sẽ tăng trở lại trong khi kết quả yêu cầu nhiễm sắc thể có fitness nhỏ nhất).
+Bước 6: Chọn ra nhiễm sắc thể có chỉ số fitness thấp nhất: nghĩa là cách sắp xếp vị trí các địa điểm có độ phù hợp nhất với thời gian của lịch trình.
+Bảng 3.1.1 là ví dụ về kết quả của hệ thống gợi ý lịch trình tự động. Kết quả cho ra lịch trình du lịch chi tiết trong 3 ngày tại Thành phố Hồ Chí Minh.
+[TABLE]
+Thời gian || Sự kiện
+Ngày 1
+07:30 - 09:30 || Dinh Độc Lập
+09:30 - 09:33 || Di chuyển
+09:33 - 11:31 || Chợ Bến Thành
+11:31 - 11:35 || Di chuyển
+11:35 - 12:35 || Chài Village (Ăn trưa)
+12:35 - 12:41 || Di chuyển
+12:41 - 13:41 || Nhà thờ Đức Bà
+13:41 - 13:47 || Di chuyển
+13:47 - 15:47 || Bảo tàng Chứng tích chiến tranh
+Ngày 2
+09:00 - 12:00 || Khu di tích Lịch sử Địa đạo Củ Chi
+12:00 - 12:46 || Di chuyển
+12:46 - 13:46 || Bún mọc Bảo Phúc (Ăn trưa)
+13:46 - 16:20 || Di chuyển
+16:20 - 17:20 || Chùa Hoằng Pháp
+Ngày 3
+07:00 - 09:00 || Đường sách Nguyễn Văn Bình
+09:00 - 09:13 || Di chuyển
+09:13 - 11:13 || Vinhomes Central Park
+11:13 - 11:31 || Di chuyển
+11:31 - 12:31 || Sushi Tei (Ăn trưa)
+12:31 - 12:41 || Di chuyển
+12:41 - 15:41 || Thảo Cầm Viên
+15:41 - 16:33 || Di chuyển
+16:33 - 17:33 || Chùa Bửu Long
+[/TABLE]
+Bảng 3.1.1 - Lịch trình du lịch 3 ngày tại Thành phố Hồ Chí Minh
+Kiến trúc
+Hình 3.2.1 - Sơ đồ kiến trúc
+(Lưu ý: Hình ảnh chỉ thể hiện kiến trúc của chức năng tạo và chỉnh sửa lịch trình, các tính năng khác cũng có cấu trúc tương tự)
+Hình 3.2.1 trình bày sơ đồ kiến trúc của chức năng tạo và chỉnh sửa lịch trình. Kiến trúc bao gồm các thành phần chính sau:
+Flutter (Client): Trong Client, View sử dụng các Widget để hiển thị dữ liệu và tương tác người dùng. BLOC (Business Logic Components) được sử dụng để quản lý các logic nghiệp vụ và phân phối các sự kiện. Các BLOC cũng nhận các kết quả được trả về từ máy chủ và phản hồi cho sự kiện của người dùng.
+Python + Render (Server): Server sẽ tiếp nhận và xử lý các yêu cầu được gửi từ ứng dụng khách. Đối với chức năng tạo lịch trình, server sẽ gọi API (Application Programming Interface) đến Goong.io để lấy thông tin về khoảng cách và thời gian di chuyển giữa các địa điểm. Đồng thời, server sẽ thực hiện các thao tác truy vấn, cập nhật, xóa, thêm mới vào Cơ sở dữ liệu đối với các yêu cầu riêng biệt được nhận.
+Goong.io (Third-party API): Goong.io cung cấp các API cho việc lấy các thông tin về khoảng cách và thời gian di chuyển giữa các địa điểm.
+PostgreSQL + Amazon Web Services (Database): Cơ sở dữ liệu lưu trữ các thông tin về người dùng, địa điểm, các lịch trình được tạo và các bộ sưu tập.
+Thiết kế các thành phần
+Dữ liệu
+Dữ liệu về địa điểm, đánh giá để phục vụ việc gợi ý lịch trình của ứng dụng sẽ được lấy từ nguồn Foody.vn. Về phần hình ảnh hiển thị cho các địa điểm sẽ được lấy từ Google Search Image và lưu trữ bằng URL.
+Sơ đồ use-case
+Hình 3.3.2.1 trình bày sơ đồ Use-case của hệ thống gợi ý lịch trình.
+Hình 3.3.2.1 - Sơ đồ use-case
+Tìm kiếm địa điểm và lịch trình
+[TABLE]
+Tên | use-case || Tìm kiếm địa điểm và lịch trình
+Tóm tắt || Cho phép người dùng tìm kiếm địa điểm và lịch trình bằng cách nhập từ khóa.
+Tác nhân || Người dùng
+Use-case liên quan || Extends: Lọc địa điểm | Extends: Xem chi tiết địa điểm | Extends: Xem chi tiết lịch trình và chỉ đường
+Điều kiện tiên quyết || Không
+Hậu điều kiện || Không
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Nhấn icon “Tìm kiếm” từ thanh điều hướng
+2. Điều hướng đến màn hình “Tìm kiếm 1” chứa thanh tìm kiếm và 6 danh mục.
+3. Nhấn vào thanh tìm kiếm
+4. Điều hướng đến màn hình “Tìm kiếm 2”
+5. Nhập từ khóa
+6. Nhấn Enter
+7. Hiển thị kết quả tìm kiếm
+Dòng sự kiện phụ || A2: Nếu người dùng nhấn vào một trong sáu danh mục, bỏ qua bước 3. Kết quả tìm kiếm hiển thị ở bước 7 chỉ chứa các địa điểm thuộc danh mục đã chọn. | A5: Nếu người dùng nhấn chọn “Tìm kiếm lịch trình”, kết quả tìm kiếm hiển thị ở bước 7 là lịch trình. | A6: Nếu từ khóa người dùng nhập không có trong Cơ sở dữ liệu, thông báo không có kết quả tìm kiếm phù hợp, kết thúc use-case. | A6: Nếu người dùng nhập khoảng trắng hoặc không nhập, kết quả tìm kiếm hiển thị ở bước 7 là các địa điểm hàng đầu (có số sao và lượng đánh giá nhiều). | A6: Nếu người dùng không nhấn Enter, kết thúc use-case. | A7: Nếu người dùng muốn lọc kết quả tìm kiếm theo tiêu chí, thực hiện use-case ‘Lọc địa điểm’. | A7: Nếu người dùng xem chi tiết địa điểm/lịch trình, thực hiện use-case ‘Xem chi tiết địa điểm’/‘Xem chi tiết lịch trình và chỉ đường’.
+[/TABLE]
+Tạo mới lịch trình
+[TABLE]
+Tên | use-case || Tạo mới lịch trình
+Tóm tắt || Người dùng tạo mới lịch trình dựa vào các tiêu chí
+Tác nhân || Người dùng
+Use-case liên quan || Extends: Tìm kiếm địa điểm | Extends: Đăng nhập | Extends: Xem thông tin, chi tiết lịch trình và chỉ đường
+Điều kiện tiên quyết || Người dùng đăng nhập thành công
+Hậu điều kiện || Một lịch trình mới được tạo cho người dùng
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Nhấn chọn thêm một lịch trình mới
+2. Điều hướng đến màn hình “Tạo lịch trình mới”
+3. Chọn điểm đến (thành phố)
+4. Chọn các tiêu chí khác như ngày đi, ngày về, trải nghiệm du lịch yêu thích, đặt chế độ công khai/riêng tư cho lịch trình, tên của lịch trình
+5. Thêm vào lịch trình địa điểm du lịch tùy chọn
+6. Hiển thị lựa chọn cho phép thêm địa điểm từ “Bộ sưu tập của bạn” hoặc “Thanh tìm kiếm”
+7. Nhấn chọn “Bộ sưu tập của bạn”
+8. Hiển thị danh sách địa điểm yêu thích gồm các bộ sưu tập
+9. Nhập từ khóa tìm kiếm địa điểm trong các bộ sưu tập
+10. Hiển thị danh sách địa điểm phù hợp với yêu cầu
+11. Nhấn vào dấu “+” để thêm địa điểm vào danh sách địa điểm du lịch tùy chọn
+12. Quay trở về màn hình tạo lịch trình, cập nhật vào danh sách địa điểm du lịch tùy chọn địa điểm vừa được thêm
+13. Nhấn chọn “Bắt đầu hành trình nào”
+14. Tạo lịch trình tự động dựa vào các thông tin đã nhập
+15. Điều hướng đến use-case “Xem thông tin, chi tiết lịch trình và chỉ đường”
+Dòng sự kiện phụ || A4: Nếu người dùng chọn số ngày cho lịch trình vượt quá 7 ngày thì hệ thống hiển thị hộp thoại thông báo số ngày vượt quá 7 ngày và yêu cầu chọn lại. Quay lại bước 4. | A5: Nếu người dùng không chọn thêm địa điểm du lịch tùy chọn thì bỏ qua các bước từ 6-12, đến bước 13. | A5.1: Nếu người dùng chọn thêm địa điểm du lịch tùy chọn: | A5.1.1.1: Nếu người chưa đăng nhập thì hiện hộp thoại bạn chưa đăng nhập để yêu cầu đăng nhập, người dùng lựa chọn “Đăng nhập” thì điều hướng sang use-case “Đăng nhập”. | A5.1.1.2: Nếu người dùng đã đăng nhập nhưng chưa chọn điểm đến thì hiển thị hộp thoại yêu cầu chọn điểm đến. | A5.1.2: Quay lại bước 5. | A7: Nếu người dùng chọn thêm địa điểm từ “Thanh tìm kiếm” thì điều hướng đến use-case “Tìm kiếm địa điểm”. | A12.1: Nếu người dùng tiếp tục chọn thêm địa điểm vào danh sách địa điểm du lịch tùy chọn | A12.1.1: nếu danh sách đã thêm có số lượng nhỏ hơn 6 địa điểm, hệ thống hiển thị nút thêm, quay lại bước 5. | A12.1.2: Nếu danh sách đã thêm có số lượng bằng 6 địa điểm, hệ thống không hiển thị nút thêm địa điểm. | A12.2: Nếu người dùng bấm nút “x” xóa địa điểm trong danh sách địa điểm du lịch tùy chọn, cập nhật danh sách địa điểm, quay lại bước 12. | A13: | A13.1.1: Nếu người chưa đăng nhập thì hiện hộp thoại bạn chưa đăng nhập để yêu cầu đăng nhập, người dùng lựa chọn “Đăng nhập” thì điều hướng sang use-case “Đăng nhập”. | A13.1.2: Nếu người dùng đã đăng nhập nhưng chưa chọn điểm đến thì hiển thị hộp thoại yêu cầu chọn điểm đến. | A13.2: Quay lại bước 13.
+[/TABLE]
+Xem thông tin, chi tiết lịch trình và chỉ đường
+[TABLE]
+Tên | use-case || Xem thông tin, chi tiết lịch trình và chỉ đường
+Tóm tắt || Người dùng xem các thông tin của lịch trình, truy cập tính năng chỉ đường giữa hai địa điểm bên trong chi tiết lịch trình
+Tác nhân || Người dùng
+Use-case liên quan || Extends: Cá nhân hóa lịch trình | Extends: Chỉnh sửa thông tin tổng quan lịch trình | Extends: Hủy yêu thích/yêu thích lịch trình | Extends: Xem chi tiết địa điểm | Extends: Đăng nhập
+Điều kiện tiên quyết || Không
+Hậu điều kiện || Hiển thị thông tin lịch trình
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Hệ thống hiển thị thông tin tổng quan lịch trình bao gồm tên, thời gian, số lượt chỉnh sửa và yêu thích, thông tin người tạo lịch trình, sơ lược lịch trình…
+2. Người dùng bấm xem chi tiết lịch trình
+3. Hệ thống hiển thị các thông tin chi tiết bao gồm lịch trình và thứ tự các địa điểm tham quan, thời gian tham quan chi tiết, thời gian di chuyển
+4. Người dùng bấm xem địa điểm bên trong lịch trình
+5. Thực hiện use-case “Xem chi tiết địa điểm”
+6. Người dùng bấm xem chỉ đường giữa hai địa điểm trong lịch trình
+7. Hệ thống hiển thị màn hình chỉ đường
+8. Người dùng bấm nút quay lại màn hình chi tiết lịch trình
+9. Hệ thống quay lại hiển thị thông tin chi tiết lịch trình
+10. Người dùng bấm nút quay lại màn hình thông tin tổng quan lịch trình
+11. Hệ thống quay lại màn hình hiển thị tổng quan thông tin lịch trình
+12. Người dùng bấm nút chỉnh sửa/cá nhân hóa lịch trình
+13. Thực hiện use-case “Cá nhân hóa lịch trình”.
+14. Người dùng bấm yêu thích lịch trình
+15. Thực hiện use-case “Yêu thích/hủy yêu thích lịch trình”
+16. Người dùng bấm chỉnh sửa thông tin tổng quan lịch trình
+17. Thực hiện use-case “Chỉnh sửa thông tin tổng quan lịch trình”
+Dòng sự kiện phụ || A2: Nếu người dùng không thực hiện bước này thì bỏ qua bước 3-11, đến bước 12. | A4. Nếu người dùng không thực hiện bước này, bỏ qua bước 5, thực hiện bước 6. | A6: Nếu người dùng không thực hiện bước này, bỏ qua bước 7-8, thực hiện bước 9. | A8: Nếu người dùng không thực hiện bước này, quay lại bước 7. | A10: Nếu người dùng không thực hiện bước này, quay lại bước 3. | A12: Nếu người dùng không thực hiện bước này, bỏ qua bước 13, tới bước 14. | A13: Nếu người chưa đăng nhập thì hiện hộp thoại bạn chưa đăng nhập để yêu cầu đăng nhập, người dùng lựa chọn “Đăng nhập” thì điều hướng sang use-case “Đăng nhập”. | A14: Nếu người dùng không thực hiện bước này, bỏ qua bước 15, thực hiện bước 16. | A15: Nếu người chưa đăng nhập thì hiện hộp thoại bạn chưa đăng nhập để yêu cầu đăng nhập, người dùng lựa chọn “Đăng nhập” thì điều hướng sang use-case “Đăng nhập”. | A.16.1: Nếu người dùng không đăng nhập và không phải là người dùng tạo ra lịch trình này, kết thúc use-case. | A.16.2: Nếu người dùng đã đăng nhập và là người dùng tạo ra lịch trình đang hiển thị nhưng không thực hiện bước này, kết thúc use-case.
+[/TABLE]
+Cá nhân hóa lịch trình
+[TABLE]
+Tên | use-case || Cá nhân hóa lịch trình
+Tóm tắt || Cho phép người dùng chỉnh sửa lịch trình của bản thân hoặc của người dùng khác.
+Tác nhân || Người dùng
+Use-case liên quan || Extends: Tìm kiếm địa điểm
+Điều kiện tiên quyết || Người dùng đăng nhập thành công
+Hậu điều kiện || Lịch trình được chỉnh sửa và lưu mới
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Người dùng bấm chọn lịch trình muốn thay đổi (có thể chọn lịch trình của bản thân hoặc của người dùng khác).
+2. Hiển thị lịch trình.
+3. Người dùng chọn ký hiệu chỉnh sửa kế bên “Lịch trình chi tiết”.
+4. Hiển thị lịch trình chi tiết qua từng ngày.
+5. Người dùng chọn thêm “+” tại góc phải trên màn hình.
+6. Hiển thị lưu ý về việc thêm địa điểm vào lịch trình có thể làm thay đổi thứ tự và số lượng các điểm tham quan của từng ngày.
+7. Nhấn chọn “Tiếp tục”.
+8. Hiển thị lựa chọn thêm địa điểm từ bộ sưu tập hoặc thanh tìm kiếm.
+9. Chọn “Bộ sưu tập của bạn”.
+10. Hiển thị các bộ sưu tập địa điểm của người dùng.
+11. Nhấn chọn “+” ở địa điểm muốn thêm vào lịch trình.
+12. Hiển thị màn hình chi tiết lịch trình với danh sách các địa điểm được thêm vào bên dưới màn hình.
+13. Nhấn chọn “Lưu thay đổi”.
+14. Hiển thị lưu ý về việc thêm địa điểm vào lịch trình có thể làm thay đổi thứ tự và số lượng các điểm tham quan của từng ngày.
+15. Nhấn chọn “Tiếp tục”.
+16. Thực hiện sắp xếp lại lịch trình với những thay đổi đã thực hiện.
+17. Hiển thị lịch trình sau khi thay đổi.
+Dòng sự kiện phụ || A5: Người dùng có thể nhấn chọn “x” ở địa điểm muốn xóa khỏi lịch trình. Hệ thống sẽ hiển thị thông báo cho phép người dùng hoàn tác việc xóa địa điểm. | A5.1: Nếu người dùng nhấn chọn “Hoàn tác”, địa điểm vừa xóa sẽ được thêm lại vào lịch trình. | A5.2: Nếu người dùng không chọn “Hoàn tác” thì địa điểm sẽ được xóa hoàn toàn khỏi lịch trình. | A7: Nếu người dùng nhấn “Hủy” thì quay lại màn hình trước. | A9: Nếu người dùng chọn “Thanh tìm kiếm”, thực hiện use-case ‘Tìm kiếm địa điểm và lịch trình’. Người dùng nhấn chọn “+” tại địa điểm muốn thêm vào lịch trình. | A11: Nếu địa điểm được chọn thêm vào đã có trong lịch trình, hệ thống sẽ hiển thị thông báo “Địa điểm đã có trong lịch trình”. | A15: Nếu người dùng nhấn “Hủy” thì quay lại màn hình trước.
+[/TABLE]
+Chỉnh sửa thông tin lịch trình
+[TABLE]
+Tên | use-case || Chỉnh sửa thông tin lịch trình
+Tóm tắt || Chỉnh sửa các thông tin tổng quan của lịch trình hoặc có thể xóa lịch trình
+Tác nhân || Người dùng
+Use-case liên quan
+Điều kiện tiên quyết || Không
+Hậu điều kiện || Thông tin lịch trình được cập nhật, nếu xóa lịch trình thì lịch trình sẽ được xóa
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Hệ thống hiển thị thông tin tổng quan lịch trình để người dùng chỉnh sửa bao gồm tên, thời gian du lịch, chế độ chia sẻ lịch trình
+2. Chỉnh tên lịch trình
+3. Chỉnh ngày đi du lịch
+4. Hệ thống hiển thị giao diện chọn ngày
+5. Người dùng bấm nút xác nhận
+6. Người dùng chỉnh chế độ “Chia sẻ lịch trình”
+7. Người dùng bấm “Xóa chuyến đi này”
+8. Hệ thống hiển thị hộp thoại nhắc nhở “Có muốn xóa vĩnh viễn”
+9. Người dùng chọn nút “Xóa”
+10. Hệ thống xóa lịch trình, kết thúc use-case, quay về use-case trước đó.
+Dòng sự kiện phụ || A2: Nếu người dùng chỉnh sửa tên không hợp lệ, hệ thống hiển thị cảnh báo và nút “Lưu thay đổi” sẽ không sáng lên, quay lại bước 1. | A5.0. Nếu người dùng chọn ngày du lịch không có số ngày khớp lịch trình ban đầu, hệ thống hiển thị hộp thoại cảnh báo, quay về bước 4. | A5.1 Nếu người dùng bấm tắt giao diện chỉnh ngày, thay đổi về ngày sẽ không được lưu, quay lại bước 1. | A7.1: Nếu người dùng chọn nút “Lưu thay đổi”, hệ thống lưu các chỉnh sửa người dùng đã thực hiện, kết thúc use-case, quay về use-case trước đó. | A7.2: Nếu người dùng chọn nút “X”, kết thúc use-case, quay lại use-case trước đó. | A9: Nếu người dùng chọn nút hủy, quay về bước 1.
+[/TABLE]
+* Đặc tả của các use-case còn lại sẽ được trình bày ở phần Phụ lục.
+Lược đồ cơ sở dữ liệu
+Hình 3.3.3.1 trình bày sơ đồ lược đồ cơ sở dữ liệu của ứng dụng.
+Hình 3.3.3.1 - Lược đồ cơ sở dữ liệu
+Lược đồ cơ sở dữ liệu gồm sáu bảng sau:
+USER_INFO: Mỗi dòng trong bảng USER_INFO là thể hiện của một người dùng, bao gồm mã người dùng là khóa chính, email, mật khẩu, tên hiển thị. Ngoài ra, danh sách lịch trình yêu thích và lịch trình đã tạo có nhu cầu truy xuất cao được lưu trữ ở dạng mảng.
+ITINERARY: Mỗi dòng trong bảng ITINERARY là thể hiện của một lịch trình, bao gồm mã lịch trình là khóa chính, tên, thành phố tham quan, ngày đi, ngày về, ngày tạo lịch trình, URL ảnh minh họa cho lịch trình, số lượng người dùng yêu thích lịch trình, người tạo lịch trình là khóa ngoại tham chiếu đến bảng USER_INFO. Vì số lượng địa điểm thuộc lịch trình khá nhiều (trung bình 4-5 điểm/ngày), danh sách địa điểm được lưu trữ ở dạng jsonb (khả dụng từ PostgreSQL 9.4) giúp truy xuất nhanh mà không cần join với bảng PLACE.
+PLACE: Mỗi dòng trong bảng PLACE là thể hiện của một địa điểm, bao gồm mã địa điểm là khóa chính, tên, mô tả, phân loại (Category, là một trong hai: điểm ăn hoặc điểm tham quan), loại địa điểm (Subcategory, có thể là nhà hàng cao cấp, quán chay, cafe,... đối với điểm ăn; di tích lịch sử, du lịch sinh thái,... đối với điểm tham quan) là khóa ngoại tham chiếu đến bảng PLACE TYPE, kinh độ, vĩ độ, địa chỉ, giá cao nhất, giá thấp nhất, số điện thoại, số sao (AvgRating, là số thực thuộc [1,5]), số lượng đánh giá, tổng lượt yêu thích, giờ mở cửa, giờ đóng cửa, tỉnh, thành phố trực thuộc, danh sách URL hình ảnh của địa điểm, danh sách người dùng yêu thích địa điểm. Trường Score phục vụ cho thuật toán và không được hiển thị trên ứng dụng.
+PLACE TYPE: Mỗi dòng trong bảng PLACE TYPE là thể hiện của một loại địa điểm có mã loại địa điểm là khóa chính, tên loại và thời gian tham quan ước tính.
+REVIEW: Mỗi dòng trong bảng REVIEW là thể hiện của một đánh giá địa điểm, với bộ ba mã địa điểm, loại đánh giá (là một trong hai: đánh giá của Foody hay của người dùng Trip Package), mã đánh giá là khóa chính. Các thông tin còn lại gồm nội dung đánh giá, số sao và mã người dùng đánh giá là khóa ngoại tham chiếu đến bảng USER_INFO.
+COLLECTION: Mỗi dòng trong bảng COLLECTION là thể hiện của một bộ sưu tập địa điểm, có mã bộ sưu tập là khóa chính. Các thông tin còn lại gồm tên, ngày cập nhật, danh sách địa điểm thuộc bộ sưu tập lưu trữ ở dạng mảng và mã người dùng là khóa ngoại tham chiếu đến bảng USER_INFO.
+Chương 4:CÀI ĐẶT VÀ ĐÁNH GIÁ
+Hướng dẫn cài đặt
+Lưu ý: Ứng dụng hiện tại chỉ hỗ trợ cài đặt trên các thiết bị điện tử sử dụng hệ điều hành Android. Người dùng không có thiết Android có thể tham khảo cách tạo máy ảo Android qua đường dẫn bên dưới:
+https://www.youtube.com/watch?v=GhuiNcOEv1A.
+Cách 1: Cài đặt từ kho ứng dụng Google Play
+(1) Từ thiết bị Android, người dùng truy cập vào Play Store; (2) Tìm kiếm ứng dụng với từ khóa “trip package”; (3) Nhấn chọn ứng dụng Trip Package; (4) Nhấn chọn “Install” tại trang thông tin của ứng dụng. (5) Ứng dụng sau khi cài đặt thành công sẽ có giao diện như Hình 4.1.1.
+Hình 4.1.1 - Hướng dẫn cài đặt ứng dụng từ Google Play Store
+Cách 2: Dựng ứng dụng từ source code đã nộp
+Ngoài cách tải ứng dụng từ Google Play Store, người dùng có thể cài đặt ứng dụng thông qua file .apk được nhóm dựng từ source code.
+Lưu ý: Thiết bị cần cấp phép cài đặt ứng dụng từ bên thứ ba (trong trường hợp này là Google Drive). Người dùng kiểm tra theo các bước sau: Truy cập Settings → Apps → Special app access → Install unknown apps → Drive và bật trường “Allow from this source” (xem Hình 4.1.2).
+Hình 4.1.2 - Hướng dẫn bật cho phép cài đặt ứng dụng từ bên thứ ba
+Người dùng sử dụng thiết bị android muốn cài đặt và truy cập vào đường dẫn sau để tải file .apk về thiết bị tại đường dẫn sau.
+https://drive.google.com/file/d/1huJOb8eUcB-XjAhiSLJaV2G8hHr4ei0x/view
+Sau khi truy cập đường dẫn, file cài đặt sẽ tự động được tải về và cài đặt, người dùng cần nhấn chọn “Install” cho phép cài đặt ứng dụng (xem Hình 4.1.3).
+Hình 4.1.3 - Hướng dẫn cài đặt ứng dụng từ file .apk
+Đối với người dùng sử dụng máy ảo android, người dùng có thể tải file cài đặt về máy tính và thực hiện kéo thả file cài đặt vào máy ảo, ứng dụng sẽ tự động được cài đặt.
+Cài đặt các màn hình
+Đăng nhập
+Hình 4.2.1: Giao diện màn hình Đăng nhập
+Để đăng nhập, cần nhập đúng và đủ hai trường: tên đăng nhập (email) và mật khẩu. Tại mỗi phần nhập, người dùng có thể nhấn vào icon  để xóa nhanh toàn bộ nội dung đã nhập, hoặc icon  để hiện mật khẩu.
+Mật khẩu hợp lệ không được chứa khoảng trắng, có ít nhất 8 ký tự, bao gồm cả chữ và số. Nếu người dùng nhập tên đăng nhập (email) không hợp lệ, mật khẩu không hợp lệ, ứng dụng sẽ hiển thị thông báo và vô hiệu hóa nút Đăng nhập (xem Hình 4.2.1). Người dùng cần nhấn nút Đăng nhập để đăng nhập vào hệ thống.
+Đăng ký
+Hình 4.2.2: Giao diện tab Cá nhân (trái) và Giao diện màn hình Đăng nhập (phải)
+Để đăng ký tài khoản, người dùng chọn tab Cá nhân dưới thanh điều hướng, sau đó nhấn nút Đăng ký hoặc nhấn chọn chữ Đăng ký bên dưới màn hình đăng nhập (xem Hình 4.2.2). Người dùng cần nhập các đầy đủ các trường dữ liệu email đăng nhập, tên hiển thị, mật khẩu và xác nhận mật khẩu.
+Hình 4.2.3: Giao diện màn hình Đăng ký
+Mật khẩu hợp lệ không được chứa khoảng trắng, có ít nhất 8 ký tự, bao gồm cả chữ và số. Nếu người dùng nhập email không hợp lệ, để trống tên hiển thị, để trống mật khẩu, mật khẩu không hợp lệ, xác nhận mật khẩu mới không khớp, ứng dụng sẽ hiển thị thông báo và vô hiệu hóa nút Đăng ký (xem Hình 4.2.3). Người dùng cần nhấn nút Đăng ký để đăng ký tài khoản mới. Tất cả các thao tác khác như nhấn nút Quay lại, chuyển sang màn hình khác... đều sẽ hủy bỏ thao tác đăng ký.
+Đặt lại mật khẩu
+Để đăng ký tài khoản, người dùng chọn tab Cá nhân dưới thanh điều hướng, sau đó nhấn nút Đăng ký hoặc nhấn chọn chữ Bạn quên mật khẩu? bên dưới màn hình đăng nhập (xem Hình 4.2.2).
+Hình 4.2.4: Giao diện màn hình nhập email (trái) và mã OTP (phải)
+Người dùng cần nhập chính xác email đã sử dụng khi đăng ký tài khoản và bấm xác nhận. Nếu email được nhập chưa được sử dụng để đăng ký tài khoản, hệ thống sẽ thông báo lỗi đến người dùng. Ngược lại hệ thống sẽ gửi mã OTP (One-time Password) xác nhận thông qua email và người dùng cần nhập mã OTP đã nhận được ở màn hình kế tiếp. Nếu như vẫn chưa nhận được mã OTP, người dùng có thể nhấn chọn gửi lại sau mỗi 60 giây (xem Hình 4.2.4).
+Hình 4.2.5: Giao diện màn hình đặt lại mật khẩu
+Sau khi xác nhận mã OTP chính xác, hệ thống sẽ chuyển sang màn hình cho phép người dùng đặt lại mật khẩu. Người dùng cần điền mật khẩu hợp lệ vào hai trường dữ liệu mật khẩu và xác nhận mật khẩu. Mật khẩu hợp lệ không được chứa khoảng trắng, có ít nhất 8 ký tự, bao gồm cả chữ và số. Người dùng cần nhấn Đặt lại mật khẩu để đặt lại mật khẩu cho tài khoản (xem Hình 4.2.5). Tất cả các thao tác khác như nhấn nút Quay lại hoặc chuyển sang màn hình khác đều sẽ hủy bỏ thao tác đặt lại mật khẩu.
+Trang chủ
+Hình 4.2.6: Giao diện màn hình Trang chủ
+Trang chủ Trip Package (xem Hình 4.2.6) giới thiệu các nội dung nổi bật nhất đến người dùng theo ba đề mục: Xuyên Việt cùng Trip Package (đề xuất điểm tham quan theo tỉnh thành); Điểm đến đặc sắc (đề xuất điểm tham quan theo số sao và lượng đánh giá) và Bắt đầu hành trình mới (đề xuất lịch trình). Tại mỗi đề mục, người dùng có thể lướt hoặc nhấn vào icon    để xem tất cả địa điểm hoặc lịch trình được đề xuất, hoặc tìm kiếm thông qua thanh tìm kiếm bên dưới banner.
+Thông tin tại Trang chủ được trình bày súc tích và đầy đủ, bao gồm tên, địa chỉ, đánh giá đối với thẻ địa điểm; tỉnh thành, thời gian du lịch và số lượng điểm đến đối với thẻ lịch trình. Người dùng có thể nhấn vào thẻ địa điểm/lịch trình để xem thông tin chi tiết, hoặc nhấn chọn icon  để lưu lại địa điểm/lịch trình.
+Chỉnh sửa thông tin cá nhân
+Hình 4.2.7: Giao diện Trang cá nhân (trái) và Chỉnh sửa trang cá nhân (phải)
+Để chỉnh sửa thông tin cá nhân, người dùng chọn tab Cá nhân dưới thanh điều hướng, sau đó nhấn nút Chỉnh sửa. Các mục được chỉnh sửa bao gồm tên hiển thị, ảnh đại diện và mật khẩu. Không được sửa email đăng nhập (xem Hình 4.2.7).
+Người dùng nhấn vào Tên hiển thị để đổi tên (tên không để trống hoặc chỉ chứa khoảng trắng). Để đổi ảnh đại diện, nhấn chọn icon  để được điều hướng sang thư viện ảnh của thiết bị di động. Để đổi mật khẩu, nhấn chọn Mật khẩu hiện tại để được điều hướng sang màn hình Đổi mật khẩu (xem Hình 4.2.7).
+Người dùng cần nhấn nút Lưu thay đổi để cập nhật mới thông tin. Tất cả các thao tác khác như nhấn nút Quay lại hoặc chuyển sang màn hình khác đều sẽ hủy bỏ thông tin mới chỉnh sửa.
+Đổi mật khẩu
+Hình 4.2.8: Giao diện màn hình Đổi mật khẩu khi tất cả trường thông tin đều thỏa (trái) và khi có trường vi phạm (phải)
+Để đổi mật khẩu, cần nhập đúng và đủ ba trường: mật khẩu hiện tại, mật khẩu mới và xác nhận mật khẩu mới. Tại mỗi hộp văn bản, người dùng có thể nhấn vào icon  để xóa nhanh toàn bộ nội dung, hoặc icon  để hiện mật khẩu.
+Mật khẩu hợp lệ không được chứa khoảng trắng, có ít nhất 8 ký tự, bao gồm cả chữ và số. Nếu người dùng nhập sai hoặc để trống mật khẩu hiện tại, mật khẩu không hợp lệ, xác nhận mật khẩu mới không khớp, ứng dụng sẽ hiển thị thông báo và vô hiệu hóa nút Lưu thay đổi (xem Hình 4.2.8). Người dùng cần nhấn nút Lưu thay đổi để cập nhật mật khẩu mới. Tất cả các thao tác khác như nhấn nút Quay lại hoặc chuyển sang màn hình khác đều sẽ hủy bỏ mật khẩu mới chỉnh sửa.
+Tìm kiếm
+Hình 4.2.9: Giao diện Tìm kiếm chính (trái) và Tìm kiếm theo danh mục (phải)
+Để tìm kiếm địa điểm hoặc lịch trình, người dùng chọn tab Tìm kiếm dưới thanh điều hướng hoặc nhấn vào thanh tìm kiếm ở Trang chủ. Trang đầu của màn hình Tìm kiếm chứa thanh tìm kiếm và sáu nút đại diện cho sáu danh mục địa điểm, bao gồm: Ăn uống, Du lịch sinh thái, Mua sắm, Bảo tàng, Tham quan và Tôn giáo.
+Nếu người dùng nhấn chọn một trong sáu nút, ứng dụng sẽ hiển thị danh sách địa điểm thuộc danh mục tương ứng (xem Hình 4.2.9).
+Bên cạnh đó, người dùng có thể tìm kiếm bằng cách nhấn vào thanh tìm kiếm ở đầu trang. Ứng dụng sẽ điều hướng người dùng sang màn hình Tìm kiếm bằng từ khóa (xem Hình 4.2.10).
+Hình 4.2.10: Giao diện Tìm kiếm bằng từ khóa khi chưa nhập từ khóa (trái) và khi đã nhập từ khóa (phải)
+Khi người dùng nhấn vào thanh tìm kiếm và chưa nhập từ khóa, ứng dụng sẽ hiển thị lịch sử tìm kiếm của người dùng (xem Hình 4.2.10). Khi nhấn chọn một lịch sử tìm kiếm bất kỳ, ứng dụng hiện danh sách địa điểm hoặc lịch trình tương ứng với từ khóa đó.
+Khi người dùng nhập từ khóa tìm kiếm, ứng dụng hiển thị hai lựa chọn là Tìm kiếm địa điểm và Tìm kiếm lịch trình (xem Hình 4.2.10). Tại phần nhập nội dung Bạn cần tìm gì?, người dùng có thể nhấn vào icon  để xóa nhanh toàn bộ nội dung đã nhập.
+Hình 4.2.11: Giao diện Kết quả tìm kiếm địa điểm (trái) và Kết quả tìm kiếm lịch trình (phải)
+Tùy vào lựa chọn của người dùng ở màn hình Tìm kiếm bằng từ khóa mà ứng dụng sẽ hiển thị danh sách địa điểm hoặc danh sách lịch trình dựa vào từ khóa đã nhập (xem Hình 4.2.11).
+Thông tin trên trang kết quả hiển thị ngắn gọn bao gồm tên, địa chỉ, đánh giá đối với thẻ địa điểm; tỉnh thành, thời gian du lịch, số lượng điểm đến, số lượng người chỉnh sửa và số lượng lượt yêu thích đối với thẻ lịch trình. Người dùng có thể nhấn vào thẻ địa điểm/lịch trình để xem thông tin chi tiết, hoặc nhấn chọn icon  để lưu lại địa điểm/lịch trình. Ngoài ra khi tìm kiếm địa điểm, người dùng có thể bấm vào biểu tượng slider ở bên cạnh thanh tìm kiếm để lọc địa điểm theo đánh giá và thể loại. Tính năng này không áp dụng cho tìm kiếm lịch trình.
+Lọc địa điểm
+Hình 4.2.12: Giao diện Lọc địa điểm khi chưa chọn bộ lọc (trái) và khi đã chọn bộ lọc (phải)
+Để lọc địa điểm, người dùng truy cập vào màn hình Tìm kiếm và thực hiện thao tác tìm kiếm địa điểm, sau đó nhấn vào biểu tượng slider để hiển thị bộ lọc. Có hai tiêu chí để người dùng lọc địa điểm: theo điểm đánh giá của địa điểm và loại hình địa điểm (xem Hình 4.2.12).
+Tùy vào nhu cầu, người dùng chọn hoặc bỏ chọn các bộ lọc phù hợp và nhấn vào nút Áp dụng để thực hiện việc lọc. Có thể nhấn vào nút Xóa bộ lọc để xóa nhanh tất cả bộ lọc đang có. Sau khi áp dụng bộ lọc, ứng dụng sẽ thay đổi kết quả tìm kiếm thỏa mãn các bộ lọc đã chọn. Cần lưu ý bộ lọc sẽ được giữ nguyên giữa các lần tìm kiếm.
+Xem chi tiết lịch trình và chỉ đường
+Hình 4.2.13: Giao diện xem chi tiết lịch trình
+Để xem thông tin chi tiết của một lịch trình, người dùng cần vào thẻ lịch trình từ Trang chủ, trang Tìm kiếm hoặc Lịch trình của tôi. Giao diện đầu tiên của lịch trình sẽ hiển thị các thông tin tổng quát của lịch trình gồm: tên lịch trình, số ngày, thành phố du lịch. Sau khi người dùng thực hiện kéo màn hình sẽ thấy được tóm tắt nội dung tham quan của các ngày trong hành trình du lịch. Để xem chi tiết từng ngày trong lịch trình, ta chọn chữ “Xem chi tiết” ở mỗi ngày (xem Hình 4.2.13).
+Hình 4.2.14: Giao diện xem chi tiết từng ngày của lịch trình (trái) và chỉ đường giữa hai địa điểm trong lịch trình (phải)
+Giao diện trên thể hiện lịch trình du lịch từng ngày của lịch trình với các thông tin sau: thứ tự ngày du lịch, các địa điểm du lịch trong từng ngày, thời gian tham quan ở mỗi địa điểm, thời gian di chuyển giữa hai địa điểm và khoảng cách di chuyển giữa hai địa điểm.
+Để xem chỉ đường giữa hai địa điểm, người dùng nhấn chọn vào nút   ở khung khoảng cách giữa hai địa điểm. Giao diện chỉ đường gồm có bản đồ đường đi di chuyển giữa hai địa điểm được chọn (xem Hình 4.2.14).
+Yêu thích và hủy yêu thích lịch trình
+Hình 4.2.15: Giao diện Chi tiết lịch trình khi chưa yêu thích (trái) và khi đã bấm yêu thích (phải)
+Người dùng có thể yêu thích hoặc hủy yêu thích một lịch trình bằng hai cách: tìm kiếm lịch trình và bấm vào biểu tượng  trên thẻ lịch trình, hoặc truy cập vào màn hình Chi tiết lịch trình và bấm vào biểu tượng . Nếu lịch trình đã được yêu thích, biểu tượng  sẽ được tô màu đỏ, ngược lại  sẽ có màu trắng viền đen (xem Hình 4.2.15).
+Tạo lịch trình mới
+Hình 4.2.16: Giao diện Tạo lịch trình mới
+Lưu ý rằng người dùng phải đăng nhập thành công để tạo lịch trình. Người dùng cần cung cấp thông tin bắt buộc là thành phố muốn du lịch. Ngoài ra, người dùng có thể tùy chọn các thông tin khác như ngày đi, ngày về (liên quan trực tiếp đến số ngày trải nghiệm của lịch trình), trải nghiệm yêu thích, điểm du lịch tùy chọn, tên lịch trình (xem Hình 4.2.16).
+Mọi lịch trình được tạo mặc định sẽ ở chế độ công khai, hiển thị với người dùng khác của Trip Package. Người dùng có thể gạt tắt để đưa lịch trình về chế độ riêng tư.
+Hình 4.2.17: Giao diện chỉnh sửa ngày đi-về trong Tạo lịch trình mới (trái) và nhắc nhở của hệ thống nếu người dùng chọn thời gian du lịch vượt quá 7 ngày (phải)
+Mặc định, ngày đi của lịch trình là ngày hiện tại và ngày về là 4 ngày sau đó. Người dùng có thể chỉnh sửa ngày đi và về của lịch trình để phù hợp với kế hoạch cá nhân. Hệ thống cho phép tạo lịch trình tối đa 7 ngày. Nếu vượt quá giới hạn, hệ thống sẽ hiện thông báo yêu cầu người dùng chọn lại (xem Hình 4.2.17).
+Hình 4.2.18: Giao diện lựa chọn điểm đến cho lịch trình (trái) và giao diện thêm địa điểm du lịch tùy chọn (phải)
+Người dùng có thể tùy ý thêm các địa điểm muốn ghé thăm (địa điểm phải nằm trong thành phố du lịch đã chọn) ở mục Điểm du lịch tùy chọn. Địa điểm có thể được chọn theo hai cách: từ thanh tìm kiếm và từ bộ sưu tập (xem Hình 4.2.18).
+Cá nhân hóa lịch trình
+Hình 4.2.19: Giao diện nút bấm để cá nhân hóa lịch trình
+Để cá nhân hóa lịch trình, người dùng nhấn chọn biểu tượng  Hình 4.2.19. Sau khi bấm, giao diện cá nhân hóa sẽ hiển thị như Hình 4.2.20.
+Hình 4.2.20: Giao diện sau khi bấm cá nhân hóa lịch trình
+Nếu người dùng muốn xóa địa điểm khỏi lịch trình thì bấm icon  ở mỗi thẻ địa điểm để xóa.
+Hình 4.2.21: Giao diện khi thêm địa điểm mới vào lịch trình
+Nếu người dùng muốn thêm địa điểm mới vào lịch trình, nhấn chọn biểu tượng ở góc phải màn hình để thêm địa điểm từ mục Tìm kiếm hoặc địa điểm đã có trong Bộ sưu tập. Địa điểm được thêm sẽ hiển thị dưới ở phần dưới cùng của màn hình (xem Hình 4.2.21).
+Hình 4.2.22: Giao diện xác nhận cá nhân hóa vào lịch trình
+Sau khi đã xóa hoặc thêm địa điểm mới vào lịch trình, người dùng nhấn chọn nút “Lưu thay đổi” ở cuối màn hình. Hệ thống sẽ một lần nữa hiển thị thông báo cho người dùng về việc có thể thay đổi thứ tự cũng như số lượng các điểm tham quan của từng ngày trong lịch trình (xem Hình 4.2.22). Nếu người dùng đồng ý, hệ thống sẽ tiến hành sắp xếp lại các địa điểm trong ngày cho phù hợp. Nếu người dùng không muốn thay đổi lịch trình ban đầu nữa thì nhấn chọn “Hủy” để trở về trạng thái ban đầu.
+Chỉnh sửa thông tin lịch trình
+Hình 4.2.23: Giao diện chỉnh sửa thông tin lịch trình
+Khi truy cập vào giao diện xem lịch trình, nếu người dùng đang đăng nhập vào tài khoản tạo ra lịch trình đó thì hệ thống sẽ cho phép người dùng truy cập vào giao diện chỉnh sửa thông tin lịch trình. Ở đây người dùng sẽ có thể thay đổi các thông tin tổng quan của lịch trình như tên lịch trình, ngày đi - về, chế độ chia sẻ lịch trình. Khi cập nhật xong toàn bộ thông tin, người dùng nhấn “Hoàn thành” để lưu các thay đổi. Ngoài ra ở đây người dùng cũng có thể xóa lịch trình hiện đang truy cập (xem Hình 4.2.23).
+Xem chi tiết địa điểm
+Hình 4.2.24: Giao diện Chi tiết địa điểm
+Để xem đầy đủ chi tiết của một địa điểm, người dùng cần vào thẻ địa điểm mong muốn tại các màn hình như Trang chủ, Chi tiết lịch trình, Tìm kiếm.
+Thông tin tại màn hình Chi tiết địa điểm rõ ràng và đầy đủ giúp người dùng nắm được các thông tin của địa điểm gồm tên, tỉnh thành, số lượng nhận xét, điểm đánh giá trung bình, hình ảnh, mô tả, thời gian đóng - mở cửa, số điện thoại, địa chỉ và những đánh giá của người dùng tại địa điểm này (xem Hình 4.2.24). Người dùng có thể nhấn vào dòng chữ Xem toàn bộ để hiển thị toàn bộ đánh giá. Ngoài ra người dùng còn có thể đóng góp đánh giá của mình khi nhấn nút Viết đánh giá.
+Đánh giá địa điểm
+Hình 4.2.25: Giao diện Đánh giá địa điểm (trái) và Chi tiết địa điểm có hiển thị đánh giá vừa đăng (phải)
+Người dùng có thể viết đánh giá địa điểm khi nhấn nút Viết đánh giá tại màn hình Chi tiết địa điểm của địa điểm muốn đánh giá. Màn hình Đánh giá địa điểm sẽ hiển thị địa điểm muốn đánh giá, đồng thời cho phép người dùng lựa chọn điểm số và nhập nhận xét cho địa điểm (xem Hình 4.2.25). Thang điểm của đánh giá là từ 1 đến 5, với điểm 1 là “Rất không hài lòng!” và điểm 5 là “Rất hài lòng!”. Người dùng có thể chỉ đánh giá điểm số mà không bắt buộc phải nhập nhận xét. Người dùng cần nhấn nút Đăng nhận xét để hoàn tất phần đánh giá của mình.
+Lưu địa điểm vào bộ sưu tập
+Hình 4.2.26: Giao diện Lưu địa điểm vào bộ sưu tập
+Để thêm một địa điểm vào bộ sưu tập, người dùng có thể tìm kiếm địa điểm và nhấn vào biểu tượng  trên thẻ địa điểm hoặc truy cập vào màn hình Chi tiết địa điểm và nhấn vào biểu tượng .
+Ứng dụng sẽ hiển thị danh sách các bộ sưu tập (xem Hình 4.2.26) để người dùng thêm địa điểm vào. Ngoài ra, ở bước này người dùng có thể tạo bộ sưu tập mới bằng cách nhấn nút Tạo mới. Một địa điểm có thể được thêm vào nhiều bộ sưu tập khác nhau. Người dùng cần nhấn nút Hoàn tất để hoàn tất phần đánh giá của mình.
+Hình 4.2.27: Giao diện Chi tiết địa điểm khi chưa thêm vào bộ sưu tập (trái) và khi đã thêm vào bộ sưu tập (phải)
+Nếu địa điểm đã được thêm vào bộ sưu tập thì biểu tượng  sẽ tô màu đỏ, ngược lại  sẽ có màu trắng viền đen (xem Hình 4.2.27).
+Tạo bộ sưu tập mới
+Hình 4.2.28: Pop-up Tạo bộ sưu tập (trái) và Giao diện màn hình Địa điểm yêu thích sau khi bộ sưu tập mới được tạo (phải)
+Người dùng có thể tạo bộ sưu tập mới trong lúc thêm địa điểm vào bộ sưu tập hoặc có thể tạo bộ sưu tập bằng cách vào tab Cá nhân rồi vào mục Địa điểm yêu thích. Người dùng nhấn nút + để hiện cửa sổ pop-up Tạo tập địa điểm. Người dùng điền tên bộ sưu tập và chọn vào nút Tạo để hoàn tất tạo bộ sưu tập (xem Hình 4.2.28).
+Xóa bộ sưu tập
+Hình 4.2.29: Màn hình Địa điểm yêu thích ở chế độ xem (trái) và chế độ chỉnh sửa (phải)
+Khi muốn xóa một bộ sưu tập, người dùng có thể chọn vào nút Chỉnh sửa ở góc phải trên của màn hình Địa điểm yêu thích để vào chế độ chỉnh sửa, các icon  sẽ xuất hiện ở góc phải trên của các bộ sưu tập, nhấn chọn để thực hiện xóa bộ sưu tập tương ứng (xem Hình 4.2.29).
+Hình 4.2.30: Pop-up xác nhận xóa bộ sưu tập
+Cửa sổ xác nhận sẽ xuất hiện. Nếu người dùng chọn Xóa, bộ sưu tập sẽ bị xóa vĩnh viễn, nếu người dùng chọn Thoát sẽ không có thay đổi xảy ra. Khi người dùng đã hoàn tất chỉnh sửa, chọn nút Xong để quay trở lại chế độ xem (xem Hình 4.2.30).
+Đánh giá hiệu năng
+Thời gian phản hồi API
+Nhóm thực hiện kiểm thử API bằng công cụ Postman Collection và sử dụng 20 user ảo gửi request cùng 1 lúc trong 2 phút. Và các API được chọn là những API sử dụng thường xuyên nhất trong ứng dụng: Tìm kiếm các địa điểm (Search Places API) và truy xuất thông tin địa điểm (Get Place Detail API), Tìm kiếm các lịch trình (Search Itineraries API) và truy xuất thông tin lịch trình (Get Itinerary Detail API) (xem Hình 4.3.1).
+Hình 4.3.1. Thời gian phản hồi trung bình của API
+Thời gian phản hồi trung bình của Search Places API và Get Itinerary Detail API lâu hơn đáng kể so với Get Place Detail API và Search Itineraries API. Điều này là dễ hiểu bởi việc truy xuất thông tin lịch trình chi tiết bao gồm thông tin về lịch trình và thông tin về tất cả địa điểm trong lịch trình nên lượng dữ liệu được truyền tải là khá lớn khiến cho thời gian nhận được toàn bộ dữ liệu có phần lâu hơn so với các API khác. Đối với Search Places API, việc tìm và lọc ra tất cả các địa điểm có liên quan đến từ khóa tìm kiếm trên toàn bộ dữ liệu về địa điểm có thể làm ảnh hưởng đến thời gian nhận phản hồi từ máy chủ.
+Độ tương thích của ứng dụng
+Hệ điều hành: Android 5.0 trở lên.
+Thiết bị tương thích: Điện thoại di động, máy tính bảng.
+Phạm vi địa lý: Ứng dụng sử dụng dữ liệu các địa điểm ở Việt Nam, nên phạm vi sử dụng là trên toàn lãnh thổ Việt Nam.
+Đánh giá thuật toán
+Nhóm xác định mức độ liên quan của các địa điểm được đề xuất trong lịch trình để đánh giá độ hiệu quả của thuật toán thông qua ba chỉ số: Precision, Recall và F1-score. Hình 4.4.1 mô tả định nghĩa Precision và Recall.
+Hình 4.4.1. Minh họa Precision và Recall. Nguồn: caihuuthuc.wordpress.com
+Trong bối cảnh của ứng dụng, các tính chất trên được diễn giải như sau:
+T (True): địa điểm được gợi ý/đưa vào lịch trình.
+F (False): địa điểm không được gợi ý/đưa vào lịch trình.
+P (Positive): địa điểm liên quan với người dùng/có score cao.
+N (Negative): địa điểm không liên quan với người dùng /có score thấp.
+Vậy, Precision là tỉ lệ địa điểm liên quan được gợi ý (true positive) trên tổng số địa điểm được gợi ý (true positive + false positive). Precision càng cao thì các địa điểm được cho là liên quan được gợi ý càng nhiều. Khi Precision = 1, không có địa điểm nào được cho là liên quan mà không được gợi ý/có score thấp.
+Recall là tỉ lệ địa điểm liên quan được gợi ý (true positive) trên tổng số địa điểm thực sự liên quan (true positive + false negative). Recall càng cao thì địa điểm được gợi ý càng thực sự liên quan với người dùng. Khi Recall = 1, tất cả địa điểm thực sự liên quan đều được gợi ý/có score cao.
+Chỉ dựa vào một trong hai chỉ số trên là không đủ để đánh giá khách quan độ hiệu quả thuật toán. Vì vậy, ta sử dụng thêm F1-score nhằm đánh giá độ chính xác dựa trên cả Precision và Recall. F1-score đặc biệt hữu dụng khi có sự chênh lệch lớn giữa Precision và Recall. Một chỉ số phổ biến khác giúp đánh giá độ chính xác là Accuracy. Tuy nhiên, Accuracy được tính toán trên cả nhóm địa điểm liên quan (positive) và không liên quan (negative). F1-score phù hợp hơn vì chỉ tính toán dựa trên nhóm địa điểm liên quan (positive) - là nhóm ta mong muốn đánh giá hơn.
+Nhóm tiến hành khảo sát 165 người (Link khảo sát: https://form-survey-coral.vercel.app/). Mỗi người tham gia cần chọn một tỉnh thành họ mong muốn du lịch; và (các) loại hình du lịch ưa thích. Sau đó, nhóm trích xuất danh sách địa điểm thỏa với các lựa chọn trên từ Cơ sở dữ liệu của Trip Package. Các địa điểm này sẽ được đưa vào lịch trình thực tế nếu người tham gia trực tiếp sử dụng ứng dụng.
+Người tham gia cần trả lời câu hỏi: Dựa trên suy nghĩ và trải nghiệm của họ, họ sẽ tham quan hoặc giới thiệu cho người khác địa điểm nào trong các địa điểm được đề xuất? Mục tiêu của khảo sát nhằm tìm ra độ liên quan của địa điểm gợi ý đối với người dùng thực tế.
+Vì số lượng người tham gia khảo sát không nhiều, mỗi người tham gia có thể chọn các thành phố du lịch khác nhau, thậm chí có các thành phố được rất ít/không được bất cứ người tham gia nào chọn (ví dụ: Quảng Ninh chỉ có 3 người chọn đánh giá, Cần Thơ không được bất cứ người nào chọn, …). Trong phạm vi đề tài, nhóm chỉ lấy ra ba thành phố được nhiều người dùng lựa chọn nhất, bao gồm Đà Nẵng, Huế, Khánh Hòa và đối chiếu với dữ liệu địa điểm của Trip Package (xem Bảng 4.4.1, Bảng 4.4.3 và Bảng 4.4.5 tương ứng).
+[TABLE]
+Địa điểm gợi ý || Địa điểm liên quan (đối với người tham gia khảo sát) || Địa điểm gợi ý | Địa điểm liên quan
+• Asia Park - Công viên Châu Á | • Bảo Tàng Điêu Khắc Chăm Đà Nẵng | • Biển Mỹ Khê | • Chùa Nam Sơn | • Công Viên Biển Đông | • Bảo Tàng Đà Nẵng | • Bảo Tàng Mỹ Thuật Đà Nẵng | • Hồ Xanh Đà Nẵng | • Ghềnh Bàng | • Chùa Pháp Lâm | • Hải Đăng Tiên Sa | • Bảo Tàng Đồng Đình | • Bãi Tắm Phước Mỹ | • Bãi Rạng | • Ngũ Hành Sơn | • Khu Du Lịch Sinh Thái Suối Hoa | • Tượng Cá Chép Hóa Rồng | • Suối Khoáng Nóng Núi Thần Tài | • Bãi Đa - Sơn Trà | • Cây Đa Sơn Trà || • Biển Mỹ Khê | • Bãi Biển Non Nước | • Bãi Bụt Sơn Trà - Du Lịch Sinh Thái | • Bãi Rạng | • Bãi Tắm Phước Mỹ | • Bảo Tàng Mỹ Thuật Đà Nẵng | • Bảo Tàng Điêu Khắc Chăm Đà Nẵng | • Bảo Tàng Đà Nẵng | • Bảo Tàng Đồng Đình | • Chùa Nam Sơn | • Chùa Pháp Lâm | • Cây Đa Sơn Trà | • Công Viên Biển Đông | • Cầu Rồng | • Cầu Tàu Tình Yêu | • Du Lịch Sinh Thái Bãi Cát Vàng | • Ghềnh Bàng | • Hải Đăng Tiên Sa | • Hồ Xanh Đà Nẵng | • Khu Du Lịch Sinh Thái Suối Hoa | • Ngũ Hành Sơn | • Asia Park - Công viên Châu Á | • Suối Khoáng Nóng Núi Thần Tài | • Tượng Cá Chép Hóa Rồng || • Biển Mỹ Khê | • Hồ Xanh Đà Nẵng | • Chùa Nam Sơn | • Ghềnh Bàng | • Bảo Tàng Điêu Khắc Chăm Đà Nẵng | • Khu Du Lịch Sinh Thái Suối Hoa | • Bãi Rạng | • Bãi Tắm Phước Mỹ | • Tượng Cá Chép Hóa Rồng | • Suối Khoáng Nóng Núi Thần Tài | • Công Viên Biển Đông | • Chùa Pháp Lâm | • Ngũ Hành Sơn | • Asia Park - Công viên Châu Á | • Cây Đa Sơn Trà | • Bảo Tàng Đồng Đình | • Bảo Tàng Đà Nẵng | • Bảo Tàng Mỹ Thuật Đà Nẵng
+[/TABLE]
+Bảng 4.4.1: Địa điểm gợi ý và địa điểm liên quan đối với người dùng
+khi du lịch Đà Nẵng
+Kết quả tính toán Precision, Recall và F1-score của Đà Nẵng được ghi dưới Bảng 4.4.2.
+[TABLE]
+Thành phố || Địa điểm | gợi ý || Địa điểm gợi ý  Địa điểm liên quan || Địa điểm | liên quan || Precision || Recall || F1-score
+Đà Nẵng || 20 || 18 || 24 || 90% || 75% || 82%
+[/TABLE]
+Bảng 4.4.2: Kết quả thống kê Precision, Recall và F1-score của Đà Nẵng
+Đối với Đà Nẵng, chỉ số F1-score tốt nằm ở mức 82%. Precision lên đến 90% nghĩa là các địa điểm được cho là liên quan tại đây cũng được đưa nhiều vào lịch trình. Tuy nhiên, trong bối cảnh của đề tài, Recall được đánh giá cao hơn Precision vì nó đại diện cho sự liên quan giữa địa điểm gợi ý và người dùng thực tế. Dù Recall khá cao (75%) nhưng vẫn thấp hơn so với Precision (90%), thể hiện các địa điểm nhóm cho là liên quan chưa thực sự phù hợp với du khách và cần phải cải thiện thêm.
+[TABLE]
+Địa điểm gợi ý || Địa điểm liên quan (đối với người tham gia khảo sát) || Địa điểm gợi ý | Địa điểm liên quan
+• Đại Nội - Hoàng Thành Huế | • Chùa Thiên Mụ | • Lăng Khải Định | • Lăng Tự Đức | • Lăng Minh Mạng | • Đèo Hải Vân | • Đầm Lập An | • Đồi Vọng Cảnh | • Cung An Định | • Chùa Từ Hiếu | • Huyền Không Sơn Thượng | • Phố Đi Bộ Nguyễn Đình Chiểu | • Bảo Tàng Cổ Vật Cung Đình Huế | • Chùa Tây Thiên | • Chùa Từ Đàm | • Vịnh Lăng Cô | • Lăng Gia Long | • Đan Viện Thiên An | • Thiền Viện Trúc Lâm Bạch Mã | • Chùa Huyền Không || • Biển Lộc Bình | • Bãi Biển Thuận An | • Bảo Tàng Cổ Vật Cung Đình Huế | • Chùa Thiên Mụ | • Chùa Từ Hiếu | • Cung An Định | • Công Viên Hồ Thủy Tiên | • Huyền Không Sơn Thượng | • Hồ Thủy Tiên | • Lăng Khải Định | • Lăng Minh Mạng | • Lăng Tự Đức | • Phá Tam Giang | • Phố Đi Bộ Nguyễn Đình Chiểu | • Vịnh Lăng Cô | • Đan Viện Thiên An | • Đèo Hải Vân | • Đầm Lập An | • Đồi Vọng Cảnh | • Đại Nội - Hoàng Thành Huế || • Phố Đi Bộ Nguyễn Đình Chiểu | • Cung An Định | • Đồi Vọng Cảnh | • Chùa Từ Hiếu | • Đầm Lập An | • Lăng Khải Định | • Đại Nội - Hoàng Thành Huế | • Đèo Hải Vân | • Lăng Tự Đức | • Chùa Thiên Mụ | • Bảo Tàng Cổ Vật Cung Đình Huế | • Lăng Minh Mạng | • Vịnh Lăng Cô | • Đan Viện Thiên An
+[/TABLE]
+Bảng 4.4.3: Địa điểm gợi ý và địa điểm liên quan đối với người dùng
+khi du lịch Huế
+Kết quả tính toán Precision, Recall và F1-score của Huế được ghi dưới Bảng 4.4.4.
+[TABLE]
+Thành phố || Địa điểm | gợi ý || Địa điểm gợi ý  Địa điểm liên quan || Địa điểm | liên quan || Precision || Recall || F1-score
+Huế || 20 || 14 || 20 || 70% || 70% || 70%
+[/TABLE]
+Bảng 4.4.4: Kết quả thống kê Precision, Recall và F1-score của Huế
+Không có sự chênh lệch giữa Precision và Recall ở Huế (cùng bằng 70%). Nói cách khác, có đến 70% địa điểm liên quan được đưa vào lịch trình, và 70% khả năng địa điểm đó thực sự phù hợp với người dùng thực tế. Với thông tin trên, nhóm nhận định thuật toán gợi ý hoạt động tốt và cân bằng được giữa hai yêu cầu: độ chính xác và độ phù hợp với người dùng.
+[TABLE]
+Địa điểm gợi ý || Địa điểm liên quan (đối với người tham gia khảo sát) || Địa điểm gợi ý | Địa điểm liên quan
+• Tháp Bà Ponagar | • Bãi Chướng | • Du Lịch Sinh Thái Ẩm Thực Đảo Bình Ba | • Bãi Nồm - Đảo Bình Ba | • Bãi Biển Nhũ Tiên | • Khu Du Lịch Con Sẻ Tre | • Khu Du Lịch Hòn Chồng | • Đảo Bình Hưng | • Bãi Bà Bóng - Đảo Bình Hưng | • Bãi Đá Trứng - Đảo Bình Hưng | • Khu Dã Ngoại Làng Cát - Hòn Thơm | • Thác Tà Gụ | • Bãi Tắm Nhà Cũ - Đảo Bình Ba | • Hòn Tằm Island | • Hòn Tằm Eco Green Resort | • Trại Nuôi Cấy Ngọc Trai Hòn Tằm Nha Trang | • Suối Ba Hồ | • Khu Bảo Tồn Biển Hòn Mun - Nha Trang | • Khu Du Lịch Hòn Bà - Yersin | • Bãi Tranh || • Bãi Biển Nhũ Tiên | • Bãi Bà Bóng - Đảo Bình Hưng | • Bãi Chướng | • Bãi Nồm - Đảo Bình Ba | • Bãi Đá Trứng - Đảo Bình Hưng | • Du Lịch Sinh Thái Ẩm Thực Đảo Bình Ba | • Khu Du Lịch Ba Hồ | • Khu Du Lịch Con Sẻ Tre | • Khu Du Lịch Hòn Chồng | • Khu Dã Ngoại Làng Cát - Hòn Thơm | • Nhà Thờ Cây Vong | • Nhà Thờ Hà Dừa | • Thủy Cung Trí Nguyên | • Đảo Bình Hưng | • Chùa Suối Đổ | • Tháp Bà Ponagar || • Bãi Bà Bóng - Đảo Bình Hưng | • Tháp Bà Ponagar | • Khu Dã Ngoại Làng Cát - Hòn Thơm | • Đảo Bình Hưng | • Bãi Đá Trứng - Đảo Bình Hưng | • Bãi Nồm - Đảo Bình Ba | • Bãi Biển Nhũ Tiên | • Khu Du Lịch Hòn Chồng | • Du Lịch Sinh Thái Ẩm Thực Đảo Bình Ba | • Bãi Chướng | • Khu Du Lịch Con Sẻ Tre
+[/TABLE]
+Bảng 4.4.5: Địa điểm gợi ý và địa điểm liên quan đối với người dùng
+khi du lịch Khánh Hòa
+Kết quả tính toán Precision, Recall và F1-score của Khánh Hòa được ghi dưới Bảng 4.4.6.
+[TABLE]
+Tỉnh || Địa điểm | gợi ý || Địa điểm gợi ý  Địa điểm liên quan || Địa điểm | liên quan || Precision || Recall || F1-score
+Khánh Hòa || 20 || 11 || 16 || 55% || 69% || 61%
+[/TABLE]
+Bảng 4.4.6: Kết quả thống kê Precision, Recall và F1-score của Khánh Hòa
+Chỉ số F1-score ở Khánh Hòa ở mức khá với 61%. Lý giải cho điều này, nhóm cho rằng Khánh Hòa là một tỉnh có phạm vi du lịch rộng. Khi xét trong phạm vi toàn tỉnh, các điểm tham quan ứng dụng gợi ý có thể xa lạ hơn với đa số du khách – vốn thường chỉ tham quan một thành phố hoặc khu vực của Khánh Hòa (ví dụ như Nha Trang). Như đã đề cập, Recall được đánh giá cao hơn Precision trong bối cảnh của đề tài. Trong trường hợp của Khánh Hòa, dù độ chính xác thấp (Precision bằng 55%) nhưng người tham gia hài lòng với các địa điểm họ được gợi ý (Recall bằng 69%). Vậy nên chỉ số trên là chấp nhận được cho thuật toán gợi ý.
+Tiếp theo, nhóm đánh giá thuật toán dựa trên cả tỉnh thành và loại hình du lịch. Khi tham quan một tỉnh thành, bản thân mỗi du khách có thể yêu thích nhiều loại hình du lịch. Điều này tuy phù hợp với thực tế nhưng sẽ tạo ra nhiều tổ hợp tỉnh thành – loại hình du lịch khác nhau. Vậy sử dụng Precision, Recall và F1-score cho trường hợp này là không khả thi.
+Nếu đáp ứng đúng tỉnh thành du lịch và tất cả các loại hình du lịch, trung bình cứ 10 địa điểm ứng dụng gợi ý thì có 6.3 địa điểm người tham gia khảo sát cảm thấy hài lòng (họ sẽ ghé thăm hoặc sẽ giới thiệu cho người khác ghé thăm nếu du lịch tại tỉnh thành đó). Theo thuật toán gợi ý của Trip Package, mỗi ngày du khách tham quan tối đa 5 địa điểm, 10 địa điểm ứng với tối đa 2 ngày. Vậy con số 6.3 thống kê được từ khảo sát được nhóm đánh giá là khá.
+Đánh giá độ hữu ích
+Nhóm thực hiện khảo sát 165 người dùng về việc tính hữu ích của ứng dụng gợi ý lịch trình Trip Package (Link khảo sát: https://form-survey-coral.vercel.app/).
+Khảo sát sử dụng thang đo Likert gồm 5 mức độ; mức 1 thấp nhất ứng với trạng thái không sẵn lòng/không phù hợp và mức 5 cao nhất ứng với rất sẵn lòng/rất phù hợp.
+Hình 4.5.1: Độ sẵn sàng sử dụng ứng dụng của người dùng dựa trên độ tuổi
+Với câu hỏi “Dựa vào trải nghiệm từ ứng dụng và video demo, bạn có sẵn lòng sử dụng Trip Package để tham khảo điểm tham quan và lịch trình du lịch?”, đa số người tham gia sẵn sàng sử dụng ứng dụng (ở mức 4 và 5), chiếm khoảng 123 người trên tổng số 165, tương đương với 75%.  Ngoài ra, 58 người trẻ thuộc độ tuổi 18-29 (chiếm khoảng 35%) cho biết họ sẵn lòng tải và dùng thử ứng dụng (xem Hình 4.5.1). Điều này có thể giải thích bởi phần lớn người du lịch tự túc sẽ có độ tuổi dao động trong khoảng từ 18 đến 35.
+Hình 4.5.2: Độ hữu ích của ứng dụng đối với người dùng
+Hình 4.5.2 trình bày kết quả khảo sát độ hữu ích của ứng dụng gợi ý lịch trình du lịch cho người dùng dựa trên câu hỏi “Bạn đánh giá thế nào về độ hữu ích của ứng dụng với cộng đồng du lịch tự túc?”. Kết quả cho thấy 25% và 60% người được khảo sát cho rằng ứng dụng thật sự hữu ích ở mức 4 và mức 5. Tuy nhiên, có 9% người dùng lưỡng lự lựa chọn và 6% người dùng không cảm thấy ứng dụng có lợi trong việc du lịch. Đối với vấn đề này, nhóm cần phát triển nhiều hơn các tính năng liên quan đến lịch trình như gợi ý nhiều địa điểm và chỉnh sửa lịch trình theo ý người dùng hơn, giúp người dùng có thể sử dụng trong nhiều trường hợp.
+Chương 5:KẾT LUẬN
+Kiến thức
+Qua quá trình thực hiện đồ án, nhóm tiếp thu và trau dồi được các kiến thức, kỹ năng sau:
+Các giải thuật liên quan đến Data Mining, Machine Learning nhằm giải quyết bài toán NP-Hard/bài toán lập lịch.
+Lập trình client sử dụng framework Flutter.
+Làm việc trên môi trường Python để crawl dữ liệu, làm sạch dữ liệu và lập trình server.
+Thiết kế Cơ sở dữ liệu dựa trên nhu cầu thực tế; thao tác trên Hệ quản trị PostgreSQL để lưu trữ, mã hóa và truy xuất dữ liệu.
+Sử dụng các công cụ xây dựng server và Cơ sở dữ liệu đám mây: Neon Serverless PostgreSQL, Cloud Computing Services - Amazon Web Services (AWS).
+Khó khăn trong quá trình thực hiện
+Ngoài ra, trong quá trình thực hiện có những khó khăn nhóm tốn nhiều thời gian và công sức để nghiên cứu hướng giải quyết:
+Thu thập và xử lý dữ liệu: Để đảm bảo độ chính xác của thuật toán, dữ liệu cần có đầy đủ thông tin như địa chỉ, thời gian hoạt động, loại địa điểm… Tuy nhiên, dữ liệu ban đầu được thu thập cần phải trải qua quá trình xử lý và làm sạch để có thể đưa vào cơ sở dữ liệu. Việc thu thập đầy đủ thông tin và thống nhất dữ liệu từ các nguồn đáng tin cậy đòi hỏi khá nhiều thời gian, công sức của nhóm để tìm hiểu, nghiên cứu và hoàn thành.
+Độ hiệu quả thuật toán: Việc xây dựng thuật toán lập lịch trình du lịch tự động đòi hỏi nhóm phải tìm hiểu và kiểm tra rất nhiều trường hợp thực tế có thể xảy ra như đến trước thời gian mở cửa, địa điểm tham quan kế tiếp quá xa so với địa điểm hiện tại,... Ngoài ra, tốc độ của thuật toán còn phụ thuộc vào cơ sở dữ liệu cũng như thời gian gọi api, nên nhóm cần cải thiện thuật toán nhiều lần để thời gian sắp xếp lịch trình ngắn nhất có thể và đáp ứng được các kết quả mong muốn trong thực tế.
+Kinh phí: Để phát triển được ứng dụng và đưa ứng dụng đến nhiều người dùng, việc ứng dụng công nghệ điện toán đám mây để phát triển cơ sở dữ liệu và máy chủ là điều cần thiết. Tuy nhiên hầu hết các công nghệ này đều sẽ mất một khoản tài chính nhất định. Trước mắt, nhóm sử dụng cơ sở dữ liệu và server miễn phí nên có thể xảy ra một vài trường hợp không mong muốn như thời gian phản hồi chậm.
+Sản phẩm đạt được
+Kết quả nhóm đạt được bao gồm:
+Xây dựng server đám mây Render có thể kết nối với hệ thống cơ sở dữ liệu đám mây trên nền tảng Amazon Web Services và các API của bên thứ ba để thực hiện các yêu cầu xử lý của ứng dụng.
+Xây dựng ứng dụng di động Trip Package (đã được đăng tải trên Google Play Store) giúp người dùng tạo lịch trình du lịch tự túc, xem thông tin địa điểm du lịch cũng như truy cập và tương tác với các thông tin của hệ thống cách dễ dàng và thuận tiện.
+Chương 6:HƯỚNG PHÁT TRIỂN
+Ứng dụng Trip Package vẫn còn một số vấn đề cần cải thiện trong các bản cập nhật sau, đồng thời dự kiến triển khai thêm nhiều tính năng trong tương lai.
+Các điểm cần cải thiện:
+Cải thiện thuật toán, tăng độ chính xác của lịch trình.
+Thu thập và xử lý thêm dữ liệu địa điểm, tăng tính đa dạng cho Cơ sở dữ liệu.
+Cho phép người dùng tùy chỉnh thời gian tham quan ở mỗi địa điểm và thêm thời gian nghỉ tùy chọn.
+Gợi ý các địa điểm có vị trí địa lý gần với các địa điểm trong lịch trình hoặc gần với vị trí hiện tại của người dùng khi người dùng chỉnh sửa lịch trình.
+Bổ sung bộ lọc địa điểm theo thành phố, khoảng cách, giá cả.
+Gia cố hệ thống, tăng độ ổn định cho kết nối hệ thống.
+Thêm nội dung cho Trang chủ nhằm tăng khả năng thu hút người dùng.
+Các tính năng mới dự kiến sẽ phát triển:
+Thêm một số tính năng hỗ trợ tiện ích cho người du lịch như: đặt phòng khách sạn và phương tiện di chuyển (vé máy bay, vé tàu, xe công nghệ); thông báo khởi hành khi đến ngày du lịch.
+Bổ sung vào lịch trình thông tin khách sạn và phương tiện di chuyển.
+Cho phép thiết kế lịch trình phù hợp với chi phí mong muốn/tính toán và đưa ra tổng chi phí cần thiết.
+Cho phép người dùng ghi chú lịch trình và các địa điểm bên trong lịch trình.
+Cập nhật tính năng chỉ đường: hiển thị tuyến đường đi qua toàn bộ các địa điểm trong ngày.
+Thêm tính năng báo cáo và chỉnh sửa địa điểm.
+Thêm tùy chọn ngôn ngữ tiếng Anh.
+TÀI LIỆU THAM KHẢO
+[1]Booking, “Booking.com’s Seven Predictions for the Creative Reimagination of Travel in 2023.”  https://globalnews.booking.com/bookingcoms-seven-predictions-for-the-creative-reimagination-of-travel-in-2023/
+[2]VnEconomy, “Trào lưu du lịch tự túc phổ biến hậu đại dịch.”  https://vneconomy.vn/trao-luu-du-lich-tu-tuc-pho-bien-hau-dai-dich.htm
+[3]S. Choachaicharoenkul, D. Coit and N. Wattanapongsakorn, "Multi-Objective Trip Planning with Solution Ranking Based on User Preference and Restaurant Selection," in IEEE Access, vol. 10, pp. 10688-10705, 2022, doi: 10.1109/ACCESS.2022.3144855.
+[4]Surya Priy, “Different Types of Clustering Algorithm” https://www.geeksforgeeks.org/different-types-clustering-algorithm/
+[5]Savyakhosla, “ML | K-means++ Algorithm” https://www.geeksforgeeks.org/ml-k-means-algorithm/
+[6] M. Tenemaza, S. Luján-Mora, A. De Antonio and J. Ramírez, "Improving Itinerary Recommendations for Tourists Through Metaheuristic Algorithms: An Optimization Proposal," in IEEE Access, vol. 8, pp. 79003-79023, 2020, doi: 10.1109/ACCESS.2020.2990348.
+[7] IBM, “Logarithmic scale” https://www.ibm.com/docs/en/cognos-analytics/11.1.0?topic=visualizations-logarithmic-scale
+[8] Wolfgang Wörndl, Alexander Hefele & Daniel Herzog, “Recommending a sequence of interesting places for tourist trips”
+[9] A. Lipowski and D. Lipowska, “Roulette-wheel selection via stochastic acceptance,” Phys. A Stat. Mech. Appl., vol. 391, no. 6, pp. 2193–2196, Mar. 2012
+PHỤ LỤC
+Đặc tả use-case
+Đăng ký
+[TABLE]
+Tên use-case || Đăng ký
+Tóm tắt || Cho phép người dùng đăng ký một tài khoản mới phục vụ cho các chức năng mang tính cá nhân hóa.
+Tác nhân || Người dùng
+Use case liên quan || Không
+Điều kiện tiên quyết || Không
+Hậu điều kiện || Tài khoản người dùng mới
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Nhấn chọn nút “Đăng ký”.
+2. Hiển thị form đăng ký tài khoản cho phép người dùng nhập các thông tin cần thiết.
+3. Người dùng nhập các thông tin cần thiết và bấm “Đăng ký”.
+4. Nếu đăng ký thành công, hệ thống sẽ hiển thị màn hình đăng nhập cho phép người dùng đăng nhập với tài khoản mới tạo.
+Dòng sự kiện phụ || A4: Nếu email đăng nhập đã tồn tại trong hệ thống thì hệ thống sẽ thông báo “Tên đăng nhập đã tồn tại. Bạn vui lòng thử lại” và người dùng cần nhập một email khác để thực hiện đăng ký.
+[/TABLE]
+Đăng nhập
+[TABLE]
+Tên use-case || Đăng nhập
+Tóm tắt || Cho phép người dùng đăng nhập vào tài khoản đã tạo để thực hiện các chức năng mang tính cá nhân hóa.
+Tác nhân || Người dùng
+Use case liên quan || Không
+Điều kiện tiên quyết || Không
+Hậu điều kiện || Đăng nhập vào hệ thống thành công
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Nhấn chọn nút “Đăng nhập”.
+2. Hiển thị form đăng nhập.
+3. Nhập thông tin đăng nhập bao gồm email đăng nhập và mật khẩu. Sau đó nhấn chọn “Đăng nhập”.
+4. Chuyển hướng màn hình đến màn hình “Trang chủ” của ứng dụng.
+Dòng sự kiện phụ || A4: Nếu đăng nhập không thành công, hệ thống sẽ thông báo “Tên đăng nhập hoặc mật khẩu không chính xác. Bạn vui lòng thử lại.” và không chuyển hướng màn hình.
+[/TABLE]
+Đặt lại mật khẩu
+[TABLE]
+Tên use-case || Đặt lại mật khẩu
+Tóm tắt || Cho phép người dùng đặt lại mật khẩu tài khoản khi quên mật khẩu.
+Tác nhân || Người dùng
+Use case liên quan || Không
+Điều kiện tiên quyết || Không
+Hậu điều kiện || Đổi mật khẩu cho người dùng quên mật khẩu
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Nhấn chọn nút “Bạn quên mật khẩu?” tại trang đăng nhập.
+2. Hiển thị màn hình cho phép người dùng nhập email đăng nhập.
+3. Nhập email dùng để đăng nhập tài khoản và bấm “Xác nhận”.
+4. Hệ thống gửi mã OTP xác nhận cho người dùng thông qua email đã nhập.
+5. Hiển thị màn hình cho phép người dùng nhập mã OTP.
+6. Nhập mã OTP được gửi bởi hệ thống qua tài khoản email.
+7. Hiển thị form để người dùng nhập mật khẩu mới và xác nhận mật khẩu mới.
+8. Nhập mật khẩu mới và xác nhận mật khẩu mới và nhấn “Đặt lại mật khẩu”.
+9. Hiển thị trang đăng nhập cho phép người dùng đăng nhập với mật khẩu mới.
+Dòng sự kiện phụ || A1: Nếu đăng nhập không thành công, hệ thống sẽ thông báo “Tên đăng nhập hoặc mật khẩu không chính xác. Bạn vui lòng thử lại.” và không chuyển hướng màn hình. | A6: Nếu người dùng không nhận được mã OTP, người dùng có thể nhấn “Gửi lại” sau mỗi 60 giây. | A7: Nếu mã OTP không chính xác, hệ thống sẽ thông báo lỗi trên màn hình và người dùng cần nhập lại mã OTP.
+[/TABLE]
+Đổi mật khẩu
+[TABLE]
+Tên use-case || Đổi mật khẩu
+Tóm tắt || Cho phép người dùng đổi mật khẩu khi vẫn còn truy cập được vào tài khoản
+Tác nhân || Người dùng
+Use case liên quan || Extends: Chỉnh sửa thông tin cá nhân
+Điều kiện tiên quyết || Người dùng đăng nhập thành công
+Hậu điều kiện || Mật khẩu được cập nhật mới
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Nhấn chọn “Chỉnh sửa thông tin cá nhân”
+2. Điều hướng đến màn hình “Chỉnh sửa thông tin cá nhân”
+3. Nhấn chọn mục “Mật khẩu”
+4. Điều hướng đến màn hình “Đổi mật khẩu”
+5. Nhập mật khẩu hiện tại, mật khẩu mới và xác nhận mật khẩu mới
+6. Nhấn “Lưu thay đổi”
+7. Thông báo đổi mật khẩu thành công
+8. Quay lại màn hình “Chỉnh sửa thông tin cá nhân”
+Dòng sự kiện phụ || A3: Nếu người dùng chỉnh sửa các thông tin khác, kết thúc use-case và thực hiện use-case ‘Chỉnh sửa thông tin cá nhân’. | A5: Nếu người dùng vi phạm một trong các trường hợp sau, quay lại bước 5. | Không nhập hoặc nhập sai mật khẩu cũ. | Mật khẩu mới không hợp lệ (không đủ 8 ký tự, không có cả chữ và số, có khoảng trắng). | Mật khẩu mới và xác nhận mật khẩu mới không khớp. | A6: Nếu người dùng không xác nhận lưu, bỏ qua bước 7 và không cập nhật mật khẩu mới. | A8: Nếu người dùng muốn chỉnh sửa các thông tin khác, thực hiện use-case ‘Chỉnh sửa thông tin cá nhân’.
+[/TABLE]
+Chỉnh sửa thông tin cá nhân
+[TABLE]
+Tên use-case || Chỉnh sửa thông tin cá nhân
+Tóm tắt || Cho phép người dùng thay đổi tên và ảnh đại diện khi vẫn còn truy cập được vào tài khoản
+Tác nhân || Người dùng
+Use case liên quan || Extends: Đổi mật khẩu
+Điều kiện tiên quyết || Người dùng đăng nhập thành công
+Hậu điều kiện || Tên người dùng và ảnh đại diện được cập nhật mới.
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Nhấn chọn “Chỉnh sửa thông tin cá nhân”
+2. Điều hướng đến màn hình “Chỉnh sửa thông tin cá nhân”
+Dòng sự kiện con 1 (đổi tên) || S1. Nhập tên người dùng mới
+S2.  Hiện dấu tick xanh ở cuối hộp thoại nhằm thông báo tên người dùng hợp lệ
+Dòng sự kiện con 2 (đổi ảnh) || S1’. Nhấn vào ảnh đại diện
+S2’. Điều hướng đến thư viện ảnh của thiết bị mobile
+S3’. Nhấn chọn ảnh đại diện mới
+S4’. Quay lại màn hình “Chỉnh sửa thông tin cá nhân”
+S5’. Hiển thị ảnh đại diện mới.
+Dòng sự kiện chính || 3. Nhấn “Lưu thay đổi”
+4. Quay lại màn hình “Trang cá nhân”
+5. Hiển thị tên và ảnh đại diện mới.
+Dòng sự kiện phụ || A2: Nếu người dùng chọn đổi mật khẩu, kết thúc use-case và thực hiện use-case ‘Đổi mật khẩu’. | AS1: Nếu người dùng để trống tên, hoặc tên chỉ chứa khoảng trắng, quay lại bước 3’. | AS3’: Nếu người dùng bấm nút “Quay lại” mà không chọn ảnh, bỏ qua bước S5’. | A3: Nếu người dùng không xác nhận lưu, bỏ qua bước 5 và không cập nhật tên, ảnh đại diện mới.
+[/TABLE]
+Lọc địa điểm
+[TABLE]
+Tên use-case || Lọc địa điểm
+Tóm tắt || Cho phép người dùng lọc địa điểm theo số sao và thể loại
+Tác nhân || Người dùng
+Use case liên quan || Extends: Tìm kiếm địa điểm và lịch trình | Extends: Xem chi tiết địa điểm
+Điều kiện tiên quyết || Không
+Hậu điều kiện || Không
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Nhấn icon “Tìm kiếm” từ thanh điều hướng
+2. Điều hướng đến màn hình “Tìm kiếm 1” chứa thanh tìm kiếm và 6 danh mục.
+3. Nhấn vào thanh tìm kiếm
+4. Điều hướng đến màn hình “Tìm kiếm 2”
+5. Nhấn chọn icon bộ lọc
+6. Nhấn chọn (các) bộ lọc mong muốn
+7. Nhấn “Xác nhận”
+8. Hiển thị kết quả phù hợp với bộ lọc đã chọn.
+Dòng sự kiện phụ || A2: Nếu người dùng nhấn vào một trong sáu danh mục, bỏ qua bước 3. Kết quả tìm kiếm hiển thị ở bước 7 chỉ chứa các địa điểm thuộc danh mục đã chọn. | A4: Nếu người dùng tìm kiếm bằng từ khóa, thực hiện use-case ‘Tìm kiếm địa điểm và lịch trình’. | A7: Nếu người dùng không nhấn xác nhận, kết thúc use-case. | A8: Nếu người dùng muốn bổ sung hoặc xóa bớt bộ lọc, quay lại bước 5. | A8: Nếu các bộ lọc người dùng chọn không thỏa dữ liệu trong Cơ sở dữ liệu, thông báo không có kết quả tìm kiếm phù hợp. | A8: Nếu người dùng xem chi tiết địa điểm, thực hiện use-case ‘Xem chi tiết địa điểm’.
+[/TABLE]
+Xem chi tiết địa điểm
+[TABLE]
+Tên use-case || Xem chi tiết địa điểm
+Tóm tắt || Cho phép người dùng xem thông tin chi tiết của địa điểm như tên, địa chỉ, giờ đóng mở cửa, khoảng giá cũng như là các đánh giá về địa điểm đó
+Tác nhân || Người dùng
+Use case liên quan || Extends: Đánh giá địa điểm | Extends: Lưu địa điểm vào bộ sưu tập
+Điều kiện tiên quyết || Không
+Hậu điều kiện || Không
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Người dùng bấm chọn vào một địa điểm.
+2. Hiển thị màn chi tiết địa điểm.
+3. Người dùng sẽ xem được thông tin chi tiết của địa điểm đó.
+Dòng sự kiện phụ || A3.1: Nếu người dùng chọn “Đánh giá” chuyển tới use-case “Đánh giá địa điểm” | A3.2: Nếu người dùng chọn nút “Yêu thích” chuyển tới use-case “Lưu địa điểm vào bộ sưu tập”
+[/TABLE]
+Đánh giá địa điểm
+[TABLE]
+Tên use-case || Đánh giá địa điểm
+Tóm tắt || Cho phép người dùng thực hiện đánh giá các địa điểm trong ứng dụng
+Tác nhân || Người dùng
+Điều kiện tiên quyết || Người dùng đăng nhập thành công
+Hậu điều kiện || Thêm đánh giá của người dùng về địa điểm
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Tại màn xem chi tiết của địa điểm chọn “Viết bình luận”
+2. Hiển thị giao diện đánh giá địa điểm, mặc định sẽ là đánh giá 5 sao
+3. Điền đánh giá và đánh giá địa điểm theo sao.
+4. Bấm “Hoàn tất” để hoàn thành đánh giá địa điểm
+5. Hệ thống thông báo thêm đánh giá thành công và thêm đánh giá vào phần bình luận của địa điểm.
+Dòng sự kiện phụ || A3: Nếu người dùng chưa đánh giá sao hoặc chưa bình luận mà vẫn bấm “Hoàn tất” thì hệ thống sẽ xem như là mặc định (5 sao và không có bình luận) và tiếp tục bước 5
+[/TABLE]
+Lưu địa điểm vào bộ sưu tập
+[TABLE]
+Tên use-case || Lưu địa điểm vào bộ sưu tập
+Tóm tắt || Người dùng lưu địa điểm vào bộ sưu tập, những địa điểm đã lưu có thể dùng để thêm vào lịch trình
+Tác nhân || Người dùng
+Use case liên quan || Extends: Tạo bộ sưu tập
+Điều kiện tiên quyết || Người dùng đăng nhập thành công
+Hậu điều kiện || Thêm địa điểm vào bộ sưu tập của người dùng trên hệ thống
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Người dùng nhấn nút trái tim được hiển thị cùng với địa điểm
+2. Hệ thống hiện pop-up bộ sưu tập của người dùng để lưu địa điểm vào.
+3. Người dùng chọn bộ sưu tập muốn lưu vào và bấm “Hoàn tất”
+4. Hệ thống thông báo địa điểm đã được thêm vào bộ sưu tập
+Dòng sự kiện phụ || A3: Nếu người dùng chọn “Tạo mới” bộ sưu tập, chuyển đến use-case “Tạo bộ sưu tập mới”
+[/TABLE]
+Chỉnh sửa danh sách lịch trình của tôi
+[TABLE]
+Tên use-case || Chỉnh sửa danh sách lịch trình của tôi
+Tóm tắt || Chỉnh sửa bao gồm thêm và xóa các lịch trình do chính người dùng tạo ra hoặc người dùng yêu thích trong danh sách lịch trình của người dùng
+Tác nhân || Người dùng
+Use case liên quan
+Điều kiện tiên quyết || Người dùng đăng nhập thành công
+Hậu điều kiện || Cập nhật danh sách lịch trình đã tạo hoặc đã lưu của hệ thống, đồng thời cập nhật lịch trình tương ứng
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Hệ thống hiển thị danh sách các lịch trình đã tạo và đã thích chia làm hai tab tương ứng
+2. Bấm nút chỉnh sửa danh sách
+3.Hệ thống hiển thị kí hiệu xóa ở trước mỗi thẻ lịch trình cho phép người dùng xóa
+4. Người dùng bấm xóa lịch trình đã tạo
+5. Hệ thống hiển thị hộp thoại nhắc nhở người dùng
+6. Người dùng chọn xác nhận xóa lịch trình đã tạo
+7. Hệ thống xóa lịch trình của người dùng khỏi ứng dụng
+8. Người dùng bấm xóa lịch trình đã thích
+9. Hệ thống hiển thị hộp thoại nhắc nhở người dùng
+10. Người dùng chọn xác nhận xóa lịch trình đã thích khỏi danh sách
+11. Cập nhật tình trạng hủy yêu thích của người dùng với lịch trình, xóa lịch trình khỏi danh sách yêu thích của người dùng.
+12.Người dùng bấm nút “Xong”
+13. Hệ thống ẩn các kí hiệu cho phép xóa lịch trình, kết thúc use-case.
+Dòng sự kiện phụ || A2: Nếu người dùng không thực hiện bước này, bỏ qua bước 3-12, đến bước 13. | A4: Nếu người dùng không thực hiện bước này, bỏ qua bước 5- 7, đến bước 8 | A6: Nếu người dùng chọn “Hủy”, quay lại bước 1 | A8: Nếu người dùng không thực hiện bước này, bỏ qua bước 9-11, đến bước 12 | A10: Nếu người dùng chọn “Hủy”, quay lại bước 1 | A12: Nếu người dùng không thực hiện bước này, quay lại bước 1.
+[/TABLE]
+Yêu thích và hủy yêu thích lịch trình
+[TABLE]
+Tên use-case || Yêu thích và hủy yêu thích lịch trình
+Tóm tắt || Người dùng yêu thích/hủy yêu thích lịch trình của người khác
+Tác nhân || Người dùng
+Use case liên quan || Không
+Điều kiện tiên quyết || Người dùng đăng nhập thành công
+Hậu điều kiện || Cập nhật danh sách lịch trình yêu thích của người dùng
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Hiển thị lịch trình kèm button trái tim ở trạng thái “đã yêu thích” ở các lịch trình mà người dùng đã yêu thích trước đó.
+2. Người dùng bấm button trái tim
+3. Xóa lịch trình yêu thích vào danh sách lịch trình yêu thích của người dùng và load lại nút yêu thích thành trạng thái “chưa yêu thích”
+Dòng sự kiện phụ || A1: Nếu người dùng chưa yêu thích lịch trình đó thì button trái tim ở trạng thái “chưa yêu thích” lịch trình. | A3: Nếu người dùng chưa yêu thích lịch trình thì khi bấm button hệ thống thêm lịch trình đó khỏi danh sách lịch trình yêu thích và load lại nút yêu thích thành trạng thái “đã yêu thích”. | A3.1: Nếu server đang bảo trì hoặc thiết bị đang không kết nối mạng thì hiện thông báo lỗi và kết thúc use-case.
+[/TABLE]
+Tạo bộ sưu tập mới
+[TABLE]
+Tên use-case || Tạo bộ sưu tập mới
+Tóm tắt || Người dùng tạo bộ sưu tập mới để lưu các địa điểm yêu thích.
+Tác nhân || Người dùng
+Use case liên quan || Không
+Điều kiện tiên quyết || Người dùng đăng nhập thành công
+Hậu điều kiện || Một bộ sưu tập mới được tạo cho người dùng.
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Nhấn chọn nút “Tạo mới”.
+2. Hiển thị form nhập tên bộ sưu tập.
+3. Điền tên bộ sưu tập mới.
+4. Kiểm tra độ hợp lệ của tên.
+5. Nhấn chọn nút “Tạo”.
+6. Quay lại màn hình trước.
+7. Hiển thị danh sách bộ sưu tập bao gồm bộ sưu tập mới tạo.
+Dòng sự kiện phụ || A3: Nếu người dùng nhấn “Hủy” thì quay lại màn hình trước và kết thúc use-case. | A4: Nếu người dùng để trống tên, hoặc tên chỉ chứa khoảng trắng thì thông báo lỗi và quay lại bước 3. | A5: Nếu người dùng nhấn “Hủy” thì quay lại màn hình trước và kết thúc use-case. | A6: Nếu server đang bảo trì hoặc thiết bị đang không kết nối mạng thì hiện thông báo lỗi, quay lại màn hình trước và kết thúc use-case.
+[/TABLE]
+Xóa bộ sưu tập
+[TABLE]
+Tên use-case || Xóa bộ sưu tập
+Tóm tắt || Cho phép người dùng xóa các bộ sưu tập của mình khi vẫn còn truy cập được vào tài khoản.
+Tác nhân || Người dùng
+Use case liên quan || Không
+Điều kiện tiên quyết || Người dùng đăng nhập thành công
+Hậu điều kiện || Danh sách bộ sưu tập được cập nhật mới.
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Nhấn chọn “Địa điểm yêu thích”.
+2. Điều hướng đến màn hình “Địa điểm yêu thích”.
+3. Nhấn chọn biểu tượng cây viết.
+4. Hiện biểu tượng “x” ở mọi bộ sưu tập.
+5. Nhấn chọn biểu tượng “x” ở bộ sưu tập cần xóa.
+6. Hiện pop-up xác nhận xóa.
+7. Nhấn chọn nút “Xóa”.
+8. Cập nhật lại danh sách bộ sưu tập.
+9. Nhấn chọn nút “Xong”.
+10. Ẩn biểu tượng “x” ở mọi bộ sưu tập.
+Dòng sự kiện phụ || A7: Nếu người dùng chọn nút “Thoát” thì bộ sưu tập không bị xóa. | A9: Nếu người dùng không nhấn chọn nút “Xong” mà muốn xóa tiếp các bộ sưu tập khác thì quay lại bước S3.
+[/TABLE]
+Sửa bộ sưu tập
+[TABLE]
+Tên use-case || Sửa bộ sưu tập
+Tóm tắt || Cho phép người dùng sửa các bộ sưu tập của mình khi vẫn còn truy cập được vào tài khoản.
+Tác nhân || Người dùng
+Use case liên quan || Không
+Điều kiện tiên quyết || Người dùng đăng nhập thành công
+Hậu điều kiện || Danh sách địa điểm trong bộ sưu tập được cập nhật mới.
+Dòng sự kiện chính || Hệ thống || Người dùng
+1. Nhấn chọn “Địa điểm yêu thích”.
+2. Điều hướng đến màn hình “Địa điểm yêu thích”.
+3. Nhấn vào bộ sưu tập cần chỉnh sửa
+4. Điều hướng đến màn hình hiển thị danh sách địa điểm trong bộ sưu tập.
+5. Nhấn chọn biểu tượng cây viết.
+6. Hiện biểu tượng “x” ở mọi địa điểm.
+7. Nhấn chọn biểu tượng “x” ở địa điểm cần xóa.
+8. Hiện pop-up xác nhận xóa.
+9. Nhấn chọn nút “Xóa”.
+10. Cập nhật lại danh sách địa điểm trong bộ sưu tập.
+11. Nhấn chọn nút “Xong”.
+12. Ẩn biểu tượng “x” ở mọi địa điểm.
+Dòng sự kiện phụ || A9: Nếu người dùng chọn nút “Thoát” thì địa điểm không bị xóa. | A11: Nếu người dùng không nhấn chọn nút “Xong” mà muốn xóa tiếp các bộ sưu tập khác thì quay lại bước S5’.
+[/TABLE]

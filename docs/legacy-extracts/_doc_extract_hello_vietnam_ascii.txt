@@ -1,0 +1,1291 @@
+Report v0.1
+Bang chia viec - thoi gian thuc hien: 2 ngay (deadline: 5h chieu thu bay 28/6)
+[TABLE]
+Task || Noi dung cu the || Nguoi thuc hien || Deadline || Đanh gia đo hoan thanh
+Task 1: Ra soat cac chuc nang đa đe xuat trong đe tai || Đoc lai toan bo phan chuc nang đa co, trich xuat cac tinh nang nho || Kim Oanh || 08:00 thu sau 27/6
+Task 2: Viet mo ta ngan cho moi chuc nang || Gom: Muc đich – Đau vao – Ket qua đau ra – Vi du su dung || Phuc || 20:00 thu sau 27/6
+Task 3: Đe xuat chuc nang mo rong || Viet ngan gon 3–5 tinh nang co the bo sung sau: AR, Booking, Lich offline... || Thai || 08:00 thu bay 28/6
+Task 4: Bien soan report hoan chinh || Trinh bay logic, ro rang tung phan: mo đau, chuc nang, mo rong, so đo || Kim Oanh || 17:00 thu bay 28/6
+[/TABLE]
+Hello Vietnam - Project Report
+1. Tom tat y chinh cua đe tai “Hello Vietnam”
+Muc tieu chinh:Tao mot ung dung đa nen tang (iOS, Android, Windows, macOS) giup:
+Ca nhan hoa trai nghiem du lich tai Viet Nam.
+Ket noi khach du lich va nguoi đia phuong.
+Quang ba van hoa, san pham, dich vu Viet Nam ra quoc te.
+Van đe thuc te:
+Viet Nam co ty le khach quay lai <10%, trong khi Thai Lan đat 60%.
+Nhan dien thuong hieu du lich Viet con yeu, thieu trai nghiem “ca nhan hoa”.
+2. Tiep can nhu cau cua du khach
+Ban la ai va ban đang o đauD
+Toi đang:
+1.1) O Viet Nam1.2) O ngoai Viet Nam
+Toi muon biet them ve:
+Neu đang o Viet Nam (1.1):
+1.1.1) Nhung hoat đong thu vi gan toi1.1.2) Đia điem tiep theo nen ghe tham
+Neu đang o nuoc ngoai (1.2):
+1.2.1) Tim hieu đieu gi lam Viet Nam tro nen đac biet1.2.2) Tim y tuong ve đia điem va thoi điem nen đi du lich1.2.3) Toi đa đat ve va đang len ke hoach chuyen đi
+Thoi gian toi du đinh đi du lich:
+1 tuan hoac it hon (phu hop đe kham pha 1–3 đia điem)
+2 tuan (đu đe kham pha nui, bien va van hoa)
+Hon 2 tuan (thuc su “hieu” va “trai nghiem” Viet Nam)
+Toi se đi du lich vao thoi điem:
+Thang 12 – Thang 2
+Thang 3 – Thang 5
+Thang 6 – Thang 8
+Thang 9 – Thang 11
+Toi chu yeu đi du lich vi ly do giD (co the chon nhieu ly do)
+Am thuc
+Van hoa truyen thong
+Van hoa bieu dien / nghe thuat
+Thien nhien
+Tiec tung / soi đong
+Kham pha / phieu luu
+3. Cac chuc nang chinh can co
+1. Cong cu ho tro du khach
+Goi y thoi điem & đia điem du lich theo thoi tiet, so thich, thoi gian ranh.
+Goi y hoat đong gan vi tri hien tai.
+Gioi thieu van hoa, mon an, san pham ban đia theo khu vuc.
+Giai thich cach su dung cac ung dung pho bien tai Viet Nam (Zalo, Grab…)
+Tu đien anh (image-based translator) dung AI đe nhan dien mon an, đo vat
+Cung cap tu vung mau, phien am, ho tro luyen phat am
+Lich trinh goi y dua theo so thich ca nhan (am thuc, thien nhien, van hoa…)
+Tao nhat ky hanh trinh (timeline) đe luu giu va chia se trai nghiem
+Luu đia điem, mon an, nguoi dan vao danh sach yeu thich
+2. Cong cu ho tro nguoi ban đia
+Tao gian hang mini đe gioi thieu san pham/dich vu (đa ngon ngu: Viet, Anh, Phap, Đuc)
+Su dung mau co san đe đang san pham de dang (form khai bao: loai hinh, nguon goc, muc đo cay…)
+Gan bo loc tim kiem: mon chay, đo cay, thu cong, đac san vung mien…
+Tu đong đinh vi tren ban đo (Google Maps + OSM)
+Nhan compliment tu du khach (nut “Cam on”/“Ban that tuyet”)
+Quan ly luot tuong tac, binh luan tu nguoi dung
+3. Chuc nang xa hoi va tuong tac
+Nut Compliment tao ket noi tich cuc giua khach va dan đia phuong
+Chia se nhat ky hanh trinh len mang xa hoi hoac voi ban be.
+He thong yeu thich (favorites) cho nguoi dung luu lai moi trai nghiem
+Goi y ban đong hanh hoac nhom đi cung (neu đuoc mo rong sau)
+Đanh gia/quay lai trai nghiem sau khi ket thuc hanh trinh.
+4. Ky thuat
+Frontend: Flutter (đa nen tang: mobile, desktop)
+Backend: Supabase
+Xac thuc: Open-source OAuth (Google, Facebook, email)
+UI/UX: Penpot hoac Figma
+Quan ly du an: Trello
+4. Ke hoach khao sat & tim hieu
+1. Khao sat nguoi dung muc tieu
+Khach du lich nuoc ngoai: Dung Google Forms hoi ve thoi quen, nhu cau, app đang dung khi du lich.
+Nguoi ban đia: (chu quan an, homestay...) phong van qua Zalo, Facebook.
+2. Nghien cuu đoi thu
+Phan tich cac ung dung: Klook, KKDay, Airbnb Experiences, Culture Trip hay nhung app gan voi app cua minh/ app noi tieng va hoi giong ma ban biet.
+So sanh chuc nang, UI, điem manh/yeu.
+3. Tim hieu ky thuat
+Thu nghiem Flutter (cross-platform).
+Khoi tao Supabase DB (users, places, foods).
+Tim hieu xac thuc OAuth (Firebase Auth vs Supabase Auth vs NextAuth).
+5. Ket luan
+"Hello Vietnam" nham mang lai trai nghiem du lich ca nhan hoa, ket noi van hoa ban đia voi du khach quoc te, đong gop vao viec nang cao hinh anh du lich Viet Nam tren ban đo quoc te.
+Mo ta chuc nang
+Cong cu ho tro khach du lich
+Goi y thoi điem & đia điem du lich theo thoi tiet, so thich, thoi gian ranh.
+Muc đich: Giup du khach lua chon thoi gian va đia điem phu hop đe co trai nghiem tron ven, tranh thoi tiet xau hoac khong đung mua du lich.
+Đau vao: Thoi gian du kien đi du lich, so thich ca nhan (am thuc, thien nhien, kham pha,...), vi tri hien tai (neu co), so ngay luu tru.
+Ket qua đau ra: Danh sach goi y điem đen phu hop theo mua, kem ly do đe xuat va cac meo nhu nen mang gi, nen tranh gi.
+Vi du su dung: Neu nguoi dung chon đi vao thang 12, ung dung goi y nen đen Sa Pa hoac Ha Noi, vi thoi tiet lanh thich hop thuong thuc pho va tham quan mua le hoi, đong thoi đe xuat mang theo ao khoac va khan am.
+Goi y hoat đong gan vi tri hien tai.
+Muc đich: Giup du khach tan dung thoi gian ranh hieu qua bang cach kham pha cac hoat đong, điem đen thu vi quanh ho trong ban kinh gan.
+Đau vao: Vi tri GPS hien tai cua nguoi dung; tuy chon ban kinh tim kiem va loai hinh hoat đong mong muon.
+Ket qua đau ra: Danh sach hoat đong goi y co sap xep theo khoang cach va muc đo pho bien, bao gom hinh anh, mo ta ngan va chi đuong.
+Vi du su dung: Nguoi dung đang o TP. Ho Chi Minh mo ung dung vao buoi toi se đuoc goi y “An khuya o cho Ho Thi Ky – 1.2km” hoac “Đi dao pho đi bo Nguyen Hue – 800m”.
+Gioi thieu van hoa, mon an, san pham ban đia theo khu vuc.
+Muc đich: Giup khach hieu sau hon ve vung đat minh ghe tham, tang su gan ket va hung thu voi van hoa Viet.
+Đau vao: Khu vuc hien tai hoac khu vuc đang tim kiem.
+Ket qua đau ra: Thong tin chi tiet ve cac mon an, trang phuc, tap tuc, san pham thu cong, đuoc trinh bay sinh đong voi hinh anh, phien am, giai thich ngan gon.
+Vi du su dung: Khi đen Hue, ung dung gioi thieu cac mon an đac trung cua Hue, neu nguoi dung bam vao mon “Banh beo” thi se co kem hinh anh va video ngan ve mon an, goi y đia điem an uy tin va đanh gia cua nguoi dung khac.
+Giai thich cach su dung cac ung dung pho bien tai Viet Nam (Zalo, Grab…)
+Muc đich: Giam bo ngo cho du khach khi su dung cac dich vu so pho bien o Viet Nam.
+Đau vao: Lua chon ung dung hoac nhu cau (vi du: “Toi muon đat xe” → goi y Grab).
+Ket qua đau ra: Huong dan bang hinh anh va video minh hoa tung buoc, co ban dich nhieu ngon ngu.
+Vi du su dung: Du khach chua biet cach đat xe qua Grab đuoc huong dan bang anh: chon điem đon, chon hinh thuc thanh toan, luu y ve gia cuoc gio cao điem.
+Tu đien anh (image-based translator) dung AI đe nhan dien mon an, đo vat
+Muc đich: Giup nguoi dung nhan dien nhanh mon an hoac vat dung bang hinh anh, ngay ca khi khong biet tieng Viet.
+Đau vao: Anh chup truc tiep tu camera hoac tai tu thu vien anh.
+Ket qua đau ra: Ten mon/vat the + thanh phan chinh + vung mien pho bien + goi y đia điem mua/thuong thuc.
+Vi du su dung: Du khach chup anh mon banh co hinh hoa, app tra ve: “Banh in Hue – lam tu bot nep, đuong va đau xanh – co ban tai cho Đong Ba”.
+Cung cap tu vung mau, phien am, ho tro luyen phat am
+Muc đich: Tang kha nang giao tiep co ban bang tieng Viet, ho tro tuong tac nhe nhang voi nguoi đia phuong.
+Đau vao: Chu đe can luyen (an uong, hoi đuong, chao hoi,...).
+Ket qua đau ra: Danh sach tu/cau mau co phien am quoc te, phat am giong chuan.
+Vi du su dung: Chon chu đe “hoi gia”, nguoi dung đuoc hoc cum tu “Cai nay bao nhieu tienD” – phien am: cach đoc ra am tuong tu trong ngon ngu cua ho, giong đoc đi kem + nut ghi am lai đe so sanh.
+Lich trinh goi y dua theo so thich ca nhan (am thuc, thien nhien, van hoa…)
+Muc đich: Tu đong tao lich trinh theo nhu cau va thoi gian cua nguoi dung.
+Đau vao: Thoi gian luu tru, đia điem mong muon, so thich ca nhan (co the chon nhieu: am thuc, kham pha, nghi duong).
+Ket qua đau ra: Lich trinh goi y tung ngay (sang – trua – chieu – toi), tich hop ban đo chi đuong va meo trai nghiem.
+Vi du su dung: Nguoi dung chon “Kham pha ket hop van hoa – am thuc” trong 2 ngay tai Đa Nang – Hoi An, he thong goi y:
+Ngay 1 – Kham pha Đa Nang
+Sang: Tham quan chua Linh Ung – Ban đao Son Tra
+Trua: An mi Quang Ba Mua
+Chieu: Tham quan Bao tang Cham – ngam cau Rong
+Toi: Đi cho đem an vat, xem trinh dien nghe thuat đuong pho
+Ngay 2 – Đi ve trong ngay đen Hoi An (30km)
+Sang: Di chuyen tu Đa Nang đen pho co Hoi An, tham quan Chua Cau, nha co
+Trua: Thuong thuc cao lau
+Chieu: Đi thuyen tren song Hoai
+Toi: Tha hoa đang, ve lai Đa Nang
+Tao nhat ky hanh trinh (timeline) đe luu giu va chia se trai nghiem
+Muc đich: Giup nguoi dung ghi lai ky niem, luu giu trai nghiem, de dang chia se voi ban be.
+Đau vao: Anh, mo ta, đia điem đa ghe tham (ghi lai tu đong hoac do nguoi dung nhap).
+Ket qua đau ra: Dong thoi gian hanh trinh hien thi theo thu tu ngay/thoi gian, co the chinh sua hoac chia se.
+Vi du su dung: Sau 3 ngay du lich, timeline hien thi: “Ngay 1 – Tham quan Đa nang, an mi quang, đi cho đem”; “Ngay 2 – Kham pha Hoi An, an cao lau, tha hoa đang, ..”.
+Luu đia điem, mon an, nguoi dan vao danh sach yeu thich
+Muc đich: Tang trai nghiem ca nhan hoa, giup nguoi dung de quay lai noi đa yeu thich hoac goi y cho nguoi khac.
+Đau vao: Nut “Them vao yeu thich” khi xem thong tin chi tiet ve mon an, đia điem, nguoi dan hoac hoat đong.
+Ket qua đau ra: Mot danh sach ca nhan hoa co the truy cap moi luc, chia se hoac dung đe xay dung lich trinh sau nay.
+Vi du su dung: Nguoi dung sau khi đen tiem banh Coi Xay Gio o Đa Lat bam “Yeu thich” đe chia se cho ban be lan sau đen.
+Cong cu ho tro nguoi ban đia
+Tao gian hang mini đe gioi thieu san pham/dich vu (đa ngon ngu: Viet, Anh, Phap, Đuc)
+Giup nguoi dan, tieu thuong de dang tiep can du khach quoc te bang cach gioi thieu san pham bang nhieu ngon ngu.
+Đau vao: Thong tin co ban cua san pham/dich vu (ten, hinh anh, mo ta, gia, ngon ngu).
+Ket qua đau ra: Mot “gian hang so” hien thi trong app, co the truy cap cong khai, voi giao dien dich san sang Anh, Phap, Đuc.
+Vi du su dung: Chi Lan ban tranh theu tay nhap mo ta bang tieng Viet, he thong tu tao ban dich sang tieng Anh: “Hand-embroidered painting – Hue style – 100% silk”.
+Su dung mau co san đe đang san pham de dang (form khai bao: loai hinh, nguon goc, muc đo cay…)
+Muc đich: Giup nguoi dan đang thong tin san pham nhanh chong, đay đu ma khong can hieu ve cong nghe.
+Đau vao: Chon loai san pham → đien theo form co san: mon an, dich vu, đo luu niem, chon nguon goc, đac điem (cay/khong cay, vung mien,...).
+Ket qua đau ra: Trang thong tin san pham đuoc tao chuan hoa, de đoc, de hien thi trong app, co kha nang goi y cho du khach đung muc tieu.
+Vi du su dung: Chi Ba ban mam nhap thong tin qua form: “Loai hinh: Thuc pham – Nguon goc: Ben Tre – Đac điem: cay nhe – thu cong”. He thong tu sinh trang san pham.
+Gan bo loc tim kiem: mon chay, đo cay, thu cong, đac san vung mien…
+Muc đich: Tang kha nang tiep can khach hang muc tieu bang cach cho phep nguoi dung loc theo nhu cau cu the.
+Đau vao: Thong tin san pham đuoc gan tag phu hop luc đang.
+Ket qua đau ra: Khi khach tim kiem, cac san pham se đuoc goi y theo đung bo loc (VD: chi hien mon chay, hoac san pham thu cong mien Trung).
+Vi du su dung: Du khach an chay tim kiem “vegetarian food” → app tra ve “Banh it tran chay – Ben Tre” cua chi Ba.
+Tu đong đinh vi tren ban đo (Google Maps + OSM)
+Muc đich: Giup khach de tim đen đia điem kinh doanh, tranh bi lac hoac bo qua cac gian hang nho.
+Đau vao: Nguoi ban xac nhan vi tri hien tai hoac nhap đia chi.
+Ket qua đau ra: Gian hang hien thi đung tren ban đo, kem huong dan đuong đi.
+Vi du su dung: Chi Nam ban bun bo Hue đuoc đinh vi chinh xac tren ban đo Hoi An. Du khach dung app co the đi bo 5 phut la đen.
+Nhan compliment tu du khach (nut “Cam on”/“Ban that tuyet”)
+Muc đich: Tang su khich le, tuong tac tich cuc tu khach du lich đoi voi nguoi ban đia.
+Đau vao: Khach hang nhan nut cam on sau khi trai nghiem san pham/dich vu.
+Ket qua đau ra: Nguoi ban nhan đuoc thong bao ve loi khen cua du khach
+Vi du su dung: Anh ban nuoc mia đuoc 7 loi khen tu khach nuoc ngoai sau 1 ngay ban, co the dung đe tao uy tin va quang ba them.
+Quan ly luot tuong tac, binh luan tu nguoi dung
+Muc đich: Giup nguoi ban hieu ro muc đo quan tam, phan hoi va nhu cau tu khach hang.
+Đau vao: Hanh đong cua khach nhu xem, thich, binh luan, chia se.
+Ket qua đau ra: Bang thong ke đon gian: bao nhieu luot xem, bao nhieu luot thich, binh luan nao noi bat. Co the phan hoi binh luan.
+Vi du su dung: Chi Sau ban non la thay san pham đuoc 250 luot xem trong tuan qua, co 12 nguoi tha tim va 3 binh luan tich cuc. Chi tra loi cam on tung nguoi đe tang ket noi.
+Chuc nang xa hoi va tuong tac
+Nut Compliment tao ket noi tich cuc giua khach va dan đia phuong
+Muc đich: Khuyen khich su cong nhan, tao đong luc tinh than cho nguoi dan phuc vu tot hon va xay dung bau khong khi du lich tich cuc.
+Đau vao: Du khach nhan nut “Cam on” hoac “Ban that tuyet” sau khi dung san pham/dich vu hoac gap nguoi than thien.
+Ket qua đau ra: Nguoi đia phuong nhan đuoc thong bao loi khen kem nguoi gui va ly do (neu co).
+Vi du su dung: Du khach an banh mi thay co ban hang de thuong, nhan “Cam on” → Co nhan đuoc: “Ban vua đuoc khen boi Marie (France): ‘Mon an cua co rat ngon’”
+Chia se nhat ky hanh trinh len mang xa hoi hoac voi ban be.
+Muc đich: Giup nguoi dung luu giu va chia se trai nghiem voi ban be, đong thoi lan toa hinh anh tich cuc ve Viet Nam.
+Đau vao: Anh, ghi chu hanh trinh, đia điem, đanh gia ca nhan đuoc nguoi dung ghi lai.
+Ket qua đau ra: Link chia se tren mang xa hoi hoac gui qua email/messenger, kem hinh anh va đuong dan timeline.
+Vi du su dung: Ban Linh vua ket thuc chuyen đi Đa Lat 3 ngay, chia se nhat ky qua Facebook voi caption: “Mot hanh trinh tuyet voi🧡”.
+He thong yeu thich (favorites) cho nguoi dung luu lai moi trai nghiem
+Muc đich: Cho phep nguoi dung luu lai nhung trai nghiem đang nho đe de quay lai hoac goi y cho nguoi khac.
+Đau vao: Nut “Yeu thich” tai moi điem đen, mon an, nguoi ban đia, hoat đong,...
+Ket qua đau ra: Danh sach ca nhan hoa co the xem lai moi luc, co the dung đe len lich trinh moi hoac chia se.
+Vi du su dung: Ban Hai luu “Pho Thin – Ha Noi” va “Co Hang ban che sen” vao muc yeu thich đe ghe lai lan sau hoac gioi thieu cho ban minh.
+Goi y ban đong hanh hoac nhom đi cung (neu đuoc mo rong sau)
+Muc đich: Giup nguoi du lich mot minh tim đuoc ban đong hanh an toan, co cung so thich, hoac nhom du lich cung tuyen.
+Đau vao: Nguoi dung chon bat che đo “Tim ban đong hanh” + cung cap lich trinh du kien, so thich va gioi tinh neu muon.
+Ket qua đau ra: Danh sach nhung nguoi co lich trinh tuong tu, co the gui loi moi tro chuyen hoac tao nhom.
+Vi du su dung: Ban Tom (My) muon kham pha Hoi An vao ngay 12/7, đuoc goi y ban Trang (Viet Nam) cung đi ngay đo, cung so thich chup anh va an chay → ghep nhom đi cung.
+Đanh gia/quay lai trai nghiem sau khi ket thuc hanh trinh.
+Muc đich: Thu thap phan hoi đe cai thien dich vu, đong thoi giup nguoi dung nho lai hanh trinh va đong gop cho cong đong.
+Đau vao: Sau khi ket thuc moi hoat đong hoac chuyen đi, nguoi dung đuoc nhac đanh gia.
+Ket qua đau ra: Sao, nhan xet, hinh anh đinh kem se hien thi cho nhung nguoi dung khac tham khao.
+Vi du su dung: Ban Ngoc đanh gia 5 sao cho “Homestay May Nui” sau chuyen đi Sapa: “Chi chu than thien, canh cuc chill!”
+Đe xuat chuc nang mo rong
+CHUC NANG MO RONG ĐE XUAT
+1. Đat dich vu noi đia (In-app Booking)
+Muc đich: Giup du khach đat cac dich vu nhu tour trai nghiem, lop hoc nau an, thue xe may, ve tham quan... ngay trong app ma khong can dung app ngoai.
+Đau vao: Đia điem, thoi gian mong muon, loai hinh dich vu (tour, ve, lop hoc,...)
+Ket qua đau ra: Danh sach dich vu co the đat, kem gia, thoi gian, thong tin nguoi to chuc, va nut thanh toan.
+Vi du su dung: Du khach o Hoi An co the đat “Tour lam đen long 2 gio” tu nguoi dan đia phuong.
+2. Che đo su dung offline (Offline Mode)
+Muc đich: Ho tro du khach khi mat ket noi mang (vung sau, tau xe, nuoc ngoai…)
+Đau vao: Cac muc đuoc nguoi dung chon tai ve (ban đo, lich trinh, tu đien, timeline,…)
+Ket qua đau ra: App hoat đong đuoc cac tinh nang co ban ma khong can mang.
+Vi du su dung: Du khach o Sapa tai truoc lich trinh + ban đo đi bo, van xem đuoc thong tin khi o ban lang khong co song.
+3. Tich hop AR tai điem du lich (Augmented Reality)
+Muc đich: Tang tinh tuong tac va hieu biet bang cach chieu thong tin ao tai cac điem tham quan.
+Đau vao: Vi tri GPS va camera.
+Ket qua đau ra: Khi gio camera tai di tich, app hien thi hinh anh, loi ke, video huong dan, lich su đia điem.
+Vi du su dung: Gio may tai Chua Cau – Hoi An → hien thong tin lich su, hinh anh phuc dung qua cac thoi ky.
+4. Tich điem đoi qua (Reward & Loyalty System)
+Muc đich: Khuyen khich nguoi dung tuong tac nhieu hon, quay lai app thuong xuyen.
+Đau vao: Hanh đong nguoi dung: check-in, đanh gia, chia se, tang compliment,...
+Ket qua đau ra: Điem thuong tich luy, co the đoi lay voucher an uong, ve vao cong, mon qua luu niem.
+Vi du su dung: Sau 10 lan check-in, nguoi dung nhan đuoc ma giam gia 50.000đ khi đat lop hoc nau an truyen thong.
+5. Tu đong nhan dien lich trinh tu anh ve/ma QR (Smart Scan)
+Muc đich: Giup nguoi dung tiet kiem thoi gian len lich trinh, đong bo nhanh voi lich ca nhan.
+Đau vao: Anh ve may bay, ve tau, email xac nhan đat phong/tour.
+Ket qua đau ra: App tu đong đe xuat khung lich trinh phu hop voi thoi gian va đia điem.
+Vi du su dung: Nguoi dung chup anh ve may bay toi Hue vao ngay 20/8 → app goi y hanh trinh kham pha Hue trong 3 ngay.
+Report v0.2
+Hello Vietnam - Project Report
+[TABLE]
+Giao vien huong dan
+MsC. Tiet Gia Hong
+Nhom sinh vien
+22127319 - Le Tran Kim Oanh
+22127331 - Nguyen Gia Phuc
+22127382 - Cao Pham Hoang Thai
+Thanh pho Ho Chi Minh, 01/07/2025
+[/TABLE]
+Khoa Cong Nghe Thong Tin
+Bo mon He thong thong tin
+Truong Đai hoc Khoa Hoc Tu Nhien
+Muc luc
+Phan cong cong viec
+[TABLE]
+Task || Noi dung cu the || Nguoi thuc hien || Đanh gia
+Task 1: Viet report co ban + phan cong || Lam report v0.1 co cac chuc nang chinh can co, chia viec va goi y cach lam || Oanh || 100%
+Task 2: Viet mo ta ngan cho moi chuc nang || Gom: Muc đich – Đau vao – Ket qua đau ra – Vi du su dung || Phuc || 100%
+Task 3: Đe xuat chuc nang mo rong || Viet ngan gon 3–5 tinh nang co the bo sung sau: AR, Booking, Lich offline... || Thai || 100%
+Task 4: Bien soan report hoan chinh || Tong hop bang chuc nang + trinh bay logic, ro rang tung phan || Oanh || 100%
+[/TABLE]
+Tom tat y chinh cua đe tai “Hello Vietnam”
+Muc tieu chinh:Tao mot ung dung đa nen tang (iOS, Android, Windows) giup:
+Ca nhan hoa trai nghiem du lich tai Viet Nam.
+Ket noi khach du lich va nguoi đia phuong.
+Quang ba van hoa, san pham, dich vu Viet Nam ra quoc te.
+Van đe thuc te:
+Viet Nam co ty le khach quay lai <10%, trong khi Thai Lan đat 60%.
+Nhan dien thuong hieu du lich Viet con yeu, thieu trai nghiem “ca nhan hoa”.
+Tiep can nhu cau cua du khach
+Ban la ai va ban đang o đauD
+Toi đang:
+O Viet Nam
+O ngoai Viet Nam
+Toi muon biet them ve:
+Neu đang o Viet Nam (a):
+Nhung hoat đong thu vi gan toi
+Đia điem tiep theo nen ghe tham
+Neu đang o nuoc ngoai (b):
+Tim hieu đieu gi lam Viet Nam tro nen đac biet
+Tim y tuong ve đia điem va thoi điem nen đi du lich
+Toi đa đat ve va đang len ke hoach chuyen đi
+Thoi gian toi du đinh đi du lich:
+1 tuan hoac it hon (phu hop đe kham pha 1–3 đia điem)
+2 tuan (đu đe kham pha nui, bien va van hoa)
+Hon 2 tuan (thuc su “hieu” va “trai nghiem” Viet Nam)
+Toi se đi du lich vao thoi điem:
+Thang 12 – Thang 2
+Thang 3 – Thang 5
+Thang 6 – Thang 8
+Thang 9 – Thang 11
+Toi chu yeu đi du lich vi ly do giD (co the chon nhieu ly do)
+Am thuc
+Van hoa truyen thong
+Van hoa bieu dien / nghe thuat
+Thien nhien
+Tiec tung / soi đong
+Kham pha / phieu luu
+Cac chuc nang chinh can co
+Cong cu ho tro du khach
+Goi y thoi điem & đia điem du lich theo thoi tiet, so thich, thoi gian ranh.
+Goi y hoat đong gan vi tri hien tai.
+Gioi thieu van hoa, mon an, san pham ban đia theo khu vuc.
+Giai thich cach su dung cac ung dung pho bien tai Viet Nam (Zalo, Grab…)
+Tu đien anh (image-based translator) dung AI đe nhan dien mon an, đo vat
+Cung cap tu vung mau, phien am, ho tro luyen phat am
+Lich trinh goi y dua theo so thich ca nhan (am thuc, thien nhien, van hoa…)
+Tao nhat ky hanh trinh (timeline) đe luu giu va chia se trai nghiem
+Luu đia điem, mon an, nguoi dan vao danh sach yeu thich
+Cong cu ho tro nguoi ban đia
+Tao gian hang mini đe gioi thieu san pham/dich vu (đa ngon ngu: Viet, Anh, Phap, Đuc)
+Su dung mau co san đe đang san pham de dang (form khai bao: loai hinh, nguon goc, muc đo cay…)
+Gan bo loc tim kiem: mon chay, đo cay, thu cong, đac san vung mien…
+Tu đong đinh vi tren ban đo (Google Maps + OSM)
+Nhan compliment tu du khach (nut “Cam on”/“Ban that tuyet”)
+Quan ly luot tuong tac, binh luan tu nguoi dung
+Chuc nang xa hoi va tuong tac
+Nut Compliment tao ket noi tich cuc giua khach va dan đia phuong
+Chia se nhat ky hanh trinh len mang xa hoi hoac voi ban be.
+He thong yeu thich (favorites) cho nguoi dung luu lai moi trai nghiem
+Goi y ban đong hanh hoac nhom đi cung (neu đuoc mo rong sau)
+Đanh gia/quay lai trai nghiem sau khi ket thuc hanh trinh.
+Mo ta chi tiet chuc nang
+Cong cu ho tro khach du lich
+Goi y thoi điem & đia điem du lich theo thoi tiet, so thich, thoi gian ranh.
+Muc đich: Giup du khach lua chon thoi gian va đia điem phu hop đe co trai nghiem tron ven, tranh thoi tiet xau hoac khong đung mua du lich.
+Đau vao: Thoi gian du kien đi du lich, so thich ca nhan (am thuc, thien nhien, kham pha,...), vi tri, so ngay luu tru.
+Ket qua đau ra: Danh sach goi y điem đen phu hop theo mua, kem ly do đe xuat va cac meo nhu nen mang gi, nen tranh gi.
+Vi du su dung: Neu nguoi dung chon đi vao thang 12, ung dung goi y nen đen Sa Pa hoac Ha Noi, vi thoi tiet lanh thich hop thuong thuc pho va tham quan mua le hoi, đong thoi đe xuat mang theo ao khoac va khan am.
+Goi y hoat đong gan vi tri hien tai.
+Muc đich: Giup du khach tan dung thoi gian ranh hieu qua bang cach kham pha cac hoat đong, điem đen thu vi quanh ho trong ban kinh gan.
+Đau vao: Vi tri GPS hien tai cua nguoi dung; tuy chon ban kinh tim kiem va loai hinh hoat đong mong muon.
+Ket qua đau ra: Danh sach hoat đong goi y co sap xep theo khoang cach va muc đo pho bien, bao gom hinh anh, mo ta ngan va chi đuong.
+Vi du su dung: Nguoi dung đang o TP. Ho Chi Minh mo ung dung vao buoi toi se đuoc goi y “An khuya o cho Ho Thi Ky – 1.2km” hoac “Đi dao pho đi bo Nguyen Hue – 800m”.
+Gioi thieu van hoa, mon an, san pham ban đia theo khu vuc.
+Muc đich: Giup khach hieu sau hon ve vung đat minh ghe tham, tang su gan ket va hung thu voi van hoa Viet.
+Đau vao: Khu vuc hien tai hoac khu vuc đang tim kiem.
+Ket qua đau ra: Thong tin chi tiet ve cac mon an, trang phuc, tap tuc, san pham thu cong, đuoc trinh bay sinh đong voi hinh anh, phien am, giai thich ngan gon.
+Vi du su dung: Khi đen Hue, ung dung gioi thieu cac mon an đac trung cua Hue, neu nguoi dung bam vao mon “Banh beo” thi se co kem hinh anh va video ngan ve mon an, goi y đia điem an uy tin va đanh gia cua nguoi dung khac.
+Giai thich cach su dung cac ung dung pho bien tai Viet Nam (Zalo, Grab…)
+Muc đich: Giam bo ngo cho du khach khi su dung cac dich vu so pho bien o Viet Nam.
+Đau vao: Lua chon ung dung hoac nhu cau (vi du: “Toi muon đat xe” → goi y Grab).
+Ket qua đau ra: Huong dan bang hinh anh va video minh hoa tung buoc, co ban dich nhieu ngon ngu.
+Vi du su dung: Du khach chua biet cach đat xe qua Grab đuoc huong dan bang anh: chon điem đon, chon hinh thuc thanh toan, luu y ve gia cuoc gio cao điem.
+Tu đien anh (image-based translator) dung AI đe nhan dien mon an, đo vat
+Muc đich: Giup nguoi dung nhan dien nhanh mon an hoac vat dung bang hinh anh, ngay ca khi khong biet tieng Viet.
+Đau vao: Anh chup truc tiep tu camera hoac tai tu thu vien anh.
+Ket qua đau ra: Ten mon/vat the + thanh phan chinh + vung mien pho bien + goi y đia điem mua/thuong thuc.
+Vi du su dung: Du khach chup anh mon banh co hinh hoa, app tra ve: “Banh in Hue – lam tu bot nep, đuong va đau xanh – co ban tai cho Đong Ba”.
+Cung cap tu vung mau, phien am, ho tro luyen phat am
+Muc đich: Tang kha nang giao tiep co ban bang tieng Viet, ho tro tuong tac nhe nhang voi nguoi đia phuong.
+Đau vao: Chu đe can luyen (an uong, hoi đuong, chao hoi,...).
+Ket qua đau ra: Danh sach tu/cau mau co phien am quoc te, phat am giong chuan.
+Vi du su dung: Chon chu đe “hoi gia”, nguoi dung đuoc hoc cum tu “Cai nay bao nhieu tienD” – phien am: cach đoc ra am tuong tu trong ngon ngu cua ho, giong đoc đi kem + nut ghi am lai đe so sanh.
+Lich trinh goi y dua theo so thich ca nhan (am thuc, thien nhien, van hoa…)
+Muc đich: Tu đong tao lich trinh theo nhu cau va thoi gian cua nguoi dung.
+Đau vao: Thoi gian luu tru, đia điem mong muon, so thich ca nhan (co the chon nhieu: am thuc, kham pha, nghi duong).
+Ket qua đau ra: Lich trinh goi y tung ngay (sang – trua – chieu – toi), tich hop ban đo chi đuong va meo trai nghiem.
+Vi du su dung: Nguoi dung chon “Kham pha ket hop van hoa – am thuc” trong 2 ngay tai Đa Nang – Hoi An, he thong goi y:
+Ngay 1 – Kham pha Đa Nang
+Sang: Tham quan chua Linh Ung – Ban đao Son Tra
+Trua: An mi Quang Ba Mua
+Chieu: Tham quan Bao tang Cham – ngam cau Rong
+Toi: Đi cho đem an vat, xem trinh dien nghe thuat đuong pho
+Ngay 2 – Đi ve trong ngay đen Hoi An (30km)
+Sang: Di chuyen tu Đa Nang đen pho co Hoi An, tham quan Chua Cau, nha co
+Trua: Thuong thuc cao lau
+Chieu: Đi thuyen tren song Hoai
+Toi: Tha hoa đang, ve lai Đa Nang
+Tao nhat ky hanh trinh (timeline) đe luu giu va chia se trai nghiem
+Muc đich: Giup nguoi dung ghi lai ky niem, luu giu trai nghiem, de dang chia se voi ban be.
+Đau vao: Anh, mo ta, đia điem đa ghe tham (ghi lai tu đong hoac do nguoi dung nhap).
+Ket qua đau ra: Dong thoi gian hanh trinh hien thi theo thu tu ngay/thoi gian, co the chinh sua hoac chia se.
+Vi du su dung: Sau 3 ngay du lich, timeline hien thi: “Ngay 1 – Tham quan Đa nang, an mi quang, đi cho đem”; “Ngay 2 – Kham pha Hoi An, an cao lau, tha hoa đang, ..”.
+Luu đia điem, mon an, nguoi dan vao danh sach yeu thich
+Muc đich: Tang trai nghiem ca nhan hoa, giup nguoi dung de quay lai noi đa yeu thich hoac goi y cho nguoi khac.
+Đau vao: Nut “Them vao yeu thich” khi xem thong tin chi tiet ve mon an, đia điem, nguoi dan hoac hoat đong.
+Ket qua đau ra: Mot danh sach ca nhan hoa co the truy cap moi luc, chia se hoac dung đe xay dung lich trinh sau nay.
+Vi du su dung: Nguoi dung sau khi đen tiem banh Coi Xay Gio o Đa Lat bam “Yeu thich” đe chia se cho ban be lan sau đen.
+Cong cu ho tro nguoi ban đia
+Tao gian hang mini đe gioi thieu san pham/dich vu
+Giup nguoi dan, tieu thuong de dang tiep can du khach quoc te bang cach gioi thieu san pham bang nhieu ngon ngu.
+Đau vao: Thong tin co ban cua cua hang/dich vu (ten, hinh anh, mo ta, muc gia, ngon ngu goc).
+Ket qua đau ra: Mot “gian hang so” hien thi trong app, co the truy cap cong khai.
+Vi du su dung: Chi Lan ban tranh theu tay nhap mo ta bang tieng Viet, he thong tu tao ban dich sang tieng Anh: “Hand-embroidered painting – Hue style – 100% silk”.
+Su dung mau co san đe đang san pham de dang (form khai bao: loai hinh, nguon goc, muc đo cay…)
+Muc đich: Giup nguoi dan đang thong tin san pham nhanh chong, đay đu ma khong can hieu ve cong nghe.
+Đau vao: Chon loai san pham → đien theo form co san: mon an, dich vu, đo luu niem, chon nguon goc, đac điem (cay/khong cay, vung mien,...).
+Ket qua đau ra: Trang thong tin san pham đuoc tao chuan hoa, de đoc, de hien thi trong app, co kha nang goi y cho du khach đung muc tieu.
+Vi du su dung: Chi Ba ban mam nhap thong tin qua form: “Loai hinh: Thuc pham – Nguon goc: Ben Tre – Đac điem: cay nhe – thu cong”. He thong tu sinh trang san pham.
+Gan bo loc tim kiem: mon chay, đo cay, thu cong, đac san vung mien…
+Muc đich: Tang kha nang tiep can khach hang muc tieu bang cach cho phep nguoi dung loc theo nhu cau cu the.
+Đau vao: Thong tin san pham đuoc gan tag phu hop luc đang.
+Ket qua đau ra: Khi khach tim kiem, cac san pham se đuoc goi y theo đung bo loc (VD: chi hien mon chay, hoac san pham thu cong mien Trung).
+Vi du su dung: Du khach an chay tim kiem “vegetarian food” → app tra ve “Banh it tran chay – Ben Tre” cua chi Ba.
+Tu đong đinh vi tren ban đo (Google Maps + OSM)
+Muc đich: Giup khach de tim đen đia điem kinh doanh, tranh bi lac hoac bo qua cac gian hang nho.
+Đau vao: Nguoi ban xac nhan vi tri hien tai hoac nhap đia chi.
+Ket qua đau ra: Gian hang hien thi đung tren ban đo, kem huong dan đuong đi.
+Vi du su dung: Chi Nam ban bun bo Hue đuoc đinh vi chinh xac tren ban đo Hoi An. Du khach dung app co the đi bo 5 phut la đen.
+Tra loi đanh gia cua du khach
+Muc đich: Giup nguoi ban xem đanh gia cua du khach roi tra loi
+Đau vao: Đanh gia cua khach hang.
+Ket qua đau ra: Nguoi ban tra loi đanh gia cua khach hang
+Vi du su dung: Anh ban nuoc mia đuoc 7 loi khen tu khach nuoc ngoai sau 1 ngay ban, co the co the tra loi đanh gia cua du khach (he thong co the goi y cau tra loi mau nhu “Cam on ban” hoac nguoi ban co the cai đat san cau tra loi mau).
+Quan ly luot tuong tac, binh luan tu nguoi dung
+Muc đich: Giup nguoi ban hieu ro muc đo quan tam, phan hoi va nhu cau tu khach hang.
+Đau vao: Hanh đong cua khach nhu xem, thich, binh luan, chia se.
+Ket qua đau ra: Bang thong ke đon gian: bao nhieu luot xem, bao nhieu luot thich, binh luan nao noi bat. Co the phan hoi binh luan.
+Vi du su dung: Chi Sau ban non la thay san pham đuoc 250 luot xem trong tuan qua, co 12 nguoi tha tim va 3 binh luan tich cuc. Chi tra loi cam on tung nguoi đe tang ket noi.
+Chuc nang xa hoi va tuong tac
+Nut Compliment tao ket noi tich cuc giua khach va dan đia phuong -> Mau tao san cho user click de dang
+Muc đich: Khuyen khich su cong nhan, tao đong luc tinh than cho nguoi dan phuc vu tot hon va xay dung bau khong khi du lich tich cuc.
+Đau vao: Du khach nhan nut “Cam on” hoac “Ban that tuyet” sau khi dung san pham/dich vu hoac gap nguoi than thien.
+Ket qua đau ra: Nguoi đia phuong nhan đuoc thong bao loi khen kem nguoi gui va ly do (neu co).
+Vi du su dung: Du khach an banh mi thay co ban hang de thuong, nhan “Cam on” → Co nhan đuoc: “Ban vua đuoc khen boi Marie (France): ‘Mon an cua co rat ngon’”
+Chia se nhat ky hanh trinh len mang xa hoi hoac voi ban be.
+Muc đich: Giup nguoi dung luu giu va chia se trai nghiem voi ban be, đong thoi lan toa hinh anh tich cuc ve Viet Nam.
+Đau vao: Anh, ghi chu hanh trinh, đia điem, đanh gia ca nhan đuoc nguoi dung ghi lai.
+Ket qua đau ra: Link chia se tren mang xa hoi hoac gui qua email/messenger, kem hinh anh va đuong dan timeline.
+Vi du su dung: Ban Linh vua ket thuc chuyen đi Đa Lat 3 ngay, chia se nhat ky qua Facebook voi caption: “Mot hanh trinh tuyet voi!”.
+He thong yeu thich (favorites) cho nguoi dung luu lai moi trai nghiem
+Muc đich: Cho phep nguoi dung luu lai nhung trai nghiem đang nho đe de quay lai hoac goi y cho nguoi khac.
+Đau vao: Nut “Yeu thich” tai moi điem đen, mon an, nguoi ban đia, hoat đong,...
+Ket qua đau ra: Danh sach ca nhan hoa co the xem lai moi luc, co the dung đe len lich trinh moi hoac chia se.
+Vi du su dung: Ban Hai luu “Pho Thin – Ha Noi” va “Co Hang ban che sen” vao muc yeu thich đe ghe lai lan sau hoac gioi thieu cho ban minh.
+Goi y ban đong hanh hoac nhom đi cung (neu đuoc mo rong sau)
+Muc đich: Giup nguoi du lich mot minh tim đuoc ban đong hanh an toan, co cung so thich, hoac nhom du lich cung tuyen.
+Đau vao: Nguoi dung chon bat che đo “Tim ban đong hanh” + cung cap lich trinh du kien, so thich va gioi tinh neu muon.
+Ket qua đau ra: Danh sach nhung nguoi co lich trinh tuong tu, co the gui loi moi tro chuyen hoac tao nhom.
+Vi du su dung: Ban Tom (My) muon kham pha Hoi An vao ngay 12/7, đuoc goi y ban Trang (Viet Nam) cung đi ngay đo, cung so thich chup anh va an chay → ghep nhom đi cung.
+Đanh gia/quay lai trai nghiem sau khi ket thuc hanh trinh.
+Muc đich: Thu thap phan hoi đe cai thien dich vu, đong thoi giup nguoi dung nho lai hanh trinh va đong gop cho cong đong.
+Đau vao: Sau khi ket thuc moi hoat đong hoac chuyen đi, nguoi dung đuoc nhac đanh gia.
+Ket qua đau ra: Sao, nhan xet, hinh anh đinh kem se hien thi cho nhung nguoi dung khac tham khao.
+Vi du su dung: Ban Ngoc đanh gia 5 sao cho “Homestay May Nui” sau chuyen đi Sapa: “Chi chu than thien, canh cuc chill!”
+Luu y phan biet 2 chuc nang Goi y thoi điem va đia điem du lich theo thoi tiet, so thich, thoi gian ranh va Lich trinh goi y dua theo so thich ca nhan (am thuc, thien nhien, van hoa…):
+Goi y thoi điem va đia điem du lich theo thoi tiet, so thich, thoi gian ranh
+Muc đich: Ho tro nguoi dung chua biet đi đau, khi nao.
+Thoi điem su dung: Truoc chuyen đi.
+Co che: Phan tich so thich + thoi gian nghi + mua/thoi tiet đe đua ra đe xuat đia điem + thoi điem phu hop.
+Vi du:
+Ban thich le hoi + co 1 tuan ranh vao thang 4 → Goi y đen Hue dip Festival.
+Ban thich tranh nong + du lich thien nhien → Goi y đi Đa Lat vao thang 7.
+Lich trinh goi y dua theo so thich ca nhan (am thuc, thien nhien, van hoa…)
+Muc đich: Ho tro nguoi dung đa chon noi đen, can len ke hoach chi tiet tung ngay.
+Thoi điem su dung: Trong hoac ngay truoc chuyen đi.
+Co che: Tao lich trinh ngay 1, ngay 2, ngay 3… theo so thich cua nguoi dung.
+Vi du:
+Ban đen Hoi An va thich am thuc → Lich trinh co tour nau an, cho đem, đac san đia phuong.
+Ban thich kham pha → Lich trinh gom đap xe ra lang gom, dao thuyen song Thu Bon.
+Đe xuat chuc nang mo rong
+Đat dich vu noi đia (In-app Booking)
+Muc đich: Giup du khach đat cac dich vu nhu tour trai nghiem, lop hoc nau an, thue xe may, ve tham quan... ngay trong app ma khong can dung app ngoai.
+Đau vao: Đia điem, thoi gian mong muon, loai hinh dich vu (tour, ve, lop hoc,...)
+Ket qua đau ra: Danh sach dich vu co the đat, kem gia, thoi gian, thong tin nguoi to chuc, va nut thanh toan.
+Vi du su dung: Du khach o Hoi An co the đat “Tour lam đen long 2 gio” tu nguoi dan đia phuong.
+Che đo su dung offline (Offline Mode)
+Muc đich: Ho tro du khach khi mat ket noi mang (vung sau, tau xe, nuoc ngoai…)
+Đau vao: Cac muc đuoc nguoi dung chon tai ve (ban đo, lich trinh, tu đien, timeline,…)
+Ket qua đau ra: App hoat đong đuoc cac tinh nang co ban ma khong can mang.
+Vi du su dung: Du khach o Sapa tai truoc lich trinh + ban đo đi bo, van xem đuoc thong tin khi o ban lang khong co song.
+Tich hop AR tai điem du lich (Augmented Reality)
+Muc đich: Tang tinh tuong tac va hieu biet bang cach chieu thong tin ao tai cac điem tham quan.
+Đau vao: Vi tri GPS va camera.
+Ket qua đau ra: Khi gio camera tai di tich, app hien thi hinh anh, loi ke, video huong dan, lich su đia điem.
+Vi du su dung: Gio may tai Chua Cau – Hoi An → hien thong tin lich su, hinh anh phuc dung qua cac thoi ky.
+Tich điem đoi qua (Reward & Loyalty System)
+Muc đich: Khuyen khich nguoi dung tuong tac nhieu hon, quay lai app thuong xuyen.
+Đau vao: Hanh đong nguoi dung: check-in, đanh gia, chia se, tang compliment,...
+Ket qua đau ra: Điem thuong tich luy, co the đoi lay voucher an uong, ve vao cong, mon qua luu niem.
+Vi du su dung: Sau 10 lan check-in, nguoi dung nhan đuoc ma giam gia 50.000đ khi đat lop hoc nau an truyen thong.
+Tu đong nhan dien lich trinh tu anh ve/ma QR (Smart Scan)
+Muc đich: Giup nguoi dung tiet kiem thoi gian len lich trinh, đong bo nhanh voi lich ca nhan.
+Đau vao: Anh ve may bay, ve tau, email xac nhan đat phong/tour.
+Ket qua đau ra: App tu đong đe xuat khung lich trinh phu hop voi thoi gian va đia điem.
+Vi du su dung: Nguoi dung chup anh ve may bay toi Hue vao ngay 20/8 → app goi y hanh trinh kham pha Hue trong 3 ngay.
+Bang tong hop chuc nang (chua co cac chuc nang mo rong)
+[TABLE]
+STT || Ten chuc nang || Nhom nguoi dung || Mo ta || Muc đo uu tien
+1 || Goi y thoi điem & đia điem theo thoi tiet, so thich || Du khach || Đe xuat noi va thoi gian phu hop dua tren so thich va thoi tiet. || Cao
+2 || Goi y hoat đong gan vi tri hien tai || Du khach || Hien thi cac điem đen/hoat đong thu vi gan vi tri nguoi dung. || Cao
+3 || Gioi thieu van hoa, mon an, san pham theo khu vuc || Du khach || Cung cap thong tin van hoa va đac san theo tung vung mien. || Trung binh
+4 || Huong dan su dung app pho bien (Zalo, Grab...) || Du khach || Video, hinh anh huong dan cac ung dung pho bien tai VN. || Trung binh
+5 || Tu đien anh AI (Image-based Translator) || Du khach || Nhan dien mon an, đo vat qua anh, cung cap thong tin. || Cao
+6 || Cung cap tu vung, phien am, luyen phat am || Du khach || Giup nguoi dung hoc giao tiep tieng Viet co ban. || Trung binh
+7 || Lich trinh goi y theo so thich ca nhan || Du khach || Tao lich trinh tu đong theo thoi gian va so thich nguoi dung. || Cao
+8 || Tao nhat ky hanh trinh (timeline) || Du khach || Luu giu va chia se hanh trinh, anh, đia điem. || Trung binh
+9 || Luu yeu thich (mon an, đia điem, nguoi dan...) || Du khach || Cho phep luu lai cac đia điem hoac trai nghiem yeu thich. || Cao
+10 || Tao gian hang mini đa ngon ngu || Nguoi ban đia || Nguoi dan đang san pham/dich vu đe gioi thieu đen khach. || Cao
+11 || Mau đang san pham theo form || Nguoi ban đia || Đang san pham theo mau san, de thao tac, co đay đu thong tin. || Cao
+12 || Bo loc tim kiem thong minh || Nguoi ban đia || Cho phep gan tag đe khach de tim san pham phu hop (chay, cay...) || Trung binh
+13 || Tu đong đinh vi tren ban đo || Nguoi ban đia || Xac đinh vi tri quan hang tren Google Maps/OSM. || Cao
+14 || Nhan compliment tu du khach || Nguoi ban đia || Tao đong luc va uy tin cho nguoi dan nho loi khen tu du khach. || Trung binh
+15 || Thong ke luot tuong tac va binh luan || Nguoi ban đia || Hien thi so luot xem, tha tim, binh luan đe nguoi ban theo doi. || Thap
+16 || Nut compliment (tuong tac tich cuc) || Chung || Cho phep nguoi dung gui loi khen đen nguoi dan. || Cao
+17 || Chia se nhat ky hanh trinh || Chung || Cho phep nguoi dung chia se hanh trinh qua mang xa hoi. || Trung binh
+18 || Goi y ban đong hanh || Chung || Goi y ket noi du khach cung lich trinh, so thich. || Thap
+19 || Đanh gia sau hanh trinh || Chung || Cho phep nguoi dung đanh gia điem đen/san pham/dich vu. || Trung binh
+[/TABLE]
+Ky thuat
+Frontend: Flutter (đa nen tang: mobile, desktop)
+Backend: Supabase
+Xac thuc: Open-source OAuth (Google, Facebook, email)
+UI/UX: Penpot hoac Figma
+Quan ly du an: Trello
+Ke hoach khao sat & tim hieu
+Khao sat nguoi dung muc tieu
+Khach du lich nuoc ngoai: Dung Google Forms hoi ve thoi quen, nhu cau, app đang dung khi du lich.
+Nguoi ban đia: (chu quan an, homestay...) phong van qua Zalo, Facebook.
+Nghien cuu đoi thu
+Phan tich cac ung dung: Klook, KKDay, Airbnb Experiences, Culture Trip hay nhung app gan voi app cua minh/ app noi tieng va hoi giong ma ban biet.
+So sanh chuc nang, UI, điem manh/yeu.
+Tim hieu ky thuat
+Thu nghiem Flutter (cross-platform).
+Khoi tao Supabase DB (users, places, foods).
+Tim hieu xac thuc OAuth (Firebase Auth vs Supabase Auth vs NextAuth).
+Ket luan
+"Hello Vietnam" nham mang lai trai nghiem du lich ca nhan hoa, ket noi van hoa ban đia voi du khach quoc te, đong gop vao viec nang cao hinh anh du lich Viet Nam tren ban đo quoc te.
+Phuc
+Get Travel Recommendations – Goi y thoi điem & đia điem du lich
+Trai nghiem khach hang & Cai đat he thong
+1. Nhap thong tin co ban
+Trai nghiem: Nguoi dung mo tinh nang, chon it nhat mot trong hai:
+Thoi gian đi du lich
+Đia điem mong muon
+He thong:
+Neu co đia điem → backend chuan hoa đia điem (geocoding → toa đo, vung).
+Neu co thoi gian → backend ghi nhan đe tinh toan thoi tiet/mua.
+Neu khong chon gi → hien thi loi: “Vui long chon it nhat thoi gian hoac đia điem.”
+Neu offline → hien thi thong bao: “Can ket noi mang đe dung tinh nang nay.”
+2. Nhap them thong tin tuy chon
+Trai nghiem: Nguoi dung co the nhap so ngay luu tru va chon so thich ca nhan (am thuc, thien nhien, le hoi…).  He thong:
+Luu lai thong tin vao bo nho tam..
+Gui toan bo input (bat buoc + tuy chon) len backend qua API.
+3. Phan tich thoi tiet & mua du lich
+Trai nghiem: Nguoi dung bam “Xem goi y”, he thong hien thi trang thai đang xu ly. He thong:
+Backend goi Weather API đe lay du lieu du bao (≤16 ngay) hoac climatology (neu xa hon).
+Tinh WeatherScore tu cac chi so (nhiet đo, mua, am, UV).
+Ket qua đuoc luu vao cache đe tranh goi API nhieu lan.
+4. Ca nhan hoa theo so thich & su kien
+Trai nghiem: Nguoi dung chon “Am thuc” hoac “Le hoi” trong phan so thich. He thong:
+Backend so khop interests cua nguoi dung voi tags cua destinations va events.
+Neu co su kien trung thoi gian + so thich → cong them điem uu tien.
+Neu khong co du lieu su kien → chi dua vao tag chung cua điem đen.
+5. Xep hang & chon goi y toi uu
+Trai nghiem: Nguoi dung thay danh sach điem đen xep hang theo muc đo phu hop. He thong:
+Backend tinh tong điem = Weather + Season + Interest + Duration + EventBonus.
+Chuan hoa thang điem (0–100).
+Chon top 5–10 điem đen co điem cao nhat.
+7. Hien thi ly do va tips
+Trai nghiem: Tren moi card goi y, nguoi dung thay: “Thoi tiet đep”, “Co Festival Hue”, “Phu hop voi 7 ngay luu tru”. He thong:
+Lay tips (vi du: nhiet đo < 15°C → goi y “mang ao khoac”).
+Hien thi tips kem bieu tuong, co the mo rong.
+8. Tuong tac sau khi nhan goi y
+Trai nghiem: Nguoi dung chon “Them vao yeu thich”. He thong:
+Đong bo du lieu luu vao server khi co mang.
+Cac luu y khi cai đat he thong
+Tich hop dich vu ngoai
+Phai co API key Weather/Geocoding.
+Can co che bao mat, khong hardcode API key trong ung dung.
+Đat gioi han retry va xu ly khi API ngoai bi timeout hoac quota het.
+Cache du lieu
+Cache ket qua Weather API trong 24–72 gio đe tiet kiem chi phi va tang toc.
+Cache geocoding (toa đo cho đia danh) đe tranh goi API lap lai.
+Quan ly du lieu noi bo
+Tao bang destinations voi metadata (best_months, min_days, tags).
+Tao bang events đe quan ly su kien du lich theo đia phuong.
+Co the seed du lieu ban đau thu cong cho cac điem đen lon (Hue, Đa Nang, Đa Lat, Ha Long…).
+Trai nghiem offline
+Neu khong co mang: thong bao ro rang “Can ket noi Internet đe dung tinh nang nay”.
+Cho phep luu truoc mot so goi du lieu offline co ban (top 10 điem đen).
+Hieu nang & phan hoi
+Thoi gian tra ket qua toi đa: 1.5 giay (co cache), 3 giay (khi goi API).
+Đa ngon ngu & UX
+Tips, ly do va thong bao nen co song ngu (Tieng Viet + Tieng Anh).
+UI can đon gian: 2 input bat buoc, 2 input tuy chon trong phan “Nang cao”.
+Phan tich du lieu va lua chon điem đen
+1. Xac đinh tieu chi đanh gia goi y
+Moi goi y (đia điem hoac thoi gian, tuy input) đuoc tinh mot điem tong hop dua tren:
+Phu hop thoi điem (TimeFit Score): 0–100, dua vao du bao thoi tiet hoac du lieu climatology (nhiet đo, mua, UV, đo am).
+Phu hop đia điem (DestinationFit Score): neu nguoi dung chon đia điem → he thong so khop thoi điem đi voi best_months, mua cao điem, le hoi.
+Phu hop thoi gian (DurationFit Score): neu nguoi dung nhap so ngay → so sanh voi min_days hoac recommended_days cua điem đen.
+Phu hop so thich (InterestMatch Score): neu nguoi dung co nhap so thich → tinh % trung giua so thich va tags cua điem đen/su kien.
+Điem su kien (EventBonus Score): cong them điem neu trong thoi gian đo co le hoi hoac su kien đac biet.
+Đo pho bien (Popularity Score): dua tren so luot chon truoc đo, hoac so lan luu goi y.
+2. Cong thuc tinh điem tong hop
+Dung mo hinh cham điem tuyen tinh:
+FinalScore=w1 × TimeFit + w2 × DestinationFit + w3 × DurationFit + w4 × InterestMatch + w5  × EventBonus + w6 × Popularity + w7 × Feasibility
+Cac trong so (w1…w7) đuoc đieu chinh tuy thuoc vao du lieu khao sat va muc đo quan trong.
+Vi du:
+w1 (TimeFit) = 0.30
+w2 (DestinationFit) = 0.20
+w3 (DurationFit) = 0.20
+w4 (InterestMatch) = 0.15
+w5 (EventBonus) = 0.05
+w6 (Popularity) = 0.05
+Neu nguoi dung khong nhap so thich hoac khong co so ngay → he thong loai bo thanh phan đo khoi cong thuc va chuan hoa lai trong so.
+3. Du lieu khach quan
+Weather: tu API cong khai (OpenWeather, Meteostat)
+Destination metadata: best_months, min_days, recommended_days, tags.
+Events: co so du lieu su kien theo vung/thoi gian.
+Popularity: thong ke tu he thong (so luot nguoi dung chon, luu goi y).
+Feasibility: tinh toan thoi gian di chuyen tu ban đo (Google Maps, OpenStreetMap).
+4. Tranh chu quan
+Khong chi viet “thoi điem nay đep đe đi” → phai chung minh bang du lieu thoi tiet (nhiet đo, mua, UV).
+Khong chi viet “đia điem nay noi tieng” → phai co so lieu rating, so luot chon, hoac đanh gia tu he thong.
+Phai mo ta ro “đo hieu qua”: bao nhieu % nguoi dung chap nhan goi y, đo chinh xac so voi lua chon cuoi cung.
+Thai
+Explore Local Culture & Cuisine
+Trai nghiem khach hang & Cai đat he thong
+Mo muc “Kham pha van hoa & am thuc” Trai nghiem: Nguoi dung vao tab “Explore”. He thong: Hien thi 3 loi vao chinh: Danh muc chu đe, Ban đo, Goi y gan toi. Option co ban đuoc nap san tu bo du lieu offline.
+Chon goc nhin kham pha Trai nghiem: Nguoi dung chon theo Chu đe (Van hoa, Le hoi, Ung xu, Am thuc), theo Khu vuc, hoac “Gan toi”. He thong:
+Neu co mang: goi API tra ve danh sach điem/ bai viet theo bo loc, kem xep hang va anh bia.
+Neu offline: dung goi micro-guide đa cache trong SQLite hoac JSON.
+Xem the noi dung van hoa hoac mon an Trai nghiem: Man hinh chi tiet gom mo ta ngan, “Nen lam” va “Tranh lam”, anh minh hoa, cau Viet đon gian co phien am, mon tieu bieu, khung gio goi y. The item gom cac noi dung: phien am, mo ta, goi y đia điem, video, ban đo. He thong:
+Render noi dung text va anh tu cache truoc, sau đo lazy-load anh HD neu co mang.
+Hien thi nut “Nghe” cho ten mon va cau mau bang audio TTS hoac file thu am đa cache.
+Goi y gan vi tri hien tai Trai nghiem: O tab Ban đo hoac “Gan toi”, app goi y mon đac trung, cho đem, pho am thuc, bao tang, le hoi gan nguoi dung. He thong:
+Xin quyen GPS. Neu nguoi dung chua cho phep GPS → chuyen sang kham pha theo chu đe.
+Tinh khoang cach va thoi gian di chuyen, uu tien điem mo cua, phu hop thoi điem ngay.
+Neu offline: hien thi lop ban đo đon gian va danh sach goi y tinh.
+Quy tac ung xu va meo an uong Trai nghiem: Nguoi dung xem “Do & Don’t”, quy trinh goi mon, tip van hoa tra tien, chia se mon. He thong:
+Hien thi checklist, cau mau kem audio, link sang “Practice Phrases”.
+Cache noi dung đe xem offline.
+Luu, đanh dau, va chia se Trai nghiem: Luu danh sach mon, quan, meo; chia se the noi dung. He thong:
+Luu cuc bo ngay.
+Đong bo server khi co mang. Xuat anh the noi dung nhe đe chia se.
+Goi y theo ngu canh thoi gian – vi tri Trai nghiem: Gan gio an toi, app nhac nhe mon đia phuong xung quanh. He thong:
+Chi kich hoat neu nguoi dung bat cho phep.
+Dung geofence đon gian, tan suat hop ly đe tiet kiem pin.
+Fallback tat nhac neu offline lau.
+Dong thay the
+A2: Khong co vi tri hoac nguoi dung tu choi GPS → chuyen sang kham pha theo chu đe. A3: Thieu mang va chua co bundle offline → hien thi “Tai goi noi dung truoc chuyen đi”. A4: Điem đen đong cua hoac qua xa → đe xuat lua chon thay the gan hon.
+A5: Neu du lieu khu vuc chua co → hien thi thong bao ‘Đang cap nhat’ va goi y khu vuc lan can. A6: Luu trung → hop nhat danh sach yeu thich. Neu offline → hien thi danh sach đa luu.
+Tong ket
+Nhung phan chi can hien thi
+Danh muc chu đe, bai viet van hoa, mon tieu bieu, meo ung xu, hinh anh minh hoa.
+Nhung phan tuong tac voi thiet bi
+GPS đe “Gan toi” va Ban đo.
+Loa đe phat audio ten mon va cau mau.
+Nhung phan tuong tac voi API
+Truy van danh sach điem van hoa, mon an, quan goi y.
+Xep hang theo muc đo phu hop, gio mo cua, khoang cach.
+Đong bo danh sach yeu thich.
+Noi dung can chuan bi
+Van ban
+Chu đe van hoa: ung xu ban an, trang phuc, chao hoi, mac ca, tip.
+Am thuc: mon đac trung, mo ta ngan, gia tham khao, khu vuc pho bien, cau goi mon.
+Ban dich đa ngon ngu. Cau Viet co phien am đon gian đe đoc.
+Hinh anh
+Anh mon, khong gian an uong, bieu tuong van hoa. Dung luong đa nen.
+Am thanh
+Audio ten mon va cau mau. Uu tien giong ban đia, co the TTS cho phan it quan trong.
+Rating, đo pho bien
+Metadata va cau truc quan ly
+Place: id, ten, loai, toa đo, gio mo cua, gia, phu hop sang trua chieu toi, rating, vung.
+Dish: id, ten_vi, ten_en, phien am, mo ta, nguyen lieu chinh, vung, dip le, muc cay, muc pho bien.
+CultureCard: id, chu đe, do_list, don’t_list, cau mau, link audio, anh.
+Quan he: Place ↔ Dish, Region ↔ CultureCard.
+Local cache: SQLite cac bang chinh, TTL cho anh va audio.
+Luu y khi cai đat
+Offline-first: goi noi dung cot loi theo thanh pho.
+Quyen rieng tu: xin quyen vi tri ro rang, co che đo chi dung khi mo app.
+Hieu nang: phan trang, lazy-load anh, nen audio.
+Chat luong noi dung: chuan hoa giong audio, thong nhat phien am.
+Kha dung: ho tro color-blind cho ban đo heat điem an uong, co chu lon.
+Identify Dish or Item via AI
+Trai nghiem khach hang & Cai đat he thong
+Chon “Nhan dien mon hoac vat dung” Trai nghiem: Nguoi dung mo camera trong app hoac chon anh tu thu vien. He thong:
+Xin quyen Camera va Anh.
+Hien thi khung chup, goi y “chup ro, đu anh sang”.
+Chup anh hoac tai anh Trai nghiem: Nguoi dung chup anh mon an, menu, đo vat van hoa. He thong:
+Tien xu ly anh tren thiet bi: crop, resize, nen.
+Neu co mang: gui anh đa nen toi API AI nhan dien.
+Nhan dien va phan tich Trai nghiem: App hien thi ket qua chinh va 2 đen 3 goi y thay the voi đo tin cay. He thong:
+Pipeline model:
+Food detection hoac object detection.
+Classification theo danh muc mon hoac đo vat.
+Ket hop vi tri hien tai va ngon ngu thiet bi đe uu tien ket qua phu hop vung.
+The ket qua Trai nghiem: The gom ten mon/đo vat, mo ta ngan, nguyen lieu chinh hoac chat lieu, di ung pho bien, vung xuat xu, cau goi mon bang tieng Viet kem audio, noi gan nhat co mon đo hoac noi thuong gap đo vat nay. He thong:
+Lay metadata tu DB, audio tu cache hoac TTS.
+Neu co mang: goi y quan gan toi co mon tuong tu.
+Neu offline: hien thi noi dung co san, an phan “gan toi”.
+Hanh đong tiep theo
+Trai nghiem:
+“Nghe cach goi mon”.
+“Them vao lich trinh an” hoac “Luu vao yeu thich”.
+“Xem mon tuong tu”.
+“Xem huong dan an / su dung đo vat”
+He thong:
+Ghi log su kien, đong bo khi online.
+Lien ket sang “Practice Phrases” đe luyen nhanh.
+Dong thay the
+A2: Anh mo hoac thieu sang → nhac chup lai, bat đen flash. A3: Đo tin cay thap → hoi nguoi dung chon mot trong 3 goi y hoac them ngu canh “đang o quan, nha hang”. A4: Khong tim thay metadata → hien thi khung “Gui phan hoi đe cap nhat sau”.
+Tong ket
+Nhung phan chi can hien thi
+The ket qua: ten, mo ta, anh mau, nguyen lieu, di ung, cau goi mon, tuong tu.
+Nhung phan tuong tac voi thiet bi
+Camera, Thu vien anh, Flash, Loa đe phat audio, GPS đe uu tien theo vung.
+Nhung phan tuong tac voi API
+API nhan dien anh.
+API goi y quan gan toi.
+Đong bo yeu thich va lich su nhan dien.
+Noi dung can chuan bi
+Van ban
+Tu đien mon an theo vung: ten đa ngon ngu, phien am, mo ta, di ung, nguyen lieu noi bat, muc cay, cach an.
+Đo vat van hoa: ten, mo ta, chat lieu, boi canh su dung, bao tang hoac khu pho lien quan.
+Cau goi mon ngan gon kem phien am.
+Hinh anh
+Anh mau chuan hoa cho moi mon va đo vat, nhieu goc đo.
+Anh mau thuc đia đe tang đo robust.
+Am thanh
+Audio ten mon va cau goi mon.
+Co the TTS cho phien ban multi-language.
+Metadata va cau truc quan ly
+Dish: id, ten_vi, ten_en, phien am, mo ta, nguyen lieu, di ung, vung, muc cay, anh_ids, audio_id.
+FoodAlias: dish_id, alias theo vung, theo menu.
+Object: id, ten, mo ta, chat lieu, vung, le hoi lien quan, anh_ids.
+MenuLexicon: tu vung thuong gap, viet tat, loi chinh ta pho bien.
+ModelHints: tag hinh anh, boi canh, mua vu, thoi điem trong ngay đe rerank.
+Mapping theo vung đe uu tien ket qua.
+Luu y khi cai đat
+Quyen rieng tu: xu ly anh cuc bo khi co the, chi tai len server khi nguoi dung đong y. Co tuy chon “đong gop anh đe cai thien AI”.
+Hieu nang: gioi han kich thuoc anh gui len, hien thi skeleton trong luc cho, timeout hop ly, retry voi chat luong thap hon neu mang yeu.
+Chat luong nhan dien: hien thi đo tin cay, luon cho phep nguoi dung chon goi y khac, luu phan hoi đe fine-tune.
+Kha dung: canh bao di ung ro rang, bieu tuong de hieu, text lon.
+Oanh
+Practice Essential Vietnamese Phrases
+Trai nghiem khach hang & Cai đat he thong
+1. Chon chu đe cum tu
+Trai nghiem: Nguoi dung mo ung dung, chon chu đe nhu “Chao hoi” hoac “An uong”.
+He thong: Ung dung goi API co so du lieu đe lay danh sach cum tu theo chu đe.
+Neu co mang: gui request đen server/database.
+Neu offline: đoc du lieu tu bo nho cuc bo (SQLite hoac file JSON đa cache).
+2. Xem cum tu va nghe phat am
+Trai nghiem: Nguoi dung thay cum tu “Xin chao” va nhan nut loa đe nghe audio.
+He thong:
+Ung dung phat file audio qua trinh phat am thanh tren thiet bi.
+Neu audio chua tai ve: ung dung ket noi API file server đe tai file .mp3/.wav.
+Neu audio đa cache: phat truc tiep tu bo nho cuc bo.
+3. Luyen phat am (speech-to-text)
+Trai nghiem: Nguoi dung nhan nut micro, đoc “Xin chao”, va cho phan hoi.
+He thong:
+Ung dung yeu cau quyen microphone cua thiet bi.
+Am thanh thu đuoc gui vao engine nhan dien giong noi co san tren thiet bi (Google Speech API tren Android, Apple Speech Recognition tren iOS).
+Ket qua text tra ve tu API cua he đieu hanh.
+He thong so sanh text đo voi cum tu goc trong co so du lieu va phan hoi ngay.
+4. Luu cum tu yeu thich va tien trinh hoc
+Trai nghiem: Nguoi dung đanh dau “Xin chao” la cum tu yeu thich.
+He thong:
+Thao tac nay đuoc ghi vao bo nho cuc bo đe đam bao offline van hoat đong.
+Khi co ket noi mang, ung dung đong bo voi API backend đe luu tien trinh len server.
+5. Quiz va flashcard
+Trai nghiem: Nguoi dung lam quiz: he thong hoi “How to say Hello in VietnameseD” va cho nguoi dung chon hoac đoc ra.
+He thong:
+Ung dung lay cau hoi tu co so du lieu.
+Neu quiz yeu cau noi: lai kich hoat microphone + speech recognition API.
+Ket qua đuoc xu ly va hien thi ngay tren app.
+6. Tong ket
+Nhung phan chi can hien thi
+Bao gom danh sach cum tu, ban dich.
+Du lieu co the đuoc lay tu server hoac đoc truc tiep tu bo nho cuc bo neu đa cache/offline.
+Nhung phan tuong tac voi thiet bi
+Nghe phat am: khi nguoi dung nhan nut loa, ung dung phat audio bang loa cua thiet bi; nguon audio co the tu file server hoac tu cache trong bo nho.
+Luyen phat am: khi nguoi dung nhan nut micro, ung dung kich hoat engine nhan dien giong noi (speech recognition) co san tren thiet bi đe ghi am va xu ly.
+Nhung phan tuong tac voi API
+Lay du lieu: ung dung gui yeu cau đen API đe lay danh sach cum tu theo chu đe.
+Tai file audio/hinh anh: neu chua co trong cache, ung dung se ket noi đen file server đe tai.
+Đong bo tien trinh hoc: khi nguoi dung luu cum tu yeu thich hoac lam quiz, du lieu đuoc ghi tam vao bo nho cuc bo va đong bo len server qua API khi co ket noi mang.
+Noi dung can chuan bi cho chuc nang
+1. Van ban (Text)
+Cum tu tieng Viet: danh sach cau ngan, de dung trong tinh huong thuc te (chao hoi, hoi đuong, mua sam, khan cap…).
+Ban dich: it nhat la tieng Anh; co the bo sung tieng Phap, tieng Đuc, tieng Trung… tuy đoi tuong khach du lich.
+Cach luu:
+Luu trong co so du lieu chinh (server).
+Voi che đo offline: xuat ra file JSON/SQLite đong goi trong ung dung đe tai san.
+2. Am thanh (Audio)
+Audio mau: file phat am chuan cho tung cum tu. Co the:
+Thu am giong ban xu đe tao trai nghiem tu nhien.
+Hoac su dung cong cu Text-to-Speech (TTS) đe tao file mp3/wav.
+Cach luu:
+Tren server luu tru file (CDN, cloud storage).
+Trong ung dung, khi lan đau tai se cache vao bo nho cuc bo.
+3. Hinh anh minh hoa (Image)
+Hinh anh ho tro “show & tell”: minh hoa cho cac cum tu thuong dung (vi du: hinh bat pho, chai nuoc, taxi).
+Giup nguoi dung đua đien thoai cho nguoi đia phuong xem neu khong noi đuoc.
+Cach luu:
+Bo hinh anh chuan hoa (PNG/JPG dung luong nhe) đuoc đong goi trong ung dung.
+Co the bo sung anh moi tu server qua cap nhat, nhung can toi uu dung luong.
+Cac luu y khi cai đat he thong
+1. Ket noi API (server, co so du lieu, file audio)
+Đo tre va toc đo tai:Khi nguoi dung goi API lay cum tu hoac audio, can toi uu đe hien thi nhanh (cache du lieu, nen file audio).
+Quyen truy cap va bao mat:Khong nen đua khoa API dich vu backend truc tiep trong app (de bi lo). Can phan tach khoa cong khai (anon key) cho client va khoa rieng cho quan tri.
+Hoat đong offline:Nguoi dung du lich co the khong co mang, nen can co che tai san du lieu va fallback ve du lieu cuc bo.
+2. Engine nhan dien giong noi tren đien thoai (speech-to-text)
+Quyen truy cap:Bat buoc xin quyen microphone va speech recognition. Neu nguoi dung tu choi, can co thong bao giai thich cho nguoi dung.
+Đo chinh xac:Engine cua Google/Apple hoat đong tot, nhung tieng Viet co dau nen van co kha nang nhan sai → chi nen dung đe phan hoi co ban, khong cham điem tuyet đoi.
+Su khac biet giua nen tang: Android de dung Google Speech API, iOS can them khai bao quyen trong Info.plist. Can test tren ca hai he đieu hanh.
+3. Luu tru du lieu (text, audio, hinh anh)
+Tren server:
+Du lieu text trong co so du lieu (de mo rong).
+File audio/hinh anh tren dich vu luu tru (CDN hoac cloud storage) đe truy cap nhanh.
+Trong ung dung (offline mode):
+Du lieu quan trong (cum tu + audio co ban) nen đong goi san trong app hoac cho phep tai ve truoc chuyen đi.
+Dung SQLite hoac JSON đe luu cum tu, folder rieng đe cache audio/hinh anh.
+Dung luong:Toi uu kich thuoc file audio va hinh anh (nen, chon đinh dang nhe) đe app khong qua nang khi tai offline.
+4. Đong bo du lieu nguoi dung (yeu thich, tien trinh hoc)
+Offline-first:Luu tam vao bo nho cuc bo, sau đo đong bo len server khi co internet.
+Xung đot du lieu:Neu nguoi dung hoc tren nhieu thiet bi, can co che đong bo uu tien theo timestamp hoac cho phep merge du lieu.
+5. Chuc nang luyen am:
+Su dung thuat toan Levenshtein Distance đe đo đo tuong đong giua 2 chuoi
+=> Khong chi tra ket qua đung sai ma con co ti le %.
+Cho nguoi dung lam quiz, sau moi quiz, hoi nguoi dung đanh gia (1–5 sao) ve su ro rang va huu ich cua phan luyen phat am.
+6. Co nhung thuat toan hien thi đe toi uu hieu qua hoc tap sau:
+6.1. Thuat toan dua tren Spaced Repetition (On tap ngat quang)
+Su dung mo hinh nhu SM-2 (Anki) hoac bien the:
+Quiz se lap lai cac tu/cau nguoi hoc sai nhieu, nhung theo khoang cach thoi gian tang dan.
+Cau nao đa tra loi đung nhieu lan -> hien thi it hon.
+=> Tang kha nang ghi nho dai han, tranh hoc vet.
+6.2. Adaptive Learning (Đieu chinh theo nang luc)
+Dua tren muc đo thanh thao:
+Neu user sai nhieu -> quiz giam đo kho, nhieu goi y hon.
+Neu user đung lien tuc -> quiz nang cap đo kho (toc đo nhanh hon, cau dai hon).
+Co the dung Item Response Theory (IRT) đe chon cau hoi phu hop nang luc.
+6.3. Thuat toan xen ke (Interleaving Practice)
+Thay vi hoc 1 loai quiz lien tuc, tron lan:
+Nghe → noi → đoc → viet.
+Trac nghiem tu vung xen voi hoan thanh cau, chon phat am đung.
+Giup nao “kho đoan”, tang kha nang ung dung linh hoat.
+6.4. Gamification + Randomization
+Quiz shuffle đe tranh hoc thuoc vi tri đap an.
+Them “boss level” hoac checkpoint (vi du: 5 cau đung lien tiep đe qua man).
+Dung he thong XP/coin/badge đe duy tri đong luc.
+6.5. Dua vao du lieu hanh vi (Learning Analytics)
+Ghi log thoi gian lam quiz, so lan tra loi sai/đung, phat am bi loi.
+Thuat toan chon quiz uu tien cac tu hay quen hoac phat am sai.
+Ap dung machine learning đe du đoan điem yeu va goi y luyen tap.
+Generate Personalized Itinerary
+Trai nghiem khach hang & Cai đat he thong
+1. Chon muc “Lich trinh goi y”
+Trai nghiem: Nguoi dung mo ung dung va chon muc “Lich trinh goi y”.He thong: Ung dung hien thi giao dien lua chon thong tin co ban (thoi gian luu tru, khu vuc, so thich). Khong can ket noi mang o buoc nay vi du lieu option đuoc nap san tu he thong.
+2. Chon thong tin chuyen đi
+Trai nghiem: Nguoi dung chon tu danh sach co san: thoi gian luu tru (1 tuan, 2 tuan…), khu vuc (Ha Noi, Đa Nang, TP.HCM…), so thich (am thuc, thien nhien, van hoa, nghi duong…).He thong:
+Ung dung ghi nhan cac lua chon.
+Neu co mang: gui thong tin qua API đen server đe phan tich.
+Neu offline: goi y mot so lich trinh mau co san trong app.
+3. He thong goi y điem đen theo moc thoi gian
+Trai nghiem: Nguoi dung thay he thong goi y nhieu điem đen/hoat đong phu hop cho tung moc thoi gian (sang – trua – chieu – toi). Vi du: sang – tham quan Ho Guom, trua – an pho, chieu – tham quan Van Mieu.He thong:
+Server phan tich du lieu đau vao.
+Truy van co so du lieu đe lay danh sach điem đen/hoat đong phu hop voi so thich va thoi gian.
+Tra ve danh sach goi y đuoc chia theo tung khung gio.
+4. Nguoi dung chon điem yeu thich
+Trai nghiem: Nguoi dung tu chon nhung điem goi y ma minh thich cho tung moc thoi gian.He thong:
+Ung dung luu lai danh sach lua chon cua nguoi dung.
+Neu co mang: đong bo voi server đe chuan bi sinh lich trinh.
+Neu offline: luu tam trong bo nho cuc bo.
+5. Sinh lich trinh chi tiet
+Trai nghiem: Sau khi nguoi dung xac nhan lua chon, ung dung hien thi lich trinh chi tiet theo tung ngay, tung moc thoi gian dua tren cac điem đa chon.He thong:
+API server tong hop lua chon, tao lich trinh cuoi cung (timeline sang – trua – chieu – toi).
+Ung dung hien thi lich trinh dang timeline kem ban đo, goi y mon an, meo trai nghiem.
+Neu offline: sinh lich trinh dua tren du lieu mau đa co trong app.
+6. Luu lich trinh
+Trai nghiem: Nguoi dung co the share lich trinh nay len trang ca nhan hoac tai ve duoi dang PDF/anh.He thong:
+Neu co mang: luu lich trinh vao co so du lieu ca nhan cua nguoi dung.
+Neu offline: luu tam vao bo nho cuc bo va đong bo khi co ket noi.
+Tong ket
+Nhung phan chi can hien thi
+Danh sach option (thoi gian, khu vuc, so thich).
+Goi y điem đen theo khung gio.
+Lich trinh chi tiet sau khi nguoi dung chon.
+Nhung phan tuong tac voi thiet bi
+GPS: hien thi vi tri va chi đuong.
+Ban đo: dung dich vu ban đo (Google Maps hoac OpenStreetMap).
+Nhung phan tuong tac voi API
+Phan tich du lieu đau vao đe goi y điem đen.
+Lay danh sach goi y điem đen, hoat đong, mon an, meo.
+Sinh lich trinh chi tiet sau khi nguoi dung chon.
+Đong bo lich trinh đa luu cua nguoi dung.
+Noi dung can chuan bi
+Van ban (Text)
+Danh sach điem đen/hoat đong chia theo loai hinh (am thuc, van hoa, thien nhien…).
+Mo ta ngan, thoi gian goi y.
+Goi y mon an va meo trai nghiem.
+Hinh anh (Image)
+Hinh anh điem đen, mon an, hoat đong.
+Dung luong toi uu đe hien thi nhanh.
+Metadata va cau truc quan ly
+Tag cho điem đen: loai hinh, khu vuc, phu hop thoi gian nao (sang, trua, chieu, toi).
+Lien ket voi ban đo (toa đo GPS).
+Cac luu y khi cai đat he thong
+Tich hop ban đo/GPS
+Phai xin quyen truy cap vi tri.
+Nen co ban đo offline co ban cho du khach.
+Đong bo du lieu nguoi dung
+Offline-first: luu tam lua chon, đong bo khi co internet.
+Giai quyet xung đot neu nguoi dung chinh sua lich trinh tren nhieu thiet bi.
+Cach he thong phan tich du lieu va lua chon điem đen
+Thu thap du lieu đau vao
+User input: ngay luu tru, khu vuc, loai du lich, so thich.
+Contextual data: thoi tiet, gio mo cua, mua vu.
+Lich su su dung: cac lich trinh truoc, hanh vi chon/bo.
+Loc điem đen theo đieu kien co ban
+Chi chon nhung điem phu hop logic (cung thanh pho, mo cua, hop mua).
+Loc theo loai hinh:
+Gia đinh -> uu tien cac đia điem an toan, phu hop tre em (cong vien, bao tang, khu vui choi, bai bien co dich vu).
+Cap đoi -> goi y điem lang man (canh đep ngam hoang hon, resort yen tinh, trai nghiem rieng tu).
+Nhom ban -> goi y hoat đong nhieu nguoi tham gia (team-building, bar/pub, trekking nhom, the thao duoi nuoc).
+Ca nhan -> goi y trai nghiem tu do, de di chuyen mot minh (walking tour, cafe đoc đao, homestay).
+Loai bo điem khong kha thi (qua xa > X km so voi timeline, đong cua ngay đo).
+Đanh gia va xep hang điem đenHe thong tinh điem cho tung điem đen dua tren nhieu tieu chi:
+x2: Chuan hoa tu rating thuc (1–5 sao). => loc truoc voi nguong
+x3: So luot check-in, review (log scale).  => loc truoc voi nguong
+x5: Đo phu hop mua/đieu kien thoi tiet. => loc truoc
+x1: Muc đo khop giua so thich nguoi dung, loai du lich va category/tags cua điem đen.
+Loc thong tin input
+Thuat toan goi y: (goi y dua tren noi dung, dua tren loc cong tac)
+Dua tren tt user
+Dua tren lich su trai nghiem cua user (rate, like)
+Score = a.x1 + b.x2 + c.x3 + e.x5
+x4: Đo phu hop voi moc gio (sang/chieu/toi).
+Luu y:
+Khi phan tich du lieu hanh vi, he thong co the kiem tra: Khach lua chon so thich co nhieu tuong đong voi loai hinh gia đinh khong, tu đo tinh chinh trong so f đe goi y cang chinh xac.
+Sap xep:
+Chon top-N điem co điem so cao nhat cho tung moc thoi gian.
+Giu log tinh điem (feature contribution) -> explainability: he thong co the giai thich vi sao đe xuat (vi du: “Goi y Ho Guom vi phu hop so thich thien nhien)
+Toi uu hoa timeline: => phai khao sat ngta dua tren tuoi hay gi (tour, app…)
+Gia đinh: tranh lich day, uu tien nghi trua dai.
+Nhom ban: timeline co the day hon, nhieu hoat đong ban đem.
+Cap đoi: timeline co them khoang thoi gian trong (khong bi “nhoi nhet”).
+Ca nhan: co the linh hoat, nhieu trai nghiem ca nhan.
+Sinh lich trinh chi tiet cuoi cung
+He thong tong hop cac lua chon, sap xep vao timeline tung ngay.
+Kem ban đo chi đuong, goi y mon an đac trung va meo trai nghiem.
+Nhung nhom attribute quan trong:
+1 object đia điem gom:
+Thong tin co ban: id, ten, mo ta, đia chi, toa đo (dung đe lien ket link toi map).
+Phan loai: category, subCategory, tags.
+Chi phi: priceRange, estimatedCost.
+Thoi gian: openHours, seasonality, recommendedTimeSlots, durationMinutes.
+Đinh luong khach quan: rating, ratingCount, popularityScore.
+Khong gian: coords, region, city.
+Noi dung phu tro: images, relatedFoods, transport.
+Metadata quan tri: nguon, cap nhat cuoi.
+User input:
+So ngay luu tru (Duration options)
+1 ngay (day trip)
+2 ngay 1 đem
+3 ngay 2 đem
+5 ngay 4 đem
+7 ngay (1 tuan)
+10 ngay
+14 ngay (2 tuan)
+21 ngay (3 tuan)
+Loai hinh du lich (Travel type)
+Ca nhan (Solo travel)
+Gia đinh (Family trip, co tre nho)
+Nhom ban (Group travel, 3–6 nguoi)
+Cap đoi (Couple / Honeymoon)
+So thich (Preferences / Categories)
+Van hoa – Lich su (Culture & History)
+Bao tang, di tich, chua đen
+Lang nghe truyen thong
+Kien truc (nha co, pho co, cung đinh)
+Thien nhien – Ngoai troi (Nature & Outdoor)
+Leo nui, trekking
+Tham quan hang đong
+Bai bien, lan ngam san ho
+Cong vien quoc gia
+Nghi duong (Relaxation & Wellness)
+Resort bien
+Spa, massage
+Tam khoang nong, suoi nuoc nong
+Kham pha – Phieu luu (Adventure)
+The thao duoi nuoc (kayak, luot song)
+Motorbike tour / off-road
+Zipline, du luon
+Giai tri – Mua sam (Entertainment & Shopping)
+Cho đem, trung tam thuong mai
+Quan bar, pub, cafe đoc đao
+Cong vien giai tri
+Tham quan cho đem / street food
+Trai nghiem cong đong (Community & Local life)
+Homestay cung dan ban
+Tinh nguyen / nong trai
+Le hoi đia phuong
+Khach san, motel…
+Quan an, nha hang…
+Tu tao lich trinh chuyen đi (ghe qua đia điem nao, mac đinh đi xe may) voi api link toi google maps đe nguoi dung tu chon loai phuong tien va tu xem tong thoi gian đi.
+Oanh 2
+PostGIS
+PostgreSQL von la he quan tri co so du lieu quan he (RDBMS).
+Khi cai them PostGIS, PostgreSQL tro thanh mot Spatial Database (co so du lieu khong gian) — co the luu tru, truy van, va phan tich du lieu đia ly (geographic hoac geometric).
+PostGIS them vao PostgreSQL:
+Kieu du lieu khong gian, vi du:
+GEOMETRY (hinh hoc phang)
+GEOGRAPHY (du lieu theo kinh đo/vi đo)
+Ham xu ly khong gian, nhu:
+ST_Distance(a, b) — tinh khoang cach giua hai điem.
+ST_Area(polygon) — tinh dien tich vung.
+ST_Intersects(a, b) — kiem tra hai vung co giao nhau khong.
+ST_Buffer(point, distance) — tao vung bao quanh điem.
+PostGIS thuong đuoc dung trong:
+He thong ban đo (GIS) — nhu QGIS, GeoServer, MapServer.
+Ung dung đinh vi (location-based apps): tim quan gan nhat, khoang cach giua hai đia điem.
+Phan tich đia ly: vung phu song, khu vuc rui ro, phan vung dan cu.
+Quan ly ha tang: đuong xa, mang đien, cong ranh, vien thong.
+POI:
+POI la điem quan tam hoac đia điem đang chu y tren ban đo, vi du: quan ca phe, tram xang, benh vien, truong hoc, nha hang, điem du lich, v.v.
+Moi POI co toa đo khong gian (latitude, longitude) va thong tin mo ta đi kem.
+POI thuong la mot điem (Point) trong du lieu GIS (Geographic Information System) hoac PostGIS.
+Google Maps Directions API:
+Chuc nang:
+Tinh lo trinh theo nhieu phuong tien: o to (driving, co ho tro ket xe), đi bo, xe đap, phuong tien cong cong (transit).
+Đi qua nhieu điem dung (waypoints) va chia lo trinh thanh nhieu “legs”. (Luu y: waypoint ap dung cho driving/walking/cycling — khong ap dung cho transit.)
+Toi uu thu tu điem dung (tu đong sap xep route đe tong thoi gian/đo dai toi uu) — hien lam qua Routes API voi optimizeWaypointOrder=true.
+ETAs co xet giao thong thuc te: đat departure_time (hien tai hoac tuong lai) + traffic_model đe nhan duration_in_traffic cho che đo lai xe.
+Nhieu cach chi đinh điem: đia chi van ban, Place ID, hoac toa đo lat/lng.
+Tham so đieu chinh lo trinh: tranh cao toc/thu phi/pha (avoid=highways|tolls|ferries), chon ngon ngu/đon vi, lay đuong polyline đe ve route tren ban đo, kem steps (huong re) va fare cho transit.
+Nhieu phuong an tuyen (alternatives) đe nguoi dung so sanh.
+1. Ket hop điem hoi nghi / cong viec vao lich trinh
+Dung PostGIS đe luu va truy van du lieu POI, tinh khoang cach tu điem hoi nghi hoac cong viec đen cac đia điem xung quanh bang ST_Distance hoac ST_DWithin.
+Dung Google Maps Directions API đe tao lo trinh di chuyen giua cac điem (origin → hoi nghi → POI → khach san).
+Dung PostGIS đe loc POI theo ban kinh (vi du 2 km quanh đia điem hoi nghi), sau đo gui danh sach đo vao Directions API đe tinh tuyen toi uu.
+2. Toi uu thoi gian di chuyen va tranh gio cao điem
+Dung Google Maps Directions API (hoac Routes API) voi departure_time va traffic_model đe tinh ETA co xet đen giao thong thuc te (duration_in_traffic).
+Dung optimizeWaypointOrder=true đe sap xep thu tu điem dung hop ly, giam tong thoi gian di chuyen.
+Dung PostGIS đe xac đinh cac POI gan nhat truoc khi gui yeu cau đen API, giup giam chi phi tinh toan.
+3. Goi y lich trinh theo mua
+Luu them thuoc tinh mua hoac đieu kien thoi tiet cho tung POI (vi du: summer_only, indoor, outdoor) hoac them cot best_months hoac season trong bang đia điem.
+Logic: Khi nguoi dung chon “I will travel in March – May”, he thong uu tien đia điem co best_months chua khoang thoi gian nay.
+Co the hien thi them “Ly do goi y” (vi du: “Mua hoa tam giac mach o Ha Giang” hoac “Thoi điem lan bien đep o Phu Quoc”).
+Dung PostGIS đe loc POI phu hop theo mua va khu vuc.
+Dung Directions API đe tinh tuyen di chuyen giua cac POI đuoc chon (vi du: chon điem trong nha vao mua mua, điem ngoai troi vao mua kho).
+4. Goi y ba goi lich trinh (Tiet kiem – Tieu chuan – Nang cao trai nghiem)
+Dung Google Maps Directions API voi alternatives=true đe lay nhieu tuyen kha thi.
+Ap dung tham so avoid=tolls cho goi tiet kiem, avoid=highways cho goi trai nghiem.
+4.1. Muc tieu san pham
+Đa dang hoa lua chon theo ngan sach va khau vi trai nghiem.
+Duy tri cau truc lich trinh nhat quan (buoi sang – trua – chieu – toi) nhung thay đoi “chat luong” điem đen, dich vu, va chi phi.
+Cho phep nguoi dung chuyen cap đo tuc thi ma khong phai nhap lai thong tin.
+4.2. Đinh nghia 3 cap đo
+Tiet kiem: cho o binh dan, an uong binh dan/quan đia phuong, uu tien điem mien phi hoac phi thap, di chuyen cong cong/đi bo, toi đa hoa so điem trong ngay nhung khoang cach ngan.
+Tieu chuan: khach san tam trung, nha hang pho thong–kha, ket hop điem noi tieng va mot vai trai nghiem tra phi, can bang giua so điem va thoi gian nghi.
+Nang cao trai nghiem: luu tru boutique/đac sac, nha hang/đau bep đia phuong, workshop thu cong/am thuc, tour rieng/nho, uu tien “it nhung chat”.
+4.3. Chuan hoa khai niem ngan sach DDD
+Moi gia luu trong co so du lieu theo VND, co bang ty gia đe hien thi đa tien te.
+Tren moi thanh pho hoac khu vuc, khai bao “band chi phi” tham khao theo ngay/nguoi, vi du:
+Tiet kiem: vi du 400k–800k VND/ngay
+Tieu chuan: 800k–1.8M VND/ngay
+Nang cao: 1.8M–5M+ VND/ngay
+Phan loai vung, moi cap mot vung mot khoang chi phi => khao sat muc song binh quan tung vung
+4.4. Chon lich trinh theo cap đo => suy nghi thuat toan (xem lai)
+Tiet kiem:
+Luu tru: price_level=1; distance đen trung tam ≤ 3–5 km đe giam chi phi di chuyen.
+An uong: price_level=1; uu tien quan đia phuong.
+Hoat đong: mien phi/thap phi; toi đa 4–5 muc/ngay, tong thoi gian di chuyen ≤ 90 phut/ngay.
+Tieu chuan:
+Luu tru: price_level=2; vi tri thuan tien.
+An uong: price_level=1–2; mot bua “đac san co đat cho”.
+Hoat đong: ve vao cua pho bien; 3–4 muc/ngay; tong di chuyen ≤ 120 phut.
+Nang cao trai nghiem:
+Luu tru: price_level=3 hoac class=boutique.
+An uong: 1 bua “signature”/fine-local; co workshop/tour rieng.
+Hoat đong: 2–3 muc trong tam; tong di chuyen ≤ 90 phut; tranh gio cao điem nhieu hon.
+5. Map co ho tro phuong tien di chuyen
+Routes API va Directions API cung cap du lieu chi tiet cho cac phuong tien: o to, đi bo, xe đap, phuong tien cong cong (mode=driving|walking|bicycling|transit).
+Khi nguoi dung mo lich trinh, he thong hien thi thong tin phuong tien di chuyen (vi du: tuyen xe buyt, tau đien ngam, thoi gian chuyen tram, khoang cach đi bo giua cac chang).
+PostgreSQL luu loai phuong tien (transport_mode) cho tung chang, giup hien thi đong nhat giua he thong noi bo va Google Maps.
+6. Hien thi thong tin y te va đai su quan khi xem ban đo
+O moi điem trong lich trinh (hotel, hoi nghi, POI), hien thi nut: “Xem xung quanh”.
+Khi bam, mo bottom sheet voi hai tab: “Y te” va “Đai su quan”.
+Moi tab liet ke cac điem gan nhat theo ban kinh cau hinh (vi du 1–3 km), xep theo khoang cach va trang thai mo cua.
+Moi item co cac hanh đong: Goi/Website, Xem chi tiet, Chi đuong (mo Google Maps deeplink).
+Co nut “Mo ca lop tren ban đo” đe bat overlay tat ca điem Y te/Đai su quan gan điem đo trong che đo Overview cua app.
+Cong nghe:
+Buoc 1: Luu va truy van du lieu
+Dung PostgreSQL + PostGIS đe luu du lieu y te va đai su quan
+Dung ST_DWithin đe loc điem gan, ST_Distance đe tinh khoang cach va sap xep.
+Buoc 2: Bo sung thong tin chi tiet (gio mo cua, lien he, website)
+Dung Google Places API (Nearby Search / Place Details) đe lay hoac đoi chieu du lieu thuc te theo Place ID.
+Buoc 3: Hien thi danh sach va ban đo trong app
+Dung Google Maps JavaScript API (hoac Maps SDK for Android/iOS) đe hien thi marker va overlay layer (GeoJSON).
+Dung React / Android BottomSheet / iOS Sheet đe hien thi danh sach (bottom sheet) theo tab “Y te” va “Đai su quan”.
+Buoc 4: Chi đuong tu điem hien tai đen đia điem đuoc chon
+Dung Google Maps Directions API hoac deeplink (https://www.google.com/maps/dir/Dapi=1&destination=lat,lng) đe mo lo trinh đieu huong.
+Buoc 5: Mo lop ban đo tong quan (Overview)
+Dung GeoJSON layer tu API noi bo (PostGIS → GeoJSON) đe overlay cac điem y te/đai su quan len ban đo.
+Refs:
+https://developers.google.com/maps/documentation/directions/overview
+Phuc 2
+Muc tieu
+Xin phep nguoi dung xoa cac du lieu ca nhan đa dung cho ca nhan hoa va AI sau khi ket thuc lich trinh.
+Minh bach noi dung xoa.
+Thoi điem kich hoat
+Sau khi lich trinh ket thuc.
+Kich hoat mot lan cho moi Plan.
+Noi dung thong bao
+Tieu đe: Bao ve quyen rieng tu sau chuyen đi
+Thong điep: “Ban co muon xoa mot so du lieu ca nhan đa dung cho goi y va AI trong chuyen đi vua roi khongD”
+Cac thong tin se xoa:
+So thich dung cho goi y (Favorites)
+Hinh anh đa gui cho AI (Anh goc)
+Lich trinh đa trai nghiem (Ke hoach va cac hang muc trong chuyen)
+Nut: Xoa ngay | Giu lai
+Pham vi du lieu se xoa khi nguoi dung đong y
+So thich dung cho goi y
+Toan bo muc yeu thich gan voi Plan hoac phat sinh trong chuyen.
+Tac đong:
+Goi y ca nhan hoa tro ve mac đinh.
+Hinh anh đa gui cho AI
+Tep anh do nguoi dung tai len trong chuyen.
+Tac đong:
+Anh bi xoa khoi kho luu tru.
+Lich trinh đa trai nghiem
+Ban ghi chuyen đi đa hoan tat.
+Cac hang muc, điem đen, ngay-gio trong chuyen.
+Tac đong:
+Muc “Lich trinh cua toi” khong con chuyen đo.
+Dong thoi gian, ban đo hanh trinh khong con hien thi.
+Trinh bay “Chi tiet du lieu se xoa”
+So thich dung cho goi y
+Gom cac đia điem đa thich, cac đanh gia va phan hoi đuoc dung đe ca nhan hoa đe xuat.
+Hinh anh AI
+Gom anh ban đa tai len đe nhan dien va moi ket qua phan tich tu cac anh đo.
+Lich trinh đa trai nghiem
+Gom ten chuyen, ngay đi, danh sach điem đen va hoat đong trong chuyen.
+Anh huong toi tinh nang sau khi xoa
+Trang đe xuat đia điem, lo trinh goi y: hien thi ket qua mac đinh theo khu vuc thay vi ca nhan hoa.
+Lich su AI: trong, khong the xem lai anh/nhan cu.
+Loi tat trong Cai đat
+Muc Quyen rieng tu co nut “Xoa du lieu sau chuyen” voi cung 2 tuy chon.
+Co cong tac bat/tat “Luon nhac toi xoa sau chuyen đi”.
+Thai 2
+Đuc Anh 2
+THONG BAO
+Voucher Available (Su dung du lieu tren bang nao, đuoc sd ntn)
+Muc tieu: Bao co voucher moi.
+Thoi điem kich hoat: Gan voucher cho user.
+Noi dung thong bao
+Tieu đe: Ban co voucher moi
+Thong điep: “Nhan đe xem va ap dung.”
+Deeplink: hvn://voucher/<voucher_id>
+Nut: Xem voucher | Bo qua
+Premium Expiry Warning
+Muc tieu: Nhac gia han goi.
+Thoi điem kich hoat: expiry_date - 3 ngay.
+Noi dung thong bao
+Tieu đe: Premium sap het han
+Thong điep: “Gia han đe khong gian đoan quyen loi.”
+Deeplink: hvn://billing
+Nut: Gia han | Bo qua
+Forum Interaction
+Muc tieu: Bao reply/mention/topic theo doi.
+Thoi điem kich hoat: Co bai tra loi/mention moi lien quan user.
+Noi dung thong bao
+Tieu đe: Co hoat đong moi trong chu đe ban theo doi
+Deeplink: hvn://forum/topic/<id>
+Nut: Xem bai viet.
+Post-trip Review Prompt
+Muc tieu: Thu thap đanh gia sau chuyen đi..
+Thoi điem kich hoat: plan.end_at + 1 ngay.
+Noi dung thong bao
+Tieu đe: Đanh gia trai nghiem sau chuyen đi
+Thong điep: “Nhan đe đanh gia cac điem đa ghe.”
+Deeplink: hvn://plan/<plan_id>/review
+Nut: Đanh gia ngay | Đe sau..
+Oanh 3
+4. Goi y ba goi lich trinh (Tiet kiem – Tieu chuan – Nang cao trai nghiem)
+Dung Google Maps Directions API voi alternatives=true đe lay nhieu tuyen kha thi.
+Ap dung tham so avoid=tolls cho goi tiet kiem, avoid=highways cho goi trai nghiem.
+4.1. Muc tieu san pham
+Đa dang hoa lua chon theo ngan sach va khau vi trai nghiem.
+Duy tri cau truc lich trinh nhat quan (buoi sang – trua – chieu – toi) nhung thay đoi “chat luong” điem đen, dich vu, va chi phi.
+Cho phep nguoi dung chuyen cap đo tuc thi ma khong phai nhap lai thong tin.
+4.2. Đinh nghia 3 cap đo
+Tiet kiem: cho o binh dan, an uong binh dan/quan đia phuong, uu tien điem mien phi hoac phi thap, di chuyen cong cong/đi bo, toi đa hoa so điem trong ngay nhung khoang cach ngan.
+Tieu chuan: khach san tam trung, nha hang pho thong–kha, ket hop điem noi tieng va mot vai trai nghiem tra phi, can bang giua so điem va thoi gian nghi.
+Nang cao trai nghiem: luu tru boutique/đac sac, nha hang/đau bep đia phuong, workshop thu cong/am thuc, tour rieng/nho, uu tien “it nhung chat”.
+4.3. Chuan hoa khai niem ngan sach DDD
+Moi gia luu trong co so du lieu theo VND, co bang ty gia đe hien thi đa tien te.
+Tren moi thanh pho hoac khu vuc, khai bao “band chi phi” tham khao theo ngay/nguoi, vi du:
+Tiet kiem: vi du 400k–800k VND/ngay
+Tieu chuan: 800k–1.8M VND/ngay
+Nang cao: 1.8M–5M+ VND/ngay
+Phan loai vung, moi cap mot vung mot khoang chi phi => khao sat muc song binh quan tung vung
+4.4. Chon lich trinh theo cap đo => suy nghi thuat toan (xem lai)
+Tiet kiem:
+Luu tru: price_level=1; distance đen trung tam ≤ 3–5 km đe giam chi phi di chuyen.
+An uong: price_level=1; uu tien quan đia phuong.
+Hoat đong: mien phi/thap phi; toi đa 4–5 muc/ngay, tong thoi gian di chuyen ≤ 90 phut/ngay.
+Tieu chuan:
+Luu tru: price_level=2; vi tri thuan tien.
+An uong: price_level=1–2; mot bua “đac san co đat cho”.
+Hoat đong: ve vao cua pho bien; 3–4 muc/ngay; tong di chuyen ≤ 120 phut.
+Nang cao trai nghiem:
+Luu tru: price_level=3 hoac class=boutique.
+An uong: 1 bua “signature”/fine-local; co workshop/tour rieng.
+Hoat đong: 2–3 muc trong tam; tong di chuyen ≤ 90 phut; tranh gio cao điem nhieu hon.
+Tieu chuan chi phi:
+Nhung cai co trong tinh toan cua minh
+Rating
+So luot check-in, review
+Đo phu hop mua/đieu kien thoi tiet.
+Fav list
+Category
+Group type D
+Gia mon an, gia ve tham gia cac tro choi, gia thue phong…
+Khao sat muc song (chi tieu va tieu dung luong thuc, thuc pham)
+Ref: https://www.nso.gov.vn/tin-tuc-thong-ke/2025/05/thong-cao-bao-chi-ket-qua-khao-sat-muc-song-dan-cu-nam-2024/
+Phan cap đo thi:
+Loai đac biet: TP Ha Noi, TP HCM
+Loai I: TP Hai Phong, TP Đa Nang, TP Can Tho, TP Hue.
+Loai II:
+Loai III:
+Level 1 (nong thon): 2.5M 1ng/1 thang
+Gom cac tinh thanh:
+Level 2 (thanh thi): 3.8M 1ng/1 thang
+Gom cac tinh thanh:
+Phan loai vung, gan gia tri cho tung muc. Vi du thanh pho/ tinh nao co cap 1 2 3 thi moi cap se co 1 khoang chi phi tuong ung.
+Level 1:
+Tiet kiem:
+Tieu chuan:
+Nang cao
+Level 2:
+Tiet kiem:
+Tieu chuan:
+Nang cao:
+Level 3:
+Tiet kiem:
+Tieu chuan:
+Nang cao:
+Xem xet bo no vao tinh toan the nao
+Flow code
+Phuc
+Đang nhap/Đang ky - Homepage - recommendation - đang xuat
+Đang nhap/Đang ky - Homepage - explore culture - đang xuat
+Đang nhap/Đang ky - Homepage - Wishlist - đang xuat
+Đang nhap/Đang ky - Homepage - feedback - đang xuat
+Sau khi nguoi dung hoan thanh trip planner → Delete personal data
+Thai:
+Đuc Anh:
+Đang nhap/Đang ky - Homepage - Voucher
+Đang nhap/Đang ky -
+Oanh:
+User:
+Đang nhap - Popular Apps - Chi tiet App Guide (dang post) - đang xuat
+Đang nhap - Trip Planner (9 screens) - đang xuat
+Admin:
+Đang nhap - Popular Apps - CRUD tung post - đang xuat
+Uu tien lam:
+Đang ky, đang nhap, quen mk, đang xuat 0
+Profile 2 P
+Noti 3 P
+Explore 1 ĐA
+Recommend 1 O
+Plan trip 1 ĐA
+Wish list 3 P
+App guide 2 O
+AI 2
+Delete data 2
+Feedback 0
+Ho tro dich 3
+Dashboard 1
+Reward voucher 2
+Management 1
+Forum 1
+Upgrade account 2
+Tab 14
+Thuat toan
+Cac cot data can dung cho thuat toan
+place:
+Id_place
+osm_id
+name
+description
+place_subcategory
+timeopen (xem loai nao, vd ks mo 24/24… => cai rang buoc)
+Timeclose
+is_24h
+rating_avg
+Rating_count
+price_level
+Jsonb (chua anh)
+updated_by
+updated_at
+status (con hoat đong/ngung hoat đong)
+Tu he thong:
+Tu user cung cap:
+Đia điem ca nhan hoa phu hop so thich:
+He thong tinh điem cho tung điem đen dua tren nhieu tieu chi:
+x2: Chuan hoa tu rating thuc (1–5 sao). => loc truoc voi nguong
+x3: So luot check-in, review (log scale).  => loc truoc voi nguong
+x5: Đo phu hop mua/đieu kien thoi tiet. => loc truoc
+x1: Muc đo khop giua so thich nguoi dung, loai du lich va category/tags cua điem đen.
+Loc thong tin input
+Thuat toan goi y: (goi y dua tren noi dung, dua tren loc cong tac)
+Dua tren tt user
+Dua tren lich su trai nghiem cua user (rate, like)
+Score = a.x1 + b.x2 + c.x3 + e.x5
+x4: Đo phu hop voi moc gio (sang/chieu/toi).
+Ap dung Trip package đe toi uu hoa thuat toan:
