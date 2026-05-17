@@ -33,6 +33,8 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+**/build/
+**/.dart_tool/
 
 # Symbolication related
 app.*.symbols
@@ -55,3 +57,7 @@ claude.md
 tree.txt
 plan.md 
 spec.md
+.merge-worktree/
+backend/node_modules/
+backend/supabase/.temp/
+backend/crawldata/.env

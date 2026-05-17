@@ -1,16 +1,20 @@
-# hellovietnam
+# Hello Vietnam
 
-A new Flutter project.
+Monorepo layout:
 
-## Getting Started
+- `frontend/`: Flutter app for user and admin experiences
+- `backend/`: Supabase functions, SQL, migrations, and backend support files
+- `.vscode/`: shared launch configs for local development
 
-This project is a starting point for a Flutter application.
+Run from VS Code:
 
-A few resources to get you started if this is your first Flutter project:
+- `User`: launches `frontend/lib/main.dart` on web port `3000`
+- `Admin`: launches `frontend/lib/main_admin.dart` on web port `3001`
+- `User Mobile` / `Admin Mobile`: launch the Flutter app on a connected mobile device
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Common paths:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Flutter code: [frontend/lib](frontend/lib)
+- Flutter config: [frontend/pubspec.yaml](frontend/pubspec.yaml)
+- Supabase functions: [backend/supabase/functions](backend/supabase/functions)
+- Database SQL: [backend/db](backend/db)

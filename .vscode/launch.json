@@ -5,17 +5,43 @@
       "name": "Admin",
       "request": "launch",
       "type": "dart",
-      "deviceId": "chrome",
+      "cwd": "frontend",
+      "deviceId": "edge",
       "program": "lib/main_admin.dart",
-      "args": ["--web-hostname", "localhost", "--web-port", "3000"]
+      "args": [
+        "--web-hostname",
+        "localhost",
+        "--web-port",
+        "3001"
+      ]
     },
     {
       "name": "User",
       "request": "launch",
       "type": "dart",
-      //"deviceId": "chrome",
+      "cwd": "frontend",
+      "deviceId": "edge",
       "program": "lib/main.dart",
-      "args": ["--web-hostname", "localhost", "--web-port", "3000"]
+      "args": [
+        "--web-hostname",
+        "localhost",
+        "--web-port",
+        "3000"
+      ]
+    },
+    {
+      "name": "User Mobile",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "frontend",
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "Admin Mobile",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "frontend",
+      "program": "lib/main_admin.dart"
     }
   ],
   "compounds": [
