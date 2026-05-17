@@ -1060,6 +1060,13 @@ class _SavedTrip {
   }
 
   _SavedTrip toggleStop(String stopId) {
+    final int targetIndex = stops.indexWhere(
+      (_SavedStop stop) => stop.id == stopId,
+    );
+    if (targetIndex == -1) return this;
+
+    final bool shouldComplete = !stops[targetIndex].isCompleted;
+
     return _SavedTrip(
       id: id,
       monthLabel: monthLabel,
@@ -1069,10 +1076,16 @@ class _SavedTrip {
       dateLabel: dateLabel,
       budgetLabel: budgetLabel,
       accentColors: accentColors,
-      stops: stops.map((_SavedStop stop) {
-        if (stop.id != stopId) return stop;
-        return stop.copyWith(isCompleted: !stop.isCompleted);
-      }).toList(),
+      stops: List<_SavedStop>.generate(stops.length, (int index) {
+        final _SavedStop stop = stops[index];
+        if (shouldComplete && index <= targetIndex) {
+          return stop.copyWith(isCompleted: true);
+        }
+        if (!shouldComplete && index >= targetIndex) {
+          return stop.copyWith(isCompleted: false);
+        }
+        return stop;
+      }),
     );
   }
 }
