@@ -3,7 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 enum FavoriteType {
   city,
   place,
-  food;
+  food,
+  activity,
+  culture,
+  localProduct;
 
   String get dbValue {
     switch (this) {
@@ -13,6 +16,12 @@ enum FavoriteType {
         return 'place';
       case FavoriteType.food:
         return 'food';
+      case FavoriteType.activity:
+        return 'activity';
+      case FavoriteType.culture:
+        return 'culture';
+      case FavoriteType.localProduct:
+        return 'localProduct';
     }
   }
 
@@ -24,6 +33,44 @@ enum FavoriteType {
         return FavoriteType.place;
       case 'food':
         return FavoriteType.food;
+      case 'activity':
+        return FavoriteType.activity;
+      case 'culture':
+        return FavoriteType.culture;
+      case 'localproduct':
+      case 'local_product':
+      case 'localProduct':
+        return FavoriteType.localProduct;
+      default:
+        return null;
+    }
+  }
+}
+
+enum WishlistDisplayType {
+  city,
+  place,
+  food,
+  culture,
+  activity,
+  localProduct;
+
+  static WishlistDisplayType? tryParse(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'city':
+        return WishlistDisplayType.city;
+      case 'place':
+        return WishlistDisplayType.place;
+      case 'food':
+        return WishlistDisplayType.food;
+      case 'culture':
+        return WishlistDisplayType.culture;
+      case 'activity':
+        return WishlistDisplayType.activity;
+      case 'localproduct':
+      case 'local_product':
+      case 'localProduct':
+        return WishlistDisplayType.localProduct;
       default:
         return null;
     }
@@ -34,6 +81,7 @@ class WishlistRepositoryItem {
   const WishlistRepositoryItem({
     required this.id,
     required this.type,
+    required this.displayType,
     required this.title,
     required this.description,
     this.imageUrl,
@@ -42,6 +90,7 @@ class WishlistRepositoryItem {
 
   final String id;
   final FavoriteType type;
+  final WishlistDisplayType displayType;
   final String title;
   final String description;
   final String? imageUrl;
@@ -149,10 +198,17 @@ class WishlistRepository {
     if (type == null) {
       throw StateError('Unsupported favorite type: "$typeRaw".');
     }
+    final displayTypeRaw =
+        _readNullableString(json, 'displayType') ?? type.dbValue;
+    final displayType = WishlistDisplayType.tryParse(displayTypeRaw);
+    if (displayType == null) {
+      throw StateError('Unsupported wishlist display type: "$displayTypeRaw".');
+    }
 
     return WishlistRepositoryItem(
       id: id,
       type: type,
+      displayType: displayType,
       title: _requiredString(json, 'title'),
       description: _readNullableString(json, 'description') ?? '',
       imageUrl: _readNullableString(json, 'imageUrl'),

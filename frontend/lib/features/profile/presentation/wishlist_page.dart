@@ -458,19 +458,25 @@ class _WishlistPageState extends State<WishlistPage> {
       galleryImageUrls: image.isEmpty ? const <String>[] : <String>[image],
       mapImageUrl: '',
       rating: 4.5,
-      type: _favoriteTypeToWishlistType(item.type),
+      type: _displayTypeToWishlistType(item.displayType),
       createdAt: item.createdAt,
     );
   }
 
-  WishlistType _favoriteTypeToWishlistType(FavoriteType type) {
+  WishlistType _displayTypeToWishlistType(WishlistDisplayType type) {
     switch (type) {
-      case FavoriteType.city:
+      case WishlistDisplayType.city:
         return WishlistType.city;
-      case FavoriteType.place:
+      case WishlistDisplayType.place:
         return WishlistType.place;
-      case FavoriteType.food:
+      case WishlistDisplayType.food:
         return WishlistType.food;
+      case WishlistDisplayType.culture:
+        return WishlistType.culture;
+      case WishlistDisplayType.activity:
+        return WishlistType.activity;
+      case WishlistDisplayType.localProduct:
+        return WishlistType.localProduct;
     }
   }
 
@@ -481,10 +487,13 @@ class _WishlistPageState extends State<WishlistPage> {
       case WishlistType.food:
         return FavoriteType.food;
       case WishlistType.place:
-      case WishlistType.culture:
-      case WishlistType.activity:
-      case WishlistType.localProduct:
         return FavoriteType.place;
+      case WishlistType.culture:
+        return FavoriteType.culture;
+      case WishlistType.activity:
+        return FavoriteType.activity;
+      case WishlistType.localProduct:
+        return FavoriteType.localProduct;
     }
   }
 
@@ -514,12 +523,14 @@ class _WishlistPageState extends State<WishlistPage> {
     switch (type) {
       case WishlistType.city:
       case WishlistType.place:
-      case WishlistType.culture:
       case WishlistType.activity:
-      case WishlistType.localProduct:
         return DetailCategory.activities;
+      case WishlistType.culture:
+        return DetailCategory.culture;
       case WishlistType.food:
         return DetailCategory.food;
+      case WishlistType.localProduct:
+        return DetailCategory.localProducts;
     }
   }
 

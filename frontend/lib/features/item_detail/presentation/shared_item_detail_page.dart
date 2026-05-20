@@ -89,9 +89,11 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
       case DetailCategory.food:
         return FavoriteType.food;
       case DetailCategory.activities:
+        return FavoriteType.activity;
       case DetailCategory.culture:
+        return FavoriteType.culture;
       case DetailCategory.localProducts:
-        return FavoriteType.place;
+        return FavoriteType.localProduct;
     }
   }
 

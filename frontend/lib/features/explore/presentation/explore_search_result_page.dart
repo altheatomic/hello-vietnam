@@ -35,6 +35,9 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
   final WishlistRepository _wishlistRepository = WishlistRepository();
   final Set<String> _favoriteFoodIds = <String>{};
   final Set<String> _favoritePlaceIds = <String>{};
+  final Set<String> _favoriteActivityIds = <String>{};
+  final Set<String> _favoriteCultureIds = <String>{};
+  final Set<String> _favoriteLocalProductIds = <String>{};
 
   @override
   void initState() {
@@ -64,22 +67,52 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
                 .where((item) => item.type == FavoriteType.place)
                 .map((item) => item.id),
           );
+        _favoriteActivityIds
+          ..clear()
+          ..addAll(
+            items
+                .where((item) => item.type == FavoriteType.activity)
+                .map((item) => item.id),
+          );
+        _favoriteCultureIds
+          ..clear()
+          ..addAll(
+            items
+                .where((item) => item.type == FavoriteType.culture)
+                .map((item) => item.id),
+          );
+        _favoriteLocalProductIds
+          ..clear()
+          ..addAll(
+            items
+                .where((item) => item.type == FavoriteType.localProduct)
+                .map((item) => item.id),
+          );
       });
     } catch (_) {}
   }
 
   bool _isFavoriteForCurrentFilter(SearchResultItem item) {
-    if (_selectedFilter == 2) {
-      return _favoriteFoodIds.contains(item.id);
+    switch (_categoryForIndex(_selectedFilter)) {
+      case DetailCategory.activities:
+        return _favoriteActivityIds.contains(item.id);
+      case DetailCategory.culture:
+        return _favoriteCultureIds.contains(item.id);
+      case DetailCategory.food:
+        return _favoriteFoodIds.contains(item.id);
+      case DetailCategory.localProducts:
+        return _favoriteLocalProductIds.contains(item.id);
     }
-    return _favoritePlaceIds.contains(item.id);
   }
 
   void _onFavoriteChanged(SearchResultItem item, bool isFavorite) {
     setState(() {
-      final targetSet = _selectedFilter == 2
-          ? _favoriteFoodIds
-          : _favoritePlaceIds;
+      final targetSet = switch (_categoryForIndex(_selectedFilter)) {
+        DetailCategory.activities => _favoriteActivityIds,
+        DetailCategory.culture => _favoriteCultureIds,
+        DetailCategory.food => _favoriteFoodIds,
+        DetailCategory.localProducts => _favoriteLocalProductIds,
+      };
       if (isFavorite) {
         targetSet.add(item.id);
       } else {
@@ -379,9 +412,7 @@ class _ResultCardState extends State<_ResultCard> {
 
     try {
       await _wishlistRepository.toggleFavoriteByRawId(
-        type: widget.category == DetailCategory.food
-            ? FavoriteType.food
-            : FavoriteType.place,
+        type: _favoriteTypeForCategory(widget.category),
         rawItemId: widget.item.id,
         fallbackName: widget.item.name,
       );
@@ -586,5 +617,18 @@ class _ResultCardState extends State<_ResultCard> {
         ),
       ),
     );
+  }
+}
+
+FavoriteType _favoriteTypeForCategory(DetailCategory category) {
+  switch (category) {
+    case DetailCategory.activities:
+      return FavoriteType.activity;
+    case DetailCategory.culture:
+      return FavoriteType.culture;
+    case DetailCategory.food:
+      return FavoriteType.food;
+    case DetailCategory.localProducts:
+      return FavoriteType.localProduct;
   }
 }

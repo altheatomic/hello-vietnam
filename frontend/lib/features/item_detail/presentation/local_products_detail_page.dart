@@ -13,7 +13,7 @@ class LocalProductsDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SharedItemDetailPage(
       request: request,
-      favoriteType: FavoriteType.place,
+      favoriteType: FavoriteType.localProduct,
     );
   }
 }

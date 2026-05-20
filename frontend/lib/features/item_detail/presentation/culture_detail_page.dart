@@ -13,7 +13,7 @@ class CultureDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SharedItemDetailPage(
       request: request,
-      favoriteType: FavoriteType.place,
+      favoriteType: FavoriteType.culture,
     );
   }
 }
