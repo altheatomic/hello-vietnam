@@ -37,6 +37,7 @@ class WishlistRepositoryItem {
     required this.title,
     required this.description,
     this.imageUrl,
+    this.createdAt,
   });
 
   final String id;
@@ -44,6 +45,7 @@ class WishlistRepositoryItem {
   final String title;
   final String description;
   final String? imageUrl;
+  final DateTime? createdAt;
 }
 
 class WishlistRepository {
@@ -154,6 +156,9 @@ class WishlistRepository {
       title: _requiredString(json, 'title'),
       description: _readNullableString(json, 'description') ?? '',
       imageUrl: _readNullableString(json, 'imageUrl'),
+      createdAt: DateTime.tryParse(
+        _readNullableString(json, 'createdAt') ?? '',
+      ),
     );
   }
 

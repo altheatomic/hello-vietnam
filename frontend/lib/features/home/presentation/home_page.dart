@@ -6,17 +6,164 @@ import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
+import 'package:hellovietnam/core/auth/auth_repository.dart';
 import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import '../data/home_mock_data.dart';
 import 'widgets/home_banner.dart';
 import 'widgets/feature_grid.dart';
 import 'widgets/recommendation_section.dart';
 import 'widgets/recommendation_card.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
+  late final Set<String> _favoriteDestinationIds;
+  late final Set<String> _favoriteDishIds;
+  final WishlistRepository _wishlistRepository = WishlistRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _favoriteDestinationIds = mockDestinations
+        .where((item) => item.isFavorite)
+        .map((item) => item.id)
+        .toSet();
+    _favoriteDishIds = mockDishes
+        .where((item) => item.isFavorite)
+        .map((item) => item.id)
+        .toSet();
+    _syncFavoritesFromWishlist();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncFavoritesFromWishlist();
+    }
+  }
+
+  Future<void> _syncFavoritesFromWishlist() async {
+    final userId = AuthRepository.instance.user?.id;
+    if (userId == null) return;
+    try {
+      final items = await _wishlistRepository.fetchWishlist();
+      if (!mounted) return;
+      final cityIds = items
+          .where((item) => item.type == FavoriteType.city)
+          .map((item) => item.id)
+          .toSet();
+      final foodIds = items
+          .where((item) => item.type == FavoriteType.food)
+          .map((item) => item.id)
+          .toSet();
+      setState(() {
+        _favoriteDestinationIds
+          ..clear()
+          ..addAll(cityIds);
+        _favoriteDishIds
+          ..clear()
+          ..addAll(foodIds);
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _toggleDestinationFavorite({
+    required String id,
+    required String name,
+  }) async {
+    final userId = AuthRepository.instance.user?.id;
+    if (userId == null) {
+      _showSnackBar('Please sign in to save wishlist.');
+      return;
+    }
+
+    final wasFavorite = _favoriteDestinationIds.contains(id);
+    setState(() {
+      if (wasFavorite) {
+        _favoriteDestinationIds.remove(id);
+      } else {
+        _favoriteDestinationIds.add(id);
+      }
+    });
+
+    try {
+      await _wishlistRepository.toggleFavoriteByRawId(
+        type: FavoriteType.city,
+        rawItemId: id,
+        fallbackName: name,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        if (wasFavorite) {
+          _favoriteDestinationIds.add(id);
+        } else {
+          _favoriteDestinationIds.remove(id);
+        }
+      });
+      _showSnackBar('Wishlist update failed: $error');
+    }
+  }
+
+  Future<void> _toggleDishFavorite({
+    required String id,
+    required String name,
+  }) async {
+    final userId = AuthRepository.instance.user?.id;
+    if (userId == null) {
+      _showSnackBar('Please sign in to save wishlist.');
+      return;
+    }
+
+    final wasFavorite = _favoriteDishIds.contains(id);
+    setState(() {
+      if (wasFavorite) {
+        _favoriteDishIds.remove(id);
+      } else {
+        _favoriteDishIds.add(id);
+      }
+    });
+
+    try {
+      await _wishlistRepository.toggleFavoriteByRawId(
+        type: FavoriteType.food,
+        rawItemId: id,
+        fallbackName: name,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        if (wasFavorite) {
+          _favoriteDishIds.add(id);
+        } else {
+          _favoriteDishIds.remove(id);
+        }
+      });
+      _showSnackBar('Wishlist update failed: $error');
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,12 +313,15 @@ class HomePage extends StatelessWidget {
                     title: 'Best Destination',
                     backgroundImage: AppConstants.destinationBgAsset,
                     children: mockDestinations.map((d) {
+                      final isFavorite = _favoriteDestinationIds.contains(d.id);
                       return RecommendationCard(
                         name: d.name,
                         category: d.category,
                         rating: d.rating,
                         imagePath: d.imagePath,
-                        isFavorite: d.isFavorite,
+                        isFavorite: isFavorite,
+                        onFavoriteTap: () =>
+                            _toggleDestinationFavorite(id: d.id, name: d.name),
                         onTap: () {
                           context.push(
                             AppRoutes.cityDetail,
@@ -198,12 +348,15 @@ class HomePage extends StatelessWidget {
                     title: 'Best Dishes',
                     backgroundImage: AppConstants.dishesBgAsset,
                     children: mockDishes.map((d) {
+                      final isFavorite = _favoriteDishIds.contains(d.id);
                       return RecommendationCard(
                         name: d.name,
                         category: d.category,
                         rating: d.rating,
                         imagePath: d.imagePath,
-                        isFavorite: d.isFavorite,
+                        isFavorite: isFavorite,
+                        onFavoriteTap: () =>
+                            _toggleDishFavorite(id: d.id, name: d.name),
                         onTap: () {
                           context.push(
                             AppRoutes.detailPathForCategory(

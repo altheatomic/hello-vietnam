@@ -80,23 +80,27 @@ class RecommendationCard extends StatelessWidget {
                     child: GestureDetector(
                       onTap: onFavoriteTap,
                       child: Container(
-                        width: 32,
-                        height: 32,
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.85),
+                          color: Colors.white.withValues(alpha: 0.82),
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.62),
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 4,
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
                         child: Icon(
                           isFavorite ? Icons.favorite : Icons.favorite_border,
-                          size: 18,
+                          size: 20,
                           color: isFavorite
-                              ? Colors.redAccent
+                              ? const Color(0xFFFF4D79)
                               : AppColors.textSecondary,
                         ),
                       ),

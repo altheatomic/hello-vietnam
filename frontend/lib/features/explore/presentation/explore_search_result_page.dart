@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/auth/auth_repository.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import '../data/explore_search_results_data.dart';
 import 'widgets/explore_floating_back_button.dart';
 import 'widgets/explore_preview_widgets.dart';
@@ -30,11 +32,60 @@ class ExploreSearchResultPage extends StatefulWidget {
 class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
   int _selectedFilter = 0;
   late final DestinationResults _results;
+  final WishlistRepository _wishlistRepository = WishlistRepository();
+  final Set<String> _favoriteFoodIds = <String>{};
+  final Set<String> _favoritePlaceIds = <String>{};
 
   @override
   void initState() {
     super.initState();
     _results = getResultsForDestination(widget.destination);
+    _syncFavoritesFromWishlist();
+  }
+
+  Future<void> _syncFavoritesFromWishlist() async {
+    final userId = AuthRepository.instance.user?.id;
+    if (userId == null) return;
+    try {
+      final items = await _wishlistRepository.fetchWishlist();
+      if (!mounted) return;
+      setState(() {
+        _favoriteFoodIds
+          ..clear()
+          ..addAll(
+            items
+                .where((item) => item.type == FavoriteType.food)
+                .map((item) => item.id),
+          );
+        _favoritePlaceIds
+          ..clear()
+          ..addAll(
+            items
+                .where((item) => item.type == FavoriteType.place)
+                .map((item) => item.id),
+          );
+      });
+    } catch (_) {}
+  }
+
+  bool _isFavoriteForCurrentFilter(SearchResultItem item) {
+    if (_selectedFilter == 2) {
+      return _favoriteFoodIds.contains(item.id);
+    }
+    return _favoritePlaceIds.contains(item.id);
+  }
+
+  void _onFavoriteChanged(SearchResultItem item, bool isFavorite) {
+    setState(() {
+      final targetSet = _selectedFilter == 2
+          ? _favoriteFoodIds
+          : _favoritePlaceIds;
+      if (isFavorite) {
+        targetSet.add(item.id);
+      } else {
+        targetSet.remove(item.id);
+      }
+    });
   }
 
   @override
@@ -138,6 +189,11 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
                     (context, index) => _ResultCard(
                       item: items[index],
                       category: _categoryForIndex(_selectedFilter),
+                      initialFavorite: _isFavoriteForCurrentFilter(
+                        items[index],
+                      ),
+                      onFavoriteChanged: (value) =>
+                          _onFavoriteChanged(items[index], value),
                     ),
                     childCount: items.length,
                   ),
@@ -281,10 +337,17 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
 // ─── Result card with carousel ───────────────────────────────────────
 
 class _ResultCard extends StatefulWidget {
-  const _ResultCard({required this.item, required this.category});
+  const _ResultCard({
+    required this.item,
+    required this.category,
+    required this.initialFavorite,
+    required this.onFavoriteChanged,
+  });
 
   final SearchResultItem item;
   final DetailCategory category;
+  final bool initialFavorite;
+  final ValueChanged<bool> onFavoriteChanged;
 
   @override
   State<_ResultCard> createState() => _ResultCardState();
@@ -292,11 +355,63 @@ class _ResultCard extends StatefulWidget {
 
 class _ResultCardState extends State<_ResultCard> {
   late final PageController _imageController;
+  late bool _isFavorite;
+  final WishlistRepository _wishlistRepository = WishlistRepository();
+  bool _favoriteBusy = false;
+
+  Future<void> _toggleFavorite() async {
+    if (_favoriteBusy) return;
+
+    final userId = AuthRepository.instance.user?.id;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to save wishlist.')),
+      );
+      return;
+    }
+
+    final previous = _isFavorite;
+    setState(() {
+      _favoriteBusy = true;
+      _isFavorite = !_isFavorite;
+    });
+    widget.onFavoriteChanged(_isFavorite);
+
+    try {
+      await _wishlistRepository.toggleFavoriteByRawId(
+        type: widget.category == DetailCategory.food
+            ? FavoriteType.food
+            : FavoriteType.place,
+        rawItemId: widget.item.id,
+        fallbackName: widget.item.name,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isFavorite = previous);
+      widget.onFavoriteChanged(previous);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Wishlist update failed: $error')));
+    } finally {
+      if (mounted) {
+        setState(() => _favoriteBusy = false);
+      }
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _imageController = PageController();
+    _isFavorite = widget.initialFavorite;
+  }
+
+  @override
+  void didUpdateWidget(covariant _ResultCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_favoriteBusy && oldWidget.initialFavorite != widget.initialFavorite) {
+      _isFavorite = widget.initialFavorite;
+    }
   }
 
   @override
@@ -380,14 +495,35 @@ class _ResultCardState extends State<_ResultCard> {
                     Positioned(
                       top: 10,
                       right: 10,
-                      child: Icon(
-                        widget.item.isFavorite
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: widget.item.isFavorite
-                            ? AppColors.primary
-                            : Colors.white,
-                        size: 24,
+                      child: GestureDetector(
+                        onTap: _toggleFavorite,
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.82),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.62),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            _isFavorite
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: _isFavorite
+                                ? const Color(0xFFFF4D79)
+                                : AppColors.textSecondary,
+                            size: 24,
+                          ),
+                        ),
                       ),
                     ),
                     if (imageCount > 1)

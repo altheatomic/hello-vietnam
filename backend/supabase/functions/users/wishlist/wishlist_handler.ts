@@ -19,6 +19,7 @@ type WishlistItem = {
   title: string;
   description: string;
   imageUrl: string | null;
+  createdAt: string;
 };
 
 type FavoriteRef = {
@@ -203,7 +204,7 @@ class WishlistService {
           : foodMap.get(ref.id);
       if (!item) continue;
 
-      output.push(item);
+      output.push({ ...item, createdAt: ref.createdAt });
       seen.add(key);
     }
     return output;

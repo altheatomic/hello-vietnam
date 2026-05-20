@@ -5,15 +5,17 @@
       "name": "Mobile App (Default)",
       "request": "launch",
       "type": "dart",
-      "program": "frontend/lib/main_mobile.dart"
+      "cwd": "frontend",
+      "program": "lib/main_mobile.dart"
     },
     {
       "name": "Admin Web (Chrome :3001)",
       "request": "launch",
       "type": "dart",
+      "cwd": "frontend",
       "deviceId": "chrome",
-      "program": "frontend/lib/main_admin_web.dart",
-      "args": [
+      "program": "lib/main_admin_web.dart",
+      "toolArgs": [
         "--web-hostname",
         "localhost",
         "--web-port",
@@ -24,9 +26,10 @@
       "name": "Mobile Web (Chrome :3000)",
       "request": "launch",
       "type": "dart",
+      "cwd": "frontend",
       "deviceId": "chrome",
-      "program": "frontend/lib/main_mobile.dart",
-      "args": [
+      "program": "lib/main_mobile.dart",
+      "toolArgs": [
         "--web-hostname",
         "localhost",
         "--web-port",
@@ -37,7 +40,8 @@
       "name": "User (Android)",
       "request": "launch",
       "type": "dart",
-      "program": "frontend/lib/main.dart"
+      "cwd": "frontend",
+      "program": "lib/main.dart"
     }
   ],
   "compounds": [

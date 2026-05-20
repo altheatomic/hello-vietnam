@@ -19,6 +19,7 @@ class SharedItemDetailPage extends StatefulWidget {
     this.detail,
     this.insertedSectionsBuilder,
     this.favoriteType,
+    this.topRightOverlayBuilder,
   }) : assert(
          request != null || detail != null,
          'Either request or detail must be provided.',
@@ -29,6 +30,8 @@ class SharedItemDetailPage extends StatefulWidget {
   final FavoriteType? favoriteType;
   final List<Widget> Function(BuildContext context, ItemDetail detail)?
   insertedSectionsBuilder;
+  final Widget Function(BuildContext context, ItemDetail detail)?
+  topRightOverlayBuilder;
 
   @override
   State<SharedItemDetailPage> createState() => _SharedItemDetailPageState();
@@ -107,16 +110,21 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
       return;
     }
 
-    setState(() => _favoriteBusy = true);
+    final previousState = _isFavorite;
+    setState(() {
+      _favoriteBusy = true;
+      _isFavorite = !previousState;
+    });
     try {
-      final nextState = await _wishlistRepository.toggleFavoriteByRawId(
+      await _wishlistRepository.toggleFavoriteByRawId(
         type: favoriteType,
         rawItemId: _detail.id,
         fallbackName: _detail.name,
       );
-      if (!mounted) return;
-      setState(() => _isFavorite = nextState);
     } catch (error) {
+      if (mounted) {
+        setState(() => _isFavorite = previousState);
+      }
       _showSnackBar('Wishlist update failed: $error');
     } finally {
       if (mounted) {
@@ -217,6 +225,12 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
               ),
             ),
           ),
+          if (widget.topRightOverlayBuilder != null)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 10,
+              right: AppConstants.pagePadding,
+              child: widget.topRightOverlayBuilder!(context, _detail),
+            ),
           ExploreFloatingBackButton(onTap: () => context.pop()),
         ],
       ),
@@ -354,6 +368,12 @@ class _QuickInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textStyle = const TextStyle(
+      fontSize: 14,
+      height: 1.6,
+      color: AppColors.textPrimary,
+    );
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -368,23 +388,25 @@ class _QuickInfoCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  description,
-                  maxLines: isExpanded ? null : 3,
-                  overflow: isExpanded ? null : TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.6,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final textPainter = TextPainter(
+            text: TextSpan(text: description, style: textStyle),
+            maxLines: 3,
+            textDirection: TextDirection.ltr,
+          )..layout(maxWidth: constraints.maxWidth);
+          final canExpand = textPainter.didExceedMaxLines;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                description,
+                maxLines: isExpanded ? null : 3,
+                overflow: isExpanded ? null : TextOverflow.ellipsis,
+                style: textStyle,
+              ),
+              if (canExpand) ...[
                 const SizedBox(height: 6),
                 GestureDetector(
                   onTap: onToggleExpanded,
@@ -399,23 +421,9 @@ class _QuickInfoCard extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.82),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.thumb_up_alt_outlined,
-              size: 20,
-              color: AppColors.primary,
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -465,6 +473,17 @@ class _ReviewSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (reviewCount == 0) {
+      return const Text(
+        'No review',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textSecondary,
+        ),
+      );
+    }
+
     return Wrap(
       spacing: 14,
       runSpacing: 10,
