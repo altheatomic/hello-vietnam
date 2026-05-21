@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:hellovietnam/features/forum/data/forum_mock_data.dart';
 import 'package:hellovietnam/features/home/data/home_mock_data.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/notification/domain/app_notification.dart';
@@ -61,7 +60,7 @@ class MockNotificationRepository extends ChangeNotifier
         entityId: 'post-bun-mam',
         metadata: <String, String>{
           'trigger': 'reply',
-          'actorId': ForumMockData.foodieExplorer.id,
+          'actorId': 'legacy-forum-user',
         },
       ),
     ),

@@ -82,6 +82,10 @@ class ThreadPage extends StatelessWidget {
             final List<ForumComment> comments = store.commentsForPost(postId);
 
             if (post == null) {
+              if (store.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
@@ -94,8 +98,8 @@ class ThreadPage extends StatelessWidget {
                         color: ForumColors.textMuted,
                       ),
                       const SizedBox(height: 12),
-                      const Text(
-                        'Post not found',
+                      Text(
+                        store.errorMessage ?? 'Post not found',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,

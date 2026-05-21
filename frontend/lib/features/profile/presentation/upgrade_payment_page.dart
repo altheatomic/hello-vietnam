@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
-
-// ── Data ─────────────────────────────────────────────────────────────
+import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
 
 class _PaymentMethod {
   const _PaymentMethod({
@@ -19,16 +18,9 @@ class _PaymentMethod {
   final Color labelColor;
 }
 
-// ── Page ─────────────────────────────────────────────────────────────
-
-/// Pushed from UpgradeAccountPage after a plan is selected.
-///
-/// Shows VISA / Google Pay / PayPal payment options.
 class UpgradePaymentPage extends StatefulWidget {
   const UpgradePaymentPage({super.key, required this.planId});
 
-  /// The plan id selected on the previous screen (passed for potential
-  /// order-creation logic; not displayed in this MVP).
   final String planId;
 
   @override
@@ -41,31 +33,132 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
       id: 'visa',
       label: 'VISA',
       icon: Icons.credit_card_rounded,
-      labelColor: Color(0xFF1A1F71), // VISA navy
+      labelColor: Color(0xFF1A1F71),
     ),
     _PaymentMethod(
       id: 'gpay',
       label: 'G Pay',
       icon: Icons.g_mobiledata_rounded,
-      labelColor: AppColors.textPrimary,
     ),
     _PaymentMethod(
       id: 'paypal',
       label: 'PayPal',
       icon: Icons.account_balance_wallet_rounded,
-      labelColor: Color(0xFF003087), // PayPal navy
+      labelColor: Color(0xFF003087),
     ),
   ];
 
-  String? _selectedId;
+  final SubscriptionRepository _repository = SubscriptionRepository();
+  final TextEditingController _voucherController = TextEditingController();
+
+  late Future<SubscriptionPlanInfo> _planFuture;
+  SubscriptionPlanInfo? _plan;
+  VoucherPreview? _voucherPreview;
+  String? _selectedMethodId;
+  bool _isApplyingVoucher = false;
+  bool _isPurchasing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _planFuture = _loadPlan();
+  }
+
+  @override
+  void dispose() {
+    _voucherController.dispose();
+    super.dispose();
+  }
+
+  Future<SubscriptionPlanInfo> _loadPlan() async {
+    final SubscriptionPlanInfo plan = await _repository.loadPlan(widget.planId);
+    _plan = plan;
+    return plan;
+  }
+
+  String _formatMoney(int amountMinor) {
+    return '\$${(amountMinor / 100).toStringAsFixed(2)}';
+  }
 
   void _showPrivileges() {
-    // Re-uses the same dialog from the plan page — delegates through Navigator
-    // so we don't import the private class. Shown inline here.
     showDialog<void>(
       context: context,
       builder: (_) => const _PrivilegesDialog(),
     );
+  }
+
+  Future<void> _applyVoucher(SubscriptionPlanInfo plan) async {
+    if (_isApplyingVoucher) return;
+    setState(() => _isApplyingVoucher = true);
+    try {
+      final VoucherPreview preview = await _repository.previewVoucher(
+        plan: plan,
+        code: _voucherController.text,
+      );
+      if (!mounted) return;
+      setState(() => _voucherPreview = preview);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(preview.message)));
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _voucherPreview = null);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) setState(() => _isApplyingVoucher = false);
+    }
+  }
+
+  void _removeVoucher() {
+    setState(() {
+      _voucherPreview = null;
+      _voucherController.clear();
+    });
+  }
+
+  Future<void> _purchase(SubscriptionPlanInfo plan) async {
+    final String? methodId = _selectedMethodId;
+    if (methodId == null || _isPurchasing) return;
+
+    setState(() => _isPurchasing = true);
+    try {
+      final SubscriptionPurchaseResult result = await _repository.purchase(
+        planCode: plan.code,
+        provider: methodId,
+        method: methodId,
+        voucherCode: _voucherPreview?.code,
+      );
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (BuildContext dialogContext) => AlertDialog(
+          title: const Text('Payment confirmed'),
+          content: Text(
+            'Your premium subscription is active.\n'
+            'Paid: ${_formatMoney(result.finalAmountMinor)}'
+            '${result.discountMinor > 0 ? '\nVoucher discount: ${_formatMoney(result.discountMinor)}' : ''}',
+          ),
+          actions: <Widget>[
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+
+      if (mounted) context.pop();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) setState(() => _isPurchasing = false);
+    }
   }
 
   @override
@@ -76,7 +169,6 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
       backgroundColor: Colors.white,
       body: Column(
         children: <Widget>[
-          // ── Header — same style as UpgradeAccountPage ─────────
           Container(
             color: Colors.white,
             padding: EdgeInsets.fromLTRB(10, topInset + 8, 10, 10),
@@ -103,7 +195,6 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                       ),
                     ),
                   ),
-                  // Help button
                   GestureDetector(
                     onTap: _showPrivileges,
                     child: Container(
@@ -124,8 +215,6 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
               ),
             ),
           ),
-
-          // ── Payment banner ────────────────────────────────────
           Container(
             width: double.infinity,
             color: AppColors.primaryLight.withValues(alpha: 0.25),
@@ -139,26 +228,94 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
               ),
             ),
           ),
-
-          // ── Payment method cards ──────────────────────────────
           Expanded(
+            child: FutureBuilder<SubscriptionPlanInfo>(
+              future: _planFuture,
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<SubscriptionPlanInfo> snapshot,
+                  ) {
+                    final SubscriptionPlanInfo plan =
+                        snapshot.data ??
+                        _repository.fallbackPlan(widget.planId);
+                    final int discount = _voucherPreview?.discountMinor ?? 0;
+                    final int finalAmount = plan.priceMinor - discount;
+
+                    return ListView(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppConstants.pagePadding,
+                        24,
+                        AppConstants.pagePadding,
+                        24,
+                      ),
+                      children: <Widget>[
+                        _OrderSummaryCard(
+                          plan: plan,
+                          discountMinor: discount,
+                          finalAmountMinor: finalAmount,
+                          formatMoney: _formatMoney,
+                        ),
+                        const SizedBox(height: 16),
+                        _VoucherApplyCard(
+                          controller: _voucherController,
+                          preview: _voucherPreview,
+                          isApplying: _isApplyingVoucher,
+                          onApply: () => _applyVoucher(plan),
+                          onRemove: _removeVoucher,
+                        ),
+                        const SizedBox(height: 20),
+                        ..._methods.map(
+                          (method) => _PaymentCard(
+                            method: method,
+                            isSelected: method.id == _selectedMethodId,
+                            onTap: () =>
+                                setState(() => _selectedMethodId = method.id),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+            ),
+          ),
+          SafeArea(
+            top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppConstants.pagePadding,
-                28,
+                8,
                 AppConstants.pagePadding,
-                0,
+                16,
               ),
-              child: Column(
-                children: _methods
-                    .map(
-                      (method) => _PaymentCard(
-                        method: method,
-                        isSelected: method.id == _selectedId,
-                        onTap: () => setState(() => _selectedId = method.id),
+              child: SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed:
+                      _selectedMethodId == null ||
+                          _isPurchasing ||
+                          _plan == null
+                      ? null
+                      : () => _purchase(_plan!),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryLight,
+                    disabledBackgroundColor: const Color(0xFFD9E6EA),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.cardRadius,
                       ),
-                    )
-                    .toList(),
+                    ),
+                  ),
+                  child: Text(
+                    _isPurchasing ? 'Processing...' : 'Pay now',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -168,7 +325,140 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
   }
 }
 
-// ── Payment method card ───────────────────────────────────────────────
+class _OrderSummaryCard extends StatelessWidget {
+  const _OrderSummaryCard({
+    required this.plan,
+    required this.discountMinor,
+    required this.finalAmountMinor,
+    required this.formatMoney,
+  });
+
+  final SubscriptionPlanInfo plan;
+  final int discountMinor;
+  final int finalAmountMinor;
+  final String Function(int amountMinor) formatMoney;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+        border: Border.all(color: AppColors.primaryLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            plan.name,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _AmountRow(label: 'Subtotal', value: formatMoney(plan.priceMinor)),
+          if (discountMinor > 0)
+            _AmountRow(
+              label: 'Voucher',
+              value: '-${formatMoney(discountMinor)}',
+            ),
+          const Divider(height: 22),
+          _AmountRow(
+            label: 'Total',
+            value: formatMoney(finalAmountMinor),
+            isStrong: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VoucherApplyCard extends StatelessWidget {
+  const _VoucherApplyCard({
+    required this.controller,
+    required this.preview,
+    required this.isApplying,
+    required this.onApply,
+    required this.onRemove,
+  });
+
+  final TextEditingController controller;
+  final VoucherPreview? preview;
+  final bool isApplying;
+  final VoidCallback onApply;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasVoucher = preview != null;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+        border: Border.all(color: const Color(0xFFE1E7EA)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Text(
+            'Voucher',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  enabled: !hasVoucher,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: InputDecoration(
+                    hintText: 'Enter voucher code',
+                    isDense: true,
+                    filled: true,
+                    fillColor: const Color(0xFFF4F7F9),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              TextButton(
+                onPressed: isApplying
+                    ? null
+                    : (hasVoucher ? onRemove : onApply),
+                child: Text(
+                  hasVoucher ? 'Remove' : (isApplying ? '...' : 'Apply'),
+                ),
+              ),
+            ],
+          ),
+          if (hasVoucher) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              preview!.message,
+              style: const TextStyle(
+                color: Color(0xFF16865D),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
 
 class _PaymentCard extends StatelessWidget {
   const _PaymentCard({
@@ -196,7 +486,7 @@ class _PaymentCard extends StatelessWidget {
             color: isSelected ? AppColors.primary : const Color(0xFFDDDDDD),
             width: isSelected ? 1.8 : 1.0,
           ),
-          boxShadow: [
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
@@ -224,7 +514,45 @@ class _PaymentCard extends StatelessWidget {
   }
 }
 
-// ── Privileges dialog (duplicated here to keep page self-contained) ───
+class _AmountRow extends StatelessWidget {
+  const _AmountRow({
+    required this.label,
+    required this.value,
+    this.isStrong = false,
+  });
+
+  final String label;
+  final String value;
+  final bool isStrong;
+
+  @override
+  Widget build(BuildContext context) {
+    final FontWeight weight = isStrong ? FontWeight.w800 : FontWeight.w500;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: <Widget>[
+          Text(
+            label,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontWeight: weight,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: weight,
+              fontSize: isStrong ? 18 : 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _PrivilegesDialog extends StatelessWidget {
   const _PrivilegesDialog();
@@ -273,7 +601,7 @@ class _PrivilegesDialog extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ..._privileges.map(
-              (p) => Container(
+              (String privilege) => Container(
                 width: double.infinity,
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.symmetric(
@@ -285,7 +613,7 @@ class _PrivilegesDialog extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppConstants.cardRadius),
                 ),
                 child: Text(
-                  p,
+                  privilege,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 14,

@@ -1,3 +1,5 @@
+import 'dart:math' show Random;
+
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
@@ -30,9 +32,9 @@ class _FoodTypeManagerDialogState extends State<FoodTypeManagerDialog> {
   @override
   void initState() {
     super.initState();
-    _types         = widget.initialTypes.map((t) => t).toList();
+    _types = widget.initialTypes.map((t) => t).toList();
     _editLabelCtrl = TextEditingController();
-    _addLabelCtrl  = TextEditingController();
+    _addLabelCtrl = TextEditingController();
   }
 
   @override
@@ -43,27 +45,29 @@ class _FoodTypeManagerDialogState extends State<FoodTypeManagerDialog> {
   }
 
   void _startEdit(FoodType t) => setState(() {
-        _editingId          = t.id;
-        _editColorIndex     = t.colorIndex;
-        _editLabelCtrl.text = t.label;
-      });
+    _editingId = t.id;
+    _editColorIndex = t.colorIndex;
+    _editLabelCtrl.text = t.label;
+  });
 
   void _cancelEdit() => setState(() => _editingId = null);
 
   void _saveEdit() {
     final label = _editLabelCtrl.text.trim();
     if (label.isEmpty) return;
-    if (_types.any((t) =>
-        t.id != _editingId &&
-        t.label.toLowerCase() == label.toLowerCase())) {
+    if (_types.any(
+      (t) => t.id != _editingId && t.label.toLowerCase() == label.toLowerCase(),
+    )) {
       _snack('A type with this name already exists.');
       return;
     }
     setState(() {
       final idx = _types.indexWhere((t) => t.id == _editingId);
       if (idx != -1) {
-        _types[idx] =
-            _types[idx].copyWith(label: label, colorIndex: _editColorIndex);
+        _types[idx] = _types[idx].copyWith(
+          label: label,
+          colorIndex: _editColorIndex,
+        );
       }
       _editingId = null;
     });
@@ -74,13 +78,13 @@ class _FoodTypeManagerDialogState extends State<FoodTypeManagerDialog> {
       _snack('At least one type must remain.');
       return;
     }
-    final count    = widget.foodCountForType[t.id] ?? 0;
+    final count = widget.foodCountForType[t.id] ?? 0;
     final fallback = _types.firstWhere((x) => x.id != t.id);
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => _DeleteConfirm(
-        typeLabel:     t.label,
-        foodCount:     count,
+        typeLabel: t.label,
+        foodCount: count,
         fallbackLabel: fallback.label,
       ),
     );
@@ -98,14 +102,13 @@ class _FoodTypeManagerDialogState extends State<FoodTypeManagerDialog> {
       _snack('A type with this name already exists.');
       return;
     }
-    final raw = label
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '-')
-        .replaceAll(RegExp(r'-+'), '-')
-        .replaceAll(RegExp(r'^-|-$'), '');
-    final id = _types.any((t) => t.id == raw)
-        ? '$raw-${DateTime.now().millisecondsSinceEpoch}'
-        : raw;
+
+    // Backend stores type id as UUID; generate UUIDv4 for new types.
+    String id = _newUuidV4();
+    while (_types.any((FoodType t) => t.id == id)) {
+      id = _newUuidV4();
+    }
+
     setState(() {
       _types.add(FoodType(id: id, label: label, colorIndex: _addColorIndex));
       _addLabelCtrl.clear();
@@ -113,20 +116,36 @@ class _FoodTypeManagerDialogState extends State<FoodTypeManagerDialog> {
     });
   }
 
+  String _newUuidV4() {
+    final Random random = Random.secure();
+    final List<int> bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 10
+
+    String hexByte(int b) => b.toRadixString(16).padLeft(2, '0');
+    final StringBuffer out = StringBuffer();
+    for (int i = 0; i < bytes.length; i++) {
+      out.write(hexByte(bytes[i]));
+      if (i == 3 || i == 5 || i == 7 || i == 9) out.write('-');
+    }
+    return out.toString();
+  }
+
   void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(msg),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+    SnackBar(
+      content: Text(msg),
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(seconds: 2),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: AppColors.surface,
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConstants.cardRadius)),
+        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480, maxHeight: 640),
         child: Column(
@@ -138,16 +157,21 @@ class _FoodTypeManagerDialogState extends State<FoodTypeManagerDialog> {
                   ? const Padding(
                       padding: EdgeInsets.symmetric(vertical: 32),
                       child: Center(
-                        child: Text('No types yet. Add one below.',
-                            style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textSecondary)),
+                        child: Text(
+                          'No types yet. Add one below.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                       ),
                     )
                   : ListView.separated(
                       shrinkWrap: true,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                       separatorBuilder: (_, _) =>
                           Divider(height: 1, color: AppColors.divider),
                       itemCount: _types.length,
@@ -155,28 +179,28 @@ class _FoodTypeManagerDialogState extends State<FoodTypeManagerDialog> {
                         final t = _types[i];
                         return t.id == _editingId
                             ? _FtmEditRow(
-                                controller:     _editLabelCtrl,
-                                colorIndex:     _editColorIndex,
+                                controller: _editLabelCtrl,
+                                colorIndex: _editColorIndex,
                                 onColorChanged: (ci) =>
                                     setState(() => _editColorIndex = ci),
-                                onSave:   _saveEdit,
+                                onSave: _saveEdit,
                                 onCancel: _cancelEdit,
                               )
                             : _FtmDisplayRow(
-                                type:      t,
+                                type: t,
                                 isEditing: _editingId != null,
-                                onEdit:    () => _startEdit(t),
-                                onDelete:  () => _confirmDelete(t),
+                                onEdit: () => _startEdit(t),
+                                onDelete: () => _confirmDelete(t),
                               );
                       },
                     ),
             ),
             Divider(height: 1, color: AppColors.divider),
             _FtmAddFooter(
-              controller:     _addLabelCtrl,
-              colorIndex:     _addColorIndex,
+              controller: _addLabelCtrl,
+              colorIndex: _addColorIndex,
               onColorChanged: (ci) => setState(() => _addColorIndex = ci),
-              onAdd:          _addType,
+              onAdd: _addType,
             ),
             Divider(height: 1, color: AppColors.divider),
             Padding(
@@ -190,12 +214,18 @@ class _FoodTypeManagerDialogState extends State<FoodTypeManagerDialog> {
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.textOnPrimary,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                              AppConstants.buttonRadius)),
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.buttonRadius,
+                        ),
+                      ),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 11),
+                        horizontal: 24,
+                        vertical: 11,
+                      ),
                       textStyle: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w500),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     child: const Text('Done'),
                   ),
@@ -223,15 +253,21 @@ class _FtmHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primaryLight.withValues(alpha: 0.13),
         borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppConstants.cardRadius)),
+          top: Radius.circular(AppConstants.cardRadius),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.restaurant_menu_outlined,
-              size: 18, color: AppColors.primary),
+          const Icon(
+            Icons.restaurant_menu_outlined,
+            size: 18,
+            color: AppColors.primary,
+          ),
           const SizedBox(width: 10),
-          Text('Manage Types',
-              style: Theme.of(context).textTheme.headlineMedium),
+          Text(
+            'Manage Types',
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
           const Spacer(),
           IconButton(
             onPressed: onClose,
@@ -266,31 +302,39 @@ class _FtmDisplayRow extends StatelessWidget {
           Container(
             width: 14,
             height: 14,
-            decoration: BoxDecoration(color: type.color, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: type.color,
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(type.label,
-                style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary)),
+            child: Text(
+              type.label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
           ),
           Opacity(
             opacity: isEditing ? 0.3 : 1.0,
             child: Row(
               children: [
                 _FtmRowBtn(
-                    icon: Icons.edit_outlined,
-                    tooltip: 'Rename',
-                    color: AppColors.primaryDark,
-                    onTap: isEditing ? null : onEdit),
+                  icon: Icons.edit_outlined,
+                  tooltip: 'Rename',
+                  color: AppColors.primaryDark,
+                  onTap: isEditing ? null : onEdit,
+                ),
                 const SizedBox(width: 2),
                 _FtmRowBtn(
-                    icon: Icons.delete_outline_rounded,
-                    tooltip: 'Delete',
-                    color: const Color(0xFFEF4444),
-                    onTap: isEditing ? null : onDelete),
+                  icon: Icons.delete_outline_rounded,
+                  tooltip: 'Delete',
+                  color: const Color(0xFFEF4444),
+                  onTap: isEditing ? null : onDelete,
+                ),
               ],
             ),
           ),
@@ -338,16 +382,18 @@ class _FtmEditRow extends StatelessWidget {
               ...ftmColorDots(colorIndex, onColorChanged),
               const Spacer(),
               _FtmRowBtn(
-                  icon: Icons.close_rounded,
-                  tooltip: 'Cancel',
-                  color: AppColors.textSecondary,
-                  onTap: onCancel),
+                icon: Icons.close_rounded,
+                tooltip: 'Cancel',
+                color: AppColors.textSecondary,
+                onTap: onCancel,
+              ),
               const SizedBox(width: 4),
               _FtmRowBtn(
-                  icon: Icons.check_rounded,
-                  tooltip: 'Save',
-                  color: AppColors.primary,
-                  onTap: onSave),
+                icon: Icons.check_rounded,
+                tooltip: 'Save',
+                color: AppColors.primary,
+                onTap: onSave,
+              ),
             ],
           ),
         ],
@@ -377,9 +423,13 @@ class _FtmAddFooter extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('ADD TYPE',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  letterSpacing: 0.6, color: AppColors.textSecondary)),
+          Text(
+            'ADD TYPE',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              letterSpacing: 0.6,
+              color: AppColors.textSecondary,
+            ),
+          ),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -403,11 +453,15 @@ class _FtmAddFooter extends StatelessWidget {
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.textOnPrimary,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppConstants.buttonRadius)),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.buttonRadius,
+                      ),
+                    ),
                     padding: const EdgeInsets.symmetric(horizontal: 18),
                     textStyle: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   child: const Text('Add'),
                 ),
@@ -417,9 +471,12 @@ class _FtmAddFooter extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Text('Colour: ',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.textSecondary)),
+              Text(
+                'Colour: ',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
               const SizedBox(width: 6),
               ...ftmColorDots(colorIndex, onColorChanged),
             ],
@@ -446,27 +503,29 @@ class _DeleteConfirm extends StatelessWidget {
     return AlertDialog(
       backgroundColor: AppColors.surface,
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConstants.cardRadius)),
+        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+      ),
       title: const Text('Delete Type'),
       content: Text(
         foodCount > 0
             ? 'Delete "$typeLabel"?\n\n'
-                '$foodCount food item${foodCount == 1 ? '' : 's'} '
-                'using this type will be moved to "$fallbackLabel".'
+                  '$foodCount food item${foodCount == 1 ? '' : 's'} '
+                  'using this type will be moved to "$fallbackLabel".'
             : 'Delete "$typeLabel"? This cannot be undone.',
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel')),
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFFEF4444),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppConstants.buttonRadius)),
+              borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+            ),
           ),
           child: const Text('Delete'),
         ),
@@ -478,26 +537,27 @@ class _DeleteConfirm extends StatelessWidget {
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
 InputDecoration ftmFieldDeco(String hint) => InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(
-          fontSize: 14,
-          color: AppColors.textSecondary.withValues(alpha: 0.5)),
-      filled: true,
-      fillColor: AppColors.background,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
-        borderSide: BorderSide(color: AppColors.divider),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
-        borderSide: BorderSide(color: AppColors.divider),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
-        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
-      ),
-    );
+  hintText: hint,
+  hintStyle: TextStyle(
+    fontSize: 14,
+    color: AppColors.textSecondary.withValues(alpha: 0.5),
+  ),
+  filled: true,
+  fillColor: AppColors.background,
+  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  border: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+    borderSide: BorderSide(color: AppColors.divider),
+  ),
+  enabledBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+    borderSide: BorderSide(color: AppColors.divider),
+  ),
+  focusedBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+    borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+  ),
+);
 
 List<Widget> ftmColorDots(int selected, ValueChanged<int> onTap) =>
     List.generate(foodTypeColorPalette.length, (i) {
@@ -506,7 +566,7 @@ List<Widget> ftmColorDots(int selected, ValueChanged<int> onTap) =>
         onTap: () => onTap(i),
         child: AnimatedContainer(
           duration: AppConstants.defaultAnimation,
-          width:  isSel ? 22 : 18,
+          width: isSel ? 22 : 18,
           height: isSel ? 22 : 18,
           margin: const EdgeInsets.only(right: 6),
           decoration: BoxDecoration(
@@ -546,7 +606,7 @@ class _FtmRowBtnState extends State<_FtmRowBtn> {
           ? SystemMouseCursors.click
           : SystemMouseCursors.basic,
       onEnter: (_) => setState(() => _hovered = true),
-      onExit:  (_) => setState(() => _hovered = false),
+      onExit: (_) => setState(() => _hovered = false),
       child: Tooltip(
         message: widget.tooltip,
         child: GestureDetector(

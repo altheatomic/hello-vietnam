@@ -1,10 +1,12 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
-import 'package:hellovietnam/features/forum/data/forum_mock_data.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
+import 'package:image_picker/image_picker.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -16,7 +18,9 @@ class CreatePostPage extends StatefulWidget {
 class _CreatePostPageState extends State<CreatePostPage> {
   final ForumStore _store = ForumStore.instance;
   late final TextEditingController _controller;
-  final List<String> _selectedImages = <String>[];
+  final ImagePicker _imagePicker = ImagePicker();
+  final List<XFile> _selectedImages = <XFile>[];
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -31,171 +35,55 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   Future<void> _openImagePicker() async {
-    final List<String>? result = await showModalBottomSheet<List<String>>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (BuildContext context) {
-        final Set<String> draft = <String>{..._selectedImages};
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: GlassCard(
-                  borderRadius: 28,
-                  blur: 18,
-                  opacity: 0.78,
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.72),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      const Text(
-                        'Add photos',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: ForumColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Mock multi-image picker for the forum composer.',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 16),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: ForumMockData.uploadImageOptions.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              crossAxisSpacing: 10,
-                              mainAxisSpacing: 10,
-                              childAspectRatio: 1,
-                            ),
-                        itemBuilder: (BuildContext context, int index) {
-                          final String imageUrl =
-                              ForumMockData.uploadImageOptions[index];
-                          final bool selected = draft.contains(imageUrl);
-                          return GestureDetector(
-                            onTap: () {
-                              setModalState(() {
-                                if (selected) {
-                                  draft.remove(imageUrl);
-                                } else {
-                                  draft.add(imageUrl);
-                                }
-                              });
-                            },
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: <Widget>[
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: _ComposerImage(imageUrl: imageUrl),
-                                ),
-                                if (selected)
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      color: Colors.black.withValues(
-                                        alpha: 0.24,
-                                      ),
-                                      border: Border.all(
-                                        color: ForumColors.cyanPrimary,
-                                        width: 2,
-                                      ),
-                                    ),
-                                  ),
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: selected
-                                          ? ForumColors.cyanPrimary
-                                          : Colors.white.withValues(
-                                              alpha: 0.76,
-                                            ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      selected ? Icons.check : Icons.add,
-                                      size: 16,
-                                      color: selected
-                                          ? Colors.white
-                                          : ForumColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 18),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ForumColors.bluePrimary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
-                          onPressed: () => Navigator.of(
-                            context,
-                          ).pop(draft.toList(growable: false)),
-                          child: const Text('Done'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
+    try {
+      final List<XFile> images = await _imagePicker.pickMultiImage(
+        imageQuality: 86,
+      );
+      if (!mounted || images.isEmpty) return;
 
-    if (!mounted || result == null) {
-      return;
+      setState(() {
+        _selectedImages
+          ..clear()
+          ..addAll(images.take(6));
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error.toString())));
     }
-
-    setState(() {
-      _selectedImages
-        ..clear()
-        ..addAll(result);
-    });
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final String content = _controller.text.trim();
-    if (content.isEmpty) {
+    if (content.isEmpty || _isSubmitting) {
       return;
     }
 
-    final String postId = _store.createPost(
-      content: content,
-      imageUrls: _selectedImages,
-    );
-    context.pop(postId);
+    setState(() => _isSubmitting = true);
+    try {
+      final String postId = await _store.createPost(
+        content: content,
+        imageFiles: _selectedImages,
+      );
+      if (mounted) {
+        context.pop(postId);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool canSubmit = _controller.text.trim().isNotEmpty;
+    final bool canSubmit = _controller.text.trim().isNotEmpty && !_isSubmitting;
 
     return ForumBackground(
       child: Scaffold(
@@ -278,8 +166,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                                 separatorBuilder: (_, _) =>
                                     const SizedBox(width: 10),
                                 itemBuilder: (BuildContext context, int index) {
-                                  final String imageUrl =
-                                      _selectedImages[index];
                                   return Stack(
                                     children: <Widget>[
                                       ClipRRect(
@@ -288,7 +174,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                                           width: 100,
                                           height: 100,
                                           child: _ComposerImage(
-                                            imageUrl: imageUrl,
+                                            image: _selectedImages[index],
                                           ),
                                         ),
                                       ),
@@ -298,7 +184,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                                         child: GestureDetector(
                                           onTap: () {
                                             setState(() {
-                                              _selectedImages.remove(imageUrl);
+                                              _selectedImages.removeAt(index);
                                             });
                                           },
                                           child: Container(
@@ -395,16 +281,21 @@ class _PostButton extends StatelessWidget {
 }
 
 class _ComposerImage extends StatelessWidget {
-  const _ComposerImage({required this.imageUrl});
+  const _ComposerImage({required this.image});
 
-  final String imageUrl;
+  final XFile image;
 
   @override
   Widget build(BuildContext context) {
-    if (imageUrl.startsWith('assets/')) {
-      return Image.asset(imageUrl, fit: BoxFit.cover);
-    }
-
-    return Image.network(imageUrl, fit: BoxFit.cover);
+    return FutureBuilder<Uint8List>(
+      future: image.readAsBytes(),
+      builder: (BuildContext context, AsyncSnapshot<Uint8List> snapshot) {
+        final Uint8List? bytes = snapshot.data;
+        if (bytes == null) {
+          return const ColoredBox(color: Color(0xFFEAF4F8));
+        }
+        return Image.memory(bytes, fit: BoxFit.cover);
+      },
+    );
   }
 }

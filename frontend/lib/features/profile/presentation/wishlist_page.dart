@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import 'package:hellovietnam/features/report/presentation/report_issue_popup.dart';
 
 class WishlistPage extends StatefulWidget {
@@ -11,7 +13,12 @@ class WishlistPage extends StatefulWidget {
 class _WishlistPageState extends State<WishlistPage> {
   WishlistType _selectedType = WishlistType.city;
   final Set<String> _favoriteIds = <String>{};
+  final WishlistRepository _wishlistRepository = WishlistRepository();
+  List<WishlistItem> _syncedItems = <WishlistItem>[];
+  bool _isLoading = true;
+  String? _loadError;
 
+  // ignore: unused_field
   static const List<WishlistItem> _items = <WishlistItem>[
     WishlistItem(
       id: 'dalat',
@@ -258,12 +265,7 @@ class _WishlistPageState extends State<WishlistPage> {
         'Pickled vegetables',
         'Sweet fish sauce',
       ],
-      flavors: <String>[
-        'Savory',
-        'Smoky',
-        'Slightly sweet',
-        'Fresh herbs',
-      ],
+      flavors: <String>['Savory', 'Smoky', 'Slightly sweet', 'Fresh herbs'],
       mapImageUrl:
           'https://staticmap.openstreetmap.de/staticmap.php?center=21.0157,105.8513&zoom=13&size=900x420&markers=21.0157,105.8513,red-pushpin',
       rating: 4.7,
@@ -296,12 +298,7 @@ class _WishlistPageState extends State<WishlistPage> {
         'Fresh cucumber and herbs',
         'Homemade sauce',
       ],
-      flavors: <String>[
-        'Savory',
-        'Rich',
-        'Crunchy',
-        'Fresh',
-      ],
+      flavors: <String>['Savory', 'Rich', 'Crunchy', 'Fresh'],
       mapImageUrl:
           'https://staticmap.openstreetmap.de/staticmap.php?center=10.7718,106.6915&zoom=13&size=900x420&markers=10.7718,106.6915,red-pushpin',
       rating: 4.6,
@@ -312,41 +309,217 @@ class _WishlistPageState extends State<WishlistPage> {
   @override
   void initState() {
     super.initState();
-    _favoriteIds.addAll(_items.map((WishlistItem item) => item.id));
+    _loadWishlist();
   }
 
   List<WishlistItem> get _filteredItems {
-    return _items.where((WishlistItem item) => item.type == _selectedType).toList();
+    return _syncedItems
+        .where((WishlistItem item) => item.type == _selectedType)
+        .toList();
   }
 
-  void _openDetail(WishlistItem item) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => WishlistDetailPage(
-          item: item,
-          initialFavorite: _favoriteIds.contains(item.id),
-          onFavoriteChanged: (bool isFavorite) {
-            setState(() {
-              if (isFavorite) {
-                _favoriteIds.add(item.id);
-              } else {
-                _favoriteIds.remove(item.id);
-              }
-            });
-          },
-        ),
+  Future<void> _openDetail(WishlistItem item) async {
+    final bool initialFavorite = _favoriteIds.contains(item.id);
+    final bool? finalFavorite = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) =>
+            WishlistDetailPage(item: item, initialFavorite: initialFavorite),
       ),
+    );
+
+    if (!mounted) return;
+    if (finalFavorite == null || finalFavorite == initialFavorite) {
+      return;
+    }
+    await _onDetailFavoriteChanged(item, finalFavorite);
+  }
+
+  Future<void> _loadWishlist() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+
+    final userId = AuthRepository.instance.user?.id;
+    if (userId == null) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _syncedItems = <WishlistItem>[];
+        _favoriteIds.clear();
+      });
+      return;
+    }
+
+    try {
+      final repoItems = await _wishlistRepository.fetchWishlist();
+      if (!mounted) return;
+
+      final mappedItems = repoItems.map(_toWishlistItem).toList(growable: true);
+      setState(() {
+        _syncedItems = mappedItems;
+        _favoriteIds
+          ..clear()
+          ..addAll(mappedItems.map((WishlistItem item) => item.id));
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _syncedItems = <WishlistItem>[];
+        _favoriteIds.clear();
+        _loadError = error.toString();
+      });
+    }
+  }
+
+  Future<void> _toggleFavorite(String id) async {
+    WishlistItem? item;
+    for (final current in _syncedItems) {
+      if (current.id == id) {
+        item = current;
+        break;
+      }
+    }
+    if (item == null) return;
+    final targetItem = item;
+
+    final userId = AuthRepository.instance.user?.id;
+    if (userId == null) {
+      _showSnackBar('Please sign in to update wishlist.');
+      return;
+    }
+
+    final wasFavorite = _favoriteIds.contains(id);
+    if (!wasFavorite) {
+      return;
+    }
+
+    setState(() {
+      _favoriteIds.remove(id);
+      _syncedItems.removeWhere((WishlistItem current) => current.id == id);
+    });
+
+    try {
+      await _wishlistRepository.setFavorite(
+        itemId: targetItem.id,
+        type: _wishlistTypeToFavoriteType(targetItem.type),
+        isFavorite: false,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _favoriteIds.add(id);
+        if (_syncedItems.every((WishlistItem current) => current.id != id)) {
+          _syncedItems.add(targetItem);
+        }
+      });
+      _showSnackBar('Update wishlist failed: $error');
+    }
+  }
+
+  Future<void> _onDetailFavoriteChanged(
+    WishlistItem item,
+    bool isFavorite,
+  ) async {
+    final userId = AuthRepository.instance.user?.id;
+    if (userId == null) {
+      _showSnackBar('Please sign in to update wishlist.');
+      return;
+    }
+
+    final wasFavorite = _favoriteIds.contains(item.id);
+    setState(() {
+      if (isFavorite) {
+        _favoriteIds.add(item.id);
+        if (_syncedItems.every(
+          (WishlistItem current) => current.id != item.id,
+        )) {
+          _syncedItems.add(item);
+        }
+      } else {
+        _favoriteIds.remove(item.id);
+        _syncedItems.removeWhere(
+          (WishlistItem current) => current.id == item.id,
+        );
+      }
+    });
+
+    try {
+      await _wishlistRepository.setFavorite(
+        itemId: item.id,
+        type: _wishlistTypeToFavoriteType(item.type),
+        isFavorite: isFavorite,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        if (wasFavorite) {
+          _favoriteIds.add(item.id);
+          if (_syncedItems.every(
+            (WishlistItem current) => current.id != item.id,
+          )) {
+            _syncedItems.add(item);
+          }
+        } else {
+          _favoriteIds.remove(item.id);
+          _syncedItems.removeWhere(
+            (WishlistItem current) => current.id == item.id,
+          );
+        }
+      });
+      _showSnackBar('Update wishlist failed: $error');
+    }
+  }
+
+  WishlistItem _toWishlistItem(WishlistRepositoryItem item) {
+    final image = item.imageUrl ?? '';
+    final description = item.description.trim().isEmpty
+        ? 'No description available.'
+        : item.description.trim();
+
+    return WishlistItem(
+      id: item.id,
+      title: item.title,
+      shortDescription: description,
+      detailDescription: description,
+      highlightsDescription: description,
+      coverImageUrl: image,
+      galleryImageUrls: image.isEmpty ? const <String>[] : <String>[image],
+      mapImageUrl: '',
+      rating: 4.5,
+      type: _favoriteTypeToWishlistType(item.type),
     );
   }
 
-  void _toggleFavorite(String id) {
-    setState(() {
-      if (_favoriteIds.contains(id)) {
-        _favoriteIds.remove(id);
-      } else {
-        _favoriteIds.add(id);
-      }
-    });
+  WishlistType _favoriteTypeToWishlistType(FavoriteType type) {
+    switch (type) {
+      case FavoriteType.city:
+        return WishlistType.city;
+      case FavoriteType.place:
+        return WishlistType.place;
+      case FavoriteType.food:
+        return WishlistType.food;
+    }
+  }
+
+  FavoriteType _wishlistTypeToFavoriteType(WishlistType type) {
+    switch (type) {
+      case WishlistType.city:
+        return FavoriteType.city;
+      case WishlistType.place:
+        return FavoriteType.place;
+      case WishlistType.food:
+        return FavoriteType.food;
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -398,7 +571,8 @@ class _WishlistPageState extends State<WishlistPage> {
                       icon: Icons.location_city_outlined,
                       label: 'City',
                       selected: _selectedType == WishlistType.city,
-                      onTap: () => setState(() => _selectedType = WishlistType.city),
+                      onTap: () =>
+                          setState(() => _selectedType = WishlistType.city),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -407,7 +581,8 @@ class _WishlistPageState extends State<WishlistPage> {
                       icon: Icons.place_outlined,
                       label: 'Place',
                       selected: _selectedType == WishlistType.place,
-                      onTap: () => setState(() => _selectedType = WishlistType.place),
+                      onTap: () =>
+                          setState(() => _selectedType = WishlistType.place),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -416,7 +591,8 @@ class _WishlistPageState extends State<WishlistPage> {
                       icon: Icons.restaurant_outlined,
                       label: 'Food',
                       selected: _selectedType == WishlistType.food,
-                      onTap: () => setState(() => _selectedType = WishlistType.food),
+                      onTap: () =>
+                          setState(() => _selectedType = WishlistType.food),
                     ),
                   ),
                 ],
@@ -436,31 +612,51 @@ class _WishlistPageState extends State<WishlistPage> {
                     ),
                   ),
                   SizedBox(width: 8),
-                  Icon(
-                    Icons.sort_rounded,
-                    color: Color(0xFF2EB9F8),
-                    size: 21,
-                  ),
+                  Icon(Icons.sort_rounded, color: Color(0xFF2EB9F8), size: 21),
                 ],
               ),
             ),
             const SizedBox(height: 10),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                itemCount: _filteredItems.length,
-                separatorBuilder: (BuildContext context, int index) =>
-                    const SizedBox(height: 12),
-                itemBuilder: (BuildContext context, int index) {
-                  final WishlistItem item = _filteredItems[index];
-                  return _WishlistCard(
-                    item: item,
-                    isFavorite: _favoriteIds.contains(item.id),
-                    onTap: () => _openDetail(item),
-                    onToggleFavorite: () => _toggleFavorite(item.id),
-                  );
-                },
-              ),
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF2EB9F8),
+                      ),
+                    )
+                  : _loadError != null
+                  ? _WishlistStatusView(
+                      message: 'Load wishlist failed.\n$_loadError',
+                      actionLabel: 'Retry',
+                      onActionTap: () => _loadWishlist(),
+                    )
+                  : _filteredItems.isEmpty
+                  ? _WishlistStatusView(
+                      message: AuthRepository.instance.isLoggedIn
+                          ? 'No ${_selectedType.name} item in wishlist.'
+                          : 'Please sign in to use wishlist.',
+                      actionLabel: AuthRepository.instance.isLoggedIn
+                          ? null
+                          : 'Sign in',
+                      onActionTap: AuthRepository.instance.isLoggedIn
+                          ? null
+                          : () => Navigator.of(context).maybePop(),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                      itemCount: _filteredItems.length,
+                      separatorBuilder: (BuildContext context, int index) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (BuildContext context, int index) {
+                        final WishlistItem item = _filteredItems[index];
+                        return _WishlistCard(
+                          item: item,
+                          isFavorite: _favoriteIds.contains(item.id),
+                          onTap: () => _openDetail(item),
+                          onToggleFavorite: () => _toggleFavorite(item.id),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -474,12 +670,10 @@ class WishlistDetailPage extends StatefulWidget {
     super.key,
     required this.item,
     required this.initialFavorite,
-    required this.onFavoriteChanged,
   });
 
   final WishlistItem item;
   final bool initialFavorite;
-  final ValueChanged<bool> onFavoriteChanged;
 
   @override
   State<WishlistDetailPage> createState() => _WishlistDetailPageState();
@@ -492,7 +686,10 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
     setState(() {
       _isFavorite = !_isFavorite;
     });
-    widget.onFavoriteChanged(_isFavorite);
+  }
+
+  void _handleBack() {
+    Navigator.of(context).pop(_isFavorite);
   }
 
   void _openAllImages(BuildContext context) {
@@ -513,278 +710,274 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
     const double galleryHeight = 92;
     const double galleryWidth = 122;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: <Widget>[
-          SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Stack(
-                  children: <Widget>[
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(14),
-                      ),
-                      child: _NetworkImageWithFallback(
-                        imageUrl: widget.item.coverImageUrl,
-                        width: double.infinity,
-                        height: headerHeight,
-                      ),
-                    ),
-                    Positioned(
-                      top: topInset + 6,
-                      right: 8,
-                      child: Column(
-                        children: <Widget>[
-                          (isPlace || isFood)
-                              ? IconButton(
-                                  onPressed: _toggleFavorite,
-                                  splashRadius: 20,
-                                  icon: Icon(
-                                    _isFavorite
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color: const Color(0xFFFF4D79),
-                                    size: 22,
-                                  ),
-                                )
-                              : _CircleIconButton(
-                                  icon: _isFavorite
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  iconColor: const Color(0xFFFF4D79),
-                                  onTap: _toggleFavorite,
-                                ),
-                          const SizedBox(height: 2),
-                          _ReportAssetIconButton(
-                            onTap: () => showReportIssueFlow(context),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (!didPop) {
+          Navigator.of(context).pop(_isFavorite);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Stack(
+          children: <Widget>[
+            SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Stack(
                     children: <Widget>[
-                      if (isPlace || isFood)
-                        Text(
-                          widget.item.title.replaceFirst('TP. ', ''),
-                          style: const TextStyle(
-                            fontSize: 35,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF2EB9F8),
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(14),
+                        ),
+                        child: _NetworkImageWithFallback(
+                          imageUrl: widget.item.coverImageUrl,
+                          width: double.infinity,
+                          height: headerHeight,
+                        ),
+                      ),
+                      Positioned(
+                        top: topInset + 6,
+                        right: 8,
+                        child: Column(
+                          children: <Widget>[
+                            _CircleIconButton(
+                              icon: _isFavorite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              iconColor: const Color(0xFFFF4D79),
+                              onTap: _toggleFavorite,
+                            ),
+                            const SizedBox(height: 2),
+                            _ReportAssetIconButton(
+                              onTap: () => showReportIssueFlow(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        if (isPlace || isFood)
+                          Text(
+                            widget.item.title.replaceFirst('TP. ', ''),
+                            style: const TextStyle(
+                              fontSize: 35,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF2EB9F8),
+                            ),
+                          )
+                        else
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: Text(
+                                  widget.item.title.replaceFirst('TP. ', ''),
+                                  style: const TextStyle(
+                                    fontSize: 35,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF2EB9F8),
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFCC00),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  '${widget.item.rating.toStringAsFixed(1)} \u2605',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        )
-                      else
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.item.detailDescription,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            height: 1.45,
+                            color: Color(0xFF222222),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         Row(
                           children: <Widget>[
                             Expanded(
                               child: Text(
-                                widget.item.title.replaceFirst('TP. ', ''),
+                                'Images',
                                 style: const TextStyle(
-                                  fontSize: 35,
+                                  fontSize: 34,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF2EB9F8),
+                                  color: Color(0xFF0C709D),
                                 ),
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFCC00),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                '${widget.item.rating.toStringAsFixed(1)} \u2605',
-                                style: const TextStyle(
+                            GestureDetector(
+                              onTap: () => _openAllImages(context),
+                              child: const Text(
+                                'See all',
+                                style: TextStyle(
                                   fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF6ABFE6),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.item.detailDescription,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          height: 1.45,
-                          color: Color(0xFF222222),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: galleryHeight,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: widget.item.galleryImageUrls.length,
+                            separatorBuilder:
+                                (BuildContext context, int index) =>
+                                    const SizedBox(width: 10),
+                            itemBuilder: (_, int index) {
+                              return GestureDetector(
+                                onTap: () => _openAllImages(context),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: _NetworkImageWithFallback(
+                                    imageUrl:
+                                        widget.item.galleryImageUrls[index],
+                                    width: galleryWidth,
+                                    height: galleryHeight,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              'Images',
-                              style: const TextStyle(
-                                fontSize: 34,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF0C709D),
-                              ),
+                        if (isPlace) ...<Widget>[
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Location',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0C709D),
                             ),
                           ),
-                          GestureDetector(
-                            onTap: () => _openAllImages(context),
-                            child: const Text(
-                              'See all',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF6ABFE6),
-                              ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: _NetworkImageWithFallback(
+                              imageUrl: widget.item.mapImageUrl,
+                              width: double.infinity,
+                              height: 120,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          _RatingSection(rating: widget.item.rating),
+                        ] else if (isFood) ...<Widget>[
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Ingredients',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0C709D),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          _BulletList(items: widget.item.ingredients),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Flavor',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0C709D),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          _BulletList(items: widget.item.flavors),
+                          const SizedBox(height: 12),
+                          _RatingSection(rating: widget.item.rating),
+                        ] else ...<Widget>[
+                          const SizedBox(height: 16),
+                          const Text(
+                            'The highlights of a visit',
+                            style: TextStyle(
+                              fontSize: 34,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0C709D),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            widget.item.highlightsDescription,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              height: 1.4,
+                              color: Color(0xFF232323),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: _NetworkImageWithFallback(
+                              imageUrl: widget.item.mapImageUrl,
+                              width: double.infinity,
+                              height: 220,
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        height: galleryHeight,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: widget.item.galleryImageUrls.length,
-                          separatorBuilder: (
-                            BuildContext context,
-                            int index,
-                          ) => const SizedBox(width: 10),
-                          itemBuilder: (_, int index) {
-                            return GestureDetector(
-                              onTap: () => _openAllImages(context),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(14),
-                                child: _NetworkImageWithFallback(
-                                  imageUrl: widget.item.galleryImageUrls[index],
-                                  width: galleryWidth,
-                                  height: galleryHeight,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      if (isPlace) ...<Widget>[
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Location',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF0C709D),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: _NetworkImageWithFallback(
-                            imageUrl: widget.item.mapImageUrl,
-                            width: double.infinity,
-                            height: 120,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        _RatingSection(rating: widget.item.rating),
-                      ] else if (isFood) ...<Widget>[
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Ingredients',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF0C709D),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        _BulletList(items: widget.item.ingredients),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Flavor',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF0C709D),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        _BulletList(items: widget.item.flavors),
-                        const SizedBox(height: 12),
-                        _RatingSection(rating: widget.item.rating),
-                      ] else ...<Widget>[
-                        const SizedBox(height: 16),
-                        const Text(
-                          'The highlights of a visit',
-                          style: TextStyle(
-                            fontSize: 34,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF0C709D),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          widget.item.highlightsDescription,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            height: 1.4,
-                            color: Color(0xFF232323),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: _NetworkImageWithFallback(
-                            imageUrl: widget.item.mapImageUrl,
-                            width: double.infinity,
-                            height: 220,
-                          ),
-                        ),
+                        SizedBox(height: bottomInset + 90),
                       ],
-                      SizedBox(height: bottomInset + 90),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Positioned(
-            top: topInset + 6,
-            left: 8,
-            child: _CircleIconButton(
-              icon: Icons.arrow_back,
-              onTap: () => Navigator.of(context).pop(),
-            ),
-          ),
-          if (isFood)
             Positioned(
-              left: 0,
-              right: 0,
-              bottom: bottomInset + 14,
-              child: Center(
-                child: Container(
-                  width: 54,
-                  height: 54,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF7FD4F7),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.search_rounded,
-                    color: Colors.white,
-                    size: 26,
+              top: topInset + 6,
+              left: 8,
+              child: _CircleIconButton(
+                icon: Icons.arrow_back,
+                onTap: _handleBack,
+              ),
+            ),
+            if (isFood)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: bottomInset + 14,
+                child: Center(
+                  child: Container(
+                    width: 54,
+                    height: 54,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF7FD4F7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.search_rounded,
+                      color: Colors.white,
+                      size: 26,
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -796,9 +989,9 @@ class WishlistAllImagesPage extends StatelessWidget {
   final WishlistItem item;
 
   List<String> get _allImages => <String>[
-        item.coverImageUrl,
-        ...item.galleryImageUrls,
-      ];
+    item.coverImageUrl,
+    ...item.galleryImageUrls,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -1009,6 +1202,51 @@ class _BulletList extends StatelessWidget {
   }
 }
 
+class _WishlistStatusView extends StatelessWidget {
+  const _WishlistStatusView({
+    required this.message,
+    this.actionLabel,
+    this.onActionTap,
+  });
+
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onActionTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.4,
+                color: Color(0xFF4C5A67),
+              ),
+            ),
+            if (actionLabel != null && onActionTap != null) ...<Widget>[
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: onActionTap,
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF2EB9F8),
+                ),
+                child: Text(actionLabel!),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _WishlistCard extends StatelessWidget {
   const _WishlistCard({
     required this.item,
@@ -1024,68 +1262,84 @@ class _WishlistCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Stack(
-                children: <Widget>[
-                  _NetworkImageWithFallback(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Stack(
+              children: <Widget>[
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onTap,
+                  child: _NetworkImageWithFallback(
                     imageUrl: item.coverImageUrl,
                     width: double.infinity,
                     height: 190,
                   ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: GestureDetector(
-                      onTap: onToggleFavorite,
-                      child: Container(
-                        width: 26,
-                        height: 26,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border,
-                          size: 16,
-                          color: const Color(0xFFFF4D79),
+                ),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Listener(
+                      behavior: HitTestBehavior.opaque,
+                      onPointerDown: (_) => onToggleFavorite(),
+                      child: Center(
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            size: 16,
+                            color: const Color(0xFFFF4D79),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              item.title,
-              style: const TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF2EB9F8),
-              ),
+          ),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF2EB9F8),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.shortDescription,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.45,
+                    color: Color(0xFF1F1F1F),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              item.shortDescription,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 16,
-                height: 1.45,
-                color: Color(0xFF1F1F1F),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1188,15 +1442,13 @@ class _ReportAssetIconButton extends StatelessWidget {
             width: 28,
             height: 28,
             fit: BoxFit.contain,
-            errorBuilder: (
-              BuildContext context,
-              Object error,
-              StackTrace? stackTrace,
-            ) => const Icon(
-              Icons.bug_report_outlined,
-              size: 28,
-              color: Color(0xFF2C2C2C),
-            ),
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stackTrace) =>
+                    const Icon(
+                      Icons.bug_report_outlined,
+                      size: 28,
+                      color: Color(0xFF2C2C2C),
+                    ),
           ),
         ),
       ),
@@ -1254,11 +1506,7 @@ class _NetworkImageWithFallback extends StatelessWidget {
   }
 }
 
-enum WishlistType {
-  city,
-  place,
-  food,
-}
+enum WishlistType { city, place, food }
 
 class WishlistItem {
   const WishlistItem({

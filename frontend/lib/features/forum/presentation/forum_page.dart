@@ -22,6 +22,7 @@ class _ForumPageState extends State<ForumPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    Future<void>.microtask(() => _store.refresh());
   }
 
   @override

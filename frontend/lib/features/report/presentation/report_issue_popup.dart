@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hellovietnam/features/report/data/report_repository.dart';
 
 Future<void> showReportIssueFlow(BuildContext context) async {
   final bool? submitted = await showModalBottomSheet<bool>(
@@ -23,7 +24,8 @@ class _ReportIssueBottomSheet extends StatefulWidget {
   const _ReportIssueBottomSheet();
 
   @override
-  State<_ReportIssueBottomSheet> createState() => _ReportIssueBottomSheetState();
+  State<_ReportIssueBottomSheet> createState() =>
+      _ReportIssueBottomSheetState();
 }
 
 class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
@@ -56,9 +58,11 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
   ];
 
   final TextEditingController _descriptionController = TextEditingController();
+  final ReportRepository _repository = ReportRepository();
   String? _selectedIssue;
   bool _showIssueValidationError = false;
   int _issueValidationTick = 0;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -66,7 +70,7 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final bool issueMissing = _selectedIssue == null;
 
     if (issueMissing) {
@@ -74,7 +78,39 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
     }
     if (issueMissing) return;
 
-    Navigator.of(context).pop(true);
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await _repository.submitReport(
+        ReportSubmission(
+          category: _categoryForIssue(_selectedIssue!),
+          targetType: AppReportTargetType.feature,
+          featureArea: 'wishlist',
+          content: _descriptionController.text,
+        ),
+      );
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  AppReportCategory _categoryForIssue(String issue) {
+    switch (issue) {
+      case 'Incorrect data':
+      case 'Missing information':
+      case 'Inappropriate image/video':
+        return AppReportCategory.contentReport;
+      case 'Map/address issue':
+        return AppReportCategory.bugReport;
+      default:
+        return AppReportCategory.suggestion;
+    }
   }
 
   void _flashIssueSelectionValidation() {
@@ -105,9 +141,7 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
         child: Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: SafeArea(
             top: false,
@@ -207,7 +241,8 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                               spacing: 8,
                               runSpacing: 8,
                               children: _issueTypes.map((item) {
-                                final bool selected = _selectedIssue == item.label;
+                                final bool selected =
+                                    _selectedIssue == item.label;
                                 return SizedBox(
                                   width: chipWidth,
                                   child: _IssueChip(
@@ -298,9 +333,7 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                 Container(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
                   decoration: const BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: Color(0xFFF1F5F9)),
-                    ),
+                    border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
                   ),
                   child: Row(
                     children: <Widget>[
@@ -340,7 +373,7 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                             ),
                           ),
                           child: ElevatedButton(
-                            onPressed: _submit,
+                            onPressed: _isSubmitting ? null : _submit,
                             style: ElevatedButton.styleFrom(
                               elevation: 0,
                               backgroundColor: Colors.transparent,
@@ -350,9 +383,9 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                             ),
-                            child: const Text(
-                              'Submit Report',
-                              style: TextStyle(
+                            child: Text(
+                              _isSubmitting ? 'Submitting...' : 'Submit Report',
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
@@ -473,15 +506,15 @@ class _IssueChip extends StatelessWidget {
             color: highlightAsError
                 ? const Color(0xFFFFF5F5)
                 : selected
-                    ? item.accentColor.withValues(alpha: 0.03)
-                    : const Color(0xFFF8FAFC),
+                ? item.accentColor.withValues(alpha: 0.03)
+                : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: highlightAsError
                   ? const Color(0xFFEF4444)
                   : selected
-                      ? item.accentColor
-                      : const Color(0xFFE2E8F0),
+                  ? item.accentColor
+                  : const Color(0xFFE2E8F0),
             ),
             boxShadow: (selected && !highlightAsError)
                 ? <BoxShadow>[
@@ -506,11 +539,7 @@ class _IssueChip extends StatelessWidget {
                       ? item.accentColor.withValues(alpha: 0.10)
                       : Colors.transparent,
                 ),
-                child: Icon(
-                  item.icon,
-                  size: 16,
-                  color: item.accentColor,
-                ),
+                child: Icon(item.icon, size: 16, color: item.accentColor),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -519,7 +548,9 @@ class _IssueChip extends StatelessWidget {
                   curve: Curves.easeInOut,
                   style: TextStyle(
                     fontSize: 12,
-                    color: selected ? item.accentColor : const Color(0xFF45556C),
+                    color: selected
+                        ? item.accentColor
+                        : const Color(0xFF45556C),
                     fontWeight: FontWeight.w500,
                     height: 1.25,
                   ),

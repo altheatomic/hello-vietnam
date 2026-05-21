@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
+import 'package:hellovietnam/features/admin/data/admin_report_repository.dart';
 
 import '../widgets/admin_section_header.dart';
 
@@ -15,14 +16,23 @@ class AdminReportPage extends StatefulWidget {
 }
 
 class _AdminReportPageState extends State<AdminReportPage> {
-  late final List<_ReportItem> _reports = _seedReports.map((e) => e).toList();
+  final AdminReportRepository _repository = AdminReportRepository();
+  final List<_ReportItem> _reports = <_ReportItem>[];
   final TextEditingController _searchController = TextEditingController();
 
   _IssueType? _issueFilter;
   _ReportStatus? _statusFilter;
   int _currentPage = 1;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   static const int _pageSize = 8;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReports();
+  }
 
   @override
   void dispose() {
@@ -71,6 +81,30 @@ class _AdminReportPageState extends State<AdminReportPage> {
     _currentPage = 1;
   });
 
+  Future<void> _loadReports() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final List<AdminReportRecord> records = await _repository.fetchReports();
+      if (!mounted) return;
+      setState(() {
+        _reports
+          ..clear()
+          ..addAll(records.map(_reportItemFromRecord));
+        _isLoading = false;
+        _currentPage = 1;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = error.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
   Future<void> _onReview(_ReportItem item) async {
     final action = await showDialog<_ReviewAction>(
       context: context,
@@ -89,10 +123,93 @@ class _AdminReportPageState extends State<AdminReportPage> {
       _ReviewAction.deleteContent => _ReportStatus.resolved,
     };
 
+    try {
+      await _repository.updateReportStatus(
+        reportId: item.id,
+        status: nextStatus.storageValue,
+        actionTaken: action.label,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error.toString())));
+      return;
+    }
+
     setState(() {
       final idx = _reports.indexWhere((e) => e.id == item.id);
       if (idx != -1) _reports[idx] = _reports[idx].copyWith(status: nextStatus);
     });
+  }
+
+  _ReportItem _reportItemFromRecord(AdminReportRecord record) {
+    return _ReportItem(
+      id: record.id,
+      reporterName: record.reporterName,
+      reporterEmail: record.reporterEmail,
+      issue: _issueTypeFromRecord(record),
+      target: _targetFromRecord(record),
+      category: _categoryFromTargetType(record.targetType),
+      createdAt: record.createdAt,
+      status: _statusFromStorage(record.status),
+      description: record.content,
+      attachments: record.images,
+    );
+  }
+
+  _IssueType _issueTypeFromRecord(AdminReportRecord record) {
+    final String category = record.reportCategory;
+    final String area = record.featureArea?.toLowerCase() ?? '';
+    if (area.contains('map')) return _IssueType.mapAddressIssue;
+    if (area.contains('media') || area.contains('image')) {
+      return _IssueType.inappropriateMedia;
+    }
+    return switch (category) {
+      'content_report' => _IssueType.incorrectData,
+      'bug_report' => _IssueType.appFunction,
+      'account_issue' => _IssueType.appFunction,
+      'payment_issue' => _IssueType.appFunction,
+      'suggestion' => _IssueType.other,
+      _ => _IssueType.other,
+    };
+  }
+
+  String _targetFromRecord(AdminReportRecord record) {
+    final String targetType = record.targetType ?? '';
+    final String featureArea = record.featureArea ?? '';
+    final String targetId = record.targetId ?? '';
+    if (featureArea.isNotEmpty) return featureArea;
+    if (targetType.isNotEmpty && targetId.isNotEmpty) {
+      return '$targetType $targetId';
+    }
+    if (targetType.isNotEmpty) return targetType;
+    return 'General report';
+  }
+
+  _Category _categoryFromTargetType(String? targetType) {
+    return switch (targetType) {
+      'food' => _Category.food,
+      'activity' => _Category.activity,
+      'culture' => _Category.item,
+      'local_product' => _Category.item,
+      'place' => _Category.place,
+      'province' => _Category.city,
+      'feature' => _Category.system,
+      'system' => _Category.system,
+      'user_account' => _Category.system,
+      _ => _Category.system,
+    };
+  }
+
+  _ReportStatus _statusFromStorage(String status) {
+    return switch (status) {
+      'pending' => _ReportStatus.pending,
+      'reviewing' => _ReportStatus.inProgress,
+      'resolved' => _ReportStatus.resolved,
+      'rejected' => _ReportStatus.dismissed,
+      _ => _ReportStatus.pending,
+    };
   }
 
   @override
@@ -113,6 +230,13 @@ class _AdminReportPageState extends State<AdminReportPage> {
                 title: 'Report Management',
                 subtitle: 'Review and manage user-submitted issues.',
               ),
+              if (_errorMessage != null) ...[
+                _ReportLoadError(
+                  message: _errorMessage!,
+                  onRetry: _loadReports,
+                ),
+                const SizedBox(height: 14),
+              ],
               _ReportStats(
                 total: _reports.length,
                 pending: _count(_ReportStatus.pending),
@@ -130,7 +254,12 @@ class _AdminReportPageState extends State<AdminReportPage> {
                   onIssueChanged: _onIssueChanged,
                   onStatusChanged: _onStatusChanged,
                 ),
-                child: filtered.isEmpty
+                child: _isLoading
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 42),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : filtered.isEmpty
                     ? const Padding(
                         padding: EdgeInsets.symmetric(vertical: 36),
                         child: EmptyState(
@@ -193,6 +322,41 @@ class _ReportContentCard extends StatelessWidget {
           ),
           Divider(height: 1, color: AppColors.divider.withValues(alpha: 0.9)),
           child,
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportLoadError extends StatelessWidget {
+  const _ReportLoadError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+        border: Border.all(color: const Color(0xFFFED7AA)),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.warning_amber_rounded, color: Color(0xFFC2410C)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFF9A3412)),
+            ),
+          ),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );
@@ -836,10 +1000,7 @@ class _ReportRowState extends State<_ReportRow> {
                     item.reporterEmail,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black,
-                    ),
+                    style: const TextStyle(fontSize: 12, color: Colors.black),
                   ),
                 ],
               ),
@@ -1330,7 +1491,10 @@ class _ReporterBlock extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   item.reporterEmail,
-                  style: const TextStyle(fontSize: 14, color: Color(0xFF62748E)),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF62748E),
+                  ),
                 ),
               ],
             ),
@@ -1494,11 +1658,17 @@ class _SystemInfoBlock extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: _SystemField(label: 'App Version', value: systemInfo.appVersion),
+            child: _SystemField(
+              label: 'App Version',
+              value: systemInfo.appVersion,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: _SystemField(label: 'OS Version', value: systemInfo.osVersion),
+            child: _SystemField(
+              label: 'OS Version',
+              value: systemInfo.osVersion,
+            ),
           ),
         ],
       ),
@@ -1610,7 +1780,7 @@ class _AttachmentSection extends StatelessWidget {
           child: Image.network(
             url,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
+            errorBuilder: (context, error, stackTrace) => Container(
               color: const Color(0xFFF1F5F9),
               alignment: Alignment.center,
               child: const Icon(
@@ -1903,6 +2073,20 @@ enum _ReviewAction {
   resolve,
 }
 
+extension on _ReviewAction {
+  String get label {
+    return switch (this) {
+      _ReviewAction.dismiss => 'Dismissed report',
+      _ReviewAction.requestInfo => 'Requested more information',
+      _ReviewAction.forward => 'Forwarded to responsible team',
+      _ReviewAction.inProgress => 'Marked as reviewing',
+      _ReviewAction.hideContent => 'Hidden reported content',
+      _ReviewAction.deleteContent => 'Deleted reported content',
+      _ReviewAction.resolve => 'Resolved report',
+    };
+  }
+}
+
 enum _IssueType {
   incorrectData(
     'Incorrect data',
@@ -1953,6 +2137,17 @@ enum _ReportStatus {
 
   const _ReportStatus(this.label);
   final String label;
+}
+
+extension _ReportStatusStorage on _ReportStatus {
+  String get storageValue {
+    return switch (this) {
+      _ReportStatus.pending => 'pending',
+      _ReportStatus.inProgress => 'reviewing',
+      _ReportStatus.resolved => 'resolved',
+      _ReportStatus.dismissed => 'rejected',
+    };
+  }
 }
 
 class _StatusStyle {
@@ -2064,118 +2259,3 @@ String _formatDate(DateTime date) {
   ];
   return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }
-
-final List<_ReportItem> _seedReports = [
-  _ReportItem(
-    id: 'REP-1029',
-    reporterName: 'Nguyen Van A',
-    reporterEmail: 'nguyenvana@example.com',
-    issue: _IssueType.incorrectData,
-    target: 'Hoang Yen Buffet',
-    category: _Category.place,
-    createdAt: DateTime(2023, 10, 25),
-    status: _ReportStatus.pending,
-    description:
-        'The phone number listed for "Hoang Yen Buffet" is incorrect. It should be 0987654321.',
-  ),
-  _ReportItem(
-    id: 'REP-1030',
-    reporterName: 'Tran Thi B',
-    reporterEmail: 'tranthib@example.com',
-    issue: _IssueType.mapAddressIssue,
-    target: 'The Coffee House',
-    category: _Category.place,
-    createdAt: DateTime(2023, 10, 25),
-    status: _ReportStatus.inProgress,
-    description:
-        'The pin for the coffee shop is located on the wrong side of the street. It is actually next to the bookstore.',
-    attachments: ['https://picsum.photos/seed/report-map/612/388'],
-  ),
-  _ReportItem(
-    id: 'REP-1031',
-    reporterName: 'Le Minh C',
-    reporterEmail: 'leminhc@example.com',
-    issue: _IssueType.inappropriateMedia,
-    target: 'Kayaking in Ha Long Bay',
-    category: _Category.activity,
-    createdAt: DateTime(2023, 10, 24),
-    status: _ReportStatus.pending,
-    description:
-        'One of the photos uploaded by a user contains inappropriate content and should be removed.',
-    attachments: ['https://picsum.photos/seed/report-media/612/388'],
-  ),
-  _ReportItem(
-    id: 'REP-1032',
-    reporterName: 'Pham Van D',
-    reporterEmail: 'phamvand@example.com',
-    issue: _IssueType.missingInformation,
-    target: 'Phuc Long Tea & Coffee',
-    category: _Category.place,
-    createdAt: DateTime(2023, 10, 23),
-    status: _ReportStatus.resolved,
-    description: 'Opening hours for Sunday are not listed on the page.',
-  ),
-  _ReportItem(
-    id: 'REP-1033',
-    reporterName: 'Hoang E',
-    reporterEmail: 'hoange@example.com',
-    issue: _IssueType.other,
-    target: 'Da Nang',
-    category: _Category.city,
-    createdAt: DateTime(2023, 10, 22),
-    status: _ReportStatus.dismissed,
-    description: 'The city overview paragraph is cut off in the middle of a sentence.',
-  ),
-  _ReportItem(
-    id: 'REP-1034',
-    reporterName: 'Bui Thi F',
-    reporterEmail: 'buithif@example.com',
-    issue: _IssueType.incorrectData,
-    target: 'Pho Bo',
-    category: _Category.food,
-    createdAt: DateTime(2023, 10, 26),
-    status: _ReportStatus.pending,
-    description: 'Food details are incorrect.',
-  ),
-  _ReportItem(
-    id: 'REP-1035',
-    reporterName: 'Dao Van G',
-    reporterEmail: 'daovang@example.com',
-    issue: _IssueType.missingInformation,
-    target: 'Travel Adapter',
-    category: _Category.item,
-    createdAt: DateTime(2023, 10, 26),
-    status: _ReportStatus.inProgress,
-    description: 'Item details are incomplete.',
-  ),
-  _ReportItem(
-    id: 'REP-1036',
-    reporterName: 'Vu Thi H',
-    reporterEmail: 'vuthih@example.com',
-    issue: _IssueType.appFunction,
-    target: 'AI Search',
-    category: _Category.system,
-    createdAt: DateTime(2023, 10, 26),
-    status: _ReportStatus.pending,
-    description:
-        'The app crashes when I try to search for restaurants. It happens every time I type more than 3 characters.',
-    attachments: ['https://picsum.photos/seed/report-system/612/388'],
-    systemInfo: _SystemInfo(
-      device: 'iPhone 14 Pro',
-      appVersion: '2.4.1',
-      osVersion: 'iOS 17.1',
-    ),
-  ),
-  _ReportItem(
-    id: 'REP-1037',
-    reporterName: 'Nguyen Minh I',
-    reporterEmail: 'nguyenminhi@example.com',
-    issue: _IssueType.appFunction,
-    target: 'Forum',
-    category: _Category.system,
-    createdAt: DateTime(2023, 10, 27),
-    status: _ReportStatus.inProgress,
-    description: 'Forum feature has inconsistent behavior.',
-  ),
-];
-

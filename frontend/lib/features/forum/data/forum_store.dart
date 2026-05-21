@@ -1,36 +1,55 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
-import 'package:hellovietnam/features/forum/data/forum_mock_data.dart';
-import 'package:hellovietnam/features/forum/domain/forum_models.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../domain/forum_models.dart';
+import 'forum_repository.dart';
 
 class ForumStore extends ChangeNotifier {
-  ForumStore._()
-    : _profilesById = Map<String, ForumUserProfile>.from(
-        ForumMockData.profilesById,
-      ),
-      _postsById = <String, ForumPost>{
-        for (final ForumPost post in ForumMockData.posts) post.id: post,
-      },
-      _commentsByPostId = <String, List<ForumComment>>{
-        for (final MapEntry<String, List<ForumComment>> entry
-            in ForumMockData.commentsByPost.entries)
-          entry.key: List<ForumComment>.from(entry.value),
-      },
-      _forYouFeedIds = List<String>.from(ForumMockData.initialForYouFeed),
-      _followingFeedIds = List<String>.from(ForumMockData.initialFollowingFeed);
+  ForumStore._({ForumRepository? repository})
+    : _repository = repository ?? ForumRepository();
 
   static final ForumStore instance = ForumStore._();
 
-  final Map<String, ForumUserProfile> _profilesById;
-  final Map<String, ForumPost> _postsById;
-  final Map<String, List<ForumComment>> _commentsByPostId;
-  final List<String> _forYouFeedIds;
-  final List<String> _followingFeedIds;
+  final ForumRepository _repository;
+
+  final Map<String, ForumUserProfile> _profilesById =
+      <String, ForumUserProfile>{};
+  final Map<String, ForumPost> _postsById = <String, ForumPost>{};
+  final Map<String, List<ForumComment>> _commentsByPostId =
+      <String, List<ForumComment>>{};
+  final List<String> _forYouFeedIds = <String>[];
+  final List<String> _followingFeedIds = <String>[];
   final Set<String> _blockedAuthorIds = <String>{};
   final Set<String> _reportedPostIds = <String>{};
+  List<ForumNotificationItem> _notifications = <ForumNotificationItem>[];
+  StreamSubscription<AuthState>? _authSubscription;
 
-  String get currentUserId => ForumMockData.currentUserId;
+  String _currentUserId = '';
+  ForumUserProfile? _currentUserProfile;
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  ForumUserProfile get currentUserProfile => _profilesById[currentUserId]!;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  String get currentUserId => _currentUserId;
+
+  ForumUserProfile get currentUserProfile =>
+      _currentUserProfile ??
+      ForumUserProfile(
+        author: const ForumAuthor(
+          id: '',
+          name: 'Forum user',
+          handle: '@forum_user',
+          avatarUrl: '',
+        ),
+        followersCount: 0,
+        followingCount: 0,
+        isCurrentUser: true,
+      );
 
   ForumAuthor get currentUserAuthor => currentUserProfile.author;
 
@@ -56,12 +75,41 @@ class ForumStore extends ChangeNotifier {
   }
 
   List<ForumNotificationItem> get notifications =>
-      List<ForumNotificationItem>.unmodifiable(
-        ForumMockData.notifications.where(
-          (ForumNotificationItem item) =>
-              !_blockedAuthorIds.contains(item.actor.id),
-        ),
-      );
+      List<ForumNotificationItem>.unmodifiable(_notifications);
+
+  Future<void> init() async {
+    _authSubscription ??= _repository.authStateChanges.listen((AuthState data) {
+      if (data.session?.user == null) {
+        _clear();
+        notifyListeners();
+        return;
+      }
+
+      unawaited(refresh());
+    });
+
+    await refresh();
+  }
+
+  Future<void> refresh({bool notifyLoading = true}) async {
+    if (notifyLoading) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
+
+    try {
+      final ForumRepositorySnapshot snapshot = await _repository.loadSnapshot();
+      _applySnapshot(snapshot);
+      _errorMessage = null;
+    } catch (error) {
+      _errorMessage = error.toString();
+      debugPrint('Load forum data error: $error');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   ForumPost? postById(String postId) {
     final ForumPost? post = _postsById[postId];
@@ -107,25 +155,38 @@ class ForumStore extends ChangeNotifier {
 
   void toggleLike(String postId) {
     final ForumPost? post = _postsById[postId];
-    if (post == null) {
-      return;
-    }
+    if (post == null) return;
 
+    final bool shouldLike = !post.isLiked;
     _postsById[postId] = post.copyWith(
-      isLiked: !post.isLiked,
-      likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+      isLiked: shouldLike,
+      likes: shouldLike ? post.likes + 1 : post.likes - 1,
     );
     notifyListeners();
+
+    unawaited(
+      _persistAndRefresh(
+        () => _repository.setPostLiked(postId: postId, liked: shouldLike),
+      ),
+    );
   }
 
   void toggleBookmark(String postId) {
     final ForumPost? post = _postsById[postId];
-    if (post == null) {
-      return;
-    }
+    if (post == null) return;
 
-    _postsById[postId] = post.copyWith(isBookmarked: !post.isBookmarked);
+    final bool shouldBookmark = !post.isBookmarked;
+    _postsById[postId] = post.copyWith(isBookmarked: shouldBookmark);
     notifyListeners();
+
+    unawaited(
+      _persistAndRefresh(
+        () => _repository.setBookmarked(
+          postId: postId,
+          bookmarked: shouldBookmark,
+        ),
+      ),
+    );
   }
 
   void toggleFollowAuthor(String authorId) {
@@ -136,57 +197,40 @@ class ForumStore extends ChangeNotifier {
       return;
     }
 
-    final bool isFollowing = profile.author.isFollowing;
-    final ForumUserProfile updatedTarget = profile.copyWith(
-      author: profile.author.copyWith(isFollowing: !isFollowing),
-      followersCount: isFollowing
-          ? profile.followersCount - 1
-          : profile.followersCount + 1,
-    );
-    _profilesById[authorId] = updatedTarget;
-
-    final ForumUserProfile currentProfile = currentUserProfile;
-    _profilesById[currentUserId] = currentProfile.copyWith(
-      followingCount: isFollowing
-          ? currentProfile.followingCount - 1
-          : currentProfile.followingCount + 1,
-    );
-
-    _syncAuthorAcrossPosts(updatedTarget.author);
-    _syncFollowingFeed(authorId: authorId, isFollowing: !isFollowing);
+    final bool shouldFollow = !profile.author.isFollowing;
+    _setAuthorFollowing(authorId: authorId, isFollowing: shouldFollow);
+    _syncFollowingFeed(authorId: authorId, isFollowing: shouldFollow);
     notifyListeners();
+
+    unawaited(
+      _persistAndRefresh(
+        () => _repository.setFollowing(
+          authorId: authorId,
+          following: shouldFollow,
+        ),
+      ),
+    );
   }
 
   void toggleBlockAuthor(String authorId) {
     final ForumUserProfile? profile = _profilesById[authorId];
-    if (profile == null || profile.isCurrentUser) {
-      return;
-    }
+    if (profile == null || profile.isCurrentUser) return;
 
-    if (_blockedAuthorIds.remove(authorId)) {
-      notifyListeners();
-      return;
-    }
-
-    _blockedAuthorIds.add(authorId);
-
-    if (profile.author.isFollowing) {
-      final ForumUserProfile updatedTarget = profile.copyWith(
-        author: profile.author.copyWith(isFollowing: false),
-        followersCount: profile.followersCount - 1,
-      );
-      _profilesById[authorId] = updatedTarget;
-
-      final ForumUserProfile currentProfile = currentUserProfile;
-      _profilesById[currentUserId] = currentProfile.copyWith(
-        followingCount: currentProfile.followingCount - 1,
-      );
-
-      _syncAuthorAcrossPosts(updatedTarget.author);
+    final bool shouldBlock = !_blockedAuthorIds.contains(authorId);
+    if (shouldBlock) {
+      _blockedAuthorIds.add(authorId);
+      _setAuthorFollowing(authorId: authorId, isFollowing: false);
       _syncFollowingFeed(authorId: authorId, isFollowing: false);
+    } else {
+      _blockedAuthorIds.remove(authorId);
     }
-
     notifyListeners();
+
+    unawaited(
+      _persistAndRefresh(
+        () => _repository.setBlocked(authorId: authorId, blocked: shouldBlock),
+      ),
+    );
   }
 
   void submitReport({
@@ -194,12 +238,20 @@ class ForumStore extends ChangeNotifier {
     required String reason,
     String? details,
   }) {
-    if (!_postsById.containsKey(postId)) {
-      return;
-    }
+    if (!_postsById.containsKey(postId)) return;
 
     _reportedPostIds.add(postId);
     notifyListeners();
+
+    unawaited(
+      _persistAndRefresh(
+        () => _repository.submitReport(
+          postId: postId,
+          reason: reason,
+          details: details,
+        ),
+      ),
+    );
   }
 
   void toggleCommentLike(String postId, String commentId) {
@@ -208,16 +260,24 @@ class ForumStore extends ChangeNotifier {
     final int index = comments.indexWhere(
       (ForumComment item) => item.id == commentId,
     );
-    if (index < 0) {
-      return;
-    }
+    if (index < 0) return;
 
     final ForumComment comment = comments[index];
+    final bool shouldLike = !comment.isLiked;
     comments[index] = comment.copyWith(
-      isLiked: !comment.isLiked,
-      likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1,
+      isLiked: shouldLike,
+      likes: shouldLike ? comment.likes + 1 : comment.likes - 1,
     );
     notifyListeners();
+
+    unawaited(
+      _persistAndRefresh(
+        () => _repository.setCommentLiked(
+          commentId: commentId,
+          liked: shouldLike,
+        ),
+      ),
+    );
   }
 
   void addReply({
@@ -226,20 +286,17 @@ class ForumStore extends ChangeNotifier {
     String? replyToHandle,
   }) {
     final ForumPost? post = _postsById[postId];
-    if (post == null) {
-      return;
-    }
+    if (post == null) return;
 
     final String trimmed = replyText.trim();
-    if (trimmed.isEmpty) {
-      return;
-    }
+    if (trimmed.isEmpty) return;
 
     final String prefix = replyToHandle == null ? '' : '$replyToHandle ';
+    final String content = '$prefix$trimmed'.trim();
     final ForumComment reply = ForumComment(
-      id: 'comment-${DateTime.now().microsecondsSinceEpoch}',
+      id: 'pending-${DateTime.now().microsecondsSinceEpoch}',
       author: currentUserAuthor,
-      content: '$prefix$trimmed'.trim(),
+      content: content,
       timeAgo: 'now',
       likes: 0,
     );
@@ -251,31 +308,30 @@ class ForumStore extends ChangeNotifier {
     comments.insert(0, reply);
     _postsById[postId] = post.copyWith(comments: post.comments + 1);
     notifyListeners();
+
+    unawaited(
+      _persistAndRefresh(
+        () => _repository.addReply(postId: postId, content: content),
+      ),
+    );
   }
 
-  String createPost({
+  Future<String> createPost({
     required String content,
-    required List<String> imageUrls,
-  }) {
+    List<String> imageUrls = const <String>[],
+    List<XFile> imageFiles = const <XFile>[],
+  }) async {
     final String trimmed = content.trim();
     if (trimmed.isEmpty) {
       throw ArgumentError('Post content cannot be empty');
     }
 
-    final String postId = 'post-${DateTime.now().microsecondsSinceEpoch}';
-    final ForumPost post = ForumPost(
-      id: postId,
-      author: currentUserAuthor,
+    final String postId = await _repository.createPost(
       content: trimmed,
-      imageUrls: List<String>.from(imageUrls),
-      timeAgo: 'now',
-      likes: 0,
-      comments: 0,
+      imageUrls: imageUrls,
+      imageFiles: imageFiles,
     );
-
-    _postsById[postId] = post;
-    _forYouFeedIds.insert(0, postId);
-    notifyListeners();
+    await refresh(notifyLoading: false);
     return postId;
   }
 
@@ -287,20 +343,105 @@ class ForumStore extends ChangeNotifier {
         .toList(growable: false);
   }
 
+  void _applySnapshot(ForumRepositorySnapshot snapshot) {
+    _currentUserId = snapshot.currentUserId;
+    _currentUserProfile = snapshot.currentUserProfile;
+    _profilesById
+      ..clear()
+      ..addAll(snapshot.profilesById);
+    _postsById
+      ..clear()
+      ..addEntries(
+        snapshot.posts.map(
+          (ForumPost post) => MapEntry<String, ForumPost>(post.id, post),
+        ),
+      );
+    _commentsByPostId
+      ..clear()
+      ..addAll(
+        snapshot.commentsByPostId.map(
+          (String key, List<ForumComment> value) =>
+              MapEntry<String, List<ForumComment>>(
+                key,
+                List<ForumComment>.from(value),
+              ),
+        ),
+      );
+    _forYouFeedIds
+      ..clear()
+      ..addAll(snapshot.forYouFeedIds);
+    _followingFeedIds
+      ..clear()
+      ..addAll(snapshot.followingFeedIds);
+    _blockedAuthorIds
+      ..clear()
+      ..addAll(snapshot.blockedAuthorIds);
+    _reportedPostIds
+      ..clear()
+      ..addAll(snapshot.reportedPostIds);
+    _notifications = List<ForumNotificationItem>.from(snapshot.notifications);
+  }
+
+  void _clear() {
+    _currentUserId = '';
+    _currentUserProfile = null;
+    _profilesById.clear();
+    _postsById.clear();
+    _commentsByPostId.clear();
+    _forYouFeedIds.clear();
+    _followingFeedIds.clear();
+    _blockedAuthorIds.clear();
+    _reportedPostIds.clear();
+    _notifications = <ForumNotificationItem>[];
+    _errorMessage = null;
+    _isLoading = false;
+  }
+
+  void _setAuthorFollowing({
+    required String authorId,
+    required bool isFollowing,
+  }) {
+    final ForumUserProfile? profile = _profilesById[authorId];
+    if (profile == null) return;
+
+    final bool wasFollowing = profile.author.isFollowing;
+    if (wasFollowing == isFollowing) return;
+
+    final ForumUserProfile updatedTarget = profile.copyWith(
+      author: profile.author.copyWith(isFollowing: isFollowing),
+      followersCount: isFollowing
+          ? profile.followersCount + 1
+          : profile.followersCount - 1,
+    );
+    _profilesById[authorId] = updatedTarget;
+
+    final ForumUserProfile currentProfile = currentUserProfile;
+    _currentUserProfile = currentProfile.copyWith(
+      followingCount: isFollowing
+          ? currentProfile.followingCount + 1
+          : currentProfile.followingCount - 1,
+    );
+    if (_currentUserId.isNotEmpty) {
+      _profilesById[_currentUserId] = _currentUserProfile!;
+    }
+
+    _syncAuthorAcrossPosts(updatedTarget.author);
+  }
+
   void _syncAuthorAcrossPosts(ForumAuthor updatedAuthor) {
     _postsById.updateAll((String key, ForumPost post) {
-      if (post.author.id != updatedAuthor.id) {
-        return post;
-      }
-      return post.copyWith(author: updatedAuthor);
+      if (post.author.id != updatedAuthor.id) return post;
+      return post.copyWith(
+        author: updatedAuthor,
+        showFollowButton:
+            updatedAuthor.id != currentUserId && !updatedAuthor.isFollowing,
+      );
     });
 
     _commentsByPostId.updateAll((String key, List<ForumComment> comments) {
       return comments
           .map((ForumComment comment) {
-            if (comment.author.id != updatedAuthor.id) {
-              return comment;
-            }
+            if (comment.author.id != updatedAuthor.id) return comment;
             return comment.copyWith(author: updatedAuthor);
           })
           .toList(growable: false);
@@ -327,5 +468,16 @@ class ForumStore extends ChangeNotifier {
     _followingFeedIds.removeWhere(
       (String postId) => _postsById[postId]?.author.id == authorId,
     );
+  }
+
+  Future<void> _persistAndRefresh(Future<void> Function() action) async {
+    try {
+      await action();
+      await refresh(notifyLoading: false);
+    } catch (error) {
+      _errorMessage = error.toString();
+      debugPrint('Save forum data error: $error');
+      await refresh(notifyLoading: false);
+    }
   }
 }

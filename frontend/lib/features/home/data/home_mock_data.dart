@@ -25,8 +25,8 @@ const List<FeatureItem> homeFeatures = [
     route: AppRoutes.translate,
   ),
   FeatureItem(
-    title: 'Send\nFeedback',
-    icon: Icons.feedback_outlined,
+    title: 'Send\nReport',
+    icon: Icons.report_problem_outlined,
     route: AppRoutes.feedback,
   ),
   FeatureItem(

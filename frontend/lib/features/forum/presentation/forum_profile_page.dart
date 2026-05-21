@@ -59,17 +59,26 @@ class ForumProfilePage extends StatelessWidget {
         body: ListenableBuilder(
           listenable: store,
           builder: (BuildContext context, Widget? child) {
-            final ForumUserProfile? profile = store.profileById(authorId);
+            final String targetAuthorId = authorId == 'me'
+                ? store.currentUserId
+                : authorId;
+            final ForumUserProfile? profile = targetAuthorId.isEmpty
+                ? null
+                : store.profileById(targetAuthorId);
             if (profile == null) {
+              if (store.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
               return Center(
                 child: TextButton(
                   onPressed: () => context.pop(),
-                  child: const Text('Profile not found'),
+                  child: Text(store.errorMessage ?? 'Profile not found'),
                 ),
               );
             }
 
-            final List<ForumPost> posts = store.postsByAuthor(authorId);
+            final List<ForumPost> posts = store.postsByAuthor(targetAuthorId);
 
             return Column(
               children: <Widget>[

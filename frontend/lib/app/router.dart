@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/auth/auth_repository.dart';
 import 'theme.dart';
@@ -241,7 +241,7 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.forumMe,
-        builder: (c, s) => const ForumProfilePage(authorId: 'cortstllylo'),
+        builder: (c, s) => const ForumProfilePage(authorId: 'me'),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
