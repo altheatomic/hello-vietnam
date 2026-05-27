@@ -15,7 +15,10 @@ import 'package:hellovietnam/features/personalization/data/travel_recommendation
 import 'package:hellovietnam/features/personalization/domain/travel_preferences.dart';
 import 'package:hellovietnam/features/personalization/presentation/widgets/travel_preferences_summary_card.dart';
 import 'package:hellovietnam/features/recommend/domain/recommend_destination.dart';
+import '../data/home_repository.dart';
 import '../data/home_mock_data.dart';
+import '../domain/destination.dart';
+import '../domain/dish.dart';
 import 'widgets/active_trip_card.dart';
 import 'widgets/home_banner.dart';
 import 'widgets/feature_grid.dart';
@@ -23,8 +26,41 @@ import 'widgets/recommendation_section.dart';
 import 'widgets/recommendation_card.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final HomeRepository _homeRepository = HomeRepository();
+  List<Destination> _destinations = mockDestinations;
+  List<Dish> _dishes = mockDishes;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFeaturedContent();
+  }
+
+  Future<void> _loadFeaturedContent() async {
+    try {
+      final HomeFeaturedContent content = await _homeRepository
+          .fetchFeaturedContent();
+      if (!mounted) return;
+      setState(() {
+        if (content.destinations.isNotEmpty) {
+          _destinations = content.destinations;
+        }
+        if (content.dishes.isNotEmpty) {
+          _dishes = content.dishes;
+        }
+      });
+    } catch (_) {
+      // Keep bundled fallback cards when Supabase has no public read policy yet.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -327,7 +363,7 @@ class HomePage extends StatelessWidget {
                   child: RecommendationSection(
                     title: 'Best Destination',
                     backgroundImage: AppConstants.destinationBgAsset,
-                    children: mockDestinations.map((d) {
+                    children: _destinations.map((d) {
                       return RecommendationCard(
                         name: d.name,
                         category: d.category,
@@ -359,7 +395,7 @@ class HomePage extends StatelessWidget {
                   child: RecommendationSection(
                     title: 'Best Dishes',
                     backgroundImage: AppConstants.dishesBgAsset,
-                    children: mockDishes.map((d) {
+                    children: _dishes.map((d) {
                       return RecommendationCard(
                         name: d.name,
                         category: d.category,

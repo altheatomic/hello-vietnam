@@ -3,7 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 enum FavoriteType {
   city,
   place,
-  food;
+  food,
+  culture,
+  activity,
+  localProduct;
 
   String get dbValue {
     switch (this) {
@@ -13,6 +16,12 @@ enum FavoriteType {
         return 'place';
       case FavoriteType.food:
         return 'food';
+      case FavoriteType.culture:
+        return 'culture';
+      case FavoriteType.activity:
+        return 'activity';
+      case FavoriteType.localProduct:
+        return 'local_product';
     }
   }
 
@@ -24,6 +33,14 @@ enum FavoriteType {
         return FavoriteType.place;
       case 'food':
         return FavoriteType.food;
+      case 'culture':
+        return FavoriteType.culture;
+      case 'activity':
+        return FavoriteType.activity;
+      case 'local_product':
+      case 'local product':
+      case 'local-product':
+        return FavoriteType.localProduct;
       default:
         return null;
     }

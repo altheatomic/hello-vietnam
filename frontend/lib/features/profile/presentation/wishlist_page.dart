@@ -11,7 +11,7 @@ class WishlistPage extends StatefulWidget {
 }
 
 class _WishlistPageState extends State<WishlistPage> {
-  WishlistType _selectedType = WishlistType.city;
+  WishlistType? _selectedType;
   final Set<String> _favoriteIds = <String>{};
   final WishlistRepository _wishlistRepository = WishlistRepository();
   List<WishlistItem> _syncedItems = <WishlistItem>[];
@@ -313,6 +313,7 @@ class _WishlistPageState extends State<WishlistPage> {
   }
 
   List<WishlistItem> get _filteredItems {
+    if (_selectedType == null) return List<WishlistItem>.from(_syncedItems);
     return _syncedItems
         .where((WishlistItem item) => item.type == _selectedType)
         .toList();
@@ -501,6 +502,12 @@ class _WishlistPageState extends State<WishlistPage> {
         return WishlistType.place;
       case FavoriteType.food:
         return WishlistType.food;
+      case FavoriteType.culture:
+        return WishlistType.culture;
+      case FavoriteType.activity:
+        return WishlistType.activity;
+      case FavoriteType.localProduct:
+        return WishlistType.localProduct;
     }
   }
 
@@ -512,6 +519,12 @@ class _WishlistPageState extends State<WishlistPage> {
         return FavoriteType.place;
       case WishlistType.food:
         return FavoriteType.food;
+      case WishlistType.culture:
+        return FavoriteType.culture;
+      case WishlistType.activity:
+        return FavoriteType.activity;
+      case WishlistType.localProduct:
+        return FavoriteType.localProduct;
     }
   }
 
@@ -563,60 +576,18 @@ class _WishlistPageState extends State<WishlistPage> {
             ),
             const SizedBox(height: 10),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _TypeChip(
-                      icon: Icons.location_city_outlined,
-                      label: 'City',
-                      selected: _selectedType == WishlistType.city,
-                      onTap: () =>
-                          setState(() => _selectedType = WishlistType.city),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _TypeChip(
-                      icon: Icons.place_outlined,
-                      label: 'Place',
-                      selected: _selectedType == WishlistType.place,
-                      onTap: () =>
-                          setState(() => _selectedType = WishlistType.place),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _TypeChip(
-                      icon: Icons.restaurant_outlined,
-                      label: 'Food',
-                      selected: _selectedType == WishlistType.food,
-                      onTap: () =>
-                          setState(() => _selectedType = WishlistType.food),
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 26),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _WishlistCategoryDropdown(
+                  selectedType: _selectedType,
+                  onChanged: (WishlistType? type) {
+                    setState(() => _selectedType = type);
+                  },
+                ),
               ),
             ),
-            const SizedBox(height: 18),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: <Widget>[
-                  Text(
-                    'Sort',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF2EB9F8),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Icon(Icons.sort_rounded, color: Color(0xFF2EB9F8), size: 21),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             Expanded(
               child: _isLoading
                   ? const Center(
@@ -633,7 +604,7 @@ class _WishlistPageState extends State<WishlistPage> {
                   : _filteredItems.isEmpty
                   ? _WishlistStatusView(
                       message: AuthRepository.instance.isLoggedIn
-                          ? 'No ${_selectedType.name} item in wishlist.'
+                          ? 'No ${_selectedType?.label.toLowerCase() ?? 'item'} in wishlist.'
                           : 'Please sign in to use wishlist.',
                       actionLabel: AuthRepository.instance.isLoggedIn
                           ? null
@@ -1345,49 +1316,62 @@ class _WishlistCard extends StatelessWidget {
   }
 }
 
-class _TypeChip extends StatelessWidget {
-  const _TypeChip({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
+class _WishlistCategoryDropdown extends StatelessWidget {
+  const _WishlistCategoryDropdown({
+    required this.selectedType,
+    required this.onChanged,
   });
 
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+  final WishlistType? selectedType;
+  final ValueChanged<WishlistType?> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        height: 46,
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF81D4FA) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF81D4FA)),
+    return PopupMenuButton<WishlistType?>(
+      initialValue: selectedType,
+      offset: const Offset(0, 46),
+      elevation: 10,
+      color: Colors.white,
+      surfaceTintColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      constraints: const BoxConstraints(minWidth: 168),
+      onSelected: onChanged,
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<WishlistType?>>[
+        const PopupMenuItem<WishlistType?>(
+          value: null,
+          child: Text('All Categories'),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        ...WishlistType.values.map(
+          (WishlistType type) => PopupMenuItem<WishlistType?>(
+            value: type,
+            child: Text(type.label),
+          ),
+        ),
+      ],
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.42),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: const Color(0xFF7DD3FC), width: 1.2),
+        ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(
-              icon,
-              size: 18,
-              color: selected ? Colors.white : const Color(0xFF81D4FA),
-            ),
-            const SizedBox(width: 6),
             Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : const Color(0xFF81D4FA),
+              selectedType?.label ?? 'All Categories',
+              style: const TextStyle(
+                color: Color(0xFF2EB9F8),
+                fontSize: 19,
+                fontWeight: FontWeight.w500,
               ),
+            ),
+            const SizedBox(width: 7),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Color(0xFF2EB9F8),
+              size: 20,
             ),
           ],
         ),
@@ -1506,7 +1490,26 @@ class _NetworkImageWithFallback extends StatelessWidget {
   }
 }
 
-enum WishlistType { city, place, food }
+enum WishlistType { city, food, place, culture, activity, localProduct }
+
+extension WishlistTypeLabel on WishlistType {
+  String get label {
+    switch (this) {
+      case WishlistType.city:
+        return 'City';
+      case WishlistType.food:
+        return 'Food';
+      case WishlistType.place:
+        return 'Place';
+      case WishlistType.culture:
+        return 'Culture';
+      case WishlistType.activity:
+        return 'Activity';
+      case WishlistType.localProduct:
+        return 'Local Product';
+    }
+  }
+}
 
 class WishlistItem {
   const WishlistItem({
