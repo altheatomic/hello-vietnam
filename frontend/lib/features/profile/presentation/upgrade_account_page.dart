@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
 
 const Color _primaryCyan = Color(0xFF2EB9F8);
 const Color _gradientStart = Color(0xFFEFF6FF);
@@ -93,7 +94,9 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
     ),
   ];
 
+  final SubscriptionRepository _repository = SubscriptionRepository();
   late final AnimationController _controller;
+  late final Future<CurrentSubscriptionInfo?> _currentSubscriptionFuture;
   String _selectedPlanId = '6m';
 
   @override
@@ -103,6 +106,7 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
       vsync: this,
       duration: const Duration(milliseconds: 1100),
     )..forward();
+    _currentSubscriptionFuture = _repository.loadCurrentSubscription();
   }
 
   @override
@@ -212,7 +216,17 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
                           child: const _PremiumBadge(),
                         ),
                       ),
-                      const SizedBox(height: 38),
+                      const SizedBox(height: 18),
+                      _Entrance(
+                        controller: _controller,
+                        begin: 0.22,
+                        end: 0.58,
+                        offset: const Offset(0, 0.06),
+                        child: _CurrentPlanStatus(
+                          subscriptionFuture: _currentSubscriptionFuture,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
                       _Entrance(
                         controller: _controller,
                         begin: 0.28,
@@ -500,6 +514,91 @@ class _PremiumBadge extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CurrentPlanStatus extends StatelessWidget {
+  const _CurrentPlanStatus({required this.subscriptionFuture});
+
+  final Future<CurrentSubscriptionInfo?> subscriptionFuture;
+
+  String _planLabel(
+    BuildContext context,
+    CurrentSubscriptionInfo? subscription,
+  ) {
+    if (subscription == null) return context.l10n.ui('Free');
+
+    switch (subscription.planCode) {
+      case '1m':
+        return context.l10n.ui('1 Month');
+      case '6m':
+        return context.l10n.ui('6 Months');
+      case '12m':
+        return context.l10n.ui('12 Months');
+    }
+
+    final int days = subscription.durationDays;
+    if (days >= 360) return context.l10n.ui('12 Months');
+    if (days >= 170) return context.l10n.ui('6 Months');
+    if (days >= 28) return context.l10n.ui('1 Month');
+
+    return subscription.planName.trim().isEmpty
+        ? context.l10n.ui('Free')
+        : subscription.planName.trim();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<CurrentSubscriptionInfo?>(
+      future: subscriptionFuture,
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<CurrentSubscriptionInfo?> snapshot,
+          ) {
+            final String planLabel = _planLabel(context, snapshot.data);
+            return Center(
+              child: _GlassPanel(
+                borderRadius: 999,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: _primaryCyan.withValues(alpha: 0.14),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.workspace_premium_rounded,
+                        size: 17,
+                        color: _primaryCyan,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        context.l10n.currentPlan(planLabel),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF374151),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
     );
   }
 }

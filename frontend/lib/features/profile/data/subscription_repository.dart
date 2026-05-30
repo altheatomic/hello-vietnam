@@ -57,6 +57,20 @@ class SubscriptionPurchaseResult {
   final DateTime? subscriptionEndDate;
 }
 
+class CurrentSubscriptionInfo {
+  const CurrentSubscriptionInfo({
+    required this.planCode,
+    required this.planName,
+    required this.durationDays,
+    required this.endDate,
+  });
+
+  final String planCode;
+  final String planName;
+  final int durationDays;
+  final DateTime? endDate;
+}
+
 class SubscriptionRepository {
   SubscriptionRepository({SupabaseClient? client})
     : _client = client ?? Supabase.instance.client;
@@ -118,6 +132,42 @@ class SubscriptionRepository {
       );
     } catch (_) {
       return fallbackPlan(code);
+    }
+  }
+
+  Future<CurrentSubscriptionInfo?> loadCurrentSubscription() async {
+    final User? user = _client.auth.currentUser;
+    if (user == null) return null;
+
+    try {
+      final List<dynamic> rows = await _client
+          .from('premium_subscription')
+          .select(
+            'end_date, subscription_plan:id_plan(code, name, duration_days)',
+          )
+          .eq('id_user', user.id)
+          .eq('status', 'active')
+          .gt('end_date', DateTime.now().toUtc().toIso8601String())
+          .order('end_date', ascending: false)
+          .limit(1);
+
+      if (rows.isEmpty) return null;
+
+      final Map<String, dynamic> row = Map<String, dynamic>.from(
+        rows.first as Map,
+      );
+      final Object? rawPlan = row['subscription_plan'];
+      if (rawPlan is! Map) return null;
+
+      final Map<String, dynamic> plan = Map<String, dynamic>.from(rawPlan);
+      return CurrentSubscriptionInfo(
+        planCode: plan['code']?.toString() ?? '',
+        planName: plan['name']?.toString() ?? '',
+        durationDays: (plan['duration_days'] as num?)?.toInt() ?? 0,
+        endDate: DateTime.tryParse(row['end_date']?.toString() ?? ''),
+      );
+    } catch (_) {
+      return null;
     }
   }
 

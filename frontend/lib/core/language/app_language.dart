@@ -147,6 +147,8 @@ class AppStrings {
       ? 'Có hiệu lực trong $days ngày kể từ ngày đổi'
       : 'Valid for $days days from redemption date';
   String justPrice(String price) => _vi ? 'Chỉ $price \$' : 'Just $price \$';
+  String currentPlan(String plan) =>
+      _vi ? 'Gói hiện tại: $plan' : 'Current plan: $plan';
   String daysDone(int days) => _vi ? '$days ngày xong' : '$days days done';
   String get firstStop => _vi ? 'Điểm đầu' : 'First stop';
   String get nextStop => _vi ? 'Điểm tiếp' : 'Next stop';
@@ -353,6 +355,8 @@ class AppStrings {
     'Premium Account': 'Tài khoản Premium',
     'Premium Account Privileges': 'Quyền lợi tài khoản Premium',
     'Select your plan:': 'Chọn gói của bạn:',
+    'Free': 'Miễn phí',
+    'Current plan': 'Gói hiện tại',
     '1 Month': '1 tháng',
     '6 Months': '6 tháng',
     '12 Months': '12 tháng',
