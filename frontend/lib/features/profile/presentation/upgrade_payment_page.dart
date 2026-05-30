@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
 
 class _PaymentMethod {
@@ -135,16 +136,16 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
       await showDialog<void>(
         context: context,
         builder: (BuildContext dialogContext) => AlertDialog(
-          title: const Text('Payment confirmed'),
+          title: Text(context.l10n.ui('Payment confirmed')),
           content: Text(
-            'Your premium subscription is active.\n'
-            'Paid: ${_formatMoney(result.finalAmountMinor)}'
-            '${result.discountMinor > 0 ? '\nVoucher discount: ${_formatMoney(result.discountMinor)}' : ''}',
+            '${context.l10n.ui('Your premium subscription is active.')}\n'
+            '${context.l10n.ui('Paid')}: ${_formatMoney(result.finalAmountMinor)}'
+            '${result.discountMinor > 0 ? '\n${context.l10n.ui('Voucher discount')}: ${_formatMoney(result.discountMinor)}' : ''}',
           ),
           actions: <Widget>[
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('OK'),
+              child: Text(context.l10n.ui('OK')),
             ),
           ],
         ),
@@ -184,11 +185,11 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                       color: Color(0xFF1C1C1C),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Upgrade account',
+                      context.l10n.ui('Upgrade account'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF121212),
@@ -359,7 +360,10 @@ class _OrderSummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _AmountRow(label: 'Subtotal', value: formatMoney(plan.priceMinor)),
+          _AmountRow(
+            label: context.l10n.ui('Subtotal'),
+            value: formatMoney(plan.priceMinor),
+          ),
           if (discountMinor > 0)
             _AmountRow(
               label: 'Voucher',
@@ -367,7 +371,7 @@ class _OrderSummaryCard extends StatelessWidget {
             ),
           const Divider(height: 22),
           _AmountRow(
-            label: 'Total',
+            label: context.l10n.ui('Total'),
             value: formatMoney(finalAmountMinor),
             isStrong: true,
           ),
@@ -405,9 +409,9 @@ class _VoucherApplyCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Voucher',
-            style: TextStyle(
+          Text(
+            context.l10n.ui('Voucher'),
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
@@ -422,7 +426,7 @@ class _VoucherApplyCard extends StatelessWidget {
                   enabled: !hasVoucher,
                   textCapitalization: TextCapitalization.characters,
                   decoration: InputDecoration(
-                    hintText: 'Enter voucher code',
+                    hintText: context.l10n.ui('Enter voucher code'),
                     isDense: true,
                     filled: true,
                     fillColor: const Color(0xFFF4F7F9),

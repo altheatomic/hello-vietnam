@@ -1,27 +1,49 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
-import 'package:hellovietnam/app/theme.dart';
-import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
-// ── Data ─────────────────────────────────────────────────────────────
+const Color _primaryCyan = Color(0xFF2EB9F8);
+const Color _gradientStart = Color(0xFFEFF6FF);
+const Color _gradientMiddle = Color(0xFFECFEFF);
+const Color _gradientEnd = Color(0xFFF0FDFA);
+const Color _selectedCardStart = Color(0xFF22D3EE);
+const Color _selectedCardMiddle = Color(0xFF60A5FA);
+const Color _selectedCardEnd = Color(0xFF06B6D4);
+const Color _unselectedCardStart = Color(0xFF67E8F9);
+const Color _unselectedCardMiddle = Color(0xFF93C5FD);
+const Color _unselectedCardEnd = Color(0xFF5EEAD4);
 
-class _Plan {
-  const _Plan({required this.id, required this.duration, required this.label});
+class _SubscriptionPlan {
+  const _SubscriptionPlan({
+    required this.id,
+    required this.duration,
+    required this.price,
+    required this.months,
+    this.isPopular = false,
+  });
 
   final String id;
   final String duration;
-
-  /// Price line shown inside the card (e.g. "Just 4.99 $").
-  final String label;
+  final String price;
+  final int months;
+  final bool isPopular;
 }
 
-// ── Page ─────────────────────────────────────────────────────────────
+class _PrivilegeItem {
+  const _PrivilegeItem({
+    required this.icon,
+    required this.title,
+    required this.color,
+  });
 
-/// Pushed from Profile → "Upgrade Account".
-///
-/// Shows three subscription plans. Tapping "?" shows a dialog listing
-/// Premium privileges. Tapping "Continue" pushes the payment method page.
+  final String icon;
+  final String title;
+  final Color color;
+}
+
 class UpgradeAccountPage extends StatefulWidget {
   const UpgradeAccountPage({super.key});
 
@@ -29,153 +51,680 @@ class UpgradeAccountPage extends StatefulWidget {
   State<UpgradeAccountPage> createState() => _UpgradeAccountPageState();
 }
 
-class _UpgradeAccountPageState extends State<UpgradeAccountPage> {
-  static const List<_Plan> _plans = [
-    _Plan(id: '1m', duration: '1 Month', label: 'Just 4.99 \$'),
-    _Plan(id: '6m', duration: '6 Months', label: '19.99 \$'),
-    _Plan(id: '12m', duration: '12 Months', label: '29.99 \$'),
+class _UpgradeAccountPageState extends State<UpgradeAccountPage>
+    with SingleTickerProviderStateMixin {
+  static const List<_SubscriptionPlan> _plans = <_SubscriptionPlan>[
+    _SubscriptionPlan(id: '1m', duration: '1 Month', price: '4.99', months: 1),
+    _SubscriptionPlan(
+      id: '6m',
+      duration: '6 Months',
+      price: '19.99',
+      months: 6,
+      isPopular: true,
+    ),
+    _SubscriptionPlan(
+      id: '12m',
+      duration: '12 Months',
+      price: '29.99',
+      months: 12,
+    ),
   ];
 
-  String _selectedId = '6m';
+  static const List<_PrivilegeItem> _privileges = <_PrivilegeItem>[
+    _PrivilegeItem(
+      icon: '🤖',
+      title: 'Access to AI Object Identification',
+      color: Color(0xFF2EB9F8),
+    ),
+    _PrivilegeItem(
+      icon: '💬',
+      title: 'Practice Essential Vietnamese Phrases',
+      color: Color(0xFF10B981),
+    ),
+    _PrivilegeItem(
+      icon: '✨',
+      title: 'Generate Personalized Itinerary',
+      color: Color(0xFFF59E0B),
+    ),
+    _PrivilegeItem(
+      icon: '🎁',
+      title: 'Many more exclusive voucher & coupon',
+      color: Color(0xFFEF4444),
+    ),
+  ];
 
-  void _showPrivileges() {
-    showDialog<void>(
-      context: context,
-      builder: (_) => const _PrivilegesDialog(),
-    );
+  late final AnimationController _controller;
+  String _selectedPlanId = '6m';
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onPlanSelected(String planId) {
+    setState(() => _selectedPlanId = planId);
   }
 
   void _onContinue() {
-    context.push(AppRoutes.upgradePayment, extra: _selectedId);
+    context.push(AppRoutes.upgradePayment, extra: _selectedPlanId);
+  }
+
+  Future<void> _showPrivilegesModal() {
+    return showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder:
+          (BuildContext context, Animation<double> a1, Animation<double> a2) {
+            return Center(
+              child: _PrivilegesModal(
+                privileges: _privileges,
+                onClose: () => Navigator.of(context).pop(),
+              ),
+            );
+          },
+      transitionBuilder:
+          (
+            BuildContext context,
+            Animation<double> animation,
+            Animation<double> secondaryAnimation,
+            Widget child,
+          ) {
+            final Animation<double> curved = CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+              reverseCurve: Curves.easeInCubic,
+            );
+            return BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: 4 * animation.value,
+                sigmaY: 4 * animation.value,
+              ),
+              child: FadeTransition(
+                opacity: curved,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.1),
+                    end: Offset.zero,
+                  ).animate(curved),
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.95, end: 1).animate(curved),
+                    child: child,
+                  ),
+                ),
+              ),
+            );
+          },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final double topInset = MediaQuery.of(context).padding.top;
+    final MediaQueryData media = MediaQuery.of(context);
+    final double bottomInset = media.padding.bottom;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
+      backgroundColor: _gradientStart,
+      body: Stack(
         children: <Widget>[
-          // ── Header — mirrors Profile/Currency header ──────────
-          Container(
-            color: Colors.white,
-            padding: EdgeInsets.fromLTRB(10, topInset + 8, 10, 10),
-            child: SizedBox(
-              height: 48,
-              child: Row(
-                children: <Widget>[
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(
-                      Icons.chevron_left,
-                      size: 26,
-                      color: Color(0xFF1C1C1C),
-                    ),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Upgrade Account',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF121212),
+          const Positioned.fill(child: _UpgradeBackground()),
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: <Widget>[
+              SliverAppBar(
+                pinned: true,
+                automaticallyImplyLeading: false,
+                toolbarHeight: 72,
+                expandedHeight: media.padding.top + 72,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                flexibleSpace: _GlassHeader(
+                  topPadding: media.padding.top,
+                  onBack: () => context.pop(),
+                  onHelp: _showPrivilegesModal,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(24, 32, 24, bottomInset + 112),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Center(
+                        child: _Entrance(
+                          controller: _controller,
+                          begin: 0.18,
+                          end: 0.56,
+                          offset: Offset.zero,
+                          scaleBegin: 0.9,
+                          child: const _PremiumBadge(),
+                        ),
                       ),
-                    ),
-                  ),
-                  // Help button — dark square with "?" icon
-                  GestureDetector(
-                    onTap: _showPrivileges,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AppColors.textPrimary,
-                        borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 38),
+                      _Entrance(
+                        controller: _controller,
+                        begin: 0.28,
+                        end: 0.64,
+                        offset: const Offset(-0.08, 0),
+                        child: Text(
+                          context.l10n.ui('Select your plan:'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF374151),
+                          ),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.question_mark_rounded,
-                        size: 20,
-                        color: Colors.white,
+                      const SizedBox(height: 20),
+                      ...List<Widget>.generate(_plans.length, (int index) {
+                        final _SubscriptionPlan plan = _plans[index];
+                        return _Entrance(
+                          controller: _controller,
+                          begin: 0.36 + (index * 0.09),
+                          end: 0.72 + (index * 0.07),
+                          offset: const Offset(-0.08, 0),
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _PlanCard(
+                              plan: plan,
+                              isSelected: plan.id == _selectedPlanId,
+                              onTap: () => _onPlanSelected(plan.id),
+                            ),
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 18),
+                      _Entrance(
+                        controller: _controller,
+                        begin: 0.72,
+                        end: 0.96,
+                        offset: const Offset(0, 0.08),
+                        child: _BenefitsPreviewCard(
+                          privileges: _privileges,
+                          onMoreTap: _showPrivilegesModal,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _Entrance(
+              controller: _controller,
+              begin: 0.78,
+              end: 1,
+              offset: const Offset(0, 0.08),
+              child: _BottomContinueBar(onContinue: _onContinue),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpgradeBackground extends StatelessWidget {
+  const _UpgradeBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[_gradientStart, _gradientMiddle, _gradientEnd],
+        ),
+      ),
+      child: Stack(
+        children: const <Widget>[
+          Positioned(
+            top: 80,
+            right: 40,
+            child: _BlurCircle(size: 112, color: Color(0x4D67E8F9)),
+          ),
+          Positioned(
+            bottom: 160,
+            left: 40,
+            child: _BlurCircle(size: 160, color: Color(0x4D93C5FD)),
+          ),
+          Positioned(
+            top: 360,
+            right: 80,
+            child: _BlurCircle(size: 96, color: Color(0x4D5EEAD4)),
+          ),
+          Positioned(
+            top: 260,
+            left: 92,
+            child: _BlurCircle(size: 128, color: Color(0x33DDD6FE)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BlurCircle extends StatelessWidget {
+  const _BlurCircle({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+    );
+  }
+}
+
+class _GlassHeader extends StatelessWidget {
+  const _GlassHeader({
+    required this.topPadding,
+    required this.onBack,
+    required this.onHelp,
+  });
+
+  final double topPadding;
+  final VoidCallback onBack;
+  final VoidCallback onHelp;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: <Color>[
+                _gradientStart.withValues(alpha: 0.95),
+                _gradientMiddle.withValues(alpha: 0.95),
+                _gradientEnd.withValues(alpha: 0.95),
+              ],
+            ),
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.white.withValues(alpha: 0.5),
+                width: 1,
               ),
             ),
           ),
+          child: Row(
+            children: <Widget>[
+              _CircleIconButton(
+                icon: Icons.arrow_back_rounded,
+                onTap: onBack,
+                tooltip: context.l10n.ui('Back'),
+              ),
+              Expanded(
+                child: Text(
+                  context.l10n.ui('Upgrade Account'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+              ),
+              _CircleIconButton(
+                icon: Icons.help_outline_rounded,
+                onTap: onHelp,
+                tooltip: context.l10n.ui('Premium Account Privileges'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-          // ── Plan banner ───────────────────────────────────────
-          Container(
-            width: double.infinity,
-            color: AppColors.primaryLight.withValues(alpha: 0.25),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: const Text(
-              'Select your plan:',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+class _CircleIconButton extends StatelessWidget {
+  const _CircleIconButton({
+    required this.icon,
+    required this.onTap,
+    required this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.8),
+        shape: const CircleBorder(),
+        elevation: 8,
+        shadowColor: Colors.black.withValues(alpha: 0.14),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(icon, size: 24, color: const Color(0xFF374151)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumBadge extends StatelessWidget {
+  const _PremiumBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: <Widget>[
+        Positioned.fill(
+          child: Transform.translate(
+            offset: const Offset(0, 18),
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: const Color(0xFFFBBF24).withValues(alpha: 0.4),
+                ),
               ),
             ),
           ),
-
-          // ── Plan cards ────────────────────────────────────────
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppConstants.pagePadding,
-                28,
-                AppConstants.pagePadding,
-                0,
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: <Color>[
+                Color(0xFFFCD34D),
+                Color(0xFFFDE047),
+                Color(0xFFFBBF24),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: const Color(0xFFFBBF24).withValues(alpha: 0.28),
+                blurRadius: 32,
+                offset: const Offset(0, 16),
               ),
-              child: Column(
-                children: _plans
-                    .map(
-                      (plan) => _PlanCard(
-                        plan: plan,
-                        isSelected: plan.id == _selectedId,
-                        onTap: () => setState(() => _selectedId = plan.id),
-                      ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Text('✨', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 10),
+              Text(
+                context.l10n.ui('Premium Account'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text('✨', style: TextStyle(fontSize: 20)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({
+    required this.plan,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final _SubscriptionPlan plan;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: context.l10n.ui(plan.duration),
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          scale: isSelected ? 1.02 : 1,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: isSelected
+                  ? const LinearGradient(
+                      colors: <Color>[
+                        Color(0xFFCFFAFE),
+                        Color(0xFFDDEAFB),
+                        Color(0xFFCFFAFE),
+                      ],
                     )
-                    .toList(),
+                  : null,
+              color: isSelected ? null : Colors.white.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected ? const Color(0xFF06B6D4) : Colors.white,
+                width: isSelected ? 2 : 1,
               ),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: Colors.black.withValues(
+                    alpha: isSelected ? 0.12 : 0.08,
+                  ),
+                  blurRadius: isSelected ? 24 : 14,
+                  offset: Offset(0, isSelected ? 12 : 8),
+                ),
+              ],
             ),
-          ),
-
-          // ── Continue button ───────────────────────────────────
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppConstants.pagePadding,
-                8,
-                AppConstants.pagePadding,
-                16,
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _onContinue,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryLight,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.cardRadius,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 20,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: isSelected
+                                ? const <Color>[
+                                    _selectedCardStart,
+                                    _selectedCardMiddle,
+                                    _selectedCardEnd,
+                                  ]
+                                : const <Color>[
+                                    _unselectedCardStart,
+                                    _unselectedCardMiddle,
+                                    _unselectedCardEnd,
+                                  ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              context.l10n.ui(plan.duration),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              context.l10n.justPrice(plan.price),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white.withValues(alpha: 0.9),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                    const SizedBox(width: 24),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF06C8DF)
+                            : const Color(0xFFE5E7EB),
+                        borderRadius: BorderRadius.circular(12),
+                        border: isSelected
+                            ? null
+                            : Border.all(
+                                color: const Color(0xFF9CA3AF),
+                                width: 2,
+                              ),
+                      ),
+                      child: isSelected
+                          ? const Icon(
+                              Icons.check_rounded,
+                              color: Colors.white,
+                              size: 32,
+                            )
+                          : null,
+                    ),
+                  ],
+                ),
+                if (plan.isPopular)
+                  Positioned(
+                    top: -24,
+                    right: -24,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: <Color>[Color(0xFFEC4899), Color(0xFFF43F5E)],
+                        ),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(12),
+                          topRight: Radius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        context.l10n.ui('POPULAR'),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
                   ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BenefitsPreviewCard extends StatelessWidget {
+  const _BenefitsPreviewCard({
+    required this.privileges,
+    required this.onMoreTap,
+  });
+
+  final List<_PrivilegeItem> privileges;
+  final VoidCallback onMoreTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<_PrivilegeItem> previewItems = privileges.take(2).toList();
+    return _GlassPanel(
+      borderRadius: 16,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Text('✨', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 10),
+              Text(
+                context.l10n.ui("What you'll get:"),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF374151),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...previewItems.map((PrivilegeItem item) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _CompactPrivilegeRow(item: item),
+            );
+          }),
+          const SizedBox(height: 6),
+          InkWell(
+            onTap: onMoreTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                context.l10n.ui('+ 2 more benefits'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _primaryCyan,
                 ),
               ),
             ),
@@ -186,93 +735,179 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage> {
   }
 }
 
-// ── Plan card ─────────────────────────────────────────────────────────
+typedef PrivilegeItem = _PrivilegeItem;
 
-class _PlanCard extends StatelessWidget {
-  const _PlanCard({
-    required this.plan,
-    required this.isSelected,
-    required this.onTap,
-  });
+class _CompactPrivilegeRow extends StatelessWidget {
+  const _CompactPrivilegeRow({required this.item});
 
-  final _Plan plan;
-  final bool isSelected;
-  final VoidCallback onTap;
+  final _PrivilegeItem item;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: AppConstants.defaultAnimation,
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.primaryLight.withValues(alpha: 0.35),
-          borderRadius: BorderRadius.circular(AppConstants.cardRadius),
-          border: Border.all(color: AppColors.primary, width: 1.5),
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 24,
+          height: 24,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: item.color.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+          ),
+          child: Text(item.icon, style: const TextStyle(fontSize: 14)),
         ),
-        child: Row(
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            context.l10n.ui(item.title),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF4B5563),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BottomContinueBar extends StatelessWidget {
+  const _BottomContinueBar({required this.onContinue});
+
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            16,
+            24,
+            MediaQuery.of(context).padding.bottom + 24,
+          ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: <Color>[
+                _gradientMiddle.withValues(alpha: 0.72),
+                _gradientEnd.withValues(alpha: 0.82),
+              ],
+            ),
+            border: Border(
+              top: BorderSide(color: Colors.white.withValues(alpha: 0.55)),
+            ),
+          ),
+          child: _GradientButton(
+            label: context.l10n.ui('Continue'),
+            height: 56,
+            onTap: onContinue,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PrivilegesModal extends StatelessWidget {
+  const _PrivilegesModal({required this.privileges, required this.onClose});
+
+  final List<_PrivilegeItem> privileges;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width * 0.9;
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: width.clamp(0, 448).toDouble(),
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[
+              Color(0xFFCFFAFE),
+              Color(0xFFDDEAFB),
+              Color(0xFFCFFAFE),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.22),
+              blurRadius: 32,
+              offset: const Offset(0, 18),
+            ),
+          ],
+        ),
+        child: Stack(
           children: <Widget>[
-            // ── Plan info pill ──────────────────────────────────
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(
-                    AppConstants.buttonRadius,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  ShaderMask(
+                    shaderCallback: (Rect bounds) => const LinearGradient(
+                      colors: <Color>[
+                        Color(0xFFFBBF24),
+                        Color(0xFFFDE047),
+                        Color(0xFFF59E0B),
+                      ],
+                    ).createShader(bounds),
+                    child: Text(
+                      context.l10n.ui('Premium Account Privileges'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
-                ),
-                child: Column(
-                  children: <Widget>[
-                    Text(
-                      plan.duration,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      plan.label,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
+                  const SizedBox(height: 34),
+                  ...List<Widget>.generate(privileges.length, (int index) {
+                    return _ModalPrivilegeCard(
+                      item: privileges[index],
+                      index: index,
+                    );
+                  }),
+                  const SizedBox(height: 20),
+                  _GradientButton(
+                    label: context.l10n.ui('Continue'),
+                    height: 48,
+                    onTap: onClose,
+                  ),
+                ],
               ),
             ),
-
-            const SizedBox(width: 14),
-
-            // ── Checkbox ────────────────────────────────────────
-            AnimatedContainer(
-              duration: AppConstants.defaultAnimation,
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary
-                    : AppColors.primaryLight.withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(6),
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Material(
+                color: Colors.white.withValues(alpha: 0.82),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  onTap: onClose,
+                  customBorder: const CircleBorder(),
+                  child: const SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: Color(0xFF4B5563),
+                      size: 22,
+                    ),
+                  ),
+                ),
               ),
-              child: isSelected
-                  ? const Icon(
-                      Icons.check_rounded,
-                      size: 20,
-                      color: Colors.white,
-                    )
-                  : null,
             ),
           ],
         ),
@@ -281,103 +916,228 @@ class _PlanCard extends StatelessWidget {
   }
 }
 
-// ── Privileges dialog ─────────────────────────────────────────────────
+class _ModalPrivilegeCard extends StatelessWidget {
+  const _ModalPrivilegeCard({required this.item, required this.index});
 
-/// Shown when the "?" help button is tapped.
-class _PrivilegesDialog extends StatelessWidget {
-  const _PrivilegesDialog();
-
-  static const List<String> _privileges = <String>[
-    'Access to AI Object Identification',
-    'Practice Essential Vietnamese Phrases',
-    'Generate Personalized Itinerary',
-    'Many more exclusive voucher & coupon',
-  ];
+  final _PrivilegeItem item;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: Duration(milliseconds: 420 + (index * 80)),
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double value, Widget? child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(-20 * (1 - value), 0),
+            child: child,
+          ),
+        );
+      },
       child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.primaryLight,
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.white.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: <Widget>[
-            // ── Close button ──────────────────────────────────
-            Align(
-              alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  Icons.close_rounded,
-                  size: 24,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 4),
-
-            // ── Title in gold — matches spec ──────────────────
-            const Text(
-              'Premium Account Privileges',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: AppColors.accentGold,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // ── Privilege cards ───────────────────────────────
-            ..._privileges.map(
-              (p) => Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppConstants.cardRadius),
-                ),
-                child: Text(
-                  p,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+            Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: item.color.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: item.color.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
-                ),
+                ],
               ),
+              child: Text(item.icon, style: const TextStyle(fontSize: 24)),
             ),
-
-            const SizedBox(height: 6),
-
-            // ── Continue dismiss ──────────────────────────────
-            GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: const Text(
-                'Continue',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                context.l10n.ui(item.title),
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1F2937),
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _GradientButton extends StatelessWidget {
+  const _GradientButton({
+    required this.label,
+    required this.height,
+    required this.onTap,
+  });
+
+  final String label;
+  final double height;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 1, end: 1),
+      duration: const Duration(milliseconds: 200),
+      builder: (BuildContext context, double scale, Widget? child) {
+        return child!;
+      },
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Ink(
+            height: height,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: <Color>[
+                  Color(0xFF22D3EE),
+                  Color(0xFF60A5FA),
+                  Color(0xFF06B6D4),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: _primaryCyan.withValues(alpha: 0.24),
+                  blurRadius: 22,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassPanel extends StatelessWidget {
+  const _GlassPanel({
+    required this.child,
+    required this.padding,
+    required this.borderRadius,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          width: double.infinity,
+          padding: padding,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _Entrance extends StatelessWidget {
+  const _Entrance({
+    required this.controller,
+    required this.begin,
+    required this.end,
+    required this.child,
+    this.offset = Offset.zero,
+    this.scaleBegin = 1,
+  });
+
+  final AnimationController controller;
+  final double begin;
+  final double end;
+  final Widget child;
+  final Offset offset;
+  final double scaleBegin;
+
+  @override
+  Widget build(BuildContext context) {
+    final Animation<double> curved = CurvedAnimation(
+      parent: controller,
+      curve: Interval(
+        begin,
+        end.clamp(begin + 0.01, 1).toDouble(),
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    return AnimatedBuilder(
+      animation: curved,
+      child: child,
+      builder: (BuildContext context, Widget? child) {
+        final double value = curved.value;
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(
+              offset.dx * (1 - value) * 240,
+              offset.dy * (1 - value) * 240,
+            ),
+            child: Transform.scale(
+              scale: scaleBegin + ((1 - scaleBegin) * value),
+              child: child,
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -10,11 +11,14 @@ class ChangePasswordPage extends StatefulWidget {
 }
 
 class _ChangePasswordPageState extends State<ChangePasswordPage> {
-  static const String _illustrationAsset = 'assets/images/Auth_Image/Password.png';
+  static const String _illustrationAsset =
+      'assets/images/Auth_Image/Password.png';
 
-  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _currentPasswordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool _obscureCurrent = true;
   bool _obscureNew = true;
@@ -30,7 +34,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.ui(message))));
   }
 
   void _onSave() {
@@ -61,7 +67,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        child: _isSuccess ? _buildSuccessScreen(context) : _buildChangePasswordForm(context),
+        child: _isSuccess
+            ? _buildSuccessScreen(context)
+            : _buildChangePasswordForm(context),
       ),
     );
   }
@@ -84,7 +92,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     return const LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: <Color>[Colors.white, Colors.white, Colors.transparent],
+                      colors: <Color>[
+                        Colors.white,
+                        Colors.white,
+                        Colors.transparent,
+                      ],
                       stops: <double>[0.0, 0.75, 1.0],
                     ).createShader(bounds);
                   },
@@ -95,11 +107,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     width: double.infinity,
                     height: totalHeight,
                     alignment: Alignment.topCenter,
-                    errorBuilder: (
-                      BuildContext context,
-                      Object error,
-                      StackTrace? stackTrace,
-                    ) => const SizedBox.shrink(),
+                    errorBuilder:
+                        (
+                          BuildContext context,
+                          Object error,
+                          StackTrace? stackTrace,
+                        ) => const SizedBox.shrink(),
                   ),
                 ),
               ),
@@ -111,13 +124,17 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   children: <Widget>[
                     IconButton(
                       onPressed: () => context.pop(),
-                      icon: const Icon(Icons.chevron_left, size: 30, color: Colors.black87),
+                      icon: const Icon(
+                        Icons.chevron_left,
+                        size: 30,
+                        color: Colors.black87,
+                      ),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Change Password',
+                        context.l10n.ui('Change Password'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF1A1A2E),
@@ -137,10 +154,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              const Text(
-                'Change your password',
+              Text(
+                context.l10n.ui('Change your password'),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF1A1A2E),
@@ -149,13 +166,16 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               const SizedBox(height: 24),
               _buildTextField(
                 controller: _currentPasswordController,
-                hint: 'Enter your current password',
+                hint: context.l10n.ui('Enter your current password'),
                 icon: Icons.lock_outline,
                 obscure: _obscureCurrent,
                 suffixIcon: IconButton(
-                  onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
+                  onPressed: () =>
+                      setState(() => _obscureCurrent = !_obscureCurrent),
                   icon: Icon(
-                    _obscureCurrent ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscureCurrent
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: Colors.grey.shade400,
                   ),
                 ),
@@ -163,13 +183,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _newPasswordController,
-                hint: 'Enter your new password',
+                hint: context.l10n.ui('Enter your new password'),
                 icon: Icons.lock_outline,
                 obscure: _obscureNew,
                 suffixIcon: IconButton(
                   onPressed: () => setState(() => _obscureNew = !_obscureNew),
                   icon: Icon(
-                    _obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscureNew
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: Colors.grey.shade400,
                   ),
                 ),
@@ -177,19 +199,22 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _confirmPasswordController,
-                hint: 'Confirm your new password',
+                hint: context.l10n.ui('Confirm your new password'),
                 icon: Icons.lock_outline,
                 obscure: _obscureConfirm,
                 suffixIcon: IconButton(
-                  onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                  onPressed: () =>
+                      setState(() => _obscureConfirm = !_obscureConfirm),
                   icon: Icon(
-                    _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscureConfirm
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: Colors.grey.shade400,
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-              _buildMainButton('Save', _onSave),
+              _buildMainButton(context.l10n.ui('Save'), _onSave),
             ],
           ),
         ),
@@ -211,20 +236,18 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             width: 200,
             height: 200,
             fit: BoxFit.contain,
-            errorBuilder: (
-              BuildContext context,
-              Object error,
-              StackTrace? stackTrace,
-            ) => const Icon(
-              Icons.check_circle_outline,
-              size: 80,
-              color: Color(0xFF42A5F5),
-            ),
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stackTrace) =>
+                    const Icon(
+                      Icons.check_circle_outline,
+                      size: 80,
+                      color: Color(0xFF42A5F5),
+                    ),
           ),
         ),
         const SizedBox(height: 40),
-        const Text(
-          'Congratulations!',
+        Text(
+          context.l10n.ui('Congratulations!'),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 24,
@@ -234,17 +257,17 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         ),
         const SizedBox(height: 12),
         Text(
-          'Your password has been changed',
+          context.l10n.ui('Your password has been changed'),
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 15,
-            color: Colors.grey.shade500,
-          ),
+          style: TextStyle(fontSize: 15, color: Colors.grey.shade500),
         ),
         const SizedBox(height: 40),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: _buildMainButton('Back to Login', () => context.go(AppRoutes.login)),
+          child: _buildMainButton(
+            context.l10n.ui('Back to Login'),
+            () => context.go(AppRoutes.login),
+          ),
         ),
         const SizedBox(height: 50),
       ],
@@ -294,7 +317,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           backgroundColor: const Color(0xFF81D4FA),
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
         child: Text(label),

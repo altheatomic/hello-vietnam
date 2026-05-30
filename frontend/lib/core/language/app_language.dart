@@ -1,0 +1,672 @@
+import 'package:flutter/material.dart';
+
+import '../storage/local_storage.dart';
+
+enum AppLanguage {
+  english('en', 'English', 'English', 'gb'),
+  vietnamese('vi', 'Tiếng Việt', 'Vietnamese', 'vn');
+
+  const AppLanguage(
+    this.code,
+    this.nativeName,
+    this.englishName,
+    this.flagCode,
+  );
+
+  final String code;
+  final String nativeName;
+  final String englishName;
+  final String flagCode;
+
+  Locale get locale => Locale(code);
+
+  static AppLanguage fromCode(String? code) {
+    return AppLanguage.values.firstWhere(
+      (AppLanguage language) => language.code == code,
+      orElse: () => AppLanguage.english,
+    );
+  }
+}
+
+class AppLanguageController extends ChangeNotifier {
+  AppLanguageController._();
+
+  static final AppLanguageController instance = AppLanguageController._();
+  static const String _storageKey = 'app_language_code';
+
+  AppLanguage _language = AppLanguage.english;
+
+  AppLanguage get language => _language;
+  String get languageCode => _language.code;
+  Locale get locale => _language.locale;
+
+  Future<void> initialize() async {
+    final String? storedCode = LocalStorage.instance.getString(_storageKey);
+    _language = AppLanguage.fromCode(storedCode);
+  }
+
+  Future<void> setLanguage(AppLanguage language) async {
+    if (_language == language) return;
+    _language = language;
+    notifyListeners();
+    await LocalStorage.instance.setString(_storageKey, language.code);
+  }
+}
+
+class AppLanguageScope extends InheritedNotifier<AppLanguageController> {
+  const AppLanguageScope({
+    super.key,
+    required AppLanguageController controller,
+    required super.child,
+  }) : super(notifier: controller);
+
+  static AppLanguageController controllerOf(BuildContext context) {
+    final AppLanguageScope? scope = context
+        .dependOnInheritedWidgetOfExactType<AppLanguageScope>();
+    return scope?.notifier ?? AppLanguageController.instance;
+  }
+
+  static AppLanguage languageOf(BuildContext context) =>
+      controllerOf(context).language;
+}
+
+extension AppLanguageBuildContext on BuildContext {
+  AppLanguageController get languageController =>
+      AppLanguageScope.controllerOf(this);
+
+  AppStrings get l10n => AppStrings.of(AppLanguageScope.languageOf(this));
+}
+
+class AppStrings {
+  const AppStrings._(this.appLanguage);
+
+  final AppLanguage appLanguage;
+
+  static AppStrings of(AppLanguage language) => AppStrings._(language);
+
+  bool get _vi => appLanguage == AppLanguage.vietnamese;
+
+  String get appName => 'Hello Vietnam';
+  String get home => _vi ? 'Trang chủ' : 'Home';
+  String get tripPlanner => _vi ? 'Lịch trình' : 'Trip Planner';
+  String get forum => _vi ? 'Diễn đàn' : 'Forum';
+  String get profile => _vi ? 'Hồ sơ' : 'Profile';
+  String get translate => _vi ? 'Dịch' : 'Translate';
+  String get sendReport => _vi ? 'Báo lỗi' : 'Send Report';
+  String get recommend => _vi ? 'Gợi ý' : 'Recommend';
+  String get explore => _vi ? 'Khám phá' : 'Explore';
+  String get popularApps => _vi ? 'Ứng dụng' : 'Popular Apps';
+  String get aiSearch => 'AI Search';
+  String get searchDestinations =>
+      _vi ? 'Tìm điểm đến' : 'Search for destinations';
+  String get retune => _vi ? 'Chỉnh lại' : 'Retune';
+  String get pickedForYou => _vi ? 'Dành cho bạn' : 'Picked For You';
+  String get bestDestination => _vi ? 'Điểm đến nổi bật' : 'Best Destination';
+  String get bestDishes => _vi ? 'Món ngon nổi bật' : 'Best Dishes';
+  String get exploreTunedTitle =>
+      _vi ? 'Khám phá theo gu' : 'Explore, tuned to you';
+  String get exploreTunedDescription => _vi
+      ? 'Các chủ đề bạn thích được ưu tiên để món ăn, văn hóa, địa điểm và hoạt động hợp gu hơn.'
+      : 'We moved your preferred themes closer to the top so food, culture, places, and activities feel more personal from the first scroll.';
+
+  String get myProfile => _vi ? 'Hồ sơ của tôi' : 'My Profile';
+  String get upgradeAccount => _vi ? 'Nâng cấp tài khoản' : 'Upgrade Account';
+  String get changePassword => _vi ? 'Đổi mật khẩu' : 'Change Password';
+  String get wishlist => _vi ? 'Danh sách yêu thích' : 'Wishlist';
+  String get voucher => _vi ? 'Mã ưu đãi' : 'Voucher';
+  String get language => _vi ? 'Ngôn ngữ' : 'Language';
+  String get currency => _vi ? 'Tiền tệ' : 'Currency';
+  String get notification => _vi ? 'Thông báo' : 'Notification';
+  String get deleteUserData =>
+      _vi ? 'Xóa dữ liệu người dùng' : 'Delete user data';
+  String get logOut => _vi ? 'Đăng xuất' : 'Log out';
+
+  String get selectPreferredLanguage =>
+      _vi ? 'Chọn ngôn ngữ bạn muốn sử dụng' : 'Select your preferred language';
+  String get currentLanguage => _vi ? 'Ngôn ngữ hiện tại' : 'Current language';
+  String get appInterfaceLanguage =>
+      _vi ? 'Ngôn ngữ giao diện ứng dụng' : 'App interface language';
+  String get upcomingTrip => _vi ? 'Sắp đi' : 'Upcoming Trip';
+  String get activeTrip => _vi ? 'Đang đi' : 'Active Trip';
+  String get tripCompleted => _vi ? 'Đã hoàn tất' : 'Trip Completed';
+  String dayOf(int day, int totalDays) =>
+      _vi ? 'Ngày $day/$totalDays' : 'Day $day of $totalDays';
+  String stepOf(int step, int totalSteps) =>
+      _vi ? 'Bước $step/$totalSteps' : 'Step $step of $totalSteps';
+  String savedTripUpdated(String title) => _vi
+      ? '$title đã được cập nhật trong Chuyến đi đã lưu'
+      : '$title updated in Saved Trips';
+  String redeemPointsConfirm(String points, String title) => _vi
+      ? 'Đổi $points điểm để nhận "$title"?'
+      : 'Redeem $points points for "$title"?';
+  String expiryDate(String date) =>
+      _vi ? 'Ngày hết hạn: $date' : 'Expiry date: $date';
+  String needMorePoints(String points) =>
+      _vi ? 'Bạn cần thêm $points điểm' : 'You need $points more points';
+  String validForDays(int days) => _vi
+      ? 'Có hiệu lực trong $days ngày kể từ ngày đổi'
+      : 'Valid for $days days from redemption date';
+  String justPrice(String price) => _vi ? 'Chỉ $price \$' : 'Just $price \$';
+  String daysDone(int days) => _vi ? '$days ngày xong' : '$days days done';
+  String get firstStop => _vi ? 'Điểm đầu' : 'First stop';
+  String get nextStop => _vi ? 'Điểm tiếp' : 'Next stop';
+  String activitiesCompleted(int count, int days) => _vi
+      ? '$count hoạt động xong · $days ngày'
+      : '$count activities completed · $days days';
+  String get cancel => _vi ? 'Hủy' : 'Cancel';
+  String get viewPlan => _vi ? 'Xem lịch' : 'View Plan';
+  String get endTrip => _vi ? 'Kết thúc' : 'End Trip';
+  String get details => _vi ? 'Chi tiết' : 'Details';
+  String get dismiss => _vi ? 'Ẩn' : 'Dismiss';
+
+  String get retry => _vi ? 'Thử lại' : 'Retry';
+  String get signIn => _vi ? 'Đăng nhập' : 'Sign in';
+  String get allCategories => _vi ? 'Tất cả danh mục' : 'All Categories';
+  String get loadWishlistFailed =>
+      _vi ? 'Không tải được danh sách yêu thích.' : 'Load wishlist failed.';
+  String get pleaseSignInToUseWishlist => _vi
+      ? 'Vui lòng đăng nhập để dùng danh sách yêu thích.'
+      : 'Please sign in to use wishlist.';
+
+  String noItemInWishlist(String itemLabel) {
+    return _vi
+        ? 'Chưa có $itemLabel trong danh sách yêu thích.'
+        : 'No ${itemLabel.toLowerCase()} in wishlist.';
+  }
+
+  String wishlistTypeLabel(String typeCode) {
+    return switch (typeCode) {
+      'city' => _vi ? 'Thành phố' : 'City',
+      'food' => _vi ? 'Món ăn' : 'Food',
+      'place' => _vi ? 'Địa điểm' : 'Place',
+      'culture' => _vi ? 'Văn hóa' : 'Culture',
+      'activity' => _vi ? 'Hoạt động' : 'Activity',
+      'localProduct' => _vi ? 'Đặc sản địa phương' : 'Local product',
+      'item' => _vi ? 'mục' : 'item',
+      _ => _vi ? 'Mục' : 'Item',
+    };
+  }
+
+  String exploreCategoryLabel(String id) {
+    return switch (id) {
+      'activities' => _vi ? 'Hoạt động' : 'Activities',
+      'culture' => _vi ? 'Văn hóa' : 'Culture',
+      'food' => _vi ? 'Ẩm thực' : 'Food',
+      'local_products' => _vi ? 'Đặc sản' : 'Local Products',
+      _ => id,
+    };
+  }
+
+  String featureLabelForRoute(String route) {
+    return switch (route) {
+      '/trip-planner' => tripPlanner,
+      '/forum' => forum,
+      '/translate' => translate,
+      '/send-feedback' => sendReport,
+      '/recommend' => recommend,
+      '/explore' => explore,
+      '/popular-apps' => popularApps,
+      '/ai-search' => aiSearch,
+      _ => route,
+    };
+  }
+
+  String ui(String english) {
+    if (!_vi) return english;
+    return _viText[english] ?? english;
+  }
+
+  static const Map<String, String> _viText = <String, String>{
+    'Explore Vietnam with': 'Khám phá Việt Nam cùng',
+    'Explore local culture, traditional food, and meaningful travel experiences across Vietnam.\nLet us guide you through every journey.':
+        'Khám phá văn hóa, ẩm thực và trải nghiệm du lịch khắp Việt Nam.\nĐể chúng tôi đồng hành cùng bạn.',
+    'Get Started': 'Bắt đầu',
+    'Discover': 'Khám phá',
+    'Login to Start Your': 'Đăng nhập để bắt đầu',
+    'Amazing Trips': 'Chuyến đi tuyệt vời',
+    'Enter your email': 'Nhập email',
+    'Enter your password': 'Nhập mật khẩu',
+    'Enter your name': 'Nhập tên',
+    'Confirm password': 'Xác nhận mật khẩu',
+    'Enter your current password': 'Nhập mật khẩu hiện tại',
+    'Enter your new password': 'Nhập mật khẩu mới',
+    'Confirm your new password': 'Xác nhận mật khẩu mới',
+    'Please enter your email': 'Vui lòng nhập email',
+    'Please enter a valid email address': 'Email không hợp lệ',
+    'Please fill in all fields': 'Vui lòng nhập đầy đủ thông tin',
+    'Passwords do not match': 'Mật khẩu không khớp',
+    'Remember me': 'Ghi nhớ',
+    'Forgot Password?': 'Quên mật khẩu?',
+    'Forgot password?': 'Quên mật khẩu?',
+    'Continue': 'Tiếp tục',
+    'Next': 'Tiếp tục',
+    'Or': 'Hoặc',
+    'Or login with': 'Hoặc đăng nhập bằng',
+    'Sign in with Google': 'Đăng nhập với Google',
+    'Continue with Google': 'Tiếp tục với Google',
+    "Don't have an account? ": 'Chưa có tài khoản? ',
+    'Create an account': 'Tạo tài khoản',
+    'Create Account': 'Tạo tài khoản',
+    'Sign Up to Explore': 'Đăng ký để khám phá',
+    'Sign Up': 'Đăng ký',
+    'Sign up': 'Đăng ký',
+    'Already have an account? ': 'Đã có tài khoản? ',
+    'Login': 'Đăng nhập',
+    'Failed to sign in': 'Đăng nhập thất bại',
+    'Google sign in failed': 'Đăng nhập Google thất bại',
+    'Sign up failed': 'Đăng ký thất bại',
+    'Success! Please check your email for a confirmation link.':
+        'Thành công! Vui lòng kiểm tra email để xác nhận.',
+    'Google Sign-In is handled in Login page':
+        'Đăng nhập Google được thực hiện ở trang Đăng nhập',
+    'Save': 'Lưu',
+    'Edit Profile': 'Sửa hồ sơ',
+    'Email': 'Email',
+    'Username': 'Tên người dùng',
+    'Upgrade Account': 'Nâng cấp tài khoản',
+    'Upgrade account': 'Nâng cấp tài khoản',
+    'Change Password': 'Đổi mật khẩu',
+    'Change your password': 'Đổi mật khẩu của bạn',
+    'Congratulations!': 'Hoàn tất!',
+    'Your password has been changed': 'Mật khẩu đã được thay đổi',
+    'New password and confirm password do not match':
+        'Mật khẩu mới và xác nhận không khớp',
+    'New password must be different from current password':
+        'Mật khẩu mới phải khác mật khẩu hiện tại',
+    'Back to Login': 'Về đăng nhập',
+    'Create new password': 'Tạo mật khẩu mới',
+    'Check your email': 'Kiểm tra email',
+    'Reset Password': 'Đặt lại mật khẩu',
+    'Please enter your email to receive\npassword reset link':
+        'Nhập email để nhận\nliên kết đặt lại mật khẩu',
+    'Confirm email': 'Xác nhận email',
+    "We've sent a password reset link to\n":
+        'Chúng tôi đã gửi liên kết đặt lại mật khẩu đến\n',
+    '\n\n1. Click the link in your email\n2. You\'ll be redirected back here\n3. Click "I\'ve clicked the link" or "Refresh/Verify Session"':
+        '\n\n1. Bấm liên kết trong email\n2. Bạn sẽ quay lại đây\n3. Bấm "Tôi đã bấm liên kết" hoặc "Kiểm tra phiên"',
+    'I\'ve clicked the link': 'Tôi đã bấm liên kết',
+    'Refresh/Verify Session': 'Kiểm tra phiên',
+    'Didn\'t receive the email? ': 'Chưa nhận được email? ',
+    'Resend': 'Gửi lại',
+    'Create your new password': 'Tạo mật khẩu mới',
+    'Your password has been created': 'Mật khẩu đã được tạo',
+    'Send reset link': 'Gửi liên kết',
+    'Resend email': 'Gửi lại email',
+    'I clicked the link': 'Tôi đã bấm liên kết',
+    'Verify session': 'Kiểm tra phiên',
+    'Enter text to translate...': 'Nhập nội dung cần dịch...',
+    'Search language...': 'Tìm ngôn ngữ...',
+    'Translation': 'Bản dịch',
+    'Translate': 'Dịch',
+    'Clear': 'Xóa',
+    'QUICK EXAMPLES': 'VÍ DỤ NHANH',
+    'Listening...': 'Đang nghe...',
+    'Translating...': 'Đang dịch...',
+    'Translation appears here': 'Bản dịch sẽ hiện ở đây',
+    'DONE': 'XONG',
+    'Select Language': 'Chọn ngôn ngữ',
+    'Auto detect': 'Tự nhận diện',
+    'Vietnamese': 'Tiếng Việt',
+    'English': 'Tiếng Anh',
+    'Report an Issue': 'Báo lỗi',
+    'Help us improve the app': 'Giúp chúng tôi cải thiện ứng dụng',
+    'Issue type': 'Loại lỗi',
+    'Incorrect data': 'Dữ liệu sai',
+    'Missing information': 'Thiếu thông tin',
+    'Inappropriate image/video': 'Ảnh/video không phù hợp',
+    'Map/address issue': 'Lỗi bản đồ/địa chỉ',
+    'Other': 'Khác',
+    'Please select one': 'Vui lòng chọn một mục',
+    'Description': 'Mô tả',
+    'Image or video': 'Ảnh hoặc video',
+    'Upload image or video': 'Tải ảnh hoặc video',
+    'Please describe the issue you encountered so we can fix it as quickly as possible...':
+        'Mô tả lỗi bạn gặp để chúng tôi có thể sửa nhanh nhất...',
+    'e.g. "When I tap the Save button on screen X, the app crashes"':
+        'VD: "Khi tôi bấm nút Lưu ở màn X, app bị thoát"',
+    'Thank you for your report. Our team will review it as soon as possible.':
+        'Cảm ơn báo cáo của bạn. Đội ngũ sẽ xem xét sớm nhất có thể.',
+    'Cancel': 'Hủy',
+    'Submitting...': 'Đang gửi...',
+    'Submit Report': 'Gửi báo lỗi',
+    'Report Submitted!': 'Đã gửi báo lỗi!',
+    'Thank you for your feedback.': 'Cảm ơn phản hồi của bạn.',
+    'Our team will review it and get back to you as soon as possible.':
+        'Đội ngũ sẽ xem xét và phản hồi sớm nhất có thể.',
+    'Done': 'Xong',
+    'Messages': 'Tin nhắn',
+    'Create post': 'Tạo bài viết',
+    'Post': 'Bài viết',
+    'What do you want to share?': 'Bạn muốn chia sẻ gì?',
+    'Saved Posts': 'Bài đã lưu',
+    'Report Post': 'Báo cáo bài viết',
+    'Post not found': 'Không tìm thấy bài viết',
+    'Go back': 'Quay lại',
+    'Follow': 'Theo dõi',
+    'Following': 'Đang theo dõi',
+    'Type your answer': 'Nhập câu trả lời',
+    'All notifications were cleared': 'Đã xóa tất cả thông báo',
+    'Popular Apps': 'Ứng dụng',
+    'App not found': 'Không tìm thấy ứng dụng',
+    'Payment confirmed': 'Đã xác nhận thanh toán',
+    'Your premium subscription is active.': 'Gói Premium đã được kích hoạt.',
+    'Premium Account': 'Tài khoản Premium',
+    'Premium Account Privileges': 'Quyền lợi tài khoản Premium',
+    'Select your plan:': 'Chọn gói của bạn:',
+    '1 Month': '1 tháng',
+    '6 Months': '6 tháng',
+    '12 Months': '12 tháng',
+    'POPULAR': 'PHỔ BIẾN',
+    "What you'll get:": 'Bạn sẽ nhận được:',
+    '+ 2 more benefits': '+ 2 quyền lợi khác',
+    'Access to AI Object Identification': 'Nhận diện vật thể bằng AI',
+    'Practice Essential Vietnamese Phrases':
+        'Luyện tập các câu tiếng Việt cần thiết',
+    'Generate Personalized Itinerary': 'Tạo lịch trình cá nhân hóa',
+    'Many more exclusive voucher & coupon':
+        'Nhiều mã ưu đãi và coupon độc quyền hơn',
+    'Paid': 'Đã thanh toán',
+    'Voucher discount': 'Giảm giá voucher',
+    'OK': 'OK',
+    'Subtotal': 'Tạm tính',
+    'Total': 'Tổng cộng',
+    'Enter voucher code': 'Nhập mã voucher',
+    'Reward': 'Phần thưởng',
+    'Available Points': 'Điểm hiện có',
+    'Use to redeem vouchers': 'Dùng để đổi mã ưu đãi',
+    'View Benefits >': 'Xem quyền lợi >',
+    'Gold': 'Hạng Vàng',
+    'Gold Tier': 'Hạng Vàng',
+    '45,000 / 70,000 pts': '45.000 / 70.000 điểm',
+    '25,000 to Platinum': 'Còn 25.000 điểm đến Bạch kim',
+    'Vouchers': 'Mã ưu đãi',
+    'Redeem Voucher': 'Đổi mã ưu đãi',
+    'My Vouchers (3)': 'Mã của tôi (3)',
+    'Discount': 'Giảm giá',
+    'Shipping': 'Vận chuyển',
+    'Gift': 'Quà tặng',
+    'Cashback': 'Hoàn tiền',
+    'points': 'điểm',
+    'Redeem Now': 'Đổi ngay',
+    'Use Now': 'Dùng ngay',
+    'Exp': 'HSD',
+    'Voucher code copied': 'Đã sao chép mã ưu đãi',
+    'Confirm Redemption': 'Xác nhận đổi mã',
+    'Voucher Details': 'Chi tiết mã ưu đãi',
+    'Voucher Code': 'Mã ưu đãi',
+    'Copy': 'Sao chép',
+    'Points required': 'Điểm cần đổi',
+    'Your available points:': 'Điểm hiện có:',
+    'Redeem Points': 'Đổi điểm',
+    'Insufficient Points': 'Không đủ điểm',
+    'How to Use': 'Cách sử dụng',
+    'Copy the voucher code above': 'Sao chép mã ưu đãi phía trên',
+    'Apply the code at checkout': 'Nhập mã khi thanh toán',
+    'Enjoy your discount or benefit': 'Tận hưởng ưu đãi hoặc quyền lợi',
+    'Code can only be used once before expiry date':
+        'Mã chỉ dùng được một lần trước ngày hết hạn',
+    'Important': 'Lưu ý',
+    'This voucher cannot be exchanged for cash and is non-transferable. Please use before the expiration date.':
+        'Mã ưu đãi không thể quy đổi thành tiền mặt và không thể chuyển nhượng. Vui lòng sử dụng trước ngày hết hạn.',
+    '\$5 off on orders over \$20': 'Giảm \$5 cho đơn từ \$20',
+    'Free nationwide shipping': 'Miễn phí vận chuyển toàn quốc',
+    '\$10 off on orders over \$50': 'Giảm \$10 cho đơn từ \$50',
+    'Free gift with purchase': 'Tặng quà khi mua hàng',
+    '\$20 Premium voucher': 'Mã Premium trị giá \$20',
+    '20% cashback up to 80K': 'Hoàn tiền 20% tối đa 80K',
+    'Special discount voucher for orders valued at \$20 or more':
+        'Mã giảm giá đặc biệt cho đơn hàng từ \$20 trở lên',
+    'Valid for all products regardless of category':
+        'Áp dụng cho mọi sản phẩm, không phân biệt danh mục',
+    'Can be combined with free shipping voucher':
+        'Có thể dùng cùng mã miễn phí vận chuyển',
+    'Maximum discount of \$5 per order': 'Giảm tối đa \$5 mỗi đơn hàng',
+    'Apply free delivery to eligible orders nationwide':
+        'Áp dụng miễn phí giao hàng cho đơn đủ điều kiện trên toàn quốc',
+    'No minimum order value required in selected zones':
+        'Không yêu cầu giá trị đơn tối thiểu tại khu vực áp dụng',
+    'Cannot be combined with another shipping voucher':
+        'Không thể dùng cùng mã vận chuyển khác',
+    'Special discount voucher for orders valued at \$50 or more':
+        'Mã giảm giá đặc biệt cho đơn hàng từ \$50 trở lên',
+    'Maximum discount of \$10 per order': 'Giảm tối đa \$10 mỗi đơn hàng',
+    'Receive one surprise gift with qualifying purchase':
+        'Nhận một phần quà bất ngờ khi đơn hàng đủ điều kiện',
+    'Gift value may vary by campaign and stock':
+        'Giá trị quà tặng có thể thay đổi theo chiến dịch và tồn kho',
+    'Voucher can be redeemed once per account':
+        'Mỗi tài khoản chỉ đổi được mã này một lần',
+    'Premium voucher with \$20 discount for Premium package':
+        'Mã giảm \$20 cho gói Premium',
+    'Upgrade your experience with exclusive features':
+        'Nâng cấp trải nghiệm với các tính năng độc quyền',
+    '24/7 priority support from specialists':
+        'Hỗ trợ ưu tiên 24/7 từ chuyên viên',
+    'Many special benefits exclusively for Premium members':
+        'Nhiều quyền lợi đặc biệt dành riêng cho thành viên Premium',
+    'Can renew and accumulate more benefits':
+        'Có thể gia hạn và tích lũy thêm quyền lợi',
+    'Get 20% cashback on eligible orders (max 80K)':
+        'Hoàn tiền 20% cho đơn đủ điều kiện (tối đa 80K)',
+    'Cashback is credited within 24 hours after completion':
+        'Tiền hoàn sẽ được cộng trong vòng 24 giờ sau khi hoàn tất',
+    'Can be combined with selected platform offers':
+        'Có thể dùng cùng một số ưu đãi được chọn trên nền tảng',
+    'Spam': 'Spam',
+    'Harassment or hate speech': 'Quấy rối hoặc thù ghét',
+    'Inappropriate content': 'Nội dung không phù hợp',
+    'False information': 'Thông tin sai lệch',
+    'Violence or dangerous content': 'Bạo lực hoặc nguy hiểm',
+    'Search destination': 'Tìm điểm đến',
+    'Search destination...': 'Tìm điểm đến...',
+    'Search destinations': 'Tìm điểm đến',
+    'Recommendation': 'Gợi ý',
+    'Please choose: ✨': 'Chọn nhé: ✨',
+    'Popular Destinations': 'Điểm đến nổi bật',
+    'Business Location': 'Địa điểm công việc',
+    'Where will you be working?': 'Bạn sẽ làm việc ở đâu?',
+    'e.g. District 1, Ho Chi Minh City': 'VD: Quận 1, TP. Hồ Chí Minh',
+    'Choose your budget': 'Chọn ngân sách',
+    'Pick one option below to continue': 'Chọn một mức để tiếp tục',
+    'Generate': 'Tạo lịch trình',
+    'e.g. 800,000 VND per day': 'VD: 800.000 VND/ngày',
+    'Choose your travel dates': 'Chọn ngày đi',
+    "When's your trip?": 'Chuyến đi của bạn vào khi nào?',
+    'What is your interest?': 'Bạn thích gì?',
+    'Select your preferences (multiple choices)': 'Chọn sở thích của bạn',
+    'Culture & History': 'Văn hóa',
+    'Nature & Outdoor': 'Thiên nhiên',
+    'Adventure': 'Phiêu lưu',
+    'Entertainment': 'Giải trí',
+    'Leisure Trip': 'Du lịch',
+    'Business Trip': 'Công tác',
+    'Your Vietnam Adventure': 'Hành trình Việt Nam',
+    'Personalized Itinerary': 'Lịch trình cá nhân hóa',
+    "Let's create your perfect trip": 'Cùng tạo chuyến đi hoàn hảo của bạn',
+    'Trip Type': 'Loại chuyến đi',
+    'Saved Trips': 'Chuyến đi đã lưu',
+    'Pick up where you left off and tick places as you complete them.':
+        'Tiếp tục chuyến đi còn dang dở và đánh dấu các điểm đã hoàn thành.',
+    'Enter address': 'Nhập địa chỉ',
+    'We will suggest activities around your business location\nduring free time':
+        'Chúng tôi sẽ gợi ý hoạt động gần nơi làm việc\ntrong thời gian rảnh',
+    'Option 1: Enter daily budget': 'Cách 1: Nhập ngân sách/ngày',
+    'Use an exact amount per day if you already know your spending limit.':
+        'Dùng số tiền cụ thể nếu bạn đã biết giới hạn chi tiêu.',
+    'Using exact daily budget. Price range will be ignored.':
+        'Đang dùng ngân sách/ngày. Mức giá sẽ được bỏ qua.',
+    'Option 2: Choose price range': 'Cách 2: Chọn mức giá',
+    'Use a quick preset instead of typing an exact amount.':
+        'Chọn nhanh một mức thay vì nhập số tiền cụ thể.',
+    'Using price range. Typed daily budget will be ignored.':
+        'Đang dùng mức giá. Ngân sách đã nhập sẽ được bỏ qua.',
+    'What kind of trips feel most like you?':
+        'Kiểu chuyến đi nào hợp với bạn nhất?',
+    'Choose a few directions so we can shape your first suggestions.':
+        'Chọn vài hướng yêu thích để chúng tôi gợi ý phù hợp ngay từ đầu.',
+    'Pick at least 2 travel styles.': 'Chọn ít nhất 2 phong cách du lịch.',
+    'Who do you usually travel with?': 'Bạn thường đi cùng ai?',
+    'This helps us avoid suggestions that feel awkward or impractical.':
+        'Điều này giúp gợi ý thực tế và hợp hoàn cảnh hơn.',
+    'Pick at least 1 companion style.': 'Chọn ít nhất 1 kiểu đồng hành.',
+    'What budget feels comfortable?': 'Mức ngân sách nào phù hợp với bạn?',
+    'We will tune recommendations so the app feels realistic from day one.':
+        'Chúng tôi sẽ điều chỉnh gợi ý để app hữu ích ngay từ ngày đầu.',
+    'Choose 1 budget level.': 'Chọn 1 mức ngân sách.',
+    'How packed do you want your days to be?':
+        'Bạn muốn lịch mỗi ngày dày đến mức nào?',
+    'This controls whether we suggest slow days, balanced plans, or busier lists.':
+        'Mục này quyết định app sẽ gợi ý lịch thư thả, cân bằng hay nhiều hoạt động hơn.',
+    'Choose your preferred pace.': 'Chọn nhịp đi bạn muốn.',
+    'Pick the things you want to see more often':
+        'Chọn những điều bạn muốn thấy thường xuyên hơn',
+    'This final step powers your Home and Explore suggestions right away.':
+        'Bước cuối này sẽ cá nhân hóa gợi ý ở Trang chủ và Khám phá ngay.',
+    'Pick at least 3 topics.': 'Chọn ít nhất 3 chủ đề.',
+    'Back later': 'Để sau',
+    'Saving...': 'Đang lưu...',
+    'Finish': 'Hoàn tất',
+    'Your Travel Taste': 'Gu du lịch của bạn',
+    'You are telling us to prioritize': 'Bạn muốn chúng tôi ưu tiên',
+    'Tailored to your travel taste': 'Gợi ý theo gu du lịch của bạn',
+    'Refine': 'Chỉnh lại',
+    'Food': 'Ẩm thực',
+    'Culture': 'Văn hóa',
+    'Nature': 'Thiên nhiên',
+    'Relaxation': 'Thư giãn',
+    'Shopping': 'Mua sắm',
+    'Photography': 'Chụp ảnh',
+    'Local Life': 'Đời sống địa phương',
+    'Street food, specialties, local flavors':
+        'Món đường phố, đặc sản, hương vị địa phương',
+    'History, rituals, art, heritage': 'Lịch sử, nghi lễ, nghệ thuật, di sản',
+    'Mountains, beaches, gardens, scenery':
+        'Núi non, bãi biển, vườn cảnh, phong cảnh',
+    'Easy pacing, cafes, spa, slow travel':
+        'Nhịp đi thư thả, cà phê, spa, du lịch chậm',
+    'Energetic activities and new thrills':
+        'Hoạt động năng lượng và trải nghiệm mới',
+    'Markets, crafts, local finds': 'Chợ, đồ thủ công, món hay ở địa phương',
+    'Scenic spots and memorable visuals': 'Góc cảnh đẹp và khung hình đáng nhớ',
+    'Neighborhood vibes and authentic moments':
+        'Không khí khu phố và khoảnh khắc đời thường',
+    'Solo': 'Đi một mình',
+    'Couple': 'Cặp đôi',
+    'Friends': 'Bạn bè',
+    'Family': 'Gia đình',
+    'Seniors': 'Người lớn tuổi',
+    'Business': 'Công tác',
+    'Freedom and flexible pacing': 'Tự do và linh hoạt nhịp đi',
+    'Romantic and cozy suggestions': 'Gợi ý lãng mạn và ấm cúng',
+    'Fun group-friendly experiences': 'Trải nghiệm vui, hợp đi nhóm',
+    'Easy, safe, family-ready options': 'Lựa chọn dễ đi, an toàn, hợp gia đình',
+    'Comfortable and low-effort plans': 'Kế hoạch thoải mái, ít tốn sức',
+    'Efficient stops around a work trip':
+        'Điểm ghé hiệu quả quanh chuyến công tác',
+    'Affordable': 'Tiết kiệm',
+    'Budget': 'Tiết kiệm',
+    'Mid-range': 'Tầm trung',
+    'Comfort': 'Thoải mái',
+    'Standard': 'Tiêu chuẩn',
+    'Premium': 'Cao cấp',
+    'Smart spending and free gems': 'Chi tiêu thông minh và điểm miễn phí',
+    'Balanced value and comfort': 'Cân bằng giữa giá trị và thoải mái',
+    'More flexibility and polish': 'Linh hoạt hơn và chỉn chu hơn',
+    'Top picks and upgraded stays': 'Lựa chọn cao cấp và lưu trú nâng hạng',
+    'Easy': 'Nhẹ nhàng',
+    'Balanced': 'Cân bằng',
+    'Active': 'Năng động',
+    'Packed': 'Dày lịch',
+    'Slow mornings and room to breathe': 'Buổi sáng chậm rãi, có khoảng nghỉ',
+    'A healthy mix of must-sees and rest':
+        'Cân bằng giữa điểm phải đi và thời gian nghỉ',
+    'More stops and more movement': 'Nhiều điểm dừng và di chuyển hơn',
+    'Make the most of every hour': 'Tận dụng tối đa từng giờ',
+    'Street Food': 'Ẩm thực đường phố',
+    'Coffee': 'Cà phê',
+    'Museums': 'Bảo tàng',
+    'Temples': 'Đền chùa',
+    'Festivals': 'Lễ hội',
+    'Beaches': 'Bãi biển',
+    'Mountains': 'Núi',
+    'Night Markets': 'Chợ đêm',
+    'Workshops': 'Workshop',
+    'Handmade Goods': 'Đồ thủ công',
+    'Scenic Spots': 'Điểm ngắm cảnh',
+    'Wellness': 'Chăm sóc sức khỏe',
+    'What type of trip are you planning?':
+        'Bạn đang lên kế hoạch chuyến đi nào?',
+    'Relax, explore, and enjoy\nyour vacation':
+        'Thư giãn, khám phá và tận hưởng\nkỳ nghỉ',
+    'Meetings, conferences, and\nnetworking': 'Họp, hội nghị và\nkết nối',
+    'Museums, temples, heritage': 'Bảo tàng, đền chùa, di sản',
+    'Hiking, beaches, parks': 'Leo núi, biển, công viên',
+    'Sports, thrills, exploration': 'Thể thao, thử thách, khám phá',
+    'Shopping, nightlife, events': 'Mua sắm, đêm, sự kiện',
+    'Where do\nyou want\nto go?': 'Bạn muốn\nđi đâu?',
+    'When are\nyou free to\ntravel?': 'Khi nào\nbạn rảnh?',
+    'Where to?': 'Đi đâu?',
+    'Choose your dream destination': 'Chọn điểm đến mơ ước',
+    'Back': 'Quay lại',
+    'Delete': 'Xóa',
+    'Ok': 'OK',
+    'Personal Data': 'Dữ liệu cá nhân',
+    'All Images': 'Tất cả ảnh',
+    'Reviews': 'Đánh giá',
+    'What to expect': 'Trải nghiệm nổi bật',
+    'Best time to visit': 'Thời điểm đẹp nhất',
+    'Map placeholder': 'Bản đồ',
+    'Image placeholder': 'Hình ảnh',
+    'Please sign in to update wishlist.':
+        'Vui lòng đăng nhập để cập nhật yêu thích.',
+    'Please click the reset link in your email first, or try refreshing the page':
+        'Vui lòng bấm liên kết trong email trước, hoặc thử tải lại trang',
+    'Session verified! You can now set your new password.':
+        'Đã xác thực phiên. Bạn có thể đặt mật khẩu mới.',
+    'No active session found. Please click the reset link in your email.':
+        'Không tìm thấy phiên. Vui lòng bấm liên kết trong email.',
+    'Failed to verify session. Please try again.':
+        'Không thể xác thực phiên. Vui lòng thử lại.',
+    'Password reset email resent! Check your inbox.':
+        'Đã gửi lại email đặt mật khẩu. Kiểm tra hộp thư nhé.',
+    'Failed to resend email. Please try again.':
+        'Không thể gửi lại email. Vui lòng thử lại.',
+    'Too many reset emails sent. Please wait 1 hour before trying again.':
+        'Bạn đã gửi quá nhiều email. Vui lòng chờ 1 giờ rồi thử lại.',
+    'Password reset email sent! Check your inbox.':
+        'Đã gửi email đặt lại mật khẩu. Kiểm tra hộp thư nhé.',
+    'Failed to send reset email. Please try again.':
+        'Không thể gửi email đặt lại. Vui lòng thử lại.',
+    'Please click the reset link in your email first':
+        'Vui lòng bấm liên kết trong email trước',
+    'Password must be at least 6 characters long':
+        'Mật khẩu phải có ít nhất 6 ký tự',
+    'Password updated successfully': 'Đã cập nhật mật khẩu',
+    'Failed to update password. Please try again.':
+        'Không thể cập nhật mật khẩu. Vui lòng thử lại.',
+    'Discover Vietnamese Culture and\nLocal Specialties':
+        'Khám phá văn hóa Việt Nam và\nđặc sản địa phương',
+    'ACTIVITIES': 'HOẠT ĐỘNG',
+    'CULTURE': 'VĂN HÓA',
+    'FOOD': 'ẨM THỰC',
+    'LOCAL PRODUCTS': 'ĐẶC SẢN',
+    'Hands-on experiences and cultural activities':
+        'Trải nghiệm thực tế và hoạt động văn hóa',
+    'Traditional customs, heritage, and cultural practices':
+        'Phong tục truyền thống, di sản và thực hành văn hóa',
+    'Local dishes and culinary specialties from different regions':
+        'Món ăn địa phương và đặc sản ẩm thực từ nhiều vùng miền',
+    'Traditional goods and handcrafted regional products':
+        'Sản phẩm truyền thống và đồ thủ công địa phương',
+    'Floating market': 'Chợ nổi',
+    'Dropping water lanterns': 'Thả hoa đăng',
+    'Water puppetry': 'Múa rối nước',
+    'Traditional craft villages': 'Làng nghề truyền thống',
+    'Beef noodle soup': 'Phở bò',
+    'Pho': 'Phở',
+    'Banh mi': 'Bánh mì',
+    'Bun bo': 'Bún bò',
+    'Conical hats': 'Nón lá',
+    'Bat Trang pottery': 'Gốm Bát Tràng',
+  };
+}
