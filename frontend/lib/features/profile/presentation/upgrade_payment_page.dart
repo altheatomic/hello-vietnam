@@ -10,13 +10,13 @@ class _PaymentMethod {
     required this.id,
     required this.label,
     required this.icon,
-    this.labelColor = AppColors.textPrimary,
+    this.iconColor = AppColors.textPrimary,
   });
 
   final String id;
   final String label;
   final IconData icon;
-  final Color labelColor;
+  final Color iconColor;
 }
 
 class UpgradePaymentPage extends StatefulWidget {
@@ -34,18 +34,13 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
       id: 'visa',
       label: 'VISA',
       icon: Icons.credit_card_rounded,
-      labelColor: Color(0xFF1A1F71),
+      iconColor: Color(0xFFFFD166),
     ),
     _PaymentMethod(
       id: 'gpay',
       label: 'G Pay',
-      icon: Icons.g_mobiledata_rounded,
-    ),
-    _PaymentMethod(
-      id: 'paypal',
-      label: 'PayPal',
-      icon: Icons.account_balance_wallet_rounded,
-      labelColor: Color(0xFF003087),
+      icon: Icons.phone_iphone_rounded,
+      iconColor: Color(0xFF111827),
     ),
   ];
 
@@ -55,7 +50,7 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
   late Future<SubscriptionPlanInfo> _planFuture;
   SubscriptionPlanInfo? _plan;
   VoucherPreview? _voucherPreview;
-  String? _selectedMethodId;
+  String? _selectedMethodId = 'visa';
   bool _isApplyingVoucher = false;
   bool _isPurchasing = false;
 
@@ -167,23 +162,25 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
     final double topInset = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFEFFBFC),
       body: Column(
         children: <Widget>[
           Container(
-            color: Colors.white,
-            padding: EdgeInsets.fromLTRB(10, topInset + 8, 10, 10),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: <Color>[Color(0xFFF3FBFF), Color(0xFFE6FCF8)],
+              ),
+            ),
+            padding: EdgeInsets.fromLTRB(20, topInset + 28, 20, 24),
             child: SizedBox(
-              height: 48,
+              height: 56,
               child: Row(
                 children: <Widget>[
-                  IconButton(
+                  _HeaderCircleButton(
                     onPressed: () => context.pop(),
-                    icon: const Icon(
-                      Icons.chevron_left,
-                      size: 26,
-                      color: Color(0xFF1C1C1C),
-                    ),
+                    icon: Icons.arrow_back_rounded,
                   ),
                   Expanded(
                     child: Text(
@@ -192,40 +189,15 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF121212),
+                        color: Color(0xFF1F2937),
                       ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: _showPrivileges,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AppColors.textPrimary,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.question_mark_rounded,
-                        size: 20,
-                        color: Colors.white,
-                      ),
-                    ),
+                  _HeaderCircleButton(
+                    onPressed: _showPrivileges,
+                    icon: Icons.help_outline_rounded,
                   ),
                 ],
-              ),
-            ),
-          ),
-          Container(
-            width: double.infinity,
-            color: AppColors.primaryLight.withValues(alpha: 0.25),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: const Text(
-              'Select your payment method:',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -244,20 +216,24 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                     final int finalAmount = plan.priceMinor - discount;
 
                     return ListView(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppConstants.pagePadding,
-                        24,
-                        AppConstants.pagePadding,
-                        24,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(28, 40, 28, 28),
                       children: <Widget>[
+                        const Text(
+                          'Select your payment method:',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
                         _OrderSummaryCard(
                           plan: plan,
                           discountMinor: discount,
                           finalAmountMinor: finalAmount,
                           formatMoney: _formatMoney,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 32),
                         _VoucherApplyCard(
                           controller: _voucherController,
                           preview: _voucherPreview,
@@ -265,7 +241,7 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                           onApply: () => _applyVoucher(plan),
                           onRemove: _removeVoucher,
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 30),
                         ..._methods.map(
                           (method) => _PaymentCard(
                             method: method,
@@ -274,6 +250,8 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                                 setState(() => _selectedMethodId = method.id),
                           ),
                         ),
+                        const SizedBox(height: 18),
+                        const _AddPaymentMethodCard(),
                       ],
                     );
                   },
@@ -282,15 +260,10 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
           SafeArea(
             top: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppConstants.pagePadding,
-                8,
-                AppConstants.pagePadding,
-                16,
-              ),
+              padding: const EdgeInsets.fromLTRB(28, 18, 28, 18),
               child: SizedBox(
                 width: double.infinity,
-                height: 48,
+                height: 64,
                 child: ElevatedButton(
                   onPressed:
                       _selectedMethodId == null ||
@@ -299,19 +272,20 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                       ? null
                       : () => _purchase(_plan!),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryLight,
+                    backgroundColor: const Color(0xFF11BED4),
                     disabledBackgroundColor: const Color(0xFFD9E6EA),
-                    elevation: 0,
+                    elevation: 8,
+                    shadowColor: const Color(0x6611BED4),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.cardRadius,
-                      ),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                   ),
                   child: Text(
-                    _isPurchasing ? 'Processing...' : 'Pay now',
+                    _isPurchasing
+                        ? 'Processing...'
+                        : context.l10n.ui('Continue'),
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 19,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
@@ -321,6 +295,32 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HeaderCircleButton extends StatelessWidget {
+  const _HeaderCircleButton({required this.onPressed, required this.icon});
+
+  final VoidCallback onPressed;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      elevation: 14,
+      shadowColor: const Color(0x2F64748B),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onPressed,
+        child: SizedBox(
+          width: 56,
+          height: 56,
+          child: Icon(icon, size: 32, color: const Color(0xFF334155)),
+        ),
       ),
     );
   }
@@ -342,34 +342,91 @@ class _OrderSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(22, 26, 22, 26),
       decoration: BoxDecoration(
-        color: AppColors.primaryLight.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
-        border: Border.all(color: AppColors.primaryLight),
+        color: Colors.white.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: const Color(0xFF64748B).withValues(alpha: 0.15),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            plan.name,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
+          Row(
+            children: <Widget>[
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: <Color>[Color(0xFF00C7DF), Color(0xFF4AA8FF)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.25),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.workspace_premium_rounded,
+                  size: 34,
+                  color: Color(0xFFFFD84D),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      plan.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Premium subscription',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF667085),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                formatMoney(plan.priceMinor),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          _AmountRow(
-            label: context.l10n.ui('Subtotal'),
-            value: formatMoney(plan.priceMinor),
-          ),
+          const Divider(height: 48, thickness: 1.4, color: Color(0xFFE5E7EB)),
           if (discountMinor > 0)
             _AmountRow(
               label: 'Voucher',
               value: '-${formatMoney(discountMinor)}',
             ),
-          const Divider(height: 22),
           _AmountRow(
             label: context.l10n.ui('Total'),
             value: formatMoney(finalAmountMinor),
@@ -400,24 +457,40 @@ class _VoucherApplyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool hasVoucher = preview != null;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(22, 24, 22, 26),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
-        border: Border.all(color: const Color(0xFFE1E7EA)),
+        color: Colors.white.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: const Color(0xFF64748B).withValues(alpha: 0.14),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            context.l10n.ui('Voucher'),
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
+          Row(
+            children: <Widget>[
+              const Icon(
+                Icons.local_offer_outlined,
+                size: 26,
+                color: Color(0xFF25BDF0),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                context.l10n.ui('Voucher'),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF334155),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 22),
           Row(
             children: <Widget>[
               Expanded(
@@ -427,23 +500,63 @@ class _VoucherApplyCard extends StatelessWidget {
                   textCapitalization: TextCapitalization.characters,
                   decoration: InputDecoration(
                     hintText: context.l10n.ui('Enter voucher code'),
-                    isDense: true,
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF98A2B3),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
                     filled: true,
-                    fillColor: const Color(0xFFF4F7F9),
+                    fillColor: Colors.white,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                      borderRadius: BorderRadius.circular(22),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(22),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFE5E7EB),
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(22),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF16C5DD),
+                        width: 1.8,
+                      ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              TextButton(
-                onPressed: isApplying
-                    ? null
-                    : (hasVoucher ? onRemove : onApply),
-                child: Text(
-                  hasVoucher ? 'Remove' : (isApplying ? '...' : 'Apply'),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 104,
+                height: 62,
+                child: ElevatedButton(
+                  onPressed: isApplying
+                      ? null
+                      : (hasVoucher ? onRemove : onApply),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF88DDF0),
+                    disabledBackgroundColor: const Color(0xFFCFE7EE),
+                    elevation: 10,
+                    shadowColor: const Color(0x3388DDF0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                  ),
+                  child: Text(
+                    hasVoucher ? 'Remove' : (isApplying ? '...' : 'Apply'),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -481,38 +594,129 @@ class _PaymentCard extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: AppConstants.defaultAnimation,
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        margin: const EdgeInsets.only(bottom: 24),
+        height: 104,
+        padding: const EdgeInsets.symmetric(horizontal: 22),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+          color: isSelected
+              ? const Color(0xFFD9F2FF).withValues(alpha: 0.82)
+              : Colors.white.withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: isSelected ? AppColors.primary : const Color(0xFFDDDDDD),
-            width: isSelected ? 1.8 : 1.0,
+            color: isSelected ? const Color(0xFF10C4DA) : Colors.transparent,
+            width: isSelected ? 3.0 : 0,
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: const Color(0xFF64748B).withValues(alpha: 0.13),
+              blurRadius: 22,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Icon(method.icon, size: 24, color: method.labelColor),
-            const SizedBox(width: 10),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: method.id == 'gpay' ? const Color(0xFFF3F4F6) : null,
+                gradient: method.id == 'visa'
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: <Color>[Color(0xFF00C7DF), Color(0xFF4AA8FF)],
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: Icon(method.icon, size: 38, color: method.iconColor),
+            ),
+            const SizedBox(width: 24),
             Text(
               method.label,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF334155),
+              ),
+            ),
+            const Spacer(),
+            _PaymentSelectionIndicator(isSelected: isSelected),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PaymentSelectionIndicator extends StatelessWidget {
+  const _PaymentSelectionIndicator({required this.isSelected});
+
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isSelected) {
+      return Container(
+        width: 56,
+        height: 56,
+        decoration: const BoxDecoration(
+          color: Color(0xFF10C4DA),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.check_rounded, color: Colors.white, size: 38),
+      );
+    }
+
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFA8B0BE), width: 4),
+        color: const Color(0xFFE5E7EB),
+      ),
+    );
+  }
+}
+
+class _AddPaymentMethodCard extends StatelessWidget {
+  const _AddPaymentMethodCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 74,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: const Color(0xFF64748B).withValues(alpha: 0.13),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Flexible(
+            child: Text(
+              'Add another payment method',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: method.labelColor,
+                color: Color(0xFF334155),
               ),
             ),
-          ],
-        ),
+          ),
+          SizedBox(width: 18),
+          Icon(Icons.chevron_right_rounded, size: 32, color: Color(0xFF334155)),
+        ],
       ),
     );
   }
@@ -539,17 +743,22 @@ class _AmountRow extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: isStrong
+                  ? const Color(0xFF1F2937)
+                  : const Color(0xFF667085),
               fontWeight: weight,
+              fontSize: isStrong ? 24 : 16,
             ),
           ),
           const Spacer(),
           Text(
             value,
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: isStrong
+                  ? const Color(0xFF35B7F0)
+                  : const Color(0xFF1F2937),
               fontWeight: weight,
-              fontSize: isStrong ? 18 : 14,
+              fontSize: isStrong ? 28 : 17,
             ),
           ),
         ],
