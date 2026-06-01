@@ -24,7 +24,9 @@ insert into voucher (
     min_order_amount_min
 )
 values
+    ('WELCOME2024', 'fixed', 200, 200, now() - interval '1 day', now() + interval '1 year', 'active', 10000, 1, 0),
     ('PREMIUM10', 'percent', 10, 500, now() - interval '1 day', now() + interval '1 year', 'active', 10000, 1, 0),
+    ('HOLIDAY15', 'percent', 15, 500, now() - interval '1 day', now() + interval '1 year', 'active', 10000, 1, 0),
     ('PREMIUM200', 'fixed', 2000, 2000, now() - interval '1 day', now() + interval '1 year', 'active', 10000, 1, 1999)
 on conflict (code) do update set
     type = excluded.type,
