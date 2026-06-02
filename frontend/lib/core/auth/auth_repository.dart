@@ -1,11 +1,10 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../config/env.dart';
+import '../media/cloudflare_media_repository.dart';
 
 class CurrentUserProfileData {
   const CurrentUserProfileData({
@@ -36,18 +35,14 @@ class AuthRepository extends ChangeNotifier {
   }
 
   final _supabase = Supabase.instance.client;
-  late final SupabaseClient _avatarStorageClient =
-      Env.hasExternalAvatarStorage
-      ? SupabaseClient(Env.avatarStorageProjectUrl, Env.avatarStorageAnonKey)
-      : _supabase;
+  final CloudflareMediaRepository _mediaRepository =
+      CloudflareMediaRepository();
   User? _user;
   late final StreamSubscription<AuthState> _authSubscription;
 
   User? get user => _user;
   bool get isLoggedIn => _user != null;
   String? get currentUserEmail => _user?.email;
-  String get _avatarBucket => Env.avatarStorageBucket;
-  bool get _usesExternalAvatarStorage => Env.hasExternalAvatarStorage;
 
   Future<CurrentUserProfileData?> getCurrentUserProfile() async {
     final currentUser = _user ?? _supabase.auth.currentUser;
@@ -72,8 +67,7 @@ class AuthRepository extends ChangeNotifier {
       debugPrint('Load current user profile error: $e');
     }
 
-    fullName ??=
-        (currentUser?.userMetadata?['full_name'] as String?)?.trim();
+    fullName ??= (currentUser?.userMetadata?['full_name'] as String?)?.trim();
     username ??= currentUser?.email?.trim();
 
     return CurrentUserProfileData(
@@ -103,33 +97,31 @@ class AuthRepository extends ChangeNotifier {
     final Uint8List bytes = await file.readAsBytes();
     final String extension = _extractFileExtension(file);
     final String storagePath =
-        previousAvatarPath != null && previousAvatarPath.isNotEmpty
-        ? previousAvatarPath
-        : 'Avatar/$userId/avatar$extension';
+        'avatars/$userId/avatar_${DateTime.now().microsecondsSinceEpoch}$extension';
 
-    if (previousAvatarPath == null || previousAvatarPath.isEmpty) {
-      final Set<String> stalePaths = <String>{
-        ..._avatarCandidatePaths(userId),
-      }..remove(storagePath);
-      await _deleteAvatarPaths(stalePaths);
-    }
-
-    await _avatarStorageClient.storage.from(_avatarBucket).uploadBinary(
-      storagePath,
-      bytes,
-      fileOptions: const FileOptions(upsert: true),
+    final CloudflareMediaUpload uploaded = await _mediaRepository.uploadBytes(
+      bytes: bytes,
+      folder: _folderFromPath(storagePath),
+      fileName: _fileNameFromPath(storagePath),
+      contentType: _mimeTypeFromExtension(extension),
     );
-
-    final String avatarUrl = _avatarUrlFromPath(storagePath);
 
     await _saveCurrentUserAvatarUrl(
       userId: userId,
-      avatarUrl: avatarUrl,
+      avatarUrl: uploaded.url,
       email: currentUser?.email?.trim(),
       fullName: (currentUser?.userMetadata?['full_name'] as String?)?.trim(),
     );
 
-    return avatarUrl;
+    await _deleteAvatarPaths(
+      <String>{
+        ..._avatarCandidatePaths(userId),
+        if (previousAvatarPath != null && previousAvatarPath.isNotEmpty)
+          previousAvatarPath,
+      }..remove(storagePath),
+    );
+
+    return uploaded.url;
   }
 
   Future<void> clearCurrentUserAvatar() async {
@@ -208,7 +200,7 @@ class AuthRepository extends ChangeNotifier {
 
   Future<void> signInWithGoogle() async {
     try {
-      final String? redirectTo = kIsWeb
+      final String redirectTo = kIsWeb
           ? Uri.base.origin
           : 'com.example.hellovietnam://login-callback';
 
@@ -305,6 +297,11 @@ class AuthRepository extends ChangeNotifier {
   }
 
   Set<String> _avatarCandidatePaths(String userId) => <String>{
+    'avatars/$userId/avatar.jpg',
+    'avatars/$userId/avatar.jpeg',
+    'avatars/$userId/avatar.png',
+    'avatars/$userId/avatar.webp',
+    'avatars/$userId/avatar.gif',
     'Avatar/$userId/avatar.jpg',
     'Avatar/$userId/avatar.jpeg',
     'Avatar/$userId/avatar.png',
@@ -315,17 +312,12 @@ class AuthRepository extends ChangeNotifier {
   Future<void> _deleteAvatarPaths(Set<String> paths) async {
     final List<String> sanitized = paths
         .where((String path) => path.trim().isNotEmpty)
-        .map((String path) => path.trim())
+        .map((String path) => _mediaRepository.keyFromUrlOrPath(path))
+        .whereType<String>()
         .toSet()
         .toList();
     if (sanitized.isEmpty) return;
-    try {
-      await _avatarStorageClient.storage.from(_avatarBucket).remove(sanitized);
-    } catch (e) {
-      if (!_usesExternalAvatarStorage) {
-        debugPrint('Delete avatar paths warning: $e');
-      }
-    }
+    await _mediaRepository.deleteKeys(sanitized);
   }
 
   Future<void> _saveCurrentUserAvatarUrl({
@@ -374,7 +366,8 @@ class AuthRepository extends ChangeNotifier {
     } on PostgrestException catch (error) {
       final String message = error.message.toLowerCase();
       final bool duplicateUsername =
-          error.code == '23505' && message.contains('user_account_username_key');
+          error.code == '23505' &&
+          message.contains('user_account_username_key');
 
       if (!duplicateUsername || email == null || email.isEmpty) {
         rethrow;
@@ -395,69 +388,40 @@ class AuthRepository extends ChangeNotifier {
       return avatarPath;
     }
 
-    if (_usesExternalAvatarStorage) {
-      try {
-        return _avatarStorageClient.storage.from(_avatarBucket).getPublicUrl(
-          avatarPath,
-        );
-      } catch (e) {
-        debugPrint('Resolve external avatar url error: $e');
-      }
-    }
-
-    try {
-      return await _avatarStorageClient.storage
-          .from(_avatarBucket)
-          .createSignedUrl(avatarPath, 60 * 60 * 24 * 30);
-    } catch (_) {
-      try {
-        return _avatarStorageClient.storage
-            .from(_avatarBucket)
-            .getPublicUrl(avatarPath);
-      } catch (e) {
-        debugPrint('Resolve avatar url error: $e');
-        return null;
-      }
-    }
-  }
-
-  String _avatarUrlFromPath(String avatarPath) {
-    return _avatarStorageClient.storage.from(_avatarBucket).getPublicUrl(
-      avatarPath,
-    );
+    return _mediaRepository.publicUrlForKey(avatarPath);
   }
 
   String? _avatarPathFromStoredAvatar(String? avatarValue) {
     if (avatarValue == null || avatarValue.isEmpty) return null;
-    if (!avatarValue.startsWith('http://') && !avatarValue.startsWith('https://')) {
-      return avatarValue;
-    }
+    return _mediaRepository.keyFromUrlOrPath(avatarValue);
+  }
 
-    final String publicPrefix =
-        '${Env.avatarStorageProjectUrl}/storage/v1/object/public/$_avatarBucket/';
-    final String signPrefix =
-        '${Env.avatarStorageProjectUrl}/storage/v1/object/sign/$_avatarBucket/';
+  String _folderFromPath(String path) {
+    final int slashIndex = path.lastIndexOf('/');
+    if (slashIndex <= 0) return '';
+    return path.substring(0, slashIndex);
+  }
 
-    if (avatarValue.startsWith(publicPrefix)) {
-      return Uri.decodeComponent(avatarValue.substring(publicPrefix.length));
+  String _fileNameFromPath(String path) {
+    final int slashIndex = path.lastIndexOf('/');
+    if (slashIndex == -1 || slashIndex == path.length - 1) {
+      return 'avatar.jpg';
     }
+    return path.substring(slashIndex + 1);
+  }
 
-    if (avatarValue.startsWith(signPrefix)) {
-      final String withoutPrefix = avatarValue.substring(signPrefix.length);
-      final int queryIndex = withoutPrefix.indexOf('?');
-      final String rawPath = queryIndex == -1
-          ? withoutPrefix
-          : withoutPrefix.substring(0, queryIndex);
-      return Uri.decodeComponent(rawPath);
+  String _mimeTypeFromExtension(String extension) {
+    switch (extension.toLowerCase()) {
+      case '.png':
+        return 'image/png';
+      case '.webp':
+        return 'image/webp';
+      case '.gif':
+        return 'image/gif';
+      case '.jpeg':
+      case '.jpg':
+      default:
+        return 'image/jpeg';
     }
-
-    final Uri? uri = Uri.tryParse(avatarValue);
-    if (uri == null) return null;
-    final List<String> segments = uri.pathSegments;
-    final int bucketIndex = segments.indexOf(_avatarBucket);
-    if (bucketIndex == -1 || bucketIndex == segments.length - 1) {
-      return null;
-    }
-    return Uri.decodeComponent(segments.sublist(bucketIndex + 1).join('/'));
   }
 }

@@ -275,43 +275,6 @@ create policy "Users can report posts"
 on forum_post_report for insert
 with check (auth.uid() = id_reporter_user);
 
-insert into storage.buckets (id, name, public)
-values ('forum-media', 'forum-media', true)
-on conflict (id) do update set public = true;
-
-drop policy if exists "Forum media is publicly readable" on storage.objects;
-create policy "Forum media is publicly readable"
-on storage.objects for select
-using (bucket_id = 'forum-media');
-
-drop policy if exists "Users can upload forum media" on storage.objects;
-create policy "Users can upload forum media"
-on storage.objects for insert
-with check (
-    bucket_id = 'forum-media'
-    and auth.uid() is not null
-    and (storage.foldername(name))[1] = auth.uid()::text
-);
-
-drop policy if exists "Users can update own forum media" on storage.objects;
-create policy "Users can update own forum media"
-on storage.objects for update
-using (
-    bucket_id = 'forum-media'
-    and auth.uid() is not null
-    and (storage.foldername(name))[1] = auth.uid()::text
-)
-with check (
-    bucket_id = 'forum-media'
-    and auth.uid() is not null
-    and (storage.foldername(name))[1] = auth.uid()::text
-);
-
-drop policy if exists "Users can delete own forum media" on storage.objects;
-create policy "Users can delete own forum media"
-on storage.objects for delete
-using (
-    bucket_id = 'forum-media'
-    and auth.uid() is not null
-    and (storage.foldername(name))[1] = auth.uid()::text
-);
+-- Forum media is stored in Cloudflare R2 through the Supabase Edge Function
+-- backend/supabase/functions/media-upload. The forum_post_media table keeps
+-- the public Cloudflare URL, so no Supabase Storage bucket/policy is required.

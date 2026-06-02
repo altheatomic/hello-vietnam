@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../core/config/env.dart';
+import '../../../core/media/cloudflare_media_repository.dart';
 import '../domain/forum_models.dart';
 
 class ForumRepositorySnapshot {
@@ -36,6 +36,8 @@ class ForumRepository {
     : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
+  final CloudflareMediaRepository _mediaRepository =
+      CloudflareMediaRepository();
 
   User? get _authUser => _client.auth.currentUser;
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
@@ -343,20 +345,13 @@ class ForumRepository {
       final String extension = _extensionFrom(
         file.name.isNotEmpty ? file.name : file.path,
       );
-      final String path =
-          '$userId/$postId/${DateTime.now().microsecondsSinceEpoch}_$i$extension';
-
-      await _client.storage
-          .from(Env.forumMediaBucket)
-          .uploadBinary(
-            path,
-            bytes,
-            fileOptions: FileOptions(
-              contentType: file.mimeType ?? _mimeTypeFromExtension(extension),
-              upsert: true,
-            ),
-          );
-      urls.add(_client.storage.from(Env.forumMediaBucket).getPublicUrl(path));
+      final CloudflareMediaUpload uploaded = await _mediaRepository.uploadBytes(
+        bytes: bytes,
+        folder: 'forum/$userId/$postId',
+        fileName: '${DateTime.now().microsecondsSinceEpoch}_$i$extension',
+        contentType: file.mimeType ?? _mimeTypeFromExtension(extension),
+      );
+      urls.add(uploaded.url);
     }
     return urls;
   }
