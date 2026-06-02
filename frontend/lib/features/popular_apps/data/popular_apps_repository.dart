@@ -78,7 +78,7 @@ class PopularAppsRepository {
       id: id,
       name: name,
       description: _str(row['description']) ?? '',
-      category: catId.toUpperCase(),
+      category: _str(catRow?['label']) ?? catId.toUpperCase(),
       logo: name.isNotEmpty ? name[0].toUpperCase() : '?',
       badgeColor: color.withValues(alpha: 0.15),
       badgeTextColor: color,

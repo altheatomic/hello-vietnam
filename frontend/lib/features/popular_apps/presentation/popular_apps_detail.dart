@@ -2,26 +2,90 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
-import 'package:hellovietnam/features/popular_apps/data/popular_apps_mock_data.dart';
+import 'package:hellovietnam/features/popular_apps/data/popular_apps_repository.dart';
+import 'package:hellovietnam/features/popular_apps/domain/popular_apps_post.dart';
 import 'package:hellovietnam/features/popular_apps/presentation/widgets/popular_apps_video_placeholder.dart';
 
-class PopularAppsDetailPage extends StatelessWidget {
+class PopularAppsDetailPage extends StatefulWidget {
   const PopularAppsDetailPage({super.key, required this.appId});
 
   final String appId;
 
   @override
-  Widget build(BuildContext context) {
-    final post = popularAppsPosts[appId];
+  State<PopularAppsDetailPage> createState() => _PopularAppsDetailPageState();
+}
 
+class _PopularAppsDetailPageState extends State<PopularAppsDetailPage> {
+  final PopularAppsRepository _repo = PopularAppsRepository();
+
+  PopularAppsPost? _post;
+  bool _isLoading = true;
+  String? _loadError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPost();
+  }
+
+  Future<void> _loadPost() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+    try {
+      final Map<String, dynamic>? row =
+          await _repo.fetchDetail(widget.appId);
+      if (!mounted) return;
+      setState(() {
+        _post = row != null ? PopularAppsPost.fromDbRow(row) : null;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _loadError = 'Could not load app details. Tap to retry.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
+
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_loadError != null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: GestureDetector(
+            onTap: _loadPost,
+            child: Text(
+              _loadError!,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final post = _post;
     if (post == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Popular Apps')),
         body: const Center(child: Text('App not found')),
       );
     }
-
-    final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -119,7 +183,7 @@ class PopularAppsDetailPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final step in post.steps) ...[
+                    for (final String step in post.steps) ...<Widget>[
                       Text(
                         step,
                         style: const TextStyle(

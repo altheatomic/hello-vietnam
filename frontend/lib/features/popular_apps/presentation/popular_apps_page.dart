@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
-import 'package:hellovietnam/features/popular_apps/data/popular_apps_mock_data.dart';
+import 'package:hellovietnam/features/popular_apps/data/popular_apps_repository.dart';
 import 'package:hellovietnam/features/popular_apps/domain/popular_apps_item.dart';
 import 'package:hellovietnam/features/popular_apps/presentation/widgets/popular_apps_cart.dart';
 import 'package:hellovietnam/features/popular_apps/presentation/widgets/popular_apps_category_tabs.dart';
@@ -15,22 +15,52 @@ class PopularAppsPage extends StatefulWidget {
 }
 
 class _PopularAppsPageState extends State<PopularAppsPage> {
+  final PopularAppsRepository _repo = PopularAppsRepository();
+
+  List<PopularAppsItem> _items = <PopularAppsItem>[];
+  List<String> _categoryLabels = <String>[];
+  bool _isLoading = true;
+  String? _loadError;
+
   String selectedCategory = 'ALL';
 
-  List<PopularAppsItem> get filteredItems {
-    if (selectedCategory == 'ALL') return popularAppsItems;
-    if (selectedCategory == 'MORE') {
-      return popularAppsItems
-          .where(
-            (item) =>
-                item.category != 'TRANSPORT' &&
-                item.category != 'CHAT' &&
-                item.category != 'PAYMENT',
-          )
-          .toList();
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+    try {
+      final results = await Future.wait([
+        _repo.fetchItems(),
+        _repo.fetchCategoryLabels(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _items = results[0] as List<PopularAppsItem>;
+        _categoryLabels = results[1] as List<String>;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _loadError = 'Could not load apps. Tap to retry.';
+      });
     }
-    return popularAppsItems
-        .where((item) => item.category == selectedCategory)
+  }
+
+  List<String> get _tabs => <String>['ALL', ..._categoryLabels];
+
+  List<PopularAppsItem> get filteredItems {
+    if (selectedCategory == 'ALL') return _items;
+    return _items
+        .where((PopularAppsItem item) => item.category == selectedCategory)
         .toList();
   }
 
@@ -75,29 +105,57 @@ class _PopularAppsPageState extends State<PopularAppsPage> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  PopularAppsCategoryTabs(
-                    categories: popularAppsCategories,
-                    selectedCategory: selectedCategory,
-                    onSelected: (value) {
-                      setState(() => selectedCategory = value);
-                    },
-                  ),
+                  if (!_isLoading && _loadError == null)
+                    PopularAppsCategoryTabs(
+                      categories: _tabs,
+                      selectedCategory: selectedCategory,
+                      onSelected: (String value) {
+                        setState(() => selectedCategory = value);
+                      },
+                    ),
                 ],
               ),
             ),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
-                itemCount: filteredItems.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final item = filteredItems[index];
-                  return PopularAppsCard(
-                    item: item,
-                    onTap: () => context.push('/popular-apps/${item.id}'),
-                  );
-                },
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _loadError != null
+                  ? Center(
+                      child: GestureDetector(
+                        onTap: _loadData,
+                        child: Text(
+                          _loadError!,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    )
+                  : filteredItems.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No apps in this category.',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                      itemCount: filteredItems.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 16),
+                      itemBuilder: (BuildContext context, int index) {
+                        final PopularAppsItem item = filteredItems[index];
+                        return PopularAppsCard(
+                          item: item,
+                          onTap: () =>
+                              context.push('/popular-apps/${item.id}'),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
