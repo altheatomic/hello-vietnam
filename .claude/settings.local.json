@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter analyze *)"
+      "Bash(flutter analyze *)",
+      "Bash(Remove-Item -Recurse -Force \"c:\\\\Users\\\\Asus\\\\hellovietnam\\\\lib\" -ErrorAction SilentlyContinue)",
+      "Bash(Remove-Item -Recurse -Force \"c:\\\\Users\\\\Asus\\\\hellovietnam\\\\android\" -ErrorAction SilentlyContinue)",
+      "Bash(Remove-Item -Recurse -Force \"c:\\\\Users\\\\Asus\\\\hellovietnam\\\\ios\" -ErrorAction SilentlyContinue)",
+      "Bash(Write-Output \"Done\")",
+      "PowerShell(git -C \"c:\\\\Users\\\\Asus\\\\hellovietnam\" status --short)"
     ]
   }
 }

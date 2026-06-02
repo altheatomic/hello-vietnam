@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
-import '../../data/popular_app_guide_mock_data.dart';
+import '../../data/admin_popular_app_repository.dart';
 import '../../domain/popular_app_guide.dart';
 import '../widgets/admin_section_header.dart';
 import '../widgets/admin_table_sort_header.dart';
@@ -23,14 +23,11 @@ class AdminPopularAppPage extends StatefulWidget {
 }
 
 class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
-  late final List<PopularAppGuide> _guides = mockPopularAppGuides
-      .map((g) => g)
-      .toList();
+  final AdminPopularAppRepository _repo = AdminPopularAppRepository();
 
-  /// Runtime category list — starts from defaults; mutated by CategoryManagerDialog.
-  late final List<AppCategory> _categories = defaultAppCategories
-      .map((c) => c)
-      .toList();
+  List<PopularAppGuide> _guides = [];
+  List<AppCategory> _categories = [];
+  bool _loading = true;
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -41,9 +38,33 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
   static const int _pageSize = 8;
 
   @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _loading = true);
+    try {
+      final results = await Future.wait([
+        _repo.fetchApps(),
+        _repo.fetchCategories(),
+      ]);
+      setState(() {
+        _guides = results[0] as List<PopularAppGuide>;
+        _categories = results[1] as List<AppCategory>;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+      _showSnack('Failed to load data: $e');
+    }
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -128,8 +149,13 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
       builder: (_) => PopularAppFormDialog(categories: _categories),
     );
     if (result == null) return;
-    setState(() => _guides.insert(0, result));
-    _showSnack('Guide "${result.name}" added.');
+    try {
+      final created = await _repo.createApp(app: result);
+      setState(() => _guides.insert(0, created));
+      _showSnack('Guide "${created.name}" added.');
+    } catch (e) {
+      _showSnack('Failed to create guide: $e');
+    }
   }
 
   Future<void> _openEdit(PopularAppGuide guide) async {
@@ -140,11 +166,16 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
           PopularAppFormDialog(initial: guide, categories: _categories),
     );
     if (result == null) return;
-    setState(() {
-      final idx = _guides.indexWhere((g) => g.id == result.id);
-      if (idx != -1) _guides[idx] = result;
-    });
-    _showSnack('Guide "${result.name}" updated.');
+    try {
+      final updated = await _repo.updateApp(app: result);
+      setState(() {
+        final idx = _guides.indexWhere((g) => g.id == updated.id);
+        if (idx != -1) _guides[idx] = updated;
+      });
+      _showSnack('Guide "${updated.name}" updated.');
+    } catch (e) {
+      _showSnack('Failed to update guide: $e');
+    }
   }
 
   Future<void> _openView(PopularAppGuide guide) async {
@@ -163,8 +194,13 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
       builder: (_) => _DeleteConfirmDialog(name: guide.name),
     );
     if (confirmed != true) return;
-    setState(() => _guides.removeWhere((g) => g.id == guide.id));
-    _showSnack('Guide "${guide.name}" deleted.');
+    try {
+      await _repo.deleteApp(guide.id);
+      setState(() => _guides.removeWhere((g) => g.id == guide.id));
+      _showSnack('Guide "${guide.name}" deleted.');
+    } catch (e) {
+      _showSnack('Failed to delete guide: $e');
+    }
   }
 
   // ── Category management ────────────────────────────────────────────────────
@@ -181,35 +217,41 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
     // null = user pressed ×; non-null = user pressed Done
     if (result == null) return;
 
-    setState(() {
-      // Find which IDs were removed
+    try {
       final oldIds = _categories.map((c) => c.id).toSet();
       final newIds = result.map((c) => c.id).toSet();
       final deletedIds = oldIds.difference(newIds);
+      final fallbackId = result.isNotEmpty ? result.first.id : 'other';
 
-      if (deletedIds.isNotEmpty) {
-        // Reassign guides whose category was deleted to the first remaining
-        final fallbackId = result.isNotEmpty ? result.first.id : 'other';
-        for (int i = 0; i < _guides.length; i++) {
-          if (deletedIds.contains(_guides[i].categoryId)) {
-            _guides[i] = _guides[i].copyWith(categoryId: fallbackId);
-          }
-        }
-
-        // Clear active filter if its category was deleted
-        if (_filterCategoryId != null &&
-            deletedIds.contains(_filterCategoryId)) {
-          _filterCategoryId = null;
-        }
+      for (final id in deletedIds) {
+        await _repo.reassignCategory(fromId: id, toId: fallbackId);
+        await _repo.deleteCategory(id);
+      }
+      for (final cat in result) {
+        await _repo.upsertCategory(category: cat);
       }
 
-      // Apply updated category list
-      _categories
-        ..clear()
-        ..addAll(result);
-    });
+      setState(() {
+        if (deletedIds.isNotEmpty) {
+          for (int i = 0; i < _guides.length; i++) {
+            if (deletedIds.contains(_guides[i].categoryId)) {
+              _guides[i] = _guides[i].copyWith(categoryId: fallbackId);
+            }
+          }
+          if (_filterCategoryId != null &&
+              deletedIds.contains(_filterCategoryId)) {
+            _filterCategoryId = null;
+          }
+        }
+        _categories
+          ..clear()
+          ..addAll(result);
+      });
 
-    _showSnack('Categories updated.');
+      _showSnack('Categories updated.');
+    } catch (e) {
+      _showSnack('Failed to update categories: $e');
+    }
   }
 
   void _showSnack(String message) {
@@ -226,6 +268,10 @@ class _AdminPopularAppPageState extends State<AdminPopularAppPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final filtered = _filtered;
     final paged = _paged;
 
