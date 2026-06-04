@@ -1,0 +1,5 @@
+[functions.location-preference]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/users/location-preference/index.ts"
+import_map = "./functions/users/location-preference/deno.json"

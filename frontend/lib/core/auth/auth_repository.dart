@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
@@ -100,7 +99,7 @@ class AuthRepository extends ChangeNotifier {
     final String? previousAvatarPath = _avatarPathFromStoredAvatar(
       profile?.avatarPath,
     );
-    final Uint8List bytes = await file.readAsBytes();
+    final bytes = await file.readAsBytes();
     final String extension = _extractFileExtension(file);
     final String storagePath =
         previousAvatarPath != null && previousAvatarPath.isNotEmpty
@@ -208,7 +207,7 @@ class AuthRepository extends ChangeNotifier {
 
   Future<void> signInWithGoogle() async {
     try {
-      final String? redirectTo = kIsWeb
+      final String redirectTo = kIsWeb
           ? Uri.base.origin
           : 'com.example.hellovietnam://login-callback';
 

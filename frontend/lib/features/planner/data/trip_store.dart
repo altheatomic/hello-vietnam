@@ -209,7 +209,7 @@ class TripStore extends ChangeNotifier {
 
       _activeTrip = ActiveTrip(
         title: title,
-        // TODO(backend): replace with persisted real itinerary data when
+        // Backend: replace with persisted real itinerary data when
         // trips are stored server-side. For now, mock data is always the
         // same so reconstructing from it is safe.
         days: TripPlannerMockData.tripDays,

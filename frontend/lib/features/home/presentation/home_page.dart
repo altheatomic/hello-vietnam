@@ -14,6 +14,7 @@ import 'package:hellovietnam/features/personalization/data/travel_preferences_re
 import 'package:hellovietnam/features/personalization/data/travel_recommendation_service.dart';
 import 'package:hellovietnam/features/personalization/domain/travel_preferences.dart';
 import 'package:hellovietnam/features/personalization/presentation/widgets/travel_preferences_summary_card.dart';
+import 'package:hellovietnam/features/location/presentation/quick_location_flow.dart';
 import 'package:hellovietnam/features/recommend/domain/recommend_destination.dart';
 import '../data/home_repository.dart';
 import '../data/home_mock_data.dart';
@@ -35,6 +36,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final HomeRepository _homeRepository = HomeRepository();
+  final QuickLocationFlow _quickLocationFlow = QuickLocationFlow();
   List<Destination> _destinations = mockDestinations;
   List<Dish> _dishes = mockDishes;
 
@@ -155,71 +157,94 @@ class _HomePageState extends State<HomePage> {
                                   .instance
                                   .unreadCount;
 
-                              return Stack(
-                                clipBehavior: Clip.none,
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: <Widget>[
                                   Container(
                                     width: 40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.2,
-                                      ),
+                                      color: Colors.white.withValues(alpha: 0.2),
                                       shape: BoxShape.circle,
                                     ),
                                     child: IconButton(
                                       icon: const Icon(
-                                        Icons.notifications_outlined,
+                                        Icons.place_outlined,
                                         size: 22,
                                       ),
                                       color: Colors.white,
                                       onPressed: () =>
-                                          context.push(AppRoutes.notification),
+                                          _quickLocationFlow.start(context),
                                     ),
                                   ),
-                                  if (unreadCount > 0)
-                                    Positioned(
-                                      top: -4,
-                                      right: -4,
-                                      child: Container(
-                                        constraints: const BoxConstraints(
-                                          minWidth: 18,
-                                          minHeight: 18,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                          vertical: 1,
-                                        ),
+                                  const SizedBox(width: 10),
+                                  Stack(
+                                    clipBehavior: Clip.none,
+                                    children: <Widget>[
+                                      Container(
+                                        width: 40,
+                                        height: 40,
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFEF4444),
-                                          borderRadius: BorderRadius.circular(
-                                            999,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.2,
                                           ),
-                                          border: Border.all(
-                                            color: Colors.white,
-                                            width: 1.2,
-                                          ),
-                                          boxShadow: const <BoxShadow>[
-                                            BoxShadow(
-                                              color: Color(0x22000000),
-                                              blurRadius: 8,
-                                              offset: Offset(0, 3),
-                                            ),
-                                          ],
+                                          shape: BoxShape.circle,
                                         ),
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          unreadCount > 99
-                                              ? '99+'
-                                              : '$unreadCount',
-                                          style: const TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w800,
-                                            color: Colors.white,
+                                        child: IconButton(
+                                          icon: const Icon(
+                                            Icons.notifications_outlined,
+                                            size: 22,
+                                          ),
+                                          color: Colors.white,
+                                          onPressed: () => context.push(
+                                            AppRoutes.notification,
                                           ),
                                         ),
                                       ),
-                                    ),
+                                      if (unreadCount > 0)
+                                        Positioned(
+                                          top: -4,
+                                          right: -4,
+                                          child: Container(
+                                            constraints: const BoxConstraints(
+                                              minWidth: 18,
+                                              minHeight: 18,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 4,
+                                              vertical: 1,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFEF4444),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                              border: Border.all(
+                                                color: Colors.white,
+                                                width: 1.2,
+                                              ),
+                                              boxShadow: const <BoxShadow>[
+                                                BoxShadow(
+                                                  color: Color(0x22000000),
+                                                  blurRadius: 8,
+                                                  offset: Offset(0, 3),
+                                                ),
+                                              ],
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Text(
+                                              unreadCount > 99
+                                                  ? '99+'
+                                                  : '$unreadCount',
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ],
                               );
                             },
