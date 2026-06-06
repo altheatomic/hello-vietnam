@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import '../../domain/feature_item.dart';
 
 /// A 2 × 4 grid of quick-action feature buttons.
@@ -77,7 +78,7 @@ class _FeatureButton extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(
-                      item.title,
+                      context.l10n.featureLabelForRoute(item.route),
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,

@@ -1,7 +1,9 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/auth/auth_repository.dart';
-import 'theme.dart';
+import '../core/language/app_language.dart';
 import '../features/item_detail/domain/detail_category.dart';
 import '../features/item_detail/domain/item_detail_models.dart';
 
@@ -586,10 +588,6 @@ GoRouter buildRouter() {
                     builder: (context, state) => const TripBudgetPage(),
                   ),
                   GoRoute(
-                    path: 'saved',
-                    builder: (context, state) => const SavedTripsPage(),
-                  ),
-                  GoRoute(
                     path: 'result',
                     builder: (context, state) => const TripResultPage(),
                     routes: [
@@ -629,6 +627,14 @@ GoRouter buildRouter() {
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: AppRoutes.tripPlannerSaved,
+                builder: (context, state) => const SavedTripsPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: AppRoutes.messages,
                 builder: (context, state) => const ForumPage(),
               ),
@@ -660,8 +666,8 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   void _onTap(BuildContext context, int index) {
-    // Profile tab (index 3): redirect to login if not authenticated
-    if (index == 3 && !AuthRepository.instance.isLoggedIn) {
+    // Profile tab (index 4): redirect to login if not authenticated
+    if (index == 4 && !AuthRepository.instance.isLoggedIn) {
       context.push(AppRoutes.login);
       return;
     }
@@ -693,64 +699,163 @@ class _CustomBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  static const _items = <_NavItem>[
-    _NavItem(
-      icon: Icons.home_outlined,
-      selectedIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    _NavItem(
-      icon: Icons.calendar_month_outlined,
-      selectedIcon: Icons.calendar_month_rounded,
-      label: 'Trip Planner',
-    ),
-    _NavItem(
-      icon: Icons.bookmark_outline_rounded,
-      selectedIcon: Icons.bookmark_rounded,
-      label: '',
-    ), // center
-    _NavItem(
-      icon: Icons.forum_outlined,
-      selectedIcon: Icons.forum_rounded,
-      label: 'Forum',
-    ),
-    _NavItem(
-      icon: Icons.person_outline_rounded,
-      selectedIcon: Icons.person_rounded,
-      label: 'Profile',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
+    final AppStrings strings = context.l10n;
+    final List<_NavItem> items = <_NavItem>[
+      _NavItem(
+        icon: Icons.home_outlined,
+        selectedIcon: Icons.home_rounded,
+        label: strings.home,
       ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 68,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(_items.length, (i) {
-              if (i == 2) return _buildCenterButton(context);
-              final branchIndex = i < 2 ? i : i - 1;
-              final isSelected = branchIndex == currentIndex;
-              return _buildNavItem(
-                _items[i],
-                isSelected,
-                () => onTap(branchIndex),
-              );
-            }),
+      _NavItem(
+        icon: Icons.calendar_month_outlined,
+        selectedIcon: Icons.calendar_month_rounded,
+        label: strings.tripPlanner,
+      ),
+      const _NavItem(
+        icon: Icons.bookmark_outline_rounded,
+        selectedIcon: Icons.bookmark_rounded,
+        label: '',
+      ),
+      _NavItem(
+        icon: Icons.forum_outlined,
+        selectedIcon: Icons.forum_rounded,
+        label: strings.forum,
+      ),
+      _NavItem(
+        icon: Icons.person_outline_rounded,
+        selectedIcon: Icons.person_rounded,
+        label: strings.profile,
+      ),
+    ];
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(34),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              height: 66,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: <Color>[
+                    Colors.white.withValues(alpha: 0.10),
+                    const Color(0xFFBFF4FF).withValues(alpha: 0.06),
+                    const Color(0xFF0E7490).withValues(alpha: 0.035),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(34),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.20),
+                  width: 1.1,
+                ),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: const Color(0xFF00BFE8).withValues(alpha: 0.07),
+                    blurRadius: 22,
+                    spreadRadius: -8,
+                    offset: const Offset(0, 7),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.055),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  const double indicatorWidth = 50;
+                  const double indicatorHeight = 46;
+                  final double slotWidth = constraints.maxWidth / items.length;
+                  final int visualIndex = currentIndex.clamp(
+                    0,
+                    items.length - 1,
+                  );
+                  final double indicatorLeft =
+                      (visualIndex * slotWidth) +
+                      ((slotWidth - indicatorWidth) / 2);
+
+                  return Stack(
+                    alignment: Alignment.centerLeft,
+                    children: <Widget>[
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 360),
+                        curve: Curves.easeOutCubic,
+                        left: indicatorLeft,
+                        top: (constraints.maxHeight - indicatorHeight) / 2,
+                        child: Container(
+                          width: indicatorWidth,
+                          height: indicatorHeight,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.28),
+                            borderRadius: BorderRadius.circular(26),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.30),
+                            ),
+                            boxShadow: <BoxShadow>[
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF22D3EE,
+                                ).withValues(alpha: 0.14),
+                                blurRadius: 16,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              width: 18,
+                              height: 3,
+                              margin: const EdgeInsets.only(bottom: 7),
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0xFF0891B2,
+                                ).withValues(alpha: 0.72),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: List.generate(items.length, (i) {
+                          if (i == 2) {
+                            return Expanded(
+                              child: Center(
+                                child: _buildCenterButton(
+                                  context,
+                                  currentIndex == i,
+                                  () => onTap(i),
+                                ),
+                              ),
+                            );
+                          }
+                          final isSelected = i == currentIndex;
+                          return Expanded(
+                            child: Center(
+                              child: _buildNavItem(
+                                items[i],
+                                isSelected,
+                                () => onTap(i),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ),
@@ -758,58 +863,59 @@ class _CustomBottomNav extends StatelessWidget {
   }
 
   Widget _buildNavItem(_NavItem item, bool isSelected, VoidCallback onTap) {
-    final color = isSelected ? AppColors.primary : AppColors.textSecondary;
+    final Color color = isSelected
+        ? const Color(0xFF075985)
+        : const Color(0xFF334155).withValues(alpha: 0.76);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 64,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
+      child: Tooltip(
+        message: item.label,
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          scale: isSelected ? 1.06 : 1,
+          child: SizedBox(
+            width: 52,
+            height: 46,
+            child: Icon(
               isSelected ? item.selectedIcon : item.icon,
-              size: 24,
+              size: 25,
               color: color,
             ),
-            const SizedBox(height: 3),
-            Text(
-              item.label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: color,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCenterButton(BuildContext context) {
+  Widget _buildCenterButton(
+    BuildContext context,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    final Color iconColor = isSelected
+        ? const Color(0xFF0891B2)
+        : const Color(0xFF334155).withValues(alpha: 0.76);
     return GestureDetector(
-      onTap: () {
-        context.push(AppRoutes.tripPlannerSaved);
-      },
-      child: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          color: AppColors.primaryLight,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      onTap: onTap,
+      child: Tooltip(
+        message: context.l10n.ui('Saved Trips'),
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          scale: isSelected ? 1.06 : 1,
+          child: SizedBox(
+            width: 52,
+            height: 46,
+            child: Icon(
+              isSelected
+                  ? Icons.bookmark_added_rounded
+                  : Icons.bookmark_outline_rounded,
+              size: 27,
+              color: iconColor,
             ),
-          ],
-        ),
-        child: const Icon(
-          Icons.bookmark_added_rounded,
-          size: 26,
-          color: Colors.white,
+          ),
         ),
       ),
     );

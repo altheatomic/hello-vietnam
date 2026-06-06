@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/city_detail/data/city_detail_mock_data.dart';
 import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart';
 import 'package:hellovietnam/features/item_detail/presentation/shared_item_detail_page.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 
 class CityDetailPage extends StatelessWidget {
   const CityDetailPage({super.key, required this.request});
@@ -15,8 +17,11 @@ class CityDetailPage extends StatelessWidget {
 
     return SharedItemDetailPage(
       detail: cityDetail.detail,
+      favoriteType: FavoriteType.city,
+      favoriteRawId: request.id,
+      favoriteName: request.name,
       insertedSectionsBuilder: (context, detail) => <Widget>[
-        const _CitySectionTitle(title: 'Best time to visit'),
+        _CitySectionTitle(title: context.l10n.ui('Best time to visit')),
         const SizedBox(height: 12),
         _BestTimeCard(
           title: cityDetail.bestTimeTitle,

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
@@ -36,8 +35,7 @@ class AuthRepository extends ChangeNotifier {
   }
 
   final _supabase = Supabase.instance.client;
-  late final SupabaseClient _avatarStorageClient =
-      Env.hasExternalAvatarStorage
+  late final SupabaseClient _avatarStorageClient = Env.hasExternalAvatarStorage
       ? SupabaseClient(Env.avatarStorageProjectUrl, Env.avatarStorageAnonKey)
       : _supabase;
   User? _user;
@@ -72,8 +70,7 @@ class AuthRepository extends ChangeNotifier {
       debugPrint('Load current user profile error: $e');
     }
 
-    fullName ??=
-        (currentUser?.userMetadata?['full_name'] as String?)?.trim();
+    fullName ??= (currentUser?.userMetadata?['full_name'] as String?)?.trim();
     username ??= currentUser?.email?.trim();
 
     return CurrentUserProfileData(
@@ -108,17 +105,18 @@ class AuthRepository extends ChangeNotifier {
         : 'Avatar/$userId/avatar$extension';
 
     if (previousAvatarPath == null || previousAvatarPath.isEmpty) {
-      final Set<String> stalePaths = <String>{
-        ..._avatarCandidatePaths(userId),
-      }..remove(storagePath);
+      final Set<String> stalePaths = <String>{..._avatarCandidatePaths(userId)}
+        ..remove(storagePath);
       await _deleteAvatarPaths(stalePaths);
     }
 
-    await _avatarStorageClient.storage.from(_avatarBucket).uploadBinary(
-      storagePath,
-      bytes,
-      fileOptions: const FileOptions(upsert: true),
-    );
+    await _avatarStorageClient.storage
+        .from(_avatarBucket)
+        .uploadBinary(
+          storagePath,
+          bytes,
+          fileOptions: const FileOptions(upsert: true),
+        );
 
     final String avatarUrl = _avatarUrlFromPath(storagePath);
 
@@ -208,7 +206,7 @@ class AuthRepository extends ChangeNotifier {
 
   Future<void> signInWithGoogle() async {
     try {
-      final String? redirectTo = kIsWeb
+      final String redirectTo = kIsWeb
           ? Uri.base.origin
           : 'com.example.hellovietnam://login-callback';
 
@@ -374,7 +372,8 @@ class AuthRepository extends ChangeNotifier {
     } on PostgrestException catch (error) {
       final String message = error.message.toLowerCase();
       final bool duplicateUsername =
-          error.code == '23505' && message.contains('user_account_username_key');
+          error.code == '23505' &&
+          message.contains('user_account_username_key');
 
       if (!duplicateUsername || email == null || email.isEmpty) {
         rethrow;
@@ -397,9 +396,9 @@ class AuthRepository extends ChangeNotifier {
 
     if (_usesExternalAvatarStorage) {
       try {
-        return _avatarStorageClient.storage.from(_avatarBucket).getPublicUrl(
-          avatarPath,
-        );
+        return _avatarStorageClient.storage
+            .from(_avatarBucket)
+            .getPublicUrl(avatarPath);
       } catch (e) {
         debugPrint('Resolve external avatar url error: $e');
       }
@@ -422,14 +421,15 @@ class AuthRepository extends ChangeNotifier {
   }
 
   String _avatarUrlFromPath(String avatarPath) {
-    return _avatarStorageClient.storage.from(_avatarBucket).getPublicUrl(
-      avatarPath,
-    );
+    return _avatarStorageClient.storage
+        .from(_avatarBucket)
+        .getPublicUrl(avatarPath);
   }
 
   String? _avatarPathFromStoredAvatar(String? avatarValue) {
     if (avatarValue == null || avatarValue.isEmpty) return null;
-    if (!avatarValue.startsWith('http://') && !avatarValue.startsWith('https://')) {
+    if (!avatarValue.startsWith('http://') &&
+        !avatarValue.startsWith('https://')) {
       return avatarValue;
     }
 

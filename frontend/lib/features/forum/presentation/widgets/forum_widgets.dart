@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
 
@@ -1065,7 +1066,7 @@ class ForumFollowButton extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
                 child: Padding(
                   padding: padding,
-                  child: Text('Following', style: textStyle),
+                  child: Text(context.l10n.ui('Following'), style: textStyle),
                 ),
               ),
             ),
@@ -1098,7 +1099,7 @@ class ForumFollowButton extends StatelessWidget {
               children: <Widget>[
                 Icon(Icons.add, size: large ? 20 : 15, color: Colors.white),
                 const SizedBox(width: 4),
-                Text('Follow', style: textStyle),
+                Text(context.l10n.ui('Follow'), style: textStyle),
               ],
             ),
           ),
@@ -1260,7 +1261,7 @@ class _ForumReplyDialogState extends State<ForumReplyDialog> {
                             enableInteractiveSelection: false,
                             onChanged: (_) => setState(() {}),
                             decoration: InputDecoration(
-                              hintText: 'Type your answer',
+                              hintText: context.l10n.ui('Type your answer'),
                               hintStyle: TextStyle(
                                 fontSize: 18,
                                 color: AppColors.textSecondary.withValues(

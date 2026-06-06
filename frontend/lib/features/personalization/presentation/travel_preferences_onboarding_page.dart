@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
 import 'package:hellovietnam/features/personalization/data/travel_preferences_repository.dart';
 import 'package:hellovietnam/features/personalization/domain/travel_preferences.dart';
@@ -61,15 +62,16 @@ class _TravelPreferencesOnboardingPageState
 
   List<_StepConfig> get _steps => <_StepConfig>[
     _StepConfig(
-      title: 'What kind of trips feel most like you?',
-      subtitle:
-          'Choose a few directions so we can shape your first suggestions.',
+      title: context.l10n.ui('What kind of trips feel most like you?'),
+      subtitle: context.l10n.ui(
+        'Choose a few directions so we can shape your first suggestions.',
+      ),
       body: _TwoColumnChoiceGrid(
         children: TravelStyle.values
             .map(
               (TravelStyle style) => _LiquidChoiceChip(
-                label: style.label,
-                subtitle: style.subtitle,
+                label: context.l10n.ui(style.label),
+                subtitle: context.l10n.ui(style.subtitle),
                 selected: _selectedStyles.contains(style),
                 expandToCell: true,
                 onTap: () {
@@ -86,18 +88,19 @@ class _TravelPreferencesOnboardingPageState
             .toList(growable: false),
       ),
       canContinue: _selectedStyles.length >= 2,
-      helperText: 'Pick at least 2 travel styles.',
+      helperText: context.l10n.ui('Pick at least 2 travel styles.'),
     ),
     _StepConfig(
-      title: 'Who do you usually travel with?',
-      subtitle:
-          'This helps us avoid suggestions that feel awkward or impractical.',
+      title: context.l10n.ui('Who do you usually travel with?'),
+      subtitle: context.l10n.ui(
+        'This helps us avoid suggestions that feel awkward or impractical.',
+      ),
       body: _TwoColumnChoiceGrid(
         children: TravelCompanion.values
             .map(
               (TravelCompanion companion) => _LiquidChoiceChip(
-                label: companion.label,
-                subtitle: companion.subtitle,
+                label: context.l10n.ui(companion.label),
+                subtitle: context.l10n.ui(companion.subtitle),
                 selected: _selectedCompanions.contains(companion),
                 expandToCell: true,
                 onTap: () {
@@ -114,20 +117,21 @@ class _TravelPreferencesOnboardingPageState
             .toList(growable: false),
       ),
       canContinue: _selectedCompanions.isNotEmpty,
-      helperText: 'Pick at least 1 companion style.',
+      helperText: context.l10n.ui('Pick at least 1 companion style.'),
     ),
     _StepConfig(
-      title: 'What budget feels comfortable?',
-      subtitle:
-          'We will tune recommendations so the app feels realistic from day one.',
+      title: context.l10n.ui('What budget feels comfortable?'),
+      subtitle: context.l10n.ui(
+        'We will tune recommendations so the app feels realistic from day one.',
+      ),
       body: Column(
         children: BudgetLevel.values
             .map(
               (BudgetLevel level) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _LiquidRadioCard(
-                  label: level.label,
-                  subtitle: level.subtitle,
+                  label: context.l10n.ui(level.label),
+                  subtitle: context.l10n.ui(level.subtitle),
                   selected: _selectedBudget == level,
                   onTap: () => setState(() => _selectedBudget = level),
                 ),
@@ -136,20 +140,21 @@ class _TravelPreferencesOnboardingPageState
             .toList(growable: false),
       ),
       canContinue: _selectedBudget != null,
-      helperText: 'Choose 1 budget level.',
+      helperText: context.l10n.ui('Choose 1 budget level.'),
     ),
     _StepConfig(
-      title: 'How packed do you want your days to be?',
-      subtitle:
-          'This controls whether we suggest slow days, balanced plans, or busier lists.',
+      title: context.l10n.ui('How packed do you want your days to be?'),
+      subtitle: context.l10n.ui(
+        'This controls whether we suggest slow days, balanced plans, or busier lists.',
+      ),
       body: Column(
         children: TravelPace.values
             .map(
               (TravelPace pace) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _LiquidRadioCard(
-                  label: pace.label,
-                  subtitle: pace.subtitle,
+                  label: context.l10n.ui(pace.label),
+                  subtitle: context.l10n.ui(pace.subtitle),
                   selected: _selectedPace == pace,
                   onTap: () => setState(() => _selectedPace = pace),
                 ),
@@ -158,19 +163,20 @@ class _TravelPreferencesOnboardingPageState
             .toList(growable: false),
       ),
       canContinue: _selectedPace != null,
-      helperText: 'Choose your preferred pace.',
+      helperText: context.l10n.ui('Choose your preferred pace.'),
     ),
     _StepConfig(
-      title: 'Pick the things you want to see more often',
-      subtitle:
-          'This final step powers your Home and Explore suggestions right away.',
+      title: context.l10n.ui('Pick the things you want to see more often'),
+      subtitle: context.l10n.ui(
+        'This final step powers your Home and Explore suggestions right away.',
+      ),
       body: Wrap(
         spacing: 12,
         runSpacing: 12,
         children: InterestTopic.values
             .map(
               (InterestTopic topic) => _LiquidChoiceChip(
-                label: topic.label,
+                label: context.l10n.ui(topic.label),
                 selected: _selectedTopics.contains(topic),
                 compact: true,
                 onTap: () {
@@ -187,7 +193,7 @@ class _TravelPreferencesOnboardingPageState
             .toList(growable: false),
       ),
       canContinue: _selectedTopics.length >= 3,
-      helperText: 'Pick at least 3 topics.',
+      helperText: context.l10n.ui('Pick at least 3 topics.'),
     ),
   ];
 
@@ -359,8 +365,10 @@ class _TravelPreferencesOnboardingPageState
                         Expanded(
                           child: _GlassActionButton(
                             label: safeStepIndex == 0
-                                ? (_isEditing ? 'Cancel' : 'Back later')
-                                : 'Back',
+                                ? (_isEditing
+                                      ? context.l10n.ui('Cancel')
+                                      : context.l10n.ui('Back later'))
+                                : context.l10n.ui('Back'),
                             onTap: _goBack,
                             isPrimary: false,
                           ),
@@ -370,8 +378,10 @@ class _TravelPreferencesOnboardingPageState
                           flex: 2,
                           child: _GlassActionButton(
                             label: safeStepIndex == _steps.length - 1
-                                ? (_isSaving ? 'Saving...' : 'Finish')
-                                : 'Continue',
+                                ? (_isSaving
+                                      ? context.l10n.ui('Saving...')
+                                      : context.l10n.ui('Finish'))
+                                : context.l10n.ui('Continue'),
                             onTap: currentStep.canContinue && !_isSaving
                                 ? _goNext
                                 : null,
@@ -444,7 +454,7 @@ class _TopBar extends StatelessWidget {
         ),
         const Spacer(),
         Text(
-          'Your Travel Taste',
+          context.l10n.ui('Your Travel Taste'),
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             color: AppColors.primary,
             fontWeight: FontWeight.w800,
@@ -490,9 +500,9 @@ class _SelectionSummary extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'You are telling us to prioritize',
-            style: TextStyle(
+          Text(
+            context.l10n.ui('You are telling us to prioritize'),
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: Color(0xFF1B3957),
@@ -504,8 +514,15 @@ class _SelectionSummary extends StatelessWidget {
             runSpacing: 8,
             children:
                 <String>[
-                      ...selectedStyles.map((style) => style.label),
-                      ...selectedTopics.take(4).map((topic) => topic.label),
+                      ...selectedStyles.map(
+                        (TravelStyle style) => context.l10n.ui(style.label),
+                      ),
+                      ...selectedTopics
+                          .take(4)
+                          .map(
+                            (InterestTopic topic) =>
+                                context.l10n.ui(topic.label),
+                          ),
                     ]
                     .map(
                       (String label) => Container(

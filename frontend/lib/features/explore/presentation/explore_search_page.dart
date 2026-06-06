@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
 
 /// Mock list of searchable destinations — swap with API later.
@@ -112,7 +113,7 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
                     focusNode: _focusNode,
                     autofocus: true,
                     showFilterButton: false,
-                    hintText: 'Search for destinations',
+                    hintText: context.l10n.ui('Search for destinations'),
                     onChanged: _onChanged,
                     onSearch: _onSubmit,
                   ),

@@ -5,9 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/explore/presentation/widgets/explore_floating_back_button.dart';
 import 'package:hellovietnam/features/item_detail/data/item_detail_mock_data.dart';
+import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
+import 'package:hellovietnam/features/report/presentation/report_issue_popup.dart';
 
 class SharedItemDetailPage extends StatefulWidget {
   const SharedItemDetailPage({
@@ -15,6 +20,9 @@ class SharedItemDetailPage extends StatefulWidget {
     this.request,
     this.detail,
     this.insertedSectionsBuilder,
+    this.favoriteType,
+    this.favoriteRawId,
+    this.favoriteName,
   }) : assert(
          request != null || detail != null,
          'Either request or detail must be provided.',
@@ -24,6 +32,9 @@ class SharedItemDetailPage extends StatefulWidget {
   final ItemDetail? detail;
   final List<Widget> Function(BuildContext context, ItemDetail detail)?
   insertedSectionsBuilder;
+  final FavoriteType? favoriteType;
+  final String? favoriteRawId;
+  final String? favoriteName;
 
   @override
   State<SharedItemDetailPage> createState() => _SharedItemDetailPageState();
@@ -35,19 +46,97 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
   late final PageController _reviewPageController;
   int _currentPage = 0;
   bool _descExpanded = false;
+  FavoriteType? _favoriteType;
+  late final String _favoriteRawId;
+  late final String _favoriteName;
 
   @override
   void initState() {
     super.initState();
     _detail = widget.detail ?? resolveItemDetail(widget.request!);
-    _isFavorite = _detail.isFavorite;
+    _favoriteType =
+        widget.favoriteType ??
+        widget.request?.favoriteType ??
+        _favoriteTypeForDetail(_detail);
+    _favoriteRawId = widget.favoriteRawId ?? _detail.id;
+    _favoriteName = widget.favoriteName ?? _detail.name;
+    _isFavorite = _favoriteType == null
+        ? _detail.isFavorite
+        : WishlistController.instance.isFavorite(
+                type: _favoriteType!,
+                rawItemId: _favoriteRawId,
+              ) ||
+              _detail.isFavorite;
     _reviewPageController = PageController(viewportFraction: 0.9);
+    WishlistController.instance.addListener(_syncFavoriteFromController);
+    WishlistController.instance.ensureLoaded().then((_) {
+      if (!mounted) return;
+      _syncFavoriteFromController();
+    });
   }
 
   @override
   void dispose() {
+    WishlistController.instance.removeListener(_syncFavoriteFromController);
     _reviewPageController.dispose();
     super.dispose();
+  }
+
+  void _syncFavoriteFromController() {
+    final FavoriteType? type = _favoriteType;
+    if (type == null) return;
+    final bool next = WishlistController.instance.isFavorite(
+      type: type,
+      rawItemId: _favoriteRawId,
+    );
+    if (next == _isFavorite) return;
+    setState(() => _isFavorite = next);
+  }
+
+  Future<void> _toggleFavorite() async {
+    final FavoriteType? type = _favoriteType;
+    if (type == null) {
+      setState(() => _isFavorite = !_isFavorite);
+      return;
+    }
+
+    final bool previous = _isFavorite;
+    setState(() => _isFavorite = !previous);
+    try {
+      final bool? next = await WishlistController.instance.toggleFavorite(
+        type: type,
+        rawItemId: _favoriteRawId,
+        fallbackName: _favoriteName,
+      );
+      if (!mounted) return;
+      if (next == null) {
+        setState(() => _isFavorite = previous);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please sign in to update wishlist.')),
+        );
+      } else {
+        setState(() => _isFavorite = next);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isFavorite = previous);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+    }
+  }
+
+  FavoriteType? _favoriteTypeForDetail(ItemDetail detail) {
+    switch (detail.category) {
+      case DetailCategory.activities:
+        return FavoriteType.activity;
+      case DetailCategory.culture:
+        return FavoriteType.culture;
+      case DetailCategory.food:
+        return FavoriteType.food;
+      case DetailCategory.localProducts:
+        return FavoriteType.localProduct;
+    }
   }
 
   @override
@@ -79,9 +168,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     rating: _detail.rating,
                     isFavorite: _isFavorite,
                     currentPage: _currentPage,
-                    onFavoriteTap: () {
-                      setState(() => _isFavorite = !_isFavorite);
-                    },
+                    onFavoriteTap: _toggleFavorite,
                     onPageChanged: (int index) {
                       setState(() => _currentPage = index);
                     },
@@ -100,7 +187,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     const SizedBox(height: 28),
                   ] else
                     const SizedBox(height: 28),
-                  const _SectionTitle(title: 'Reviews'),
+                  _SectionTitle(title: context.l10n.ui('Reviews')),
                   const SizedBox(height: 14),
                   _ReviewSummary(
                     rating: _detail.rating,
@@ -113,7 +200,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     controller: _reviewPageController,
                   ),
                   const SizedBox(height: 18),
-                  const _SectionTitle(title: 'What to expect'),
+                  _SectionTitle(title: context.l10n.ui('What to expect')),
                   const SizedBox(height: 10),
                   Text(
                     _detail.whatToExpect,
@@ -138,6 +225,15 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
             ),
           ),
           ExploreFloatingBackButton(onTap: () => context.pop()),
+          Positioned(
+            top: 6,
+            right: AppConstants.pagePadding,
+            child: SafeArea(
+              child: _ReportAssetIconButton(
+                onTap: () => showReportIssueFlow(context),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1099,6 +1195,44 @@ class _CircleIconButton extends StatelessWidget {
           width: 40,
           height: 40,
           child: Icon(icon, color: iconColor, size: 24),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReportAssetIconButton extends StatelessWidget {
+  const _ReportAssetIconButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: context.l10n.ui('Report an Issue'),
+      child: GestureDetector(
+        onTap: onTap,
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Center(
+            child: Image.asset(
+              'assets/images/Auth_Image/problem.png',
+              width: 28,
+              height: 28,
+              fit: BoxFit.contain,
+              errorBuilder:
+                  (
+                    BuildContext context,
+                    Object error,
+                    StackTrace? stackTrace,
+                  ) => const Icon(
+                    Icons.bug_report_outlined,
+                    size: 28,
+                    color: Color(0xFF2C2C2C),
+                  ),
+            ),
+          ),
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
 
 class TripInterestPage extends StatefulWidget {
@@ -59,8 +60,8 @@ class _TripInterestPageState extends State<TripInterestPage> {
     return PlannerStepScaffold(
       currentStep: 4,
       badgeIcon: Icons.explore_outlined,
-      title: 'What is your interest?',
-      subtitle: 'Select your preferences (multiple choices)',
+      title: context.l10n.ui('What is your interest?'),
+      subtitle: context.l10n.ui('Select your preferences (multiple choices)'),
       onBack: () => context.pop(),
       nextEnabled: _selectedIds.isNotEmpty,
       onNext: _showNextPlaceholder,
@@ -134,7 +135,7 @@ class _InterestCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      option.title,
+                      context.l10n.ui(option.title),
                       style: const TextStyle(
                         fontSize: 16.5,
                         fontWeight: FontWeight.w800,
@@ -143,7 +144,7 @@ class _InterestCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      option.subtitle,
+                      context.l10n.ui(option.subtitle),
                       style: const TextStyle(
                         fontSize: 14,
                         fontStyle: FontStyle.italic,

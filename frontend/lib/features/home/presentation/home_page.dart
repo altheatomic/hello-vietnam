@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
 import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
@@ -14,6 +15,8 @@ import 'package:hellovietnam/features/personalization/data/travel_preferences_re
 import 'package:hellovietnam/features/personalization/data/travel_recommendation_service.dart';
 import 'package:hellovietnam/features/personalization/domain/travel_preferences.dart';
 import 'package:hellovietnam/features/personalization/presentation/widgets/travel_preferences_summary_card.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import 'package:hellovietnam/features/recommend/domain/recommend_destination.dart';
 import '../data/home_repository.dart';
 import '../data/home_mock_data.dart';
@@ -64,6 +67,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final AppStrings strings = context.l10n;
     final mediaQuery = MediaQuery.of(context);
     final statusBarHeight = mediaQuery.padding.top;
     final bottomContentPadding = mediaQuery.padding.bottom + 96;
@@ -231,7 +235,7 @@ class _HomePageState extends State<HomePage> {
 
                       // Search bar
                       SearchBarWidget(
-                        hintText: 'Search for destinations',
+                        hintText: strings.searchDestinations,
                         readOnly: true,
                         showFilterButton: false,
                         onTap: () => context.push(AppRoutes.exploreSearch),
@@ -315,21 +319,23 @@ class _HomePageState extends State<HomePage> {
                                 returnTo: AppRoutes.home,
                               ),
                             ),
-                            buttonLabel: 'Retune',
+                            buttonLabel: strings.retune,
                           ),
                           const SizedBox(height: 18),
                           RecommendationSection(
-                            title: 'Picked For You',
+                            title: strings.pickedForYou,
                             backgroundImage: AppConstants.destinationBgAsset,
                             height: 290,
                             children: destinations
                                 .map((RecommendDestination d) {
-                                  return RecommendationCard(
+                                  return _FavoriteRecommendationCard(
+                                    favoriteType: FavoriteType.city,
+                                    rawItemId: d.id,
+                                    fallbackName: d.name,
                                     name: d.name,
                                     category: d.tags.join(' · '),
                                     rating: d.rating,
                                     imagePath: d.imagePath,
-                                    isFavorite: false,
                                     onTap: () {
                                       context.push(
                                         AppRoutes.cityDetail,
@@ -361,15 +367,17 @@ class _HomePageState extends State<HomePage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: RecommendationSection(
-                    title: 'Best Destination',
+                    title: strings.bestDestination,
                     backgroundImage: AppConstants.destinationBgAsset,
                     children: _destinations.map((d) {
-                      return RecommendationCard(
+                      return _FavoriteRecommendationCard(
+                        favoriteType: FavoriteType.city,
+                        rawItemId: d.id,
+                        fallbackName: d.name,
                         name: d.name,
                         category: d.category,
                         rating: d.rating,
                         imagePath: d.imagePath,
-                        isFavorite: d.isFavorite,
                         onTap: () {
                           context.push(
                             AppRoutes.cityDetail,
@@ -393,15 +401,17 @@ class _HomePageState extends State<HomePage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: RecommendationSection(
-                    title: 'Best Dishes',
+                    title: strings.bestDishes,
                     backgroundImage: AppConstants.dishesBgAsset,
                     children: _dishes.map((d) {
-                      return RecommendationCard(
+                      return _FavoriteRecommendationCard(
+                        favoriteType: FavoriteType.food,
+                        rawItemId: d.id,
+                        fallbackName: d.name,
                         name: d.name,
                         category: d.category,
                         rating: d.rating,
                         imagePath: d.imagePath,
-                        isFavorite: d.isFavorite,
                         onTap: () {
                           context.push(
                             AppRoutes.detailPathForCategory(
@@ -457,6 +467,83 @@ class _HomeDecorativeOrb extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FavoriteRecommendationCard extends StatefulWidget {
+  const _FavoriteRecommendationCard({
+    required this.favoriteType,
+    required this.rawItemId,
+    required this.fallbackName,
+    required this.name,
+    required this.category,
+    required this.rating,
+    required this.imagePath,
+    required this.onTap,
+  });
+
+  final FavoriteType favoriteType;
+  final String rawItemId;
+  final String fallbackName;
+  final String name;
+  final String category;
+  final double rating;
+  final String imagePath;
+  final VoidCallback onTap;
+
+  @override
+  State<_FavoriteRecommendationCard> createState() =>
+      _FavoriteRecommendationCardState();
+}
+
+class _FavoriteRecommendationCardState
+    extends State<_FavoriteRecommendationCard> {
+  final WishlistController _controller = WishlistController.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.ensureLoaded();
+  }
+
+  Future<void> _toggleFavorite() async {
+    try {
+      final bool? result = await _controller.toggleFavorite(
+        type: widget.favoriteType,
+        rawItemId: widget.rawItemId,
+        fallbackName: widget.fallbackName,
+      );
+      if (!mounted || result != null) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to update wishlist.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (BuildContext context, Widget? child) {
+        return RecommendationCard(
+          name: widget.name,
+          category: widget.category,
+          rating: widget.rating,
+          imagePath: widget.imagePath,
+          isFavorite: _controller.isFavorite(
+            type: widget.favoriteType,
+            rawItemId: widget.rawItemId,
+          ),
+          onTap: widget.onTap,
+          onFavoriteTap: _toggleFavorite,
+        );
+      },
     );
   }
 }

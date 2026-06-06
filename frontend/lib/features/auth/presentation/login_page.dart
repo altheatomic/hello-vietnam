@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -63,7 +64,9 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to sign in: ${e.toString()}'),
+          content: Text(
+            '${context.l10n.ui('Failed to sign in')}: ${e.toString()}',
+          ),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -83,7 +86,9 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Google sign in failed: ${e.toString()}'),
+          content: Text(
+            '${context.l10n.ui('Google sign in failed')}: ${e.toString()}',
+          ),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -210,7 +215,11 @@ class _LoginPageState extends State<LoginPage> {
             width: double.infinity,
             errorBuilder: (context, error, stackTrace) {
               return const Center(
-                child: Icon(Icons.flight_takeoff, size: 80, color: Colors.white),
+                child: Icon(
+                  Icons.flight_takeoff,
+                  size: 80,
+                  color: Colors.white,
+                ),
               );
             },
           ),
@@ -239,8 +248,8 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildTitle() {
     return Column(
       children: [
-        const Text(
-          'Login to Start Your',
+        Text(
+          context.l10n.ui('Login to Start Your'),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 24,
@@ -250,7 +259,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         Text(
-          'Amazing Trips',
+          context.l10n.ui('Amazing Trips'),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 24,
@@ -271,10 +280,15 @@ class _LoginPageState extends State<LoginPage> {
         if (_emailError) setState(() => _emailError = false);
       },
       decoration: InputDecoration(
-        hintText: 'Enter your email',
+        hintText: context.l10n.ui('Enter your email'),
         hintStyle: TextStyle(color: Colors.grey.shade400),
-        prefixIcon: Icon(Icons.mail_outline, color: _emailError ? Colors.red.shade300 : Colors.grey.shade400),
-        errorText: _emailError ? 'Please enter your email' : null,
+        prefixIcon: Icon(
+          Icons.mail_outline,
+          color: _emailError ? Colors.red.shade300 : Colors.grey.shade400,
+        ),
+        errorText: _emailError
+            ? context.l10n.ui('Please enter your email')
+            : null,
         errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
         filled: true,
         fillColor: Colors.grey.shade50,
@@ -285,11 +299,16 @@ class _LoginPageState extends State<LoginPage> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: _emailError ? Colors.red : Colors.grey.shade200),
+          borderSide: BorderSide(
+            color: _emailError ? Colors.red : Colors.grey.shade200,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: _emailError ? Colors.red : Colors.lightBlue.shade300, width: 1.5),
+          borderSide: BorderSide(
+            color: _emailError ? Colors.red : Colors.lightBlue.shade300,
+            width: 1.5,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -311,17 +330,24 @@ class _LoginPageState extends State<LoginPage> {
         if (_passwordError) setState(() => _passwordError = false);
       },
       decoration: InputDecoration(
-        hintText: 'Enter your password',
+        hintText: context.l10n.ui('Enter your password'),
         hintStyle: TextStyle(color: Colors.grey.shade400),
-        prefixIcon: Icon(Icons.lock_outline, color: _passwordError ? Colors.red.shade300 : Colors.grey.shade400),
+        prefixIcon: Icon(
+          Icons.lock_outline,
+          color: _passwordError ? Colors.red.shade300 : Colors.grey.shade400,
+        ),
         suffixIcon: IconButton(
           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
           icon: Icon(
-            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscurePassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: Colors.grey.shade400,
           ),
         ),
-        errorText: _passwordError ? 'Please enter your password' : null,
+        errorText: _passwordError
+            ? context.l10n.ui('Please enter your password')
+            : null,
         errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
         filled: true,
         fillColor: Colors.grey.shade50,
@@ -332,11 +358,16 @@ class _LoginPageState extends State<LoginPage> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: _passwordError ? Colors.red : Colors.grey.shade200),
+          borderSide: BorderSide(
+            color: _passwordError ? Colors.red : Colors.grey.shade200,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: _passwordError ? Colors.red : Colors.lightBlue.shade300, width: 1.5),
+          borderSide: BorderSide(
+            color: _passwordError ? Colors.red : Colors.lightBlue.shade300,
+            width: 1.5,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -361,12 +392,14 @@ class _LoginPageState extends State<LoginPage> {
             value: _rememberMe,
             onChanged: (v) => setState(() => _rememberMe = v ?? false),
             activeColor: Colors.lightBlue.shade300,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
         ),
         const SizedBox(width: 8),
         Text(
-          'Remember me',
+          context.l10n.ui('Remember me'),
           style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
         ),
 
@@ -375,9 +408,9 @@ class _LoginPageState extends State<LoginPage> {
         // Forgot password
         GestureDetector(
           onTap: _onForgotPassword,
-          child: const Text(
-            'Forgot password?',
-            style: TextStyle(
+          child: Text(
+            context.l10n.ui('Forgot password?'),
+            style: const TextStyle(
               color: Color(0xFF1A1A2E),
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -400,16 +433,13 @@ class _LoginPageState extends State<LoginPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
         child: _isLoading
             ? const CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               )
-            : const Text('Login'),
+            : Text(context.l10n.ui('Login')),
       ),
     );
   }
@@ -421,7 +451,7 @@ class _LoginPageState extends State<LoginPage> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'Or',
+            context.l10n.ui('Or'),
             style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
           ),
         ),
@@ -441,10 +471,7 @@ class _LoginPageState extends State<LoginPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
         icon: Image.asset(
           _googleLogoAsset,
@@ -461,7 +488,7 @@ class _LoginPageState extends State<LoginPage> {
             );
           },
         ),
-        label: const Text('Continue with Google'),
+        label: Text(context.l10n.ui('Continue with Google')),
       ),
     );
   }
@@ -471,14 +498,14 @@ class _LoginPageState extends State<LoginPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          "Don't have an account? ",
+          context.l10n.ui("Don't have an account? "),
           style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
         ),
         GestureDetector(
           onTap: _onCreateAccount,
-          child: const Text(
-            'Create an account',
-            style: TextStyle(
+          child: Text(
+            context.l10n.ui('Create an account'),
+            style: const TextStyle(
               color: Color(0xFF1A1A2E),
               fontSize: 14,
               fontWeight: FontWeight.w700,

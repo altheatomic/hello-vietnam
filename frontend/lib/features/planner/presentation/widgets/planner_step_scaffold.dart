@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 class PlannerStepScaffold extends StatelessWidget {
   const PlannerStepScaffold({
@@ -79,7 +80,7 @@ class PlannerStepScaffold extends StatelessWidget {
                         ),
                         SizedBox(height: tight ? 10 : 14),
                         Text(
-                          'Personalized Itinerary',
+                          context.l10n.ui('Personalized Itinerary'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: headerSize,
@@ -90,7 +91,7 @@ class PlannerStepScaffold extends StatelessWidget {
                         ),
                         SizedBox(height: tight ? 6 : 8),
                         Text(
-                          "Let's create your perfect trip",
+                          context.l10n.ui("Let's create your perfect trip"),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: subtitleSize,
@@ -139,7 +140,7 @@ class PlannerStepScaffold extends StatelessWidget {
                             const SizedBox(width: 16),
                             Expanded(
                               child: _PlannerNextButton(
-                                label: nextLabel,
+                                label: context.l10n.ui(nextLabel),
                                 enabled: nextEnabled,
                                 onTap: onNext,
                               ),
@@ -195,7 +196,7 @@ class _PlannerProgressBar extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Step $currentStep of 5',
+          context.l10n.stepOf(currentStep, 5),
           style: TextStyle(
             fontSize: labelSize,
             fontStyle: FontStyle.italic,
@@ -272,10 +273,10 @@ class _PlannerBackButton extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(24),
-            child: const Center(
+            child: Center(
               child: Text(
-                'Back',
-                style: TextStyle(
+                context.l10n.ui('Back'),
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF2DB8F5),

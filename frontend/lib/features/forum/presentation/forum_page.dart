@@ -95,6 +95,7 @@ class _ForumPageState extends State<ForumPage>
     return ForumBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        floatingActionButtonLocation: const _ForumPostFabLocation(),
         floatingActionButton: DecoratedBox(
           decoration: BoxDecoration(
             gradient: ForumColors.primaryGradient,
@@ -235,7 +236,7 @@ class _ForumFeedList extends StatelessWidget {
         AppConstants.pagePadding,
         18,
         AppConstants.pagePadding,
-        104,
+        144,
       ),
       itemCount: posts.length + (showComposer ? 1 : 0),
       separatorBuilder: (_, _) => const SizedBox(height: 18),
@@ -260,5 +261,22 @@ class _ForumFeedList extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+class _ForumPostFabLocation extends FloatingActionButtonLocation {
+  const _ForumPostFabLocation();
+
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
+    final double fabX =
+        scaffoldGeometry.scaffoldSize.width -
+        scaffoldGeometry.floatingActionButtonSize.width -
+        24;
+    final double fabY =
+        scaffoldGeometry.scaffoldSize.height -
+        scaffoldGeometry.floatingActionButtonSize.height -
+        116;
+    return Offset(fabX, fabY);
   }
 }

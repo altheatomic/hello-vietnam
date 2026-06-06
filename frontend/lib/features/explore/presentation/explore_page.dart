@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/personalization/data/travel_preferences_repository.dart';
@@ -66,6 +67,7 @@ class _ExplorePageState extends State<ExplorePage> {
 
   @override
   Widget build(BuildContext context) {
+    final AppStrings strings = context.l10n;
     final statusBarH = MediaQuery.of(context).padding.top;
     final UserTravelPreferences? preferences =
         TravelPreferencesRepository.instance.currentPreferences;
@@ -117,7 +119,9 @@ class _ExplorePageState extends State<ExplorePage> {
                         children: [
                           // Title (blue)
                           Text(
-                            'Discover Vietnamese Culture and\nLocal Specialties',
+                            context.l10n.ui(
+                              'Discover Vietnamese Culture and\nLocal Specialties',
+                            ),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 18,
@@ -130,7 +134,7 @@ class _ExplorePageState extends State<ExplorePage> {
                           const SizedBox(height: 16),
 
                           SearchBarWidget(
-                            hintText: 'Search for destinations',
+                            hintText: strings.searchDestinations,
                             readOnly: true,
                             showFilterButton: false,
                             onTap: () => context.push(AppRoutes.exploreSearch),
@@ -155,10 +159,9 @@ class _ExplorePageState extends State<ExplorePage> {
                           returnTo: AppRoutes.explore,
                         ),
                       ),
-                      title: 'Explore, tuned to you',
-                      description:
-                          'We moved your preferred themes closer to the top so food, culture, places, and activities feel more personal from the first scroll.',
-                      buttonLabel: 'Retune',
+                      title: strings.exploreTunedTitle,
+                      description: strings.exploreTunedDescription,
+                      buttonLabel: strings.retune,
                     ),
                   ),
                 ),
@@ -305,7 +308,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      categories[index].title,
+                      context.l10n.exploreCategoryLabel(categories[index].id),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: isSelected
@@ -403,7 +406,7 @@ class _FeaturedCard extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    item.name,
+                    context.l10n.ui(item.name),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,
@@ -449,7 +452,7 @@ class _CategorySection extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  category.description,
+                  context.l10n.ui(category.description),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -464,7 +467,7 @@ class _CategorySection extends StatelessWidget {
                   context.push(AppRoutes.exploreCategory, extra: categoryIndex);
                 },
                 child: Text(
-                  'Explore',
+                  context.l10n.ui('Explore'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -549,7 +552,7 @@ class _ExploreItemCard extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  item.name,
+                  context.l10n.ui(item.name),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,

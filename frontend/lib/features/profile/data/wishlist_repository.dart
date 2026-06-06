@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/language/app_language.dart';
+
 enum FavoriteType {
   city,
   place,
@@ -70,12 +72,12 @@ class WishlistRepository {
   static const String _functionName = 'wishlist';
   final SupabaseClient _client;
 
-  Future<List<WishlistRepositoryItem>> fetchWishlist({
-    String language = 'en',
-  }) async {
+  Future<List<WishlistRepositoryItem>> fetchWishlist({String? language}) async {
     final data = await _invokeAction(
       action: 'listWishlist',
-      payload: <String, dynamic>{'language': language},
+      payload: <String, dynamic>{
+        'language': language ?? AppLanguageController.instance.languageCode,
+      },
     );
 
     final rawItems = (data['items'] as List<dynamic>?) ?? const <dynamic>[];

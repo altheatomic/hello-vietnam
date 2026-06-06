@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import '../data/explore_search_results_data.dart';
 import 'widgets/explore_floating_back_button.dart';
 import 'widgets/explore_preview_widgets.dart';
@@ -124,7 +127,7 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
                         color: Colors.black87,
                       ),
                       children: [
-                        const TextSpan(text: 'Discover '),
+                        TextSpan(text: '${context.l10n.ui('Discover')} '),
                         TextSpan(
                           text: '${_results.destination}!',
                           style: const TextStyle(color: AppColors.primary),
@@ -304,7 +307,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      _filterLabels[index],
+                      context.l10n.ui(_filterLabels[index]),
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -343,11 +346,45 @@ class _ResultCard extends StatefulWidget {
 
 class _ResultCardState extends State<_ResultCard> {
   late final PageController _imageController;
+  final WishlistController _wishlistController = WishlistController.instance;
 
   @override
   void initState() {
     super.initState();
     _imageController = PageController();
+    _wishlistController.ensureLoaded();
+  }
+
+  Future<void> _toggleFavorite() async {
+    try {
+      final bool? result = await _wishlistController.toggleFavorite(
+        type: _favoriteTypeForCategory(widget.category),
+        rawItemId: widget.item.id,
+        fallbackName: widget.item.name,
+      );
+      if (!mounted || result != null) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to update wishlist.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+    }
+  }
+
+  FavoriteType _favoriteTypeForCategory(DetailCategory category) {
+    switch (category) {
+      case DetailCategory.activities:
+        return FavoriteType.activity;
+      case DetailCategory.culture:
+        return FavoriteType.culture;
+      case DetailCategory.food:
+        return FavoriteType.food;
+      case DetailCategory.localProducts:
+        return FavoriteType.localProduct;
+    }
   }
 
   @override
@@ -431,14 +468,27 @@ class _ResultCardState extends State<_ResultCard> {
                     Positioned(
                       top: 10,
                       right: 10,
-                      child: Icon(
-                        widget.item.isFavorite
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: widget.item.isFavorite
-                            ? AppColors.primary
-                            : Colors.white,
-                        size: 24,
+                      child: AnimatedBuilder(
+                        animation: _wishlistController,
+                        builder: (BuildContext context, Widget? child) {
+                          final bool isFavorite = _wishlistController
+                              .isFavorite(
+                                type: _favoriteTypeForCategory(widget.category),
+                                rawItemId: widget.item.id,
+                              );
+                          return GestureDetector(
+                            onTap: _toggleFavorite,
+                            child: Icon(
+                              isFavorite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color: isFavorite
+                                  ? AppColors.primary
+                                  : Colors.white,
+                              size: 24,
+                            ),
+                          );
+                        },
                       ),
                     ),
                     if (imageCount > 1)
@@ -489,7 +539,7 @@ class _ResultCardState extends State<_ResultCard> {
             ),
             const SizedBox(height: 6),
             Text(
-              widget.item.name,
+              context.l10n.ui(widget.item.name),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

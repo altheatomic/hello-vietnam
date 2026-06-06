@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -33,9 +34,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   void initState() {
     super.initState();
     // Listen for auth state changes (when user clicks reset link)
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) {
       final session = data.session;
-      debugPrint('Auth state changed: ${data.event}, has session: ${session != null}');
+      debugPrint(
+        'Auth state changed: ${data.event}, has session: ${session != null}',
+      );
       if (session != null && mounted) {
         // User has been authenticated via reset link, proceed to password step
         if (_step == 1) {
@@ -78,7 +83,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       // User has been authenticated via reset link, proceed to password step
       _goToStep(2);
     } else {
-      _showSnack('Please click the reset link in your email first, or try refreshing the page');
+      _showSnack(
+        'Please click the reset link in your email first, or try refreshing the page',
+      );
     }
   }
 
@@ -91,7 +98,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         _goToStep(2);
         _showSnack('Session verified! You can now set your new password.');
       } else {
-        _showSnack('No active session found. Please click the reset link in your email.');
+        _showSnack(
+          'No active session found. Please click the reset link in your email.',
+        );
       }
     } catch (e) {
       _showSnack('Failed to verify session. Please try again.');
@@ -116,8 +125,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         errorMessage = errorStr.split('INVALID_EMAIL:')[1].trim();
       } else if (errorStr.contains('RESET_FAILED:')) {
         errorMessage = errorStr.split('RESET_FAILED:')[1].trim();
-      } else if (errorStr.contains('rate limit') || errorStr.contains('Rate limit')) {
-        errorMessage = 'Too many reset emails sent. Please wait 1 hour before trying again.';
+      } else if (errorStr.contains('rate limit') ||
+          errorStr.contains('Rate limit')) {
+        errorMessage =
+            'Too many reset emails sent. Please wait 1 hour before trying again.';
       }
 
       _showSnack(errorMessage);
@@ -155,8 +166,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         errorMessage = errorStr.split('INVALID_EMAIL:')[1].trim();
       } else if (errorStr.contains('RESET_FAILED:')) {
         errorMessage = errorStr.split('RESET_FAILED:')[1].trim();
-      } else if (errorStr.contains('rate limit') || errorStr.contains('Rate limit')) {
-        errorMessage = 'Too many reset emails sent. Please wait 1 hour before trying again.';
+      } else if (errorStr.contains('rate limit') ||
+          errorStr.contains('Rate limit')) {
+        errorMessage =
+            'Too many reset emails sent. Please wait 1 hour before trying again.';
       }
 
       _showSnack(errorMessage);
@@ -204,7 +217,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.ui(msg))));
   }
 
   // ─── Build ───
@@ -214,7 +229,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        child: _step == 3 ? _buildSuccessScreen(context) : _buildFormScreen(context),
+        child: _step == 3
+            ? _buildSuccessScreen(context)
+            : _buildFormScreen(context),
       ),
     );
   }
@@ -272,11 +289,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           context.pop();
                         }
                       },
-                      icon: const Icon(Icons.chevron_left, size: 30, color: Colors.black87),
+                      icon: const Icon(
+                        Icons.chevron_left,
+                        size: 30,
+                        color: Colors.black87,
+                      ),
                     ),
                     Expanded(
                       child: Text(
-                        _step == 2 ? 'Create new password' : 'Check your email',
+                        context.l10n.ui(
+                          _step == 2
+                              ? 'Create new password'
+                              : 'Check your email',
+                        ),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 20,
@@ -301,8 +326,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           child: _step == 0
               ? _buildEmailStep()
               : _step == 1
-                  ? _buildEmailCheckStep()
-                  : _buildNewPasswordStep(),
+              ? _buildEmailCheckStep()
+              : _buildNewPasswordStep(),
         ),
 
         const SizedBox(height: 50),
@@ -316,10 +341,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Please enter your email to receive\npassword reset link',
+        Text(
+          context.l10n.ui(
+            'Please enter your email to receive\npassword reset link',
+          ),
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: Color(0xFF1A1A2E),
@@ -329,12 +356,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         const SizedBox(height: 24),
         _buildTextField(
           controller: _emailController,
-          hint: 'Enter your email',
+          hint: context.l10n.ui('Enter your email'),
           icon: Icons.mail_outline,
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 24),
-        _buildMainButton('Confirm email', _onConfirmEmail, isLoading: _isLoading),
+        _buildMainButton(
+          context.l10n.ui('Confirm email'),
+          _onConfirmEmail,
+          isLoading: _isLoading,
+        ),
       ],
     );
   }
@@ -347,10 +378,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Check your email',
+        Text(
+          context.l10n.ui('Check your email'),
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: Color(0xFF1A1A2E),
@@ -366,7 +397,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               height: 1.5,
             ),
             children: [
-              const TextSpan(text: 'We\'ve sent a password reset link to\n'),
+              TextSpan(
+                text: context.l10n.ui('We\'ve sent a password reset link to\n'),
+              ),
               TextSpan(
                 text: email,
                 style: const TextStyle(
@@ -374,38 +407,45 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const TextSpan(text: '\n\n1. Click the link in your email\n2. You\'ll be redirected back here\n3. Click "I\'ve clicked the link" or "Refresh/Verify Session"'),
+              TextSpan(
+                text: context.l10n.ui(
+                  '\n\n1. Click the link in your email\n2. You\'ll be redirected back here\n3. Click "I\'ve clicked the link" or "Refresh/Verify Session"',
+                ),
+              ),
             ],
           ),
         ),
         const SizedBox(height: 32),
         // Email icon
         const Center(
-          child: Icon(
-            Icons.email_outlined,
-            size: 64,
-            color: Color(0xFFB3E5FC),
-          ),
+          child: Icon(Icons.email_outlined, size: 64, color: Color(0xFFB3E5FC)),
         ),
         const SizedBox(height: 32),
-        _buildMainButton('I\'ve clicked the link', _onEmailLinkClicked),
+        _buildMainButton(
+          context.l10n.ui('I\'ve clicked the link'),
+          _onEmailLinkClicked,
+        ),
         const SizedBox(height: 16),
-        _buildMainButton('Refresh/Verify Session', _refreshSession, isLoading: _isLoading),
+        _buildMainButton(
+          context.l10n.ui('Refresh/Verify Session'),
+          _refreshSession,
+          isLoading: _isLoading,
+        ),
         const SizedBox(height: 20),
 
         // Resend
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Didn\'t receive the email? ',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
+            Text(
+              context.l10n.ui('Didn\'t receive the email? '),
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
             ),
             GestureDetector(
               onTap: _resendResetEmail,
-              child: const Text(
-                'Resend',
-                style: TextStyle(
+              child: Text(
+                context.l10n.ui('Resend'),
+                style: const TextStyle(
                   color: Color(0xFF42A5F5),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -425,10 +465,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Create your new password',
+        Text(
+          context.l10n.ui('Create your new password'),
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: Color(0xFF1A1A2E),
@@ -437,13 +477,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         const SizedBox(height: 24),
         _buildTextField(
           controller: _passwordController,
-          hint: 'Enter your password',
+          hint: context.l10n.ui('Enter your password'),
           icon: Icons.lock_outline,
           obscure: _obscurePassword,
           suffixIcon: IconButton(
-            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+            onPressed: () =>
+                setState(() => _obscurePassword = !_obscurePassword),
             icon: Icon(
-              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+              _obscurePassword
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
               color: Colors.grey.shade400,
             ),
           ),
@@ -451,19 +494,27 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         const SizedBox(height: 16),
         _buildTextField(
           controller: _confirmPasswordController,
-          hint: 'Enter your password',
+          hint: context.l10n.ui('Enter your password'),
           icon: Icons.lock_outline,
           obscure: _obscureConfirmPassword,
           suffixIcon: IconButton(
-            onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+            onPressed: () => setState(
+              () => _obscureConfirmPassword = !_obscureConfirmPassword,
+            ),
             icon: Icon(
-              _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+              _obscureConfirmPassword
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
               color: Colors.grey.shade400,
             ),
           ),
         ),
         const SizedBox(height: 24),
-        _buildMainButton('Continue', _onConfirmNewPassword, isLoading: _isLoading),
+        _buildMainButton(
+          context.l10n.ui('Continue'),
+          _onConfirmNewPassword,
+          isLoading: _isLoading,
+        ),
       ],
     );
   }
@@ -495,10 +546,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
         const SizedBox(height: 40),
 
-        const Text(
-          'Congratulations!',
+        Text(
+          context.l10n.ui('Congratulations!'),
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w800,
             color: Color(0xFF1A1A2E),
@@ -506,19 +557,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
         const SizedBox(height: 12),
         Text(
-          'Your password has been created',
+          context.l10n.ui('Your password has been created'),
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 15,
-            color: Colors.grey.shade500,
-          ),
+          style: TextStyle(fontSize: 15, color: Colors.grey.shade500),
         ),
 
         const SizedBox(height: 40),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: _buildMainButton(
-            'Back to Login',
+            context.l10n.ui('Back to Login'),
             () => context.go(AppRoutes.login),
           ),
         ),
@@ -565,7 +613,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  Widget _buildMainButton(String label, VoidCallback onPressed, {bool isLoading = false}) {
+  Widget _buildMainButton(
+    String label,
+    VoidCallback onPressed, {
+    bool isLoading = false,
+  }) {
     return SizedBox(
       height: 52,
       child: ElevatedButton(
@@ -574,7 +626,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           backgroundColor: const Color(0xFF81D4FA),
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
         child: isLoading

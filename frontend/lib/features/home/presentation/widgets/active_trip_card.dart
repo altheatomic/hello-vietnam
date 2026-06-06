@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
 
 // ── Color constants for each trip status ─────────────────────────────────────
@@ -101,19 +102,19 @@ class _StatusHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (trip.status) {
-      TripStatus.upcoming => _buildUpcomingHeader(),
-      TripStatus.inProgress => _buildInProgressHeader(),
-      TripStatus.completed => _buildCompletedHeader(),
+      TripStatus.upcoming => _buildUpcomingHeader(context),
+      TripStatus.inProgress => _buildInProgressHeader(context),
+      TripStatus.completed => _buildCompletedHeader(context),
     };
   }
 
-  Widget _buildUpcomingHeader() => Row(
+  Widget _buildUpcomingHeader(BuildContext context) => Row(
     children: <Widget>[
       const Icon(Icons.access_time_rounded, size: 14, color: _kAmber),
       const SizedBox(width: 5),
-      const Text(
-        'Upcoming Trip',
-        style: TextStyle(
+      Text(
+        context.l10n.upcomingTrip,
+        style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
           color: _kAmber,
@@ -131,7 +132,7 @@ class _StatusHeader extends StatelessWidget {
     ],
   );
 
-  Widget _buildInProgressHeader() {
+  Widget _buildInProgressHeader(BuildContext context) {
     final ref = trip.relevantActivity;
     final totalDays = trip.days.length;
     return Row(
@@ -145,9 +146,9 @@ class _StatusHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        const Text(
-          'Active Trip',
-          style: TextStyle(
+        Text(
+          context.l10n.activeTrip,
+          style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: _kGreen,
@@ -161,7 +162,7 @@ class _StatusHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            'Day ${ref.dayIndex + 1} of $totalDays',
+            context.l10n.dayOf(ref.dayIndex + 1, totalDays),
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -173,13 +174,13 @@ class _StatusHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildCompletedHeader() => Row(
+  Widget _buildCompletedHeader(BuildContext context) => Row(
     children: <Widget>[
       const Icon(Icons.check_circle_rounded, size: 15, color: _kBlue),
       const SizedBox(width: 5),
-      const Text(
-        'Trip Completed',
-        style: TextStyle(
+      Text(
+        context.l10n.tripCompleted,
+        style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
           color: _kBlue,
@@ -187,7 +188,7 @@ class _StatusHeader extends StatelessWidget {
       ),
       const Spacer(),
       Text(
-        '${trip.days.length} days done',
+        context.l10n.daysDone(trip.days.length),
         style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -242,9 +243,9 @@ class _UpcomingBody extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 5),
-              const Text(
-                'First stop',
-                style: TextStyle(
+              Text(
+                context.l10n.firstStop,
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: _kAmber,
@@ -317,9 +318,9 @@ class _InProgressBody extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 3),
-              const Text(
-                'Next stop',
-                style: TextStyle(
+              Text(
+                context.l10n.nextStop,
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: _kGreen,
@@ -390,7 +391,10 @@ class _CompletedBody extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '${trip.totalActivities} activities completed · ${trip.days.length} days',
+                context.l10n.activitiesCompleted(
+                  trip.totalActivities,
+                  trip.days.length,
+                ),
                 style: const TextStyle(
                   fontSize: 12.5,
                   color: AppColors.textSecondary,
@@ -419,22 +423,23 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppStrings strings = context.l10n;
     return switch (status) {
       TripStatus.upcoming => Row(
         children: <Widget>[
           const Spacer(),
-          _GhostButton(label: 'Cancel', onTap: onEnd),
+          _GhostButton(label: strings.cancel, onTap: onEnd),
           const SizedBox(width: 8),
-          _PrimaryButton(label: 'View Plan', onTap: onViewOrRoute),
+          _PrimaryButton(label: strings.viewPlan, onTap: onViewOrRoute),
         ],
       ),
       TripStatus.inProgress => Row(
         children: <Widget>[
           const Spacer(),
-          _GhostButton(label: 'End Trip', onTap: onEnd),
+          _GhostButton(label: strings.endTrip, onTap: onEnd),
           const SizedBox(width: 8),
           _PrimaryButton(
-            label: 'Details',
+            label: strings.details,
             onTap: onViewOrRoute,
             trailingIcon: Icons.arrow_forward_rounded,
           ),
@@ -443,7 +448,7 @@ class _ActionRow extends StatelessWidget {
       TripStatus.completed => Row(
         children: <Widget>[
           const Spacer(),
-          _GhostButton(label: 'Dismiss', onTap: onEnd),
+          _GhostButton(label: strings.dismiss, onTap: onEnd),
         ],
       ),
     };

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 class SavedTripsPage extends StatefulWidget {
   const SavedTripsPage({super.key});
@@ -231,9 +232,9 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                             ],
                           ),
                           const SizedBox(height: 22),
-                          const Text(
-                            'Saved Trips',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.ui('Saved Trips'),
+                            style: const TextStyle(
                               fontSize: 31,
                               fontWeight: FontWeight.w900,
                               color: AppColors.textPrimary,
@@ -241,9 +242,11 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
-                            'Pick up where you left off and tick places as you complete them.',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.ui(
+                              'Pick up where you left off and tick places as you complete them.',
+                            ),
+                            style: const TextStyle(
                               fontSize: 15,
                               color: Color(0xFF687384),
                               height: 1.45,
@@ -336,7 +339,7 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                                     onPlanAgain: () =>
                                         context.go(AppRoutes.tripPlanner),
                                     onTripTapped: () => _showMessage(
-                                      '${trip.title} updated in Saved Trips',
+                                      context.l10n.savedTripUpdated(trip.title),
                                     ),
                                   ),
                                 ),

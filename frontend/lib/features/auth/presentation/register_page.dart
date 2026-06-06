@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -22,7 +23,6 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
 
-
   @override
   void dispose() {
     _nameController.dispose();
@@ -38,16 +38,19 @@ class _RegisterPageState extends State<RegisterPage> {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (name.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
+        SnackBar(content: Text(context.l10n.ui('Please fill in all fields'))),
       );
       return;
     }
 
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
+        SnackBar(content: Text(context.l10n.ui('Passwords do not match'))),
       );
       return;
     }
@@ -55,23 +58,31 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _isLoading = true);
 
     try {
-      await AuthRepository.instance
-          .signUp(name: name, email: email, password: password);
+      await AuthRepository.instance.signUp(
+        name: name,
+        email: email,
+        password: password,
+      );
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Success! Please check your email for a confirmation link.'),
+        SnackBar(
+          content: Text(
+            context.l10n.ui(
+              'Success! Please check your email for a confirmation link.',
+            ),
+          ),
           backgroundColor: Colors.green,
         ),
       );
       context.go(AppRoutes.login);
-
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Sign up failed: ${e.toString()}'),
+          content: Text(
+            '${context.l10n.ui('Sign up failed')}: ${e.toString()}',
+          ),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -84,7 +95,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
   void _onGoogleSignIn() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google Sign-In is handled in Login page')),
+      SnackBar(
+        content: Text(
+          context.l10n.ui('Google Sign-In is handled in Login page'),
+        ),
+      ),
     );
   }
 
@@ -174,11 +189,7 @@ class _RegisterPageState extends State<RegisterPage> {
               return const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white,
-                  Colors.white,
-                  Colors.transparent,
-                ],
+                colors: [Colors.white, Colors.white, Colors.transparent],
                 stops: [0.0, 0.7, 1.0],
               ).createShader(bounds);
             },
@@ -200,8 +211,8 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildTitle() {
     return Column(
       children: [
-        const Text(
-          'Sign Up to Explore',
+        Text(
+          context.l10n.ui('Sign Up to Explore'),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 24,
@@ -211,7 +222,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
         Text(
-          'Amazing Trips',
+          context.l10n.ui('Amazing Trips'),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 24,
@@ -230,7 +241,7 @@ class _RegisterPageState extends State<RegisterPage> {
       keyboardType: TextInputType.name,
       textCapitalization: TextCapitalization.words,
       decoration: _inputDecoration(
-        hintText: 'Enter your name',
+        hintText: context.l10n.ui('Enter your name'),
         prefixIcon: Icons.person_outline,
       ),
     );
@@ -241,7 +252,7 @@ class _RegisterPageState extends State<RegisterPage> {
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
       decoration: _inputDecoration(
-        hintText: 'Enter your email',
+        hintText: context.l10n.ui('Enter your email'),
         prefixIcon: Icons.mail_outline,
       ),
     );
@@ -252,12 +263,14 @@ class _RegisterPageState extends State<RegisterPage> {
       controller: _passwordController,
       obscureText: _obscurePassword,
       decoration: _inputDecoration(
-        hintText: 'Enter your password',
+        hintText: context.l10n.ui('Enter your password'),
         prefixIcon: Icons.lock_outline,
         suffixIcon: IconButton(
           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
           icon: Icon(
-            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscurePassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: Colors.grey.shade400,
           ),
         ),
@@ -270,12 +283,16 @@ class _RegisterPageState extends State<RegisterPage> {
       controller: _confirmPasswordController,
       obscureText: _obscureConfirmPassword,
       decoration: _inputDecoration(
-        hintText: 'Confirm password',
+        hintText: context.l10n.ui('Confirm password'),
         prefixIcon: Icons.lock_outline,
         suffixIcon: IconButton(
-          onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+          onPressed: () => setState(
+            () => _obscureConfirmPassword = !_obscureConfirmPassword,
+          ),
           icon: Icon(
-            _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscureConfirmPassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: Colors.grey.shade400,
           ),
         ),
@@ -323,16 +340,13 @@ class _RegisterPageState extends State<RegisterPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
         child: _isLoading
             ? const CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               )
-            : const Text('Sign up'),
+            : Text(context.l10n.ui('Sign up')),
       ),
     );
   }
@@ -344,7 +358,7 @@ class _RegisterPageState extends State<RegisterPage> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'Or login with',
+            context.l10n.ui('Or login with'),
             style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
           ),
         ),
@@ -364,10 +378,7 @@ class _RegisterPageState extends State<RegisterPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
         icon: Image.asset(
           _googleLogoAsset,
@@ -384,7 +395,7 @@ class _RegisterPageState extends State<RegisterPage> {
             );
           },
         ),
-        label: const Text('Continue with Google'),
+        label: Text(context.l10n.ui('Continue with Google')),
       ),
     );
   }
@@ -394,14 +405,14 @@ class _RegisterPageState extends State<RegisterPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          'Already have an account? ',
+          context.l10n.ui('Already have an account? '),
           style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
         ),
         GestureDetector(
           onTap: _onLogin,
-          child: const Text(
-            'Login',
-            style: TextStyle(
+          child: Text(
+            context.l10n.ui('Login'),
+            style: const TextStyle(
               color: Color(0xFF1A1A2E),
               fontSize: 14,
               fontWeight: FontWeight.w700,

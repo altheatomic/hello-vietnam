@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 class RecommendPage extends StatelessWidget {
   const RecommendPage({super.key});
@@ -52,11 +53,11 @@ class RecommendPage extends StatelessWidget {
                             icon: Icons.arrow_back_rounded,
                             onTap: () => Navigator.of(context).pop(),
                           ),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Recommendation',
+                              context.l10n.ui('Recommendation'),
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 21,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
@@ -106,9 +107,9 @@ class RecommendPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Please choose: ✨',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.ui('Please choose: ✨'),
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF2EB9F8),
@@ -117,7 +118,7 @@ class RecommendPage extends StatelessWidget {
                     const SizedBox(height: 36),
                     _RecommendImageCard(
                       assetPath: AppConstants.recommendWhereCardAsset,
-                      label: 'Where do\nyou want\nto go?',
+                      label: context.l10n.ui('Where do\nyou want\nto go?'),
                       labelPadding: const EdgeInsets.fromLTRB(26, 18, 28, 18),
                       labelAlignment: Alignment.centerRight,
                       labelTextAlign: TextAlign.center,
@@ -126,7 +127,7 @@ class RecommendPage extends StatelessWidget {
                     const SizedBox(height: 18),
                     _RecommendImageCard(
                       assetPath: AppConstants.recommendWhenCardAsset,
-                      label: 'When are\nyou free to\ntravel?',
+                      label: context.l10n.ui('When are\nyou free to\ntravel?'),
                       onTap: () =>
                           context.push(AppRoutes.recommendWhenCalendar),
                     ),
@@ -187,13 +188,17 @@ class _SearchPrompt extends StatelessWidget {
               ),
             ],
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.search_rounded, color: Color(0xFF97A0B1), size: 24),
-              SizedBox(width: 10),
+              const Icon(
+                Icons.search_rounded,
+                color: Color(0xFF97A0B1),
+                size: 24,
+              ),
+              const SizedBox(width: 10),
               Text(
-                'Search destinations',
-                style: TextStyle(
+                context.l10n.ui('Search destinations'),
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF97A0B1),

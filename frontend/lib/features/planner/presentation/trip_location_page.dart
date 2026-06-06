@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
 
 class TripLocationPage extends StatefulWidget {
@@ -93,8 +94,8 @@ class _TripLocationPageState extends State<TripLocationPage> {
     return PlannerStepScaffold(
       currentStep: 2,
       badgeIcon: Icons.location_on_outlined,
-      title: 'Where to?',
-      subtitle: 'Choose your dream destination',
+      title: context.l10n.ui('Where to?'),
+      subtitle: context.l10n.ui('Choose your dream destination'),
       onBack: () => context.pop(),
       nextEnabled: _selectedDestinationId != null,
       onNext: _showNextPlaceholder,
@@ -106,9 +107,9 @@ class _TripLocationPageState extends State<TripLocationPage> {
           children: <Widget>[
             _SearchDestinationField(controller: _searchController),
             const SizedBox(height: 18),
-            const Text(
-              'Popular Destinations',
-              style: TextStyle(
+            Text(
+              context.l10n.ui('Popular Destinations'),
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF162235),
@@ -173,20 +174,23 @@ class _SearchDestinationField extends StatelessWidget {
           fontWeight: FontWeight.w500,
           color: Color(0xFF162235),
         ),
-        decoration: const InputDecoration(
-          prefixIcon: Icon(
+        decoration: InputDecoration(
+          prefixIcon: const Icon(
             Icons.search_rounded,
             color: Color(0xFF98A2B3),
             size: 24,
           ),
-          hintText: 'Search destination...',
-          hintStyle: TextStyle(
+          hintText: context.l10n.ui('Search destination...'),
+          hintStyle: const TextStyle(
             fontSize: 15.5,
             color: Color(0xFF98A2B3),
             fontWeight: FontWeight.w500,
           ),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 18,
+          ),
         ),
       ),
     );
