@@ -1,0 +1,274 @@
+
+
+--- PAGE 1 ---
+ 
+Thuật  toán  gợi  ý  địa  điểm  theo  nội  dung  
+1.  Mục  tiêu  của  thuật  toán  
+Thuật  toán  gợi  ý  địa  điểm  theo  nội  dung  được  xây  dựng  nhằm  đề  xuất  các  địa  điểm  phù  hợp  
+với
+ 
+người
+ 
+dùng
+ 
+dựa
+ 
+trên:
+ 
+●  sở  thích  mà  người  dùng  lựa  chọn  ●  nội  dung  mô  tả  của  địa  điểm  ●  tập  nhãn  (tags)  gắn  với  địa  điểm  
+Trong  hệ  thống  Hello  Vietnam,  phương  pháp  này  được  sử  dụng  sau  bước  lọc  dữ  liệu  để  tìm  ra  
+những
+ 
+địa
+ 
+điểm
+ 
+có
+ 
+nội
+ 
+dung
+ 
+gần
+ 
+nhất
+ 
+với
+ 
+nhu
+ 
+cầu
+ 
+của
+ 
+người
+ 
+dùng.
+ 
+2.  Dữ  liệu  đầu  vào  của  thuật  toán  
+2.1.  Dữ  liệu  từ  người  dùng  
+●  city_province  ●  start_date  ●  end_date hoặc  duration_days  ●  interests/categories  ●  travel_type  ●  budget_level  ●  preferred_time_parts  
+2.2.  Dữ  liệu  từ  hệ  thống  
+●  place.id_place  ●  place.name  ●  place.description  ●  place.status  ●  place.time_open  ●  place.time_close  ●  place.is_24h  ●  place.price_level  ●  place.tags  ●  place.best_months  ●  place.recommended_time_slots  ●  place.latitude  
+
+--- PAGE 2 ---
+●  place.longitude  ●  place_rating.rating_avg  ●  place_rating.rating_count  ●  favorite_count hoặc  checkin_count  
+Thay  vào  đó,  travel_type chỉ  đóng  vai  trò  hỗ  trợ  để:  
+●  suy  ra  khu  vực  hoặc  kiểu  không  gian  mà  người  dùng  có  xu  hướng  mong  muốn  ●  bổ  sung  cho  bước  lọc  hoặc  định  hướng  gợi  ý  theo  vùng  
+Ví  dụ:  
+●  travel_type  =  nghỉ  dưỡng →  ưu  tiên  khu  vực  ven  biển,  yên  tĩnh  ●  travel_type  =  khám  phá  văn  hóa →  ưu  tiên  khu  vực  trung  tâm,  phố  cổ,  khu  di  sản  
+4.  Giai  đoạn  1:  Lọc  trước  dữ  liệu  
+Trước  khi  tính  độ  phù  hợp  theo  nội  dung,  hệ  thống  cần  loại  bỏ  các  địa  điểm  không  phù  hợp  rõ  
+ràng.
+ 
+Một  địa  điểm  chỉ  được  giữ  lại  nếu  thỏa  các  điều  kiện  sau:  
+Nhóm  bắt  buộc:  
+4.1.  Đúng  tỉnh/thành  người  dùng  chọn  
+Place.city_province  =  user.city_provinceplace.city  
+4.2.  Địa  điểm  đang  hoạt  động  
+Place.status  =  active  
+ 
+Nhóm  không  bắt  buộc  
+4.4.  Đạt  ngưỡng  rating  tối  thiểu  
+Ví  dụ:  
+Place_rating.rating_avg  ≥  3.5  
+4.5.  Đạt  ngưỡng  review  hoặc  check-in  tối  thiểu  
+Ví  dụ:  
+place_rating.rating_count  ≥  10  hoặc  checkin_count  ≥  20  
+
+--- PAGE 3 ---
+4.8.  Phù  hợp  mùa  hoặc  thời  tiết  
+Nếu  địa  điểm  không  phù  hợp  với  tháng  mà  user  dự  định  đi  hoặc  điều  kiện  thời  tiết  quá  xấu  thì  
+loại
+ 
+bỏ.
+ 
+4.7.  Phù  hợp  mức  ngân  sách  
+Nếu  user  chọn  budget  thấp  thì  loại  bỏ  các  địa  điểm  có  price_level vượt  ngưỡng.  
+ 
+Sau  bước  này,  hệ  thống  thu  được  tập  ứng  viên:  
+P′={p
+1
+,p
+2
+,...,p
+m
+}  
+ 
+5.  Hồ  sơ  người  dùng  và  hồ  sơ  địa  điểm  
+5.1.  Hồ  sơ  người  dùng  
+Người  dùng  được  biểu  diễn  bởi  tập  sở  thích:  
+I
+u
+={i
+1
+,i
+2
+,...,i
+n
+}  
+Trong  đó:  
+●  u:  người  dùng  ●  I
+u
+ :  tập  interests  mà  user  chọn  khi  onboarding  hoặc  được  cập  nhật  dần  theo  hành  
+vi
+ 
+Ví  dụ:  
+I
+u
+={food,  culture,  nature}  
+5.2.  Hồ  sơ  địa  điểm  
+Mỗi  địa  điểm  được  biểu  diễn  bởi:  
+●  tập  tags  ●  mô  tả  nội  dung  
+Ký  hiệu:  
+●  T
+p
+ :  tập  tags  của  địa  điểm  p  
+
+--- PAGE 4 ---
+●  D
+p
+ :  mô  tả  của  địa  điểm  p  
+Ví  dụ:  
+T
+p
+={food,  culture,  walking,  photography}  
+6.  Thành  phần  1:  TagMatch  
+TagMatch  đo  mức  độ  trùng  khớp  giữa  sở  thích  user  và  tags  của  địa  điểm.  
+Công  thức  
+ 
+Giải  thích  các  biến  
+●  u:  người  dùng  ●  p:  địa  điểm  ●  I
+u
+ :  tập  sở  thích  của  user  ●  T
+p
+ :  tập  tags  của  địa  điểm  ●  I
+u
+∩T
+p
+ :  tập  các  sở  thích  của  user  cũng  xuất  hiện  trong  tags  của  địa  điểm  ●  w
+i
+ :  trọng  số  của  sở  thích  thứ  i  
+Ý  nghĩa  công  thức:  
+●  Tử  số :  tổng  trọng  số  của  các  sở  thích  mà  địa  điểm  đáp  ứng  được  ●  Mẫu  số :  tổng  trọng  số  của  tất  cả  sở  thích  user  đang  có  
+TagMatch  trả  lời  câu  hỏi:  Địa  điểm  này  đáp  ứng  được  bao  nhiêu  phần  trong  tổng  sở  thích  
+của
+ 
+người
+ 
+dùng?
+ 
+ 
+
+
+--- PAGE 5 ---
+Miền  giá  trị  
+0  ≤  TagMatch  ≤  10   
+●  bằng  1  nếu  địa  điểm  đáp  ứng  toàn  bộ  sở  thích  ●  bằng  0  nếu  không  đáp  ứng  sở  thích  nào  
+7.  Trọng  số  sở  thích  w
+i
+ 
+7.1.  Ban  đầu  
+Nếu  người  dùng  mới  bắt  đầu  dùng  app  và  chưa  có  dữ  liệu  hành  vi,  các  sở  thích  được  gán  
+trọng
+ 
+số
+ 
+bằng
+ 
+nhau.
+ 
+Nếu  user  chọn  n  sở  thích:  
+ 
+Ví  dụ  user  chọn:  
+●  food  ●  culture  ●  nature  
+thì:  
+ 
+7.2.  Sau  một  thời  gian  sử  dụng  
+Hệ  thống  học  thêm  từ  hành  vi  người  dùng.  
+Bước  1:  cập  nhật  điểm  hành  vi  
+ 
+Trong  đó:  
+
+
+--- PAGE 6 ---
+●  s
+i 
+:  điểm  hành  vi  của  sở  thích  iii  ●  η:  hệ  số  học,  ví  dụ  η=0.5  ●  r:  điểm  thưởng  hoặc  phạt  từ  một  hành  vi  
+Điểm  thưởng/phạt  ví  dụ  
+●  xem  chi  tiết:  r  =  1  ●  xem  lâu:  r  =  1  ●  lưu  yêu  thích:  r  =  3  ●  đánh  giá  cao:  r  =  5  ●  chia  sẻ:  r  =  3  ●  bỏ  qua  nhiều  lần:  r  =  −1  ●  xóa  yêu  thích:  r  =  −3  ●  đánh  giá  thấp:  r  =  −4  
+Bước  2:  chuẩn  hóa  thành  trọng  số  hành  vi  
+ 
+Bước  3:  kết  hợp  với  trọng  số  ban  đầu  
+ 
+Khuyến  nghị:  
+λ=0.6  
+Điều  này  có  nghĩa:  
+●  60%  vẫn  giữ  theo  lựa  chọn  ban  đầu  của  user  ●  40%  học  từ  hành  vi  thực  tế  
+11.  Tinh  chỉnh  theo  mốc  thời  gian  
+Sau  khi  tính  được  CBScore,  hệ  thống  có  thể  tinh  chỉnh  lại  thứ  tự  gợi  ý  dựa  trên  preferred_time_parts.  
+Gọi:  
+●  x
+4
+(u,p):  độ  phù  hợp  giữa  thời  gian  user  muốn  đi  và  recommended_time_slots của  địa  
+điểm
+ 
+
+
+--- PAGE 7 ---
+Ví  dụ:  
+ 
+Khi  đó,  thứ  hạng  cuối  cùng  có  thể  được  tính:  
+ 
+Trong  đó:  
+●  μ:  hệ  số  điều  chỉnh  nhỏ,  ví  dụ  μ=0.2  
+Ý  nghĩa  
+Mốc  giờ  chỉ  dùng  để  re-rank ,  tức  là  tinh  chỉnh  lại  thứ  tự,  chứ  không  thay  thế  phần  lõi  
+content-based.
+ 
+12.  Quy  trình  thuật  toán  hoàn  chỉnh  
+Bước  1:  Nhận  dữ  liệu  đầu  vào  
+Từ  người  dùng:  
+●  city_province  ●  start_date,  end_date  hoặc  duration_days  ●  interests  ●  travel_type  ●  budget_level  ●  preferred_time_parts  
+Bước  2:  Lọc  trước  dữ  liệu  
+Loại  các  địa  điểm  không  phù  hợp  về:  
+●  tỉnh/thành  ●  trạng  thái  hoạt  động  
+
+
+--- PAGE 8 ---
+●  tọa  độ  ●  rating  ●  review/check-in  ●  giờ  mở  cửa  ●  budget  ●  mùa  /  thời  tiết  
+Bước  3:  Xây  dựng  hồ  sơ  người  dùng  
+●  xác  định  tập  interests  Iu  ●  xác  định  trọng  số  sở  thích  wi  
+Bước  4:  Với  từng  địa  điểm  còn  lại  
+●  tính  TagMatch  ●  tính  ContentMatch  
+Bước  5:  Tính  điểm  nội  dung  
+ 
+Bước  6:  Tinh  chỉnh  theo  mốc  giờ  
+ 
+Bước  7:  Sắp  xếp  và  lấy  kết  quả  
+Sắp  xếp  giảm  dần  theo  FinalRank,  chọn  Top  N  địa  điểm  phù  hợp  nhất.  
+Module  1:  Lọc  đầu  vào  và  xây  hồ  sơ  người  dùng  sau  đó  Chọn  tập  địa  
+điểm
+ 
+ứng
+ 
+viên
+ 
+bằng
+ 
+thuật
+ 
+toán
+ 
+content-based
+ 
+recommendation
+  
+ 
+ 
+ 
+ 
+
+
+--- PAGE 9 ---
+ 

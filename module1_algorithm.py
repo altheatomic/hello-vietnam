@@ -1,0 +1,671 @@
+"""
+Module 1 algorithm:
+- build user interest profile from onboarding
+- update behavior scores
+- calculate TagMatch for candidate places
+"""
+
+from __future__ import annotations
+
+import re
+from typing import Any
+
+
+RAW_WEIGHT_CAP = 2.5
+
+BEHAVIOR_LEARNING_RATE = 0.5
+BEHAVIOR_SCORE_MIN = -10.0
+BEHAVIOR_SCORE_MAX = 20.0
+
+INITIAL_ONBOARDING_LAMBDA = 0.8
+MIN_ONBOARDING_LAMBDA = 0.4
+LAMBDA_DECAY_PER_BEHAVIOR = 0.02
+
+SCREEN_1_MAPPING: dict[str, list[tuple[str, float]]] = {
+    "food": [("food", 1.0), ("local_cuisine", 0.5)],
+    "culture": [("culture", 1.0), ("history", 0.5), ("heritage", 0.5)],
+    "nature": [("nature", 1.0), ("outdoor", 0.5)],
+    "relaxation": [("relaxation", 1.0), ("quiet", 0.5)],
+    "adventure": [("adventure", 1.0), ("activity", 0.5)],
+    "shopping": [("shopping", 1.0), ("local_market", 0.5)],
+    "photography": [("photography", 1.0), ("scenic_view", 0.5)],
+    "local life": [("local_experience", 1.0), ("traditional_craft", 0.5)],
+}
+
+SCREEN_2_MAPPING: dict[str, list[tuple[str, float]]] = {
+    "solo": [("local_experience", 0.4), ("walking", 0.4)],
+    "couple": [("scenic_view", 0.5), ("relaxation", 0.4), ("photography", 0.4)],
+    "friends": [("activity", 0.5), ("amusement", 0.4), ("nightlife", 0.3)],
+    "family": [("family_friendly", 0.6), ("park", 0.4), ("amusement", 0.4)],
+    "seniors": [("relaxation", 0.5), ("quiet", 0.4), ("indoor", 0.3)],
+    "business": [("quick_visit", 0.4), ("indoor", 0.3)],
+}
+
+SCREEN_4_MAPPING: dict[str, list[tuple[str, float]]] = {
+    "street food": [("street_food", 1.2), ("local_cuisine", 0.8), ("food", 0.7)],
+    "coffee": [("coffee", 1.2), ("relaxation", 0.6), ("indoor", 0.4)],
+    "museums": [("museum", 1.2), ("culture", 0.7), ("indoor", 0.4)],
+    "temples": [("religious_site", 1.2), ("culture", 0.7), ("heritage", 0.5)],
+    "festivals": [("festival", 1.2), ("culture", 0.7), ("local_experience", 0.6)],
+    "beaches": [("beach", 1.2), ("nature", 0.7), ("relaxation", 0.6), ("photography", 0.5)],
+    "mountains": [("mountain", 1.2), ("nature", 0.7), ("adventure", 0.7), ("photography", 0.5)],
+    "night markets": [("local_market", 1.2), ("street_food", 0.8), ("shopping", 0.7), ("nightlife", 0.5)],
+    "workshops": [("traditional_craft", 1.2), ("local_experience", 0.8), ("culture", 0.6)],
+    "handmade goods": [("souvenir", 1.2), ("local_product", 0.8), ("traditional_craft", 0.7), ("shopping", 0.6)],
+    "scenic spots": [("scenic_view", 1.2), ("photography", 0.8), ("nature", 0.6)],
+    "wellness": [("relaxation", 1.2), ("quiet", 0.6)],
+}
+
+BEHAVIOR_REWARD_MAP: dict[str, float] = {
+    "view_detail": 1.0,
+    "long_view": 1.5,
+    "favorite": 3.0,
+    "share": 3.0,
+    "add_to_trip": 5.0,
+    "check_in": 5.0,
+    "high_rating": 5.0,
+    "positive_rating": 3.0,
+    "skip_repeated": -1.0,
+    "remove_favorite": -3.0,
+    "negative_rating": -3.0,
+    "low_rating": -4.0,
+}
+
+
+def normalize_choice_key(value: str | None) -> str:
+    if not value:
+        return ""
+
+    normalized = re.sub(r"[_\-]+", " ", value.strip().lower())
+    return re.sub(r"\s+", " ", normalized)
+
+
+def normalize_weight_map(weight_map: dict[str, float]) -> dict[str, float]:
+    total = sum(max(float(weight), 0.0) for weight in weight_map.values())
+
+    if total <= 0:
+        return {tag_code: 0.0 for tag_code in weight_map}
+
+    return {
+        tag_code: round(max(float(weight), 0.0) / total, 6)
+        for tag_code, weight in weight_map.items()
+    }
+
+
+def collect_onboarding_raw_weights(
+    travel_styles: list[str] | None,
+    companion_style: str | None,
+    topics: list[str] | None,
+) -> dict[str, float]:
+    raw_weights: dict[str, float] = {}
+
+    for choice in travel_styles or []:
+        for tag_code, raw_weight in SCREEN_1_MAPPING.get(normalize_choice_key(choice), []):
+            raw_weights[tag_code] = raw_weights.get(tag_code, 0.0) + raw_weight
+
+    for tag_code, raw_weight in SCREEN_2_MAPPING.get(normalize_choice_key(companion_style), []):
+        raw_weights[tag_code] = raw_weights.get(tag_code, 0.0) + raw_weight
+
+    for choice in topics or []:
+        for tag_code, raw_weight in SCREEN_4_MAPPING.get(normalize_choice_key(choice), []):
+            raw_weights[tag_code] = raw_weights.get(tag_code, 0.0) + raw_weight
+
+    return raw_weights
+
+
+def cap_raw_weights(
+    raw_weights: dict[str, float],
+    cap: float = RAW_WEIGHT_CAP,
+) -> dict[str, float]:
+    return {
+        tag_code: round(min(float(weight), cap), 6)
+        for tag_code, weight in raw_weights.items()
+    }
+
+
+def build_onboarding_profile(
+    travel_styles: list[str] | None,
+    companion_style: str | None,
+    topics: list[str] | None,
+) -> dict[str, dict[str, float]]:
+    raw_weights = collect_onboarding_raw_weights(
+        travel_styles=travel_styles,
+        companion_style=companion_style,
+        topics=topics,
+    )
+    capped_raw_weights = cap_raw_weights(raw_weights)
+    initial_weights = normalize_weight_map(capped_raw_weights)
+
+    return {
+        "raw_weights": capped_raw_weights,
+        "initial_weights": initial_weights,
+    }
+
+
+def build_user_interest_state(
+    initial_weights: dict[str, float],
+    tag_map: dict[str, dict] | None = None,
+    source: str = "onboarding",
+) -> dict[str, dict]:
+    state: dict[str, dict] = {}
+
+    for tag_code, initial_weight in initial_weights.items():
+        tag_info = (tag_map or {}).get(tag_code) or {}
+        state[tag_code] = {
+            "tag_code": tag_code,
+            "id_tag": tag_info.get("id_tag"),
+            "initial_weight": round(float(initial_weight), 6),
+            "behavior_score": 0.0,
+            "behavior_weight": 0.0,
+            "final_weight": round(float(initial_weight), 6),
+            "positive_behavior_count": 0,
+            "negative_behavior_count": 0,
+            "behavior_count": 0,
+            "source": source,
+        }
+
+    return state
+
+
+def build_user_interest_state_from_rows(
+    rows: list[dict],
+    tag_map: dict[str, dict] | None = None,
+) -> dict[str, dict]:
+    state: dict[str, dict] = {}
+
+    for row in rows:
+        tag_code = extract_tag_code(row)
+
+        if not tag_code:
+            continue
+
+        tag_info = (tag_map or {}).get(tag_code) or (row.get("tag") or {})
+        state[tag_code] = {
+            "tag_code": tag_code,
+            "id_tag": row.get("id_tag") or tag_info.get("id_tag"),
+            "initial_weight": round(float(row.get("initial_weight") or 0.0), 6),
+            "behavior_score": round(float(row.get("behavior_score") or 0.0), 6),
+            "behavior_weight": round(float(row.get("behavior_weight") or 0.0), 6),
+            "final_weight": round(float(row.get("final_weight") or 0.0), 6),
+            "positive_behavior_count": int(row.get("positive_behavior_count") or 0),
+            "negative_behavior_count": int(row.get("negative_behavior_count") or 0),
+            "behavior_count": int(row.get("behavior_count") or 0),
+            "source": row.get("source") or "onboarding",
+        }
+
+    return state
+
+
+def build_user_interest_rows(
+    id_user: str,
+    initial_weights: dict[str, float],
+    tag_map: dict[str, dict],
+    source: str = "onboarding",
+) -> tuple[list[dict], list[str]]:
+    rows: list[dict] = []
+    missing_tag_codes: list[str] = []
+
+    for tag_code, initial_weight in initial_weights.items():
+        tag = tag_map.get(tag_code)
+
+        if not tag:
+            missing_tag_codes.append(tag_code)
+            continue
+
+        rows.append({
+            "id_user": id_user,
+            "id_tag": tag["id_tag"],
+            "initial_weight": round(float(initial_weight), 6),
+            "behavior_score": 0.0,
+            "behavior_weight": 0.0,
+            "final_weight": round(float(initial_weight), 6),
+            "positive_behavior_count": 0,
+            "negative_behavior_count": 0,
+            "behavior_count": 0,
+            "source": source,
+        })
+
+    return rows, missing_tag_codes
+
+
+def build_user_interest_rows_from_state(
+    id_user: str,
+    user_interest_state: dict[str, dict],
+    source: str | None = None,
+) -> tuple[list[dict], list[str]]:
+    rows: list[dict] = []
+    missing_tag_codes: list[str] = []
+
+    for tag_code, info in user_interest_state.items():
+        id_tag = info.get("id_tag")
+
+        if not id_tag:
+            missing_tag_codes.append(tag_code)
+            continue
+
+        rows.append({
+            "id_user": id_user,
+            "id_tag": id_tag,
+            "initial_weight": round(float(info.get("initial_weight") or 0.0), 6),
+            "behavior_score": round(float(info.get("behavior_score") or 0.0), 6),
+            "behavior_weight": round(float(info.get("behavior_weight") or 0.0), 6),
+            "final_weight": round(float(info.get("final_weight") or 0.0), 6),
+            "positive_behavior_count": int(info.get("positive_behavior_count") or 0),
+            "negative_behavior_count": int(info.get("negative_behavior_count") or 0),
+            "behavior_count": int(info.get("behavior_count") or 0),
+            "source": source or info.get("source") or "onboarding",
+        })
+
+    return rows, missing_tag_codes
+
+
+def behavior_event_to_reward(behavior_event: str) -> float:
+    key = normalize_choice_key(behavior_event).replace(" ", "_")
+
+    if key not in BEHAVIOR_REWARD_MAP:
+        raise ValueError(f"Unsupported behavior_event: {behavior_event}")
+
+    return BEHAVIOR_REWARD_MAP[key]
+
+
+def rating_to_behavior_event(rating: int | float) -> str | None:
+    numeric_rating = float(rating)
+
+    if numeric_rating >= 5:
+        return "high_rating"
+
+    if numeric_rating >= 4:
+        return "positive_rating"
+
+    if numeric_rating <= 1:
+        return "low_rating"
+
+    if numeric_rating <= 2:
+        return "negative_rating"
+
+    return None
+
+
+def clamp_behavior_score(value: float) -> float:
+    return round(
+        min(BEHAVIOR_SCORE_MAX, max(BEHAVIOR_SCORE_MIN, float(value))),
+        6,
+    )
+
+
+def extract_tag_code(tag_row: dict[str, Any]) -> str | None:
+    if tag_row.get("tag_code"):
+        return tag_row["tag_code"]
+
+    nested_tag = tag_row.get("tag") or {}
+    return nested_tag.get("tag_code")
+
+
+def extract_tag_id(tag_row: dict[str, Any]) -> str | None:
+    if tag_row.get("id_tag"):
+        return tag_row["id_tag"]
+
+    nested_tag = tag_row.get("tag") or {}
+    return nested_tag.get("id_tag")
+
+
+def update_behavior_scores(
+    user_interest_state: dict[str, dict],
+    place_tag_rows: list[dict],
+    reward: float,
+    eta: float = BEHAVIOR_LEARNING_RATE,
+) -> dict[str, dict]:
+    for place_tag in place_tag_rows:
+        tag_code = extract_tag_code(place_tag)
+
+        if not tag_code:
+            continue
+
+        confidence_score = float(place_tag.get("confidence_score") or 0.0)
+        delta = float(eta) * float(reward) * confidence_score
+
+        current = user_interest_state.setdefault(tag_code, {
+            "tag_code": tag_code,
+            "id_tag": extract_tag_id(place_tag),
+            "initial_weight": 0.0,
+            "behavior_score": 0.0,
+            "behavior_weight": 0.0,
+            "final_weight": 0.0,
+            "source": "behavior",
+        })
+
+        current["behavior_score"] = clamp_behavior_score(
+            float(current.get("behavior_score") or 0.0) + delta
+        )
+
+    return user_interest_state
+
+
+def recompute_behavior_weights(
+    user_interest_state: dict[str, dict],
+) -> dict[str, dict]:
+    positive_scores = {
+        tag_code: max(float(info.get("behavior_score") or 0.0), 0.0)
+        for tag_code, info in user_interest_state.items()
+    }
+    total_positive_score = sum(positive_scores.values())
+
+    for tag_code, info in user_interest_state.items():
+        if total_positive_score <= 0:
+            info["behavior_weight"] = 0.0
+            continue
+
+        info["behavior_weight"] = round(
+            positive_scores[tag_code] / total_positive_score,
+            6,
+        )
+
+    return user_interest_state
+
+
+def calculate_behavior_lambda(behavior_count: int) -> float:
+    return round(
+        max(
+            MIN_ONBOARDING_LAMBDA,
+            INITIAL_ONBOARDING_LAMBDA - (LAMBDA_DECAY_PER_BEHAVIOR * max(behavior_count, 0)),
+        ),
+        6,
+    )
+
+
+def extract_behavior_counters_from_state(
+    user_interest_state: dict[str, dict],
+) -> tuple[int, int, int]:
+    positive_behavior_count = 0
+    negative_behavior_count = 0
+    behavior_count = 0
+
+    for info in user_interest_state.values():
+        positive_behavior_count = max(
+            positive_behavior_count,
+            int(info.get("positive_behavior_count") or 0),
+        )
+        negative_behavior_count = max(
+            negative_behavior_count,
+            int(info.get("negative_behavior_count") or 0),
+        )
+        behavior_count = max(
+            behavior_count,
+            int(info.get("behavior_count") or 0),
+        )
+
+    return positive_behavior_count, negative_behavior_count, behavior_count
+
+
+def apply_behavior_counters_to_state(
+    user_interest_state: dict[str, dict],
+    positive_behavior_count: int,
+    negative_behavior_count: int,
+    behavior_count: int,
+) -> dict[str, dict]:
+    for info in user_interest_state.values():
+        info["positive_behavior_count"] = max(int(positive_behavior_count), 0)
+        info["negative_behavior_count"] = max(int(negative_behavior_count), 0)
+        info["behavior_count"] = max(int(behavior_count), 0)
+
+    return user_interest_state
+
+
+def infer_behavior_count_from_state(user_interest_state: dict[str, dict]) -> int:
+    lambda_candidates: list[float] = []
+    has_behavior_signal = False
+
+    for info in user_interest_state.values():
+        initial_weight = float(info.get("initial_weight") or 0.0)
+        behavior_weight = float(info.get("behavior_weight") or 0.0)
+        final_weight = float(info.get("final_weight") or 0.0)
+        behavior_score = float(info.get("behavior_score") or 0.0)
+
+        if abs(behavior_score) > 1e-9:
+            has_behavior_signal = True
+
+        denominator = initial_weight - behavior_weight
+        if abs(denominator) <= 1e-9:
+            continue
+
+        lambda_value = (final_weight - behavior_weight) / denominator
+        if 0.0 <= lambda_value <= 1.0:
+            lambda_candidates.append(lambda_value)
+
+    if not lambda_candidates:
+        return 1 if has_behavior_signal else 0
+
+    average_lambda = sum(lambda_candidates) / len(lambda_candidates)
+    clamped_lambda = min(
+        INITIAL_ONBOARDING_LAMBDA,
+        max(MIN_ONBOARDING_LAMBDA, average_lambda),
+    )
+    inferred_behavior_count = round(
+        (INITIAL_ONBOARDING_LAMBDA - clamped_lambda) / LAMBDA_DECAY_PER_BEHAVIOR
+    )
+
+    if has_behavior_signal:
+        return max(1, inferred_behavior_count)
+
+    return max(0, inferred_behavior_count)
+
+
+def recompute_final_weights(
+    user_interest_state: dict[str, dict],
+    behavior_count: int,
+) -> dict[str, dict]:
+    lambda_value = calculate_behavior_lambda(behavior_count)
+    raw_final_weights: dict[str, float] = {}
+
+    for tag_code, info in user_interest_state.items():
+        initial_weight = float(info.get("initial_weight") or 0.0)
+        behavior_weight = float(info.get("behavior_weight") or 0.0)
+
+        if behavior_count <= 0:
+            raw_final_weights[tag_code] = initial_weight
+        else:
+            raw_final_weights[tag_code] = (
+                lambda_value * initial_weight
+                + (1.0 - lambda_value) * behavior_weight
+            )
+
+    normalized_final_weights = normalize_weight_map(raw_final_weights)
+
+    for tag_code, info in user_interest_state.items():
+        info["final_weight"] = normalized_final_weights.get(tag_code, 0.0)
+
+    return user_interest_state
+
+
+def merge_user_interest_state(
+    initial_weights: dict[str, float],
+    existing_rows: list[dict],
+    tag_map: dict[str, dict] | None = None,
+    behavior_count: int = 0,
+    source: str = "onboarding",
+) -> tuple[dict[str, dict], int]:
+    existing_state = build_user_interest_state_from_rows(
+        rows=existing_rows,
+        tag_map=tag_map,
+    )
+    (
+        existing_positive_behavior_count,
+        existing_negative_behavior_count,
+        stored_behavior_count,
+    ) = extract_behavior_counters_from_state(existing_state)
+    effective_behavior_count = max(
+        int(behavior_count or 0),
+        stored_behavior_count,
+        infer_behavior_count_from_state(existing_state),
+    )
+    merged_state: dict[str, dict] = {}
+
+    for tag_code in sorted(set(existing_state) | set(initial_weights)):
+        existing_info = existing_state.get(tag_code) or {}
+        tag_info = (tag_map or {}).get(tag_code) or {}
+        merged_state[tag_code] = {
+            "tag_code": tag_code,
+            "id_tag": existing_info.get("id_tag") or tag_info.get("id_tag"),
+            "initial_weight": round(float(initial_weights.get(tag_code) or 0.0), 6),
+            "behavior_score": round(float(existing_info.get("behavior_score") or 0.0), 6),
+            "behavior_weight": round(float(existing_info.get("behavior_weight") or 0.0), 6),
+            "final_weight": round(float(existing_info.get("final_weight") or 0.0), 6),
+            "positive_behavior_count": int(existing_info.get("positive_behavior_count") or existing_positive_behavior_count),
+            "negative_behavior_count": int(existing_info.get("negative_behavior_count") or existing_negative_behavior_count),
+            "behavior_count": int(existing_info.get("behavior_count") or effective_behavior_count),
+            "source": existing_info.get("source") or source,
+        }
+
+    apply_behavior_counters_to_state(
+        user_interest_state=merged_state,
+        positive_behavior_count=existing_positive_behavior_count,
+        negative_behavior_count=existing_negative_behavior_count,
+        behavior_count=effective_behavior_count,
+    )
+    recompute_behavior_weights(merged_state)
+    recompute_final_weights(
+        user_interest_state=merged_state,
+        behavior_count=effective_behavior_count,
+    )
+
+    return merged_state, effective_behavior_count
+
+
+def apply_behavior_event(
+    user_interest_state: dict[str, dict],
+    place_tag_rows: list[dict],
+    behavior_event: str,
+    behavior_count: int,
+    eta: float = BEHAVIOR_LEARNING_RATE,
+) -> tuple[dict[str, dict], int]:
+    reward = behavior_event_to_reward(behavior_event)
+
+    update_behavior_scores(
+        user_interest_state=user_interest_state,
+        place_tag_rows=place_tag_rows,
+        reward=reward,
+        eta=eta,
+    )
+    positive_behavior_count, negative_behavior_count, current_behavior_count = extract_behavior_counters_from_state(
+        user_interest_state
+    )
+    recompute_behavior_weights(user_interest_state)
+
+    new_behavior_count = max(
+        max(behavior_count, 0) + 1,
+        current_behavior_count + 1,
+    )
+    new_positive_behavior_count = positive_behavior_count
+    new_negative_behavior_count = negative_behavior_count
+
+    if reward >= 0:
+        new_positive_behavior_count += 1
+    else:
+        new_negative_behavior_count += 1
+
+    apply_behavior_counters_to_state(
+        user_interest_state=user_interest_state,
+        positive_behavior_count=new_positive_behavior_count,
+        negative_behavior_count=new_negative_behavior_count,
+        behavior_count=new_behavior_count,
+    )
+    recompute_final_weights(
+        user_interest_state=user_interest_state,
+        behavior_count=new_behavior_count,
+    )
+
+    return user_interest_state, new_behavior_count
+
+
+def calculate_tag_match(
+    user_interest_state: dict[str, dict],
+    place_tag_rows: list[dict],
+) -> tuple[float, list[dict]]:
+    denominator = sum(
+        max(float(info.get("final_weight") or 0.0), 0.0)
+        for info in user_interest_state.values()
+    )
+
+    if denominator <= 0:
+        return 0.0, []
+
+    confidence_by_tag_code: dict[str, float] = {}
+
+    for place_tag in place_tag_rows:
+        tag_code = extract_tag_code(place_tag)
+
+        if not tag_code:
+            continue
+
+        confidence_score = float(place_tag.get("confidence_score") or 0.0)
+        confidence_by_tag_code[tag_code] = max(
+            confidence_by_tag_code.get(tag_code, 0.0),
+            confidence_score,
+        )
+
+    score = 0.0
+    matched_tags: list[dict] = []
+
+    for tag_code, info in user_interest_state.items():
+        final_weight = float(info.get("final_weight") or 0.0)
+        confidence_score = confidence_by_tag_code.get(tag_code)
+
+        if confidence_score is None:
+            continue
+
+        contribution = final_weight * confidence_score
+        score += contribution
+        matched_tags.append({
+            "tag_code": tag_code,
+            "final_weight": round(final_weight, 6),
+            "confidence_score": round(confidence_score, 6),
+            "contribution": round(contribution, 6),
+        })
+
+    score = round(score / denominator, 6)
+    matched_tags.sort(key=lambda item: item["contribution"], reverse=True)
+
+    return score, matched_tags
+
+
+def rank_places_by_tag_match(
+    places: list[dict],
+    user_interest_state: dict[str, dict],
+) -> list[dict]:
+    ranked_places: list[dict] = []
+
+    for place in places:
+        tag_match, matched_tags = calculate_tag_match(
+            user_interest_state=user_interest_state,
+            place_tag_rows=place.get("place_tag") or [],
+        )
+
+        ranked_place = dict(place)
+        ranked_place["tag_match"] = tag_match
+        ranked_place["module1_score"] = tag_match
+        ranked_place["matched_user_tags"] = matched_tags
+        ranked_places.append(ranked_place)
+
+    ranked_places.sort(
+        key=lambda place: (
+            float(place.get("module1_score") or place.get("tag_match") or 0.0),
+            float(place.get("average_rating") or 0.0),
+            int(place.get("review_count") or 0),
+        ),
+        reverse=True,
+    )
+
+    return ranked_places
+
+
+def select_top_k_after_tag_match(
+    ranked_places: list[dict],
+    total_days: int,
+    candidates_per_day: int,
+) -> tuple[list[dict], int]:
+    top_k_after_tag_match = max(int(total_days), 0) * max(int(candidates_per_day), 0)
+
+    if top_k_after_tag_match <= 0:
+        return [], 0
+
+    return ranked_places[:top_k_after_tag_match], top_k_after_tag_match

@@ -1,20 +1,57 @@
-# Hello Vietnam
+# TripPlanner_filter_only
 
-Monorepo layout:
+This folder tests only the filtering step of Module 1.
 
-- `frontend/`: Flutter app for user and admin experiences
-- `backend/`: Supabase functions, SQL, migrations, and backend support files
-- `.vscode/`: shared launch configs for local development
+It does not calculate TagMatch or FinalRank.
 
-Run from VS Code:
+## Flow
 
-- `User`: launches `frontend/lib/main.dart` on web port `3000`
-- `Admin`: launches `frontend/lib/main_admin.dart` on web port `3001`
-- `User Mobile` / `Admin Mobile`: launch the Flutter app on a connected mobile device
+1. Query `place` by required filters:
+   - `id_province = user.id_province`
+   - `status = active`
+   - `latitude is not null`
+   - `longitude is not null`
 
-Common paths:
+2. Apply optional filters in Python:
+   - `average_rating >= 3.5`
+   - `review_count >= 10`
+   - `maximum_price <= budget limit`
 
-- Flutter code: [frontend/lib](frontend/lib)
-- Flutter config: [frontend/pubspec.yaml](frontend/pubspec.yaml)
-- Supabase functions: [backend/supabase/functions](backend/supabase/functions)
-- Database SQL: [backend/db](backend/db)
+3. Check minimum expected candidates:
+   - `MinCandidates = D * 8`
+
+4. If optional filters return too few places:
+   - fallback to required-filter result.
+
+## Setup
+
+Open PowerShell in this folder:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Copy `.env.example` to `.env` and fill:
+
+```env
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+## Run
+
+Open `run_filtering.py` and replace:
+
+```python
+"id_province": "PUT_PROVINCE_UUID_HERE"
+```
+
+with a real province UUID.
+
+Then run:
+
+```powershell
+python run_filtering.py
+```
