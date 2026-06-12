@@ -4,6 +4,7 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
+import 'package:web/web.dart' as web;
 
 class _PaymentMethod {
   const _PaymentMethod({
@@ -40,6 +41,19 @@ class _VoucherOption {
   final int value;
   final int? minAmountMinor;
 
+  factory _VoucherOption.fromRepository(SubscriptionVoucherOption option) {
+    return _VoucherOption(
+      code: option.code,
+      title: option.title,
+      description: option.description,
+      discountLabel: option.discountLabel,
+      expiryLabel: option.expiryLabel,
+      type: option.type,
+      value: option.value,
+      minAmountMinor: option.minAmountMinor,
+    );
+  }
+
   int discountFor(SubscriptionPlanInfo plan) {
     if (minAmountMinor != null && plan.priceMinor < minAmountMinor!) return 0;
     if (type == 'percent') {
@@ -73,9 +87,14 @@ class _PaymentFlowData {
 }
 
 class UpgradePaymentPage extends StatefulWidget {
-  const UpgradePaymentPage({super.key, required this.planId});
+  const UpgradePaymentPage({
+    super.key,
+    required this.planId,
+    this.checkoutSessionId,
+  });
 
   final String planId;
+  final String? checkoutSessionId;
 
   @override
   State<UpgradePaymentPage> createState() => _UpgradePaymentPageState();
@@ -145,11 +164,17 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
   SubscriptionPlanInfo? _plan;
   VoucherPreview? _voucherPreview;
   String? _selectedMethodId = 'visa';
+  bool _isConfirmingCheckout = false;
 
   @override
   void initState() {
     super.initState();
     _planFuture = _loadPlan();
+    if (widget.checkoutSessionId?.trim().isNotEmpty == true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _confirmReturnedCheckout(widget.checkoutSessionId!.trim());
+      });
+    }
   }
 
   @override
@@ -162,6 +187,46 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
     final SubscriptionPlanInfo plan = await _repository.loadPlan(widget.planId);
     _plan = plan;
     return plan;
+  }
+
+  Future<void> _confirmReturnedCheckout(String sessionId) async {
+    if (_isConfirmingCheckout) return;
+    setState(() => _isConfirmingCheckout = true);
+    try {
+      final SubscriptionPlanInfo plan = await _planFuture;
+      final SubscriptionPurchaseResult result = await _repository
+          .confirmStripeCheckout(sessionId: sessionId);
+      if (!mounted) return;
+      final _PaymentMethod method = _methods.firstWhere(
+        (_PaymentMethod item) => item.id == 'visa',
+      );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => _PaymentSuccessPage(
+            data: _PaymentFlowData(
+              plan: plan,
+              method: method,
+              voucherCode: result.voucherCode,
+              discountMinor: result.discountMinor,
+              finalAmountMinor: result.finalAmountMinor,
+              purchaseResult: result,
+            ),
+            formatMoney: _formatMoney,
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+    } finally {
+      if (mounted) setState(() => _isConfirmingCheckout = false);
+    }
   }
 
   String _formatMoney(int amountMinor) {
@@ -183,6 +248,14 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
   }
 
   Future<void> _openVoucherSheet(SubscriptionPlanInfo plan) async {
+    final List<SubscriptionVoucherOption> loyaltyVouchers = await _repository
+        .loadLoyaltySubscriptionVouchers(plan: plan);
+    final List<_VoucherOption> vouchers = <_VoucherOption>[
+      ...loyaltyVouchers.map(_VoucherOption.fromRepository),
+      ..._availableVouchers,
+    ];
+    if (!mounted) return;
+
     final VoucherPreview? selected = await showModalBottomSheet<VoucherPreview>(
       context: context,
       isScrollControlled: true,
@@ -192,7 +265,7 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
         plan: plan,
         initialCode: _voucherController.text,
         selectedCode: _voucherPreview?.code,
-        vouchers: _availableVouchers,
+        vouchers: vouchers,
         repository: _repository,
         formatMoney: _formatMoney,
       ),
@@ -277,59 +350,65 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
             ),
           ),
           Expanded(
-            child: FutureBuilder<SubscriptionPlanInfo>(
-              future: _planFuture,
-              builder:
-                  (
-                    BuildContext context,
-                    AsyncSnapshot<SubscriptionPlanInfo> snapshot,
-                  ) {
-                    final SubscriptionPlanInfo plan =
-                        snapshot.data ??
-                        _repository.fallbackPlan(widget.planId);
-                    final int discount = _voucherPreview?.discountMinor ?? 0;
-                    final int finalAmount = plan.priceMinor - discount;
+            child: _isConfirmingCheckout
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF11BED4)),
+                  )
+                : FutureBuilder<SubscriptionPlanInfo>(
+                    future: _planFuture,
+                    builder:
+                        (
+                          BuildContext context,
+                          AsyncSnapshot<SubscriptionPlanInfo> snapshot,
+                        ) {
+                          final SubscriptionPlanInfo plan =
+                              snapshot.data ??
+                              _repository.fallbackPlan(widget.planId);
+                          final int discount =
+                              _voucherPreview?.discountMinor ?? 0;
+                          final int finalAmount = plan.priceMinor - discount;
 
-                    return ListView(
-                      padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
-                      children: <Widget>[
-                        Text(
-                          context.l10n.ui('Select your payment method:'),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _OrderSummaryCard(
-                          plan: plan,
-                          discountMinor: discount,
-                          finalAmountMinor: finalAmount,
-                          formatMoney: _formatMoney,
-                        ),
-                        const SizedBox(height: 12),
-                        _VoucherApplyCard(
-                          preview: _voucherPreview,
-                          formatMoney: _formatMoney,
-                          onOpen: () => _openVoucherSheet(plan),
-                          onRemove: _removeVoucher,
-                        ),
-                        const SizedBox(height: 12),
-                        ..._methods.map(
-                          (method) => _PaymentCard(
-                            method: method,
-                            isSelected: method.id == _selectedMethodId,
-                            onTap: () =>
-                                setState(() => _selectedMethodId = method.id),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const _AddPaymentMethodCard(),
-                      ],
-                    );
-                  },
-            ),
+                          return ListView(
+                            padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
+                            children: <Widget>[
+                              Text(
+                                context.l10n.ui('Select your payment method:'),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF334155),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _OrderSummaryCard(
+                                plan: plan,
+                                discountMinor: discount,
+                                finalAmountMinor: finalAmount,
+                                formatMoney: _formatMoney,
+                              ),
+                              const SizedBox(height: 12),
+                              _VoucherApplyCard(
+                                preview: _voucherPreview,
+                                formatMoney: _formatMoney,
+                                onOpen: () => _openVoucherSheet(plan),
+                                onRemove: _removeVoucher,
+                              ),
+                              const SizedBox(height: 12),
+                              ..._methods.map(
+                                (method) => _PaymentCard(
+                                  method: method,
+                                  isSelected: method.id == _selectedMethodId,
+                                  onTap: () => setState(
+                                    () => _selectedMethodId = method.id,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const _AddPaymentMethodCard(),
+                            ],
+                          );
+                        },
+                  ),
           ),
           SafeArea(
             top: false,
@@ -1349,30 +1428,30 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
     if (!_agreed || _isProcessing) return;
     setState(() => _isProcessing = true);
     try {
-      final SubscriptionPurchaseResult result = await widget.repository
-          .purchase(
-            planCode: widget.data.plan.code,
-            provider: widget.data.method.id,
-            method: widget.data.method.id,
-            voucherCode: widget.data.voucherCode,
-          );
+      final SubscriptionCheckoutResult
+      checkout = await widget.repository.createStripeCheckout(
+        planCode: widget.data.plan.code,
+        voucherCode: widget.data.voucherCode,
+        successUrl: _checkoutReturnUrl(widget.data.plan.code, success: true),
+        cancelUrl: _checkoutReturnUrl(widget.data.plan.code, success: false),
+      );
       if (!mounted) return;
-      final _PaymentFlowData successData = _PaymentFlowData(
-        plan: widget.data.plan,
-        method: widget.data.method,
-        voucherCode: result.voucherCode ?? widget.data.voucherCode,
-        discountMinor: result.discountMinor,
-        finalAmountMinor: result.finalAmountMinor,
-        purchaseResult: result,
-      );
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => _PaymentSuccessPage(
-            data: successData,
-            formatMoney: widget.formatMoney,
-          ),
-        ),
-      );
+      if (checkout.requiresCheckout) {
+        final String? checkoutUrl = checkout.checkoutUrl;
+        if (checkoutUrl == null || checkoutUrl.isEmpty) {
+          throw Exception('Checkout URL was not returned.');
+        }
+        web.window.location.href = checkoutUrl;
+        return;
+      }
+
+      final SubscriptionPurchaseResult? result = checkout.purchaseResult;
+      if (checkout.isCompleted && result != null) {
+        _showSuccess(result);
+        return;
+      }
+
+      throw Exception('Payment checkout could not be started.');
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -1385,6 +1464,35 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
+  }
+
+  String _checkoutReturnUrl(String planCode, {required bool success}) {
+    final String origin = Uri.base.origin;
+    final String encodedPlan = Uri.encodeComponent(planCode);
+    if (success) {
+      return '$origin/#/upgrade-payment?plan=$encodedPlan&stripe_session_id={CHECKOUT_SESSION_ID}';
+    }
+    return '$origin/#/upgrade-payment?plan=$encodedPlan&stripe_cancelled=1';
+  }
+
+  void _showSuccess(SubscriptionPurchaseResult result) {
+    if (!mounted) return;
+    final _PaymentFlowData successData = _PaymentFlowData(
+      plan: widget.data.plan,
+      method: widget.data.method,
+      voucherCode: result.voucherCode ?? widget.data.voucherCode,
+      discountMinor: result.discountMinor,
+      finalAmountMinor: result.finalAmountMinor,
+      purchaseResult: result,
+    );
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => _PaymentSuccessPage(
+          data: successData,
+          formatMoney: widget.formatMoney,
+        ),
+      ),
+    );
   }
 
   @override

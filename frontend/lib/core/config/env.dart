@@ -11,4 +11,8 @@ class Env {
     'CLOUDFLARE_MEDIA_PUBLIC_BASE_URL',
     defaultValue: 'https://pub-92f9bcecf7874fc4bcc402bde56011f7.r2.dev',
   );
+  static const subscriptionPaymentFunction = String.fromEnvironment(
+    'SUBSCRIPTION_PAYMENT_FUNCTION',
+    defaultValue: 'subscription-payment',
+  );
 }

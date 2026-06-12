@@ -26,6 +26,7 @@ import '../features/profile/presentation/voucher_page.dart';
 import '../features/profile/presentation/voucher_detail_page.dart';
 import '../features/profile/presentation/rank_benefits_page.dart';
 import '../features/profile/presentation/delete_user_data_page.dart';
+import '../features/loyalty/presentation/loyalty_page.dart';
 
 import '../features/forum/presentation/forum_page.dart';
 import '../features/forum/presentation/forum_profile_page.dart';
@@ -119,6 +120,7 @@ class AppRoutes {
   static const aiSearch = '/ai-search';
   static const wishlist = '/wishlist';
   static const voucher = '/voucher';
+  static const loyalty = '/loyalty';
   static const voucherDetail = '/voucher-detail';
   static const rankBenefits = '/rank-benefits';
   static const login = '/login';
@@ -418,6 +420,11 @@ GoRouter buildRouter() {
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.loyalty,
+        builder: (c, s) => const LoyaltyPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.voucherDetail,
         builder: (c, s) {
           final VoucherDetailPayload payload = s.extra is VoucherDetailPayload
@@ -454,8 +461,10 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.upgradePayment,
-        builder: (c, s) =>
-            UpgradePaymentPage(planId: (s.extra as String?) ?? '1m'),
+        builder: (c, s) => UpgradePaymentPage(
+          planId: s.uri.queryParameters['plan'] ?? (s.extra as String?) ?? '1m',
+          checkoutSessionId: s.uri.queryParameters['stripe_session_id'],
+        ),
       ),
 
       // Ã¢â€â‚¬Ã¢â€â‚¬ Recommend flow Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬

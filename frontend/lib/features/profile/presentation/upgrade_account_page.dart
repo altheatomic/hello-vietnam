@@ -97,6 +97,7 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
   final SubscriptionRepository _repository = SubscriptionRepository();
   late final AnimationController _controller;
   late final Future<CurrentSubscriptionInfo?> _currentSubscriptionFuture;
+  late final Future<List<SubscriptionPaymentHistoryItem>> _paymentHistoryFuture;
   String _selectedPlanId = '6m';
 
   @override
@@ -107,6 +108,7 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
       duration: const Duration(milliseconds: 1100),
     )..forward();
     _currentSubscriptionFuture = _repository.loadCurrentSubscription();
+    _paymentHistoryFuture = _repository.loadPaymentHistory();
   }
 
   @override
@@ -119,7 +121,28 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
     setState(() => _selectedPlanId = planId);
   }
 
-  void _onContinue() {
+  Future<void> _onContinue() async {
+    final CurrentSubscriptionInfo? subscription =
+        await _currentSubscriptionFuture;
+    final DateTime? endDate = subscription?.endDate;
+    final bool isActive =
+        endDate != null && endDate.isAfter(DateTime.now().toUtc());
+    if (isActive) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              context.l10n.ui(
+                'Your premium subscription is still active. You cannot buy another plan yet.',
+              ),
+            ),
+          ),
+        );
+      return;
+    }
+    if (!mounted) return;
     context.push(AppRoutes.upgradePayment, extra: _selectedPlanId);
   }
 
@@ -226,6 +249,17 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
                           subscriptionFuture: _currentSubscriptionFuture,
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      _Entrance(
+                        controller: _controller,
+                        begin: 0.24,
+                        end: 0.6,
+                        offset: const Offset(0, 0.06),
+                        child: _SubscriptionDetailsCard(
+                          subscriptionFuture: _currentSubscriptionFuture,
+                          paymentHistoryFuture: _paymentHistoryFuture,
+                        ),
+                      ),
                       const SizedBox(height: 28),
                       _Entrance(
                         controller: _controller,
@@ -285,7 +319,10 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
               begin: 0.78,
               end: 1,
               offset: const Offset(0, 0.08),
-              child: _BottomContinueBar(onContinue: _onContinue),
+              child: _BottomContinueBar(
+                subscriptionFuture: _currentSubscriptionFuture,
+                onContinue: () => _onContinue(),
+              ),
             ),
           ),
         ],
@@ -603,6 +640,305 @@ class _CurrentPlanStatus extends StatelessWidget {
   }
 }
 
+class _SubscriptionDetailsCard extends StatelessWidget {
+  const _SubscriptionDetailsCard({
+    required this.subscriptionFuture,
+    required this.paymentHistoryFuture,
+  });
+
+  final Future<CurrentSubscriptionInfo?> subscriptionFuture;
+  final Future<List<SubscriptionPaymentHistoryItem>> paymentHistoryFuture;
+
+  String _dateLabel(DateTime? date) {
+    if (date == null) return 'N/A';
+    final DateTime local = date.toLocal();
+    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
+  }
+
+  String _planName(
+    BuildContext context,
+    CurrentSubscriptionInfo? subscription,
+  ) {
+    if (subscription == null) return context.l10n.ui('Free');
+    switch (subscription.planCode) {
+      case '1m':
+        return context.l10n.ui('Premium 1 Month');
+      case '6m':
+        return context.l10n.ui('Premium 6 Months');
+      case '12m':
+        return context.l10n.ui('Premium 12 Months');
+    }
+    return subscription.planName.trim().isEmpty
+        ? context.l10n.ui('Premium')
+        : subscription.planName.trim();
+  }
+
+  String _remainingLabel(BuildContext context, DateTime? endDate) {
+    if (endDate == null) return context.l10n.ui('No active subscription');
+    final int days = endDate.difference(DateTime.now().toUtc()).inDays;
+    if (days < 0) return context.l10n.ui('Expired');
+    if (days == 0) return context.l10n.ui('Expires today');
+    return '$days ${context.l10n.ui('days remaining')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Object?>>(
+      future: Future.wait<Object?>(<Future<Object?>>[
+        subscriptionFuture,
+        paymentHistoryFuture,
+      ]),
+      builder: (BuildContext context, AsyncSnapshot<List<Object?>> snapshot) {
+        final CurrentSubscriptionInfo? subscription =
+            snapshot.data?[0] as CurrentSubscriptionInfo?;
+        final List<SubscriptionPaymentHistoryItem> payments =
+            snapshot.data?[1] as List<SubscriptionPaymentHistoryItem>? ??
+            const <SubscriptionPaymentHistoryItem>[];
+        final bool isPremium =
+            subscription?.endDate != null &&
+            subscription!.endDate!.isAfter(DateTime.now().toUtc());
+
+        return _GlassPanel(
+          borderRadius: 18,
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: isPremium
+                          ? const Color(0xFF10B981).withValues(alpha: 0.14)
+                          : _primaryCyan.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isPremium
+                          ? Icons.verified_rounded
+                          : Icons.workspace_premium_outlined,
+                      color: isPremium ? const Color(0xFF10B981) : _primaryCyan,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          isPremium
+                              ? context.l10n.ui('Premium active')
+                              : context.l10n.ui('Free account'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          _remainingLabel(context, subscription?.endDate),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: _SubscriptionMetric(
+                      label: context.l10n.ui('Plan'),
+                      value: _planName(context, subscription),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _SubscriptionMetric(
+                      label: context.l10n.ui('Valid until'),
+                      value: _dateLabel(subscription?.endDate),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: <Widget>[
+                  const Icon(
+                    Icons.receipt_long_rounded,
+                    color: Color(0xFF334155),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    context.l10n.ui('Payment history'),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF334155),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (payments.isEmpty)
+                Text(
+                  context.l10n.ui('No payment history yet.'),
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
+                  ),
+                )
+              else
+                ...payments
+                    .take(4)
+                    .map(
+                      (SubscriptionPaymentHistoryItem item) =>
+                          _PaymentHistoryRow(item: item, dateLabel: _dateLabel),
+                    ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SubscriptionMetric extends StatelessWidget {
+  const _SubscriptionMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.66),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF1F2937),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentHistoryRow extends StatelessWidget {
+  const _PaymentHistoryRow({required this.item, required this.dateLabel});
+
+  final SubscriptionPaymentHistoryItem item;
+  final String Function(DateTime? date) dateLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool confirmed = item.status.toLowerCase() == 'confirmed';
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.58),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.75)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: confirmed
+                  ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                  : const Color(0xFFF59E0B).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              confirmed
+                  ? Icons.check_circle_rounded
+                  : Icons.pending_actions_rounded,
+              size: 19,
+              color: confirmed
+                  ? const Color(0xFF10B981)
+                  : const Color(0xFFF59E0B),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  item.planName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF334155),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${dateLabel(item.confirmedAt ?? item.createdAt)} · ${item.provider.toUpperCase()} ${item.method}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            item.amountLabel,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PlanCard extends StatelessWidget {
   const _PlanCard({
     required this.plan,
@@ -874,8 +1210,12 @@ class _CompactPrivilegeRow extends StatelessWidget {
 }
 
 class _BottomContinueBar extends StatelessWidget {
-  const _BottomContinueBar({required this.onContinue});
+  const _BottomContinueBar({
+    required this.subscriptionFuture,
+    required this.onContinue,
+  });
 
+  final Future<CurrentSubscriptionInfo?> subscriptionFuture;
   final VoidCallback onContinue;
 
   @override
@@ -901,15 +1241,42 @@ class _BottomContinueBar extends StatelessWidget {
               top: BorderSide(color: Colors.white.withValues(alpha: 0.55)),
             ),
           ),
-          child: _GradientButton(
-            label: context.l10n.ui('Continue'),
-            height: 56,
-            onTap: onContinue,
+          child: FutureBuilder<CurrentSubscriptionInfo?>(
+            future: subscriptionFuture,
+            builder:
+                (
+                  BuildContext context,
+                  AsyncSnapshot<CurrentSubscriptionInfo?> snapshot,
+                ) {
+                  final CurrentSubscriptionInfo? subscription = snapshot.data;
+                  final DateTime? endDate = subscription?.endDate;
+                  final bool isActive =
+                      endDate != null &&
+                      endDate.isAfter(DateTime.now().toUtc());
+
+                  return _GradientButton(
+                    label: isActive
+                        ? context.l10n.ui(
+                            'Premium active until ${_compactDate(endDate)}',
+                          )
+                        : context.l10n.ui('Continue'),
+                    height: 56,
+                    onTap: isActive ? null : onContinue,
+                  );
+                },
           ),
         ),
       ),
     );
   }
+}
+
+String _compactDate(DateTime? date) {
+  if (date == null) return '';
+  final DateTime local = date.toLocal();
+  final String day = local.day.toString().padLeft(2, '0');
+  final String month = local.month.toString().padLeft(2, '0');
+  return '$day/$month/${local.year}';
 }
 
 class _PrivilegesModal extends StatelessWidget {
@@ -1099,7 +1466,7 @@ class _GradientButton extends StatelessWidget {
 
   final String label;
   final double height;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1118,12 +1485,14 @@ class _GradientButton extends StatelessWidget {
             height: height,
             width: double.infinity,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: <Color>[
-                  Color(0xFF22D3EE),
-                  Color(0xFF60A5FA),
-                  Color(0xFF06B6D4),
-                ],
+              gradient: LinearGradient(
+                colors: onTap == null
+                    ? const <Color>[Color(0xFF94A3B8), Color(0xFFCBD5E1)]
+                    : const <Color>[
+                        Color(0xFF22D3EE),
+                        Color(0xFF60A5FA),
+                        Color(0xFF06B6D4),
+                      ],
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: <BoxShadow>[

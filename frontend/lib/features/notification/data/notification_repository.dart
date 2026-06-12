@@ -142,6 +142,30 @@ class MockNotificationRepository extends ChangeNotifier
 
   int get unreadCount => _items.where((item) => !item.isRead).length;
 
+  void addLoyaltyPointsNotification({
+    required int points,
+    required String actionLabel,
+  }) {
+    if (points <= 0) return;
+
+    _items.insert(
+      0,
+      AppNotification(
+        id: 'loyalty-${DateTime.now().microsecondsSinceEpoch}',
+        type: AppNotificationType.account,
+        icon: AppNotificationIcon.badge,
+        title: 'You earned $points loyalty points',
+        description: '$actionLabel has been added to your rewards history.',
+        timestampLabel: 'Just now',
+        target: const NotificationTarget(
+          kind: NotificationTargetKind.loyaltyRewards,
+          metadata: <String, String>{'origin': 'loyalty_system'},
+        ),
+      ),
+    );
+    notifyListeners();
+  }
+
   @override
   Future<List<AppNotification>> fetchNotifications() async {
     return _cloneItems();

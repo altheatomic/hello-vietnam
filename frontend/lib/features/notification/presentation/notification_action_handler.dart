@@ -79,6 +79,9 @@ class NotificationActionHandler {
       case NotificationTargetKind.rankBenefits:
         context.push(AppRoutes.rankBenefits);
         return;
+      case NotificationTargetKind.loyaltyRewards:
+        context.push(AppRoutes.loyalty);
+        return;
     }
   }
 }

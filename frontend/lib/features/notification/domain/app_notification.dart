@@ -87,6 +87,7 @@ enum NotificationTargetKind {
   voucherCenter,
   upgradeAccount,
   rankBenefits,
+  loyaltyRewards,
 }
 
 class NotificationTarget {

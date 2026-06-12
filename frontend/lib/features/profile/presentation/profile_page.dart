@@ -71,8 +71,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadCurrentUserProfile() async {
-    final CurrentUserProfileData? profile =
-        await AuthRepository.instance.getCurrentUserProfile();
+    final CurrentUserProfileData? profile = await AuthRepository.instance
+        .getCurrentUserProfile();
 
     if (!mounted) return;
 
@@ -260,16 +260,16 @@ class _ProfilePageState extends State<ProfilePage> {
                             title: 'Wishlist',
                             onTap: () => context.push(AppRoutes.wishlist),
                           ),
+                          _SettingRow(
+                            icon: Icons.stars_rounded,
+                            title: 'Loyalty Rewards',
+                            onTap: () => context.push(AppRoutes.loyalty),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 14),
                       _SectionCard(
                         children: <Widget>[
-                          _SettingRow(
-                            icon: Icons.confirmation_number_outlined,
-                            title: 'Voucher',
-                            onTap: () => context.push(AppRoutes.voucher),
-                          ),
                           _SettingRow(
                             icon: Icons.translate_rounded,
                             title: 'Language',
