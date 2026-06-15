@@ -185,6 +185,146 @@ def fetch_user_onboarding_choices(
     return response.data or []
 
 
+def fetch_trip_plan(
+    supabase: Any,
+    trip_plan_id: str,
+) -> dict | None:
+    response = (
+        supabase
+        .table("trip_plan")
+        .select(
+            """
+            id_trip_plan,
+            id_user,
+            id_province,
+            start_date,
+            end_date,
+            total_days,
+            status,
+            created_at,
+            updated_at
+            """
+        )
+        .eq("id_trip_plan", trip_plan_id)
+        .limit(1)
+        .execute()
+    )
+
+    rows = response.data or []
+    return rows[0] if rows else None
+
+
+def fetch_trip_interest_choices(
+    supabase: Any,
+    trip_plan_id: str,
+) -> list[dict]:
+    response = (
+        supabase
+        .table("trip_interest_choice")
+        .select(
+            """
+            id_trip_plan,
+            id_trip_interest_option,
+            selection_order,
+            source,
+            trip_interest_option (
+                id_trip_interest_option,
+                option_code,
+                display_name,
+                description,
+                display_order,
+                min_selection,
+                max_selection,
+                is_active
+            )
+            """
+        )
+        .eq("id_trip_plan", trip_plan_id)
+        .execute()
+    )
+
+    return response.data or []
+
+
+def fetch_trip_interest_option_tags(
+    supabase: Any,
+    option_ids: list[str],
+    chunk_size: int = 100,
+) -> list[dict]:
+    if not option_ids:
+        return []
+
+    rows: list[dict] = []
+
+    for start_index in range(0, len(option_ids), chunk_size):
+        chunk = option_ids[start_index:start_index + chunk_size]
+
+        response = (
+            supabase
+            .table("trip_interest_option_tag")
+            .select(
+                """
+                id_trip_interest_option,
+                id_tag,
+                weight_level,
+                raw_weight,
+                is_active,
+                tag (
+                    id_tag,
+                    tag_code,
+                    tag_name,
+                    tag_group
+                )
+                """
+            )
+            .in_("id_trip_interest_option", chunk)
+            .execute()
+        )
+
+        rows.extend(response.data or [])
+
+    return rows
+
+
+def fetch_trip_interest_option_subcategories(
+    supabase: Any,
+    option_ids: list[str],
+    chunk_size: int = 100,
+) -> list[dict]:
+    if not option_ids:
+        return []
+
+    rows: list[dict] = []
+
+    for start_index in range(0, len(option_ids), chunk_size):
+        chunk = option_ids[start_index:start_index + chunk_size]
+
+        response = (
+            supabase
+            .table("trip_interest_option_subcategory")
+            .select(
+                """
+                id_trip_interest_option,
+                id_place_subcategory,
+                priority_level,
+                priority_weight,
+                is_active,
+                place_subcategory (
+                    id_place_subcategory,
+                    name,
+                    place_category
+                )
+                """
+            )
+            .in_("id_trip_interest_option", chunk)
+            .execute()
+        )
+
+        rows.extend(response.data or [])
+
+    return rows
+
+
 def replace_user_interest_tags(
     supabase: Any,
     user_id: str,

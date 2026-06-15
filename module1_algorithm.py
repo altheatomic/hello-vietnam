@@ -7,6 +7,7 @@ Module 1 algorithm:
 
 from __future__ import annotations
 
+from copy import deepcopy
 import re
 from typing import Any
 
@@ -20,6 +21,9 @@ BEHAVIOR_SCORE_MAX = 20.0
 INITIAL_ONBOARDING_LAMBDA = 0.8
 MIN_ONBOARDING_LAMBDA = 0.4
 LAMBDA_DECAY_PER_BEHAVIOR = 0.02
+
+PROFILE_INTEREST_ALPHA = 0.4
+TRIP_INTEREST_BETA = 0.6
 
 SCREEN_1_MAPPING: dict[str, list[tuple[str, float]]] = {
     "food": [("food", 1.0), ("local_cuisine", 0.5)],
@@ -257,6 +261,162 @@ def build_user_interest_rows_from_state(
         })
 
     return rows, missing_tag_codes
+
+
+def build_trip_interest_profile(
+    trip_interest_choice_rows: list[dict],
+    trip_interest_option_tag_rows: list[dict],
+) -> dict[str, Any]:
+    selected_option_map: dict[str, dict] = {}
+
+    for row in trip_interest_choice_rows:
+        option = row.get("trip_interest_option") or {}
+        option_id = row.get("id_trip_interest_option") or option.get("id_trip_interest_option")
+
+        if not option_id or not option.get("is_active", False):
+            continue
+
+        selected_option_map[str(option_id)] = {
+            "id_trip_interest_option": option_id,
+            "option_code": option.get("option_code"),
+            "display_name": option.get("display_name"),
+            "selection_order": row.get("selection_order"),
+            "source": row.get("source"),
+            "display_order": option.get("display_order"),
+        }
+
+    selected_options = sorted(
+        selected_option_map.values(),
+        key=lambda item: (
+            item.get("selection_order") is None,
+            int(item.get("selection_order") or 10_000),
+            int(item.get("display_order") or 0),
+            str(item.get("option_code") or ""),
+        ),
+    )
+
+    raw_tag_weights: dict[str, float] = {}
+    trip_tag_info_map: dict[str, dict[str, Any]] = {}
+    option_tag_details: list[dict] = []
+
+    for row in trip_interest_option_tag_rows:
+        if not row.get("is_active", False):
+            continue
+
+        option_id = str(row.get("id_trip_interest_option") or "")
+        option_info = selected_option_map.get(option_id)
+
+        if not option_info:
+            continue
+
+        tag_code = extract_tag_code(row)
+        if not tag_code:
+            continue
+
+        raw_weight = float(row.get("raw_weight") or 0.0)
+        raw_tag_weights[tag_code] = raw_tag_weights.get(tag_code, 0.0) + raw_weight
+        trip_tag_info_map[tag_code] = {
+            "id_tag": extract_tag_id(row),
+            "tag_code": tag_code,
+            "tag_name": (row.get("tag") or {}).get("tag_name"),
+            "tag_group": (row.get("tag") or {}).get("tag_group"),
+        }
+        option_tag_details.append({
+            "option_code": option_info.get("option_code"),
+            "display_name": option_info.get("display_name"),
+            "tag_code": tag_code,
+            "weight_level": row.get("weight_level"),
+            "raw_weight": round(raw_weight, 6),
+        })
+
+    normalized_tag_weights = normalize_weight_map(raw_tag_weights)
+
+    return {
+        "selected_options": selected_options,
+        "selected_option_codes": [
+            option.get("option_code")
+            for option in selected_options
+            if option.get("option_code")
+        ],
+        "raw_tag_weights": {
+            tag_code: round(raw_weight, 6)
+            for tag_code, raw_weight in raw_tag_weights.items()
+        },
+        "normalized_tag_weights": normalized_tag_weights,
+        "trip_tag_info_map": trip_tag_info_map,
+        "option_tag_details": option_tag_details,
+    }
+
+
+def build_effective_interest_state(
+    user_interest_state: dict[str, dict],
+    trip_weight_map: dict[str, float],
+    trip_tag_info_map: dict[str, dict[str, Any]] | None = None,
+    alpha: float = PROFILE_INTEREST_ALPHA,
+    beta: float = TRIP_INTEREST_BETA,
+) -> dict[str, Any]:
+    effective_interest_state = deepcopy(user_interest_state)
+
+    if not trip_weight_map:
+        effective_weight_map = {
+            tag_code: round(float(info.get("final_weight") or 0.0), 6)
+            for tag_code, info in effective_interest_state.items()
+        }
+
+        for tag_code, info in effective_interest_state.items():
+            info["user_final_weight"] = round(float(info.get("final_weight") or 0.0), 6)
+            info["trip_weight"] = 0.0
+            info["effective_weight"] = effective_weight_map[tag_code]
+
+        return {
+            "effective_interest_state": effective_interest_state,
+            "effective_weight_map": effective_weight_map,
+            "alpha": 1.0,
+            "beta": 0.0,
+        }
+
+    all_tag_codes = set(effective_interest_state) | set(trip_weight_map)
+    raw_effective_weight_map: dict[str, float] = {}
+
+    for tag_code in all_tag_codes:
+        info = effective_interest_state.get(tag_code)
+
+        if not info:
+            tag_info = (trip_tag_info_map or {}).get(tag_code) or {}
+            info = {
+                "tag_code": tag_code,
+                "id_tag": tag_info.get("id_tag"),
+                "initial_weight": 0.0,
+                "behavior_score": 0.0,
+                "behavior_weight": 0.0,
+                "final_weight": 0.0,
+                "positive_behavior_count": 0,
+                "negative_behavior_count": 0,
+                "behavior_count": 0,
+                "source": "trip_interest",
+            }
+            effective_interest_state[tag_code] = info
+
+        user_final_weight = float(info.get("final_weight") or 0.0)
+        trip_weight = float(trip_weight_map.get(tag_code) or 0.0)
+        raw_effective_weight_map[tag_code] = (
+            alpha * user_final_weight
+            + beta * trip_weight
+        )
+        info["user_final_weight"] = round(user_final_weight, 6)
+        info["trip_weight"] = round(trip_weight, 6)
+
+    effective_weight_map = normalize_weight_map(raw_effective_weight_map)
+
+    for tag_code, info in effective_interest_state.items():
+        info["effective_weight"] = effective_weight_map.get(tag_code, 0.0)
+
+    return {
+        "effective_interest_state": effective_interest_state,
+        "effective_weight_map": effective_weight_map,
+        "alpha": round(alpha, 6),
+        "beta": round(beta, 6),
+    }
 
 
 def behavior_event_to_reward(behavior_event: str) -> float:
@@ -580,9 +740,10 @@ def apply_behavior_event(
 def calculate_tag_match(
     user_interest_state: dict[str, dict],
     place_tag_rows: list[dict],
+    weight_field: str = "final_weight",
 ) -> tuple[float, list[dict]]:
     denominator = sum(
-        max(float(info.get("final_weight") or 0.0), 0.0)
+        max(float(info.get(weight_field) or 0.0), 0.0)
         for info in user_interest_state.values()
     )
 
@@ -607,20 +768,25 @@ def calculate_tag_match(
     matched_tags: list[dict] = []
 
     for tag_code, info in user_interest_state.items():
-        final_weight = float(info.get("final_weight") or 0.0)
+        interest_weight = float(info.get(weight_field) or 0.0)
         confidence_score = confidence_by_tag_code.get(tag_code)
 
         if confidence_score is None:
             continue
 
-        contribution = final_weight * confidence_score
+        contribution = interest_weight * confidence_score
         score += contribution
-        matched_tags.append({
+        matched_tag = {
             "tag_code": tag_code,
-            "final_weight": round(final_weight, 6),
+            "interest_weight": round(interest_weight, 6),
             "confidence_score": round(confidence_score, 6),
             "contribution": round(contribution, 6),
-        })
+        }
+        if weight_field == "final_weight":
+            matched_tag["final_weight"] = round(interest_weight, 6)
+        elif weight_field == "effective_weight":
+            matched_tag["effective_weight"] = round(interest_weight, 6)
+        matched_tags.append(matched_tag)
 
     score = round(score / denominator, 6)
     matched_tags.sort(key=lambda item: item["contribution"], reverse=True)
@@ -631,6 +797,7 @@ def calculate_tag_match(
 def rank_places_by_tag_match(
     places: list[dict],
     user_interest_state: dict[str, dict],
+    weight_field: str = "final_weight",
 ) -> list[dict]:
     ranked_places: list[dict] = []
 
@@ -638,6 +805,7 @@ def rank_places_by_tag_match(
         tag_match, matched_tags = calculate_tag_match(
             user_interest_state=user_interest_state,
             place_tag_rows=place.get("place_tag") or [],
+            weight_field=weight_field,
         )
 
         ranked_place = dict(place)

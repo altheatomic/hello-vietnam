@@ -5,6 +5,7 @@ Input management:
 ----------------------------------------------------------------------------------------------------
   input_file: D:\HelloVN\TripPlanner_test\pipeline_input.py
   output_file: D:\HelloVN\TripPlanner_test\KQ.txt
+  trip_plan_source: pipeline_input_fallback
   travel_profile_source: user_travel_profile
   onboarding_choice_source: user_onboarding_choice
 
@@ -15,6 +16,7 @@ Mục tiêu: Nạp toàn bộ cấu hình chuyến đi và sở thích người 
 
 Kết quả bước 1:
 ----------------------------------------------------------------------------------------------------
+  id_trip_plan: None
   id_user: e4bb33fb-5f1b-49a6-9a00-93c67183afde
   id_province: 094014a7-b8f6-481a-bbce-5ed6cdd457c5
   start_date: 2026-06-22
@@ -23,12 +25,14 @@ Kết quả bước 1:
   budget_level: mid_range
   companion_style: couple
   pace_level: balanced
-  travel_styles: ['Food', 'Culture', 'Local Life']
-  topics: ['Coffee', 'Temples', 'Beaches', 'Scenic Spots']
+  travel_styles: ['Local Life', 'Culture', 'Food']
+  topics: ['Scenic Spots', 'Temples', 'Beaches', 'Coffee']
   behavior_count: 0
   place_fetch_limit: 500
+  db_trip_plan_found: False
   db_user_travel_profile_found: True
   db_user_onboarding_choice_count: 7
+  db_trip_interest_choice_count: 0
 
 ====================================================================================================
 BƯỚC 2: Lọc Candidate Places
@@ -917,11 +921,59 @@ traditional_craft: initial_weight=0.030303, behavior_score=0.0, behavior_weight=
 indoor: initial_weight=0.024242, behavior_score=0.0, behavior_weight=0.0, final_weight=0.024242
 
 ====================================================================================================
-BƯỚC 4: Tính TagMatch Và Xếp Hạng Địa Điểm
+BƯỚC 4: Trip Planner Interest
+====================================================================================================
+Mục tiêu: Doc trip_interest_choice va mapping tag de tao trip_weight, sau do ket hop voi user_interest_tag thanh effective_interest_weight.
+
+Ket qua buoc 4:
+----------------------------------------------------------------------------------------------------
+  selected_trip_interest_option_count: 0
+  trip_raw_tag_count: 0
+  trip_normalized_tag_count: 0
+  effective_interest_tag_count: 15
+  effective_interest_alpha: 1.0
+  effective_interest_beta: 0.0
+
+====================================================================================================
+FULL Selected trip interest options: 0
+====================================================================================================
+No items
+
+====================================================================================================
+FULL Trip raw tag weights
+====================================================================================================
+No weights
+
+====================================================================================================
+FULL Trip normalized tag weights
+====================================================================================================
+No weights
+
+====================================================================================================
+FULL Effective interest weights
+====================================================================================================
+culture: 0.10303
+photography: 0.10303
+scenic_view: 0.10303
+relaxation: 0.09697
+nature: 0.078788
+beach: 0.072727
+coffee: 0.072727
+religious_site: 0.072727
+food: 0.060606
+heritage: 0.060606
+local_experience: 0.060606
+history: 0.030303
+local_cuisine: 0.030303
+traditional_craft: 0.030303
+indoor: 0.024242
+
+====================================================================================================
+BƯỚC 5: Tính TagMatch Và Xếp Hạng Địa Điểm
 ====================================================================================================
 Mục tiêu: Lấy place_tag cho candidate places, tính TagMatch với hồ sơ sở thích user và xếp hạng giảm dần theo module1_score.
 
-Kết quả bước 4:
+Kết quả bước 5:
 ----------------------------------------------------------------------------------------------------
   candidate_place_count: 397
   place_tag_row_count: 1955
@@ -1751,13 +1803,15 @@ FULL Ranked places by Module 1 score: 397
     address=25, Trần Phú, Hồ Chí Minh
 
 ====================================================================================================
-BƯỚC 5: Diversity Slot-Based Theo Subcategory
+BƯỚC 6: Diversity Slot-Based Theo Subcategory
 ====================================================================================================
 Mục tiêu: Khong lay top global sau TagMatch. He thong xep hang trong tung subcategory, cap slot cho tung subcategory, roi lay top place theo slot de tao final candidate pool cho Module 2.
 
-Ket qua buoc 5 - Diversity config:
+Ket qua buoc 6 - Diversity config:
 ----------------------------------------------------------------------------------------------------
-  user_selected_interests: ['Food', 'Culture', 'Local Life', 'Coffee', 'Temples', 'Beaches', 'Scenic Spots']
+  user_selected_interests: ['Local Life', 'Culture', 'Food', 'Scenic Spots', 'Temples', 'Beaches', 'Coffee']
+  priority_source: profile_only
+  selected_trip_interest_options: []
   profile: broad
   top_k_for_module2: 24
   related_place_category_count: 4
@@ -1769,7 +1823,7 @@ Ket qua buoc 5 - Diversity config:
   score_floor: 0.215896
   score_floor_ratio: 0.55
 
-Ket qua buoc 5 - Diversity summary:
+Ket qua buoc 6 - Diversity summary:
 ----------------------------------------------------------------------------------------------------
   ranked_pool_count: 397
   final_diversified_count: 24
@@ -1785,6 +1839,7 @@ Ket qua buoc 5 - Diversity summary:
   allocated_subcategory_count: 12
   coverage_addition_count: 12
   fill_action_count: 12
+  trip_priority_subcategory_count: 0
   strict_subcategory_violation_count: 0
   strict_place_category_violation_count: 0
   missing_coverable_interest_count: 0
@@ -1995,8 +2050,10 @@ relaxed_max_per_subcategory: 6
 relaxed_max_per_place_category: 13
 min_slot_per_related_subcategory: 1
 non_related_top_score_min: 0.05
+priority_source: profile_only
 score_floor: 0.215896
 top1_score: 0.392538
+selected_trip_interest_options: []
 related_subcategories_in_pool: ['Biển & Đảo', 'Tâm linh & Tôn giáo', 'Di tích & Lịch sử', 'Cà phê & Trà', 'Làng nghề & Trải nghiệm địa phương', 'Thiên nhiên & Cảnh quan', 'Công viên & Vườn', 'Chợ truyền thống', 'Nhà hàng / Fine Dining', 'Bảo tàng & Nghệ thuật', 'Quán ăn địa phương', 'Ẩm thực đường phố']
 skipped_related_subcategories: []
 
@@ -2014,15 +2071,17 @@ global_baseline_count_by_subcategory: {'Biển & Đảo': 3, 'Cà phê & Trà': 
 global_baseline_count_by_place_category: {'Tham quan': 3, 'Ẩm thực': 21}
 after_count_by_subcategory: {'Biển & Đảo': 3, 'Cà phê & Trà': 5, 'Tâm linh & Tôn giáo': 3, 'Làng nghề & Trải nghiệm địa phương': 1, 'Di tích & Lịch sử': 1, 'Thiên nhiên & Cảnh quan': 1, 'Công viên & Vườn': 1, 'Chợ truyền thống': 5, 'Nhà hàng / Fine Dining': 1, 'Bảo tàng & Nghệ thuật': 1, 'Quán ăn địa phương': 1, 'Ẩm thực đường phố': 1}
 after_count_by_place_category: {'Tham quan': 11, 'Ẩm thực': 8, 'Mua sắm': 5}
-global_baseline_coverage: {'food': False, 'culture': False, 'local life': False, 'coffee': True, 'temples': False, 'beaches': True, 'scenic spots': True}
-coverage_after: {'food': True, 'culture': True, 'local life': True, 'coffee': True, 'temples': True, 'beaches': True, 'scenic spots': True}
-coverable_interest_map: {'food': True, 'culture': True, 'local life': True, 'coffee': True, 'temples': True, 'beaches': True, 'scenic spots': True}
+global_baseline_coverage: {'local life': False, 'culture': False, 'food': False, 'scenic spots': True, 'temples': False, 'beaches': True, 'coffee': True}
+coverage_after: {'local life': True, 'culture': True, 'food': True, 'scenic spots': True, 'temples': True, 'beaches': True, 'coffee': True}
+coverable_interest_map: {'local life': True, 'culture': True, 'food': True, 'scenic spots': True, 'temples': True, 'beaches': True, 'coffee': True}
 missing_coverable_interests_after: []
 strict_quota_violations: {'subcategory_violations': {}, 'place_category_violations': {}}
 relaxed_quota_violations: {'subcategory_violations': {}, 'place_category_violations': {}}
 slot_by_subcategory: {'Biển & Đảo': 3, 'Tâm linh & Tôn giáo': 3, 'Di tích & Lịch sử': 1, 'Cà phê & Trà': 5, 'Làng nghề & Trải nghiệm địa phương': 1, 'Thiên nhiên & Cảnh quan': 1, 'Công viên & Vườn': 1, 'Chợ truyền thống': 5, 'Nhà hàng / Fine Dining': 1, 'Bảo tàng & Nghệ thuật': 1, 'Quán ăn địa phương': 1, 'Ẩm thực đường phố': 1}
 slot_by_place_category: {'Tham quan': 11, 'Ẩm thực': 8, 'Mua sắm': 5}
-priority_by_subcategory: {'Quán ăn địa phương': 1.0, 'Ẩm thực đường phố': 1.0, 'Nhà hàng / Fine Dining': 1.0, 'Bảo tàng & Nghệ thuật': 1.0, 'Tâm linh & Tôn giáo': 2.0, 'Di tích & Lịch sử': 2.0, 'Chợ truyền thống': 1.0, 'Làng nghề & Trải nghiệm địa phương': 1.0, 'Cà phê & Trà': 1.0, 'Biển & Đảo': 2.0, 'Hồ & Sông': 1.0, 'Công viên & Vườn': 1.0, 'Thiên nhiên & Cảnh quan': 1.0}
+profile_priority_by_subcategory: {'Làng nghề & Trải nghiệm địa phương': 0.0625, 'Chợ truyền thống': 0.0625, 'Di tích & Lịch sử': 0.125, 'Bảo tàng & Nghệ thuật': 0.0625, 'Tâm linh & Tôn giáo': 0.125, 'Nhà hàng / Fine Dining': 0.0625, 'Ẩm thực đường phố': 0.0625, 'Quán ăn địa phương': 0.0625, 'Thiên nhiên & Cảnh quan': 0.0625, 'Biển & Đảo': 0.125, 'Công viên & Vườn': 0.0625, 'Hồ & Sông': 0.0625, 'Cà phê & Trà': 0.0625}
+trip_priority_by_subcategory: {}
+priority_by_subcategory: {'Làng nghề & Trải nghiệm địa phương': 0.0625, 'Chợ truyền thống': 0.0625, 'Di tích & Lịch sử': 0.125, 'Bảo tàng & Nghệ thuật': 0.0625, 'Tâm linh & Tôn giáo': 0.125, 'Nhà hàng / Fine Dining': 0.0625, 'Ẩm thực đường phố': 0.0625, 'Quán ăn địa phương': 0.0625, 'Thiên nhiên & Cảnh quan': 0.0625, 'Biển & Đảo': 0.125, 'Công viên & Vườn': 0.0625, 'Hồ & Sông': 0.0625, 'Cà phê & Trà': 0.0625}
 related_subcategories: ['Biển & Đảo', 'Tâm linh & Tôn giáo', 'Di tích & Lịch sử', 'Cà phê & Trà', 'Làng nghề & Trải nghiệm địa phương', 'Thiên nhiên & Cảnh quan', 'Công viên & Vườn', 'Chợ truyền thống', 'Nhà hàng / Fine Dining', 'Bảo tàng & Nghệ thuật', 'Quán ăn địa phương', 'Ẩm thực đường phố']
 unused_slots: 0
 refilled_slots: 0
@@ -2031,13 +2090,14 @@ allocation_logs: [{'subcategory_name': 'Biển & Đảo', 'place_category': 'Tha
 replacements: []
 coverage_additions: [{'place_name': 'Bãi Trước', 'module1_score': 0.392538, 'subcategory_name': 'Biển & Đảo', 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'The Vintage Emporium', 'module1_score': 0.278649, 'subcategory_name': 'Cà phê & Trà', 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Giáo Họ Mân Côi', 'module1_score': 0.267287, 'subcategory_name': 'Tâm linh & Tôn giáo', 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Uyên‘s House', 'module1_score': 0.252639, 'subcategory_name': 'Làng nghề & Trải nghiệm địa phương', 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Quân Nghĩa', 'module1_score': 0.248075, 'subcategory_name': 'Di tích & Lịch sử', 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Spice Kitchen', 'module1_score': 0.239135, 'subcategory_name': 'Thiên nhiên & Cảnh quan', 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Vườn Chay', 'module1_score': 0.225978, 'subcategory_name': 'Công viên & Vườn', 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Chợ Thủ Dầu Một', 'module1_score': 0.209593, 'subcategory_name': 'Chợ truyền thống', 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Beach House Restaurant & Cocktails', 'module1_score': 0.186911, 'subcategory_name': 'Nhà hàng / Fine Dining', 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Bảo Tàng Tỉnh Bình Dương', 'module1_score': 0.157869, 'subcategory_name': 'Bảo tàng & Nghệ thuật', 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Vietnames', 'module1_score': 0.157593, 'subcategory_name': 'Quán ăn địa phương', 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Hai Ba Cuốn -- Bánh Tráng Cuốn', 'module1_score': 0.129738, 'subcategory_name': 'Ẩm thực đường phố', 'diversity_reason': 'selected_by_related_min_slot'}]
 fill_logs: [{'subcategory_name': 'Biển & Đảo', 'place_category': 'Tham quan', 'allocated_slot': 2, 'module1_score': 0.380294, 'reason': 'selected_by_related_priority'}, {'subcategory_name': 'Biển & Đảo', 'place_category': 'Tham quan', 'allocated_slot': 3, 'module1_score': 0.351516, 'reason': 'selected_by_related_priority'}, {'subcategory_name': 'Tâm linh & Tôn giáo', 'place_category': 'Tham quan', 'allocated_slot': 2, 'module1_score': 0.267069, 'reason': 'selected_by_related_priority'}, {'subcategory_name': 'Tâm linh & Tôn giáo', 'place_category': 'Tham quan', 'allocated_slot': 3, 'module1_score': 0.266043, 'reason': 'selected_by_related_priority'}, {'subcategory_name': 'Cà phê & Trà', 'place_category': 'Ẩm thực', 'allocated_slot': 2, 'module1_score': 0.2704, 'reason': 'selected_by_related_priority'}, {'subcategory_name': 'Cà phê & Trà', 'place_category': 'Ẩm thực', 'allocated_slot': 3, 'module1_score': 0.269667, 'reason': 'selected_by_related_priority'}, {'subcategory_name': 'Cà phê & Trà', 'place_category': 'Ẩm thực', 'allocated_slot': 4, 'module1_score': 0.26963, 'reason': 'selected_by_related_priority'}, {'subcategory_name': 'Cà phê & Trà', 'place_category': 'Ẩm thực', 'allocated_slot': 5, 'module1_score': 0.269464, 'reason': 'selected_by_related_priority'}, {'subcategory_name': 'Chợ truyền thống', 'place_category': 'Mua sắm', 'allocated_slot': 2, 'module1_score': 0.209133, 'reason': 'selected_by_related_priority'}, {'subcategory_name': 'Chợ truyền thống', 'place_category': 'Mua sắm', 'allocated_slot': 3, 'module1_score': 0.207206, 'reason': 'selected_by_related_priority'}, {'subcategory_name': 'Chợ truyền thống', 'place_category': 'Mua sắm', 'allocated_slot': 4, 'module1_score': 0.206819, 'reason': 'selected_by_related_priority'}, {'subcategory_name': 'Chợ truyền thống', 'place_category': 'Mua sắm', 'allocated_slot': 5, 'module1_score': 0.205897, 'reason': 'selected_by_related_priority'}]
+selected_places_by_subcategory: {'Biển & Đảo': [{'place_name': 'Bãi Trước', 'module1_score': 0.392538, 'subcategory_slot_rank': 1, 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Bãi Tắm Thủy Tiên', 'module1_score': 0.380294, 'subcategory_slot_rank': 2, 'diversity_reason': 'selected_by_related_priority'}, {'place_name': 'Bãi Ông Đụng', 'module1_score': 0.351516, 'subcategory_slot_rank': 3, 'diversity_reason': 'selected_by_related_priority'}], 'Bảo tàng & Nghệ thuật': [{'place_name': 'Bảo Tàng Tỉnh Bình Dương', 'module1_score': 0.157869, 'subcategory_slot_rank': 1, 'diversity_reason': 'selected_by_related_min_slot'}], 'Chợ truyền thống': [{'place_name': 'Chợ Thủ Dầu Một', 'module1_score': 0.209593, 'subcategory_slot_rank': 1, 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Chợ Cá', 'module1_score': 0.209133, 'subcategory_slot_rank': 2, 'diversity_reason': 'selected_by_related_priority'}, {'place_name': 'Chợ Côn Đảo', 'module1_score': 0.207206, 'subcategory_slot_rank': 3, 'diversity_reason': 'selected_by_related_priority'}, {'place_name': 'Chợ Rạch Dừa', 'module1_score': 0.206819, 'subcategory_slot_rank': 4, 'diversity_reason': 'selected_by_related_priority'}, {'place_name': 'Chợ Mới Phường 11', 'module1_score': 0.205897, 'subcategory_slot_rank': 5, 'diversity_reason': 'selected_by_related_priority'}], 'Cà phê & Trà': [{'place_name': 'The Vintage Emporium', 'module1_score': 0.278649, 'subcategory_slot_rank': 1, 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Ốc Cô Quyền', 'module1_score': 0.2704, 'subcategory_slot_rank': 2, 'diversity_reason': 'selected_by_related_priority'}, {'place_name': 'Khiết Tiên Quán', 'module1_score': 0.269667, 'subcategory_slot_rank': 3, 'diversity_reason': 'selected_by_related_priority'}, {'place_name': 'Cueicha Trà Sữa', 'module1_score': 0.26963, 'subcategory_slot_rank': 4, 'diversity_reason': 'selected_by_related_priority'}, {'place_name': 'Võng', 'module1_score': 0.269464, 'subcategory_slot_rank': 5, 'diversity_reason': 'selected_by_related_priority'}], 'Công viên & Vườn': [{'place_name': 'Vườn Chay', 'module1_score': 0.225978, 'subcategory_slot_rank': 1, 'diversity_reason': 'selected_by_related_min_slot'}], 'Di tích & Lịch sử': [{'place_name': 'Quân Nghĩa', 'module1_score': 0.248075, 'subcategory_slot_rank': 1, 'diversity_reason': 'selected_by_related_min_slot'}], 'Làng nghề & Trải nghiệm địa phương': [{'place_name': 'Uyên‘s House', 'module1_score': 0.252639, 'subcategory_slot_rank': 1, 'diversity_reason': 'selected_by_related_min_slot'}], 'Nhà hàng / Fine Dining': [{'place_name': 'Beach House Restaurant & Cocktails', 'module1_score': 0.186911, 'subcategory_slot_rank': 1, 'diversity_reason': 'selected_by_related_min_slot'}], 'Quán ăn địa phương': [{'place_name': 'Vietnames', 'module1_score': 0.157593, 'subcategory_slot_rank': 1, 'diversity_reason': 'selected_by_related_min_slot'}], 'Thiên nhiên & Cảnh quan': [{'place_name': 'Spice Kitchen', 'module1_score': 0.239135, 'subcategory_slot_rank': 1, 'diversity_reason': 'selected_by_related_min_slot'}], 'Tâm linh & Tôn giáo': [{'place_name': 'Giáo Họ Mân Côi', 'module1_score': 0.267287, 'subcategory_slot_rank': 1, 'diversity_reason': 'selected_by_related_min_slot'}, {'place_name': 'Hội Dòng Đa Minh Bà Rịa', 'module1_score': 0.267069, 'subcategory_slot_rank': 2, 'diversity_reason': 'selected_by_related_priority'}, {'place_name': 'Thánh Thất Phú Thọ', 'module1_score': 0.266043, 'subcategory_slot_rank': 3, 'diversity_reason': 'selected_by_related_priority'}], 'Ẩm thực đường phố': [{'place_name': 'Hai Ba Cuốn -- Bánh Tráng Cuốn', 'module1_score': 0.129738, 'subcategory_slot_rank': 1, 'diversity_reason': 'selected_by_related_min_slot'}]}
 
 ====================================================================================================
-BƯỚC 6: Module 2 - Initial K-means Clustering
+BƯỚC 7: Module 2 - Initial K-means Clustering
 ====================================================================================================
 Mục tiêu: Nhan candidate pool sau Diversity, kiem tra du lieu, gan duration fallback va gom dia diem thanh cum ngay ban dau.
 
-Kết quả bước 6:
+Kết quả bước 7:
 ----------------------------------------------------------------------------------------------------
   candidate_limit: 24
   target_per_day: 4
@@ -2124,11 +2184,11 @@ FULL Initial backup places after K-means: 12
     address=Võ Thành Long, Hồ Chí Minh
 
 ====================================================================================================
-BƯỚC 7: Module 2 - Greedy Repair Và Kết Quả Cuối
+BƯỚC 8: Module 2 - Greedy Repair Và Kết Quả Cuối
 ====================================================================================================
 Mục tiêu: Sửa các ngày thiếu điểm, quá nhiều điểm hoặc quá tải thời gian, sau đó trả day_clusters, backup_places và optional_places cho bước tối ưu tiếp theo.
 
-Kết quả bước 7 - Final day clusters after Greedy Repair:
+Kết quả bước 8 - Final day clusters after Greedy Repair:
 ----------------------------------------------------------------------------------------------------
   Day 1 | date=2026-06-22 | place_count=3 | total_duration=300 | warnings=[]
      1. Uyên‘s House | id_place=d50b87a1-2807-5be5-b9d8-c225b0dc0942 | subcategory=Làng nghề & Trải nghiệm địa phương | rating=4.7 | review_count=316 | duration=120 | tag_match=0.252639 | module1_score=0.252639 | max_price=340000
@@ -2145,7 +2205,7 @@ Kết quả bước 7 - Final day clusters after Greedy Repair:
      3. Thánh Thất Phú Thọ | id_place=e4086bfc-3b3c-51b2-9376-f70fa5bcc5c9 | subcategory=Tâm linh & Tôn giáo | rating=4.6 | review_count=584 | duration=60 | tag_match=0.266043 | module1_score=0.266043
      4. Chợ Thủ Dầu Một | id_place=2af91a18-186e-5f7c-bb1f-78aae9d90638 | subcategory=Chợ truyền thống | rating=4.3 | review_count=472 | duration=60 | tag_match=0.209593 | module1_score=0.209593 | max_price=290000
 
-Kết quả bước 7 - Summary:
+Kết quả bước 8 - Summary:
 ----------------------------------------------------------------------------------------------------
   main_day_cluster_count: 3
   selected_main_place_count: 11

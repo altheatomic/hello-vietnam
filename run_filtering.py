@@ -15,19 +15,29 @@ from supabase_client import get_supabase_client
 from place_repository import fetch_places_required_filter
 from filters import calculate_total_days, filter_places_with_fallback
 from pipeline_input import get_pipeline_input
-from module1_repository import fetch_user_onboarding_choices, fetch_user_travel_profile
+from module1_repository import fetch_trip_plan, fetch_user_onboarding_choices, fetch_user_travel_profile
 
 
 def resolve_user_profile(
     input_user_profile: dict,
+    db_trip_plan: dict | None,
     db_travel_profile: dict | None,
     db_onboarding_choices: list[dict] | None = None,
 ) -> tuple[dict, dict]:
     user_profile = dict(input_user_profile)
     sources = {
+        "trip_plan_source": "pipeline_input_fallback",
         "travel_profile_source": "pipeline_input_fallback",
         "onboarding_choice_source": "pipeline_input_fallback",
     }
+
+    if db_trip_plan:
+        for key in ("id_trip_plan", "id_user", "id_province", "start_date", "end_date"):
+            db_value = db_trip_plan.get(key)
+            if db_value is not None:
+                user_profile[key] = db_value
+
+        sources["trip_plan_source"] = "trip_plan"
 
     if db_travel_profile:
         for key in ("companion_style", "budget_level", "pace_level"):
@@ -133,16 +143,27 @@ def main():
     pipeline_input = get_pipeline_input()
     input_user_profile = pipeline_input["user_profile"]
     run_settings = pipeline_input["run_settings"]
+    db_trip_plan = None
+    if input_user_profile.get("id_trip_plan"):
+        db_trip_plan = fetch_trip_plan(
+            supabase=supabase,
+            trip_plan_id=str(input_user_profile["id_trip_plan"]),
+        )
+    resolved_user_id = str(
+        (db_trip_plan or {}).get("id_user")
+        or input_user_profile["id_user"]
+    )
     db_travel_profile = fetch_user_travel_profile(
         supabase=supabase,
-        user_id=input_user_profile["id_user"],
+        user_id=resolved_user_id,
     )
     db_onboarding_choices = fetch_user_onboarding_choices(
         supabase=supabase,
-        user_id=input_user_profile["id_user"],
+        user_id=resolved_user_id,
     )
     user_profile, profile_sources = resolve_user_profile(
         input_user_profile=input_user_profile,
+        db_trip_plan=db_trip_plan,
         db_travel_profile=db_travel_profile,
         db_onboarding_choices=db_onboarding_choices,
     )
@@ -155,6 +176,7 @@ def main():
     print("=" * 80)
     print("MODULE 1 TEST: FILTERING ONLY")
     print("=" * 80)
+    print(f"Trip plan source: {profile_sources['trip_plan_source']}")
     print(f"Travel profile source: {profile_sources['travel_profile_source']}")
     print(f"Onboarding choice source: {profile_sources['onboarding_choice_source']}")
     print(f"Province: {user_profile['id_province']}")

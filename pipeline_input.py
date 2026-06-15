@@ -10,6 +10,7 @@ from copy import deepcopy
 
 PIPELINE_INPUT = {
     "user_profile": {
+        "id_trip_plan": None,
         "id_user": "e4bb33fb-5f1b-49a6-9a00-93c67183afde",
         "id_province": "094014a7-b8f6-481a-bbce-5ed6cdd457c5",
         "start_date": "2026-06-22",

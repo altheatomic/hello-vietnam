@@ -361,7 +361,106 @@ def build_subcategory_priority_scores(
         for subcategory in group["subcategories"]:
             priority_scores[subcategory] = priority_scores.get(subcategory, 0.0) + 1.0
 
-    return priority_scores
+    return normalize_priority_scores(priority_scores)
+
+
+def normalize_priority_scores(priority_scores: dict[str, float]) -> dict[str, float]:
+    total = sum(max(float(score), 0.0) for score in priority_scores.values())
+
+    if total <= 0:
+        return {
+            key: 0.0
+            for key in priority_scores
+        }
+
+    return {
+        key: round(max(float(score), 0.0) / total, 6)
+        for key, score in priority_scores.items()
+    }
+
+
+def build_trip_interest_groups(
+    trip_selected_options: list[dict],
+    trip_option_subcategory_rows: list[dict],
+) -> dict[str, dict[str, set[str]]]:
+    option_map = {
+        str(option.get("id_trip_interest_option")): option
+        for option in trip_selected_options
+        if option.get("id_trip_interest_option")
+    }
+    groups: dict[str, dict[str, set[str]]] = {}
+
+    for row in trip_option_subcategory_rows:
+        if not row.get("is_active", False):
+            continue
+
+        option_id = str(row.get("id_trip_interest_option") or "")
+        option = option_map.get(option_id)
+
+        if not option:
+            continue
+
+        subcategory = row.get("place_subcategory") or {}
+        group_key = str(option.get("option_code") or option.get("display_name") or option_id)
+        group = groups.setdefault(
+            group_key,
+            {
+                "place_categories": set(),
+                "subcategories": set(),
+            },
+        )
+        subcategory_name = subcategory.get("name")
+        place_category = subcategory.get("place_category")
+
+        if subcategory_name:
+            group["subcategories"].add(str(subcategory_name))
+        if place_category:
+            group["place_categories"].add(str(place_category))
+
+    return groups
+
+
+def build_trip_subcategory_priority_scores(
+    trip_option_subcategory_rows: list[dict],
+) -> dict[str, float]:
+    priority_scores: dict[str, float] = {}
+
+    for row in trip_option_subcategory_rows:
+        if not row.get("is_active", False):
+            continue
+
+        subcategory = row.get("place_subcategory") or {}
+        subcategory_name = subcategory.get("name")
+
+        if not subcategory_name:
+            continue
+
+        priority_scores[str(subcategory_name)] = (
+            priority_scores.get(str(subcategory_name), 0.0)
+            + float(row.get("priority_weight") or 0.0)
+        )
+
+    return normalize_priority_scores(priority_scores)
+
+
+def build_effective_subcategory_priority_scores(
+    profile_priority_scores: dict[str, float],
+    trip_priority_scores: dict[str, float],
+    profile_alpha: float = 0.4,
+    trip_beta: float = 0.6,
+) -> dict[str, float]:
+    if not trip_priority_scores:
+        return dict(profile_priority_scores)
+
+    effective_scores: dict[str, float] = {}
+
+    for subcategory in set(profile_priority_scores) | set(trip_priority_scores):
+        effective_scores[subcategory] = (
+            profile_alpha * float(profile_priority_scores.get(subcategory) or 0.0)
+            + trip_beta * float(trip_priority_scores.get(subcategory) or 0.0)
+        )
+
+    return normalize_priority_scores(effective_scores)
 
 
 def get_subcategory_category(
@@ -891,15 +990,43 @@ def apply_diversity_selection(
     ranked_places: list[dict],
     total_days: int,
     user_selected_interests: list[str],
+    trip_selected_options: list[dict] | None = None,
+    trip_option_subcategory_rows: list[dict] | None = None,
 ) -> dict:
     normalized_places = normalize_ranked_places(ranked_places)
     config = build_diversity_config(
         total_days=total_days,
         user_selected_interests=user_selected_interests,
     )
-    interest_groups = get_interest_groups(user_selected_interests)
-    priority_scores = build_subcategory_priority_scores(user_selected_interests)
+    profile_interest_groups = get_interest_groups(user_selected_interests)
+    profile_priority_scores = build_subcategory_priority_scores(user_selected_interests)
+    trip_interest_groups = build_trip_interest_groups(
+        trip_selected_options=trip_selected_options or [],
+        trip_option_subcategory_rows=trip_option_subcategory_rows or [],
+    )
+    trip_priority_scores = build_trip_subcategory_priority_scores(
+        trip_option_subcategory_rows=trip_option_subcategory_rows or [],
+    )
+    has_trip_interest = bool(trip_priority_scores)
+    interest_groups = trip_interest_groups if has_trip_interest else profile_interest_groups
+    priority_scores = build_effective_subcategory_priority_scores(
+        profile_priority_scores=profile_priority_scores,
+        trip_priority_scores=trip_priority_scores,
+    )
     places_by_subcategory = group_places_by_subcategory(normalized_places)
+    if has_trip_interest:
+        related_subcategories = sorted(priority_scores.keys())
+        related_place_categories = sorted({
+            str((row.get("place_subcategory") or {}).get("place_category"))
+            for row in (trip_option_subcategory_rows or [])
+            if row.get("is_active", False)
+            and (row.get("place_subcategory") or {}).get("place_category")
+        })
+        config["related_subcategories"] = related_subcategories
+        config["related_subcategory_count"] = len(related_subcategories)
+        config["related_place_categories"] = related_place_categories
+        config["related_place_category_count"] = len(related_place_categories)
+    config["priority_source"] = "trip_plus_profile" if has_trip_interest else "profile_only"
     before_top_k = normalized_places[:config["top_k"]]
     score_floor = compute_score_floor(
         ranked_places=normalized_places,
@@ -1049,6 +1176,11 @@ def apply_diversity_selection(
             "top1_score": round(float(normalized_places[0].get("module1_score") or 0.0), 6)
             if normalized_places
             else 0.0,
+            "selected_trip_interest_options": [
+                option.get("option_code") or option.get("display_name")
+                for option in (trip_selected_options or [])
+                if option.get("option_code") or option.get("display_name")
+            ],
             "related_subcategories_in_pool": related_subcategories,
             "skipped_related_subcategories": skipped_related_subcategories,
         },
@@ -1072,6 +1204,14 @@ def apply_diversity_selection(
             "relaxed_quota_violations": relaxed_quota_violations,
             "slot_by_subcategory": slot_by_subcategory,
             "slot_by_place_category": slot_by_place_category_map,
+            "profile_priority_by_subcategory": {
+                subcategory: round(score, 6)
+                for subcategory, score in profile_priority_scores.items()
+            },
+            "trip_priority_by_subcategory": {
+                subcategory: round(score, 6)
+                for subcategory, score in trip_priority_scores.items()
+            },
             "priority_by_subcategory": {
                 subcategory: round(score, 6)
                 for subcategory, score in priority_scores.items()
@@ -1087,5 +1227,18 @@ def apply_diversity_selection(
             "replacements": [],
             "coverage_additions": coverage_additions,
             "fill_logs": fill_logs,
+            "selected_places_by_subcategory": {
+                subcategory: [
+                    {
+                        "place_name": place.get("name"),
+                        "module1_score": round(float(place.get("module1_score") or 0.0), 6),
+                        "subcategory_slot_rank": place.get("subcategory_slot_rank"),
+                        "diversity_reason": place.get("diversity_reason"),
+                    }
+                    for place in diversified_top_k
+                    if place.get("subcategory_name") == subcategory
+                ]
+                for subcategory in sorted(selected_count_by_subcategory.keys())
+            },
         },
     }

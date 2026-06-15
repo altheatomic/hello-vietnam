@@ -14,7 +14,9 @@ from typing import TextIO
 
 from filters import calculate_total_days, filter_places_with_fallback
 from module1_algorithm import (
+    build_effective_interest_state,
     build_onboarding_profile,
+    build_trip_interest_profile,
     build_user_interest_rows_from_state,
     merge_user_interest_state,
     rank_places_by_tag_match,
@@ -24,6 +26,10 @@ from module1_repository import (
     attach_place_tags_to_places,
     build_tag_map,
     fetch_active_tags,
+    fetch_trip_interest_choices,
+    fetch_trip_interest_option_subcategories,
+    fetch_trip_interest_option_tags,
+    fetch_trip_plan,
     fetch_user_onboarding_choices,
     fetch_place_tags_for_places,
     fetch_user_interest_tags,
@@ -260,16 +266,40 @@ def write_text_line(output_file: TextIO, text: str) -> None:
     output_file.write(text + "\n")
 
 
+def write_weight_map(output_file: TextIO, title: str, weight_map: dict[str, float]) -> None:
+    output_file.write("=" * 100 + "\n")
+    output_file.write(f"{title}\n")
+    output_file.write("=" * 100 + "\n")
+
+    if not weight_map:
+        output_file.write("No weights\n\n")
+        return
+
+    for tag_code, weight in sorted(weight_map.items(), key=lambda item: item[1], reverse=True):
+        output_file.write(f"{tag_code}: {round(float(weight), 6)}\n")
+
+    output_file.write("\n")
+
+
 def resolve_user_profile(
     input_user_profile: dict,
+    db_trip_plan: dict | None,
     db_travel_profile: dict | None,
     db_onboarding_choices: list[dict] | None = None,
 ) -> tuple[dict, dict]:
     user_profile = dict(input_user_profile)
     sources = {
+        "trip_plan_source": "pipeline_input_fallback",
         "travel_profile_source": "pipeline_input_fallback",
         "onboarding_choice_source": "pipeline_input_fallback",
     }
+
+    if db_trip_plan:
+        for key in ("id_trip_plan", "id_user", "id_province", "start_date", "end_date"):
+            db_value = db_trip_plan.get(key)
+            if db_value is not None:
+                user_profile[key] = db_value
+        sources["trip_plan_source"] = "trip_plan"
 
     if db_travel_profile:
         for key in ("companion_style", "budget_level", "pace_level"):
@@ -433,16 +463,48 @@ def run_report(output_file: TextIO) -> None:
     run_settings = pipeline_input["run_settings"]
 
     supabase = get_supabase_client()
+    db_trip_plan = None
+    if input_user_profile.get("id_trip_plan"):
+        db_trip_plan = fetch_trip_plan(
+            supabase=supabase,
+            trip_plan_id=str(input_user_profile["id_trip_plan"]),
+        )
+    resolved_user_id = str(
+        (db_trip_plan or {}).get("id_user")
+        or input_user_profile["id_user"]
+    )
     db_travel_profile = fetch_user_travel_profile(
         supabase=supabase,
-        user_id=input_user_profile["id_user"],
+        user_id=resolved_user_id,
     )
     db_onboarding_choices = fetch_user_onboarding_choices(
         supabase=supabase,
-        user_id=input_user_profile["id_user"],
+        user_id=resolved_user_id,
     )
+    trip_interest_choice_rows: list[dict] = []
+    trip_interest_option_tag_rows: list[dict] = []
+    trip_interest_option_subcategory_rows: list[dict] = []
+    if db_trip_plan:
+        trip_interest_choice_rows = fetch_trip_interest_choices(
+            supabase=supabase,
+            trip_plan_id=str(db_trip_plan["id_trip_plan"]),
+        )
+        selected_option_ids = [
+            str(row.get("id_trip_interest_option"))
+            for row in trip_interest_choice_rows
+            if row.get("id_trip_interest_option")
+        ]
+        trip_interest_option_tag_rows = fetch_trip_interest_option_tags(
+            supabase=supabase,
+            option_ids=selected_option_ids,
+        )
+        trip_interest_option_subcategory_rows = fetch_trip_interest_option_subcategories(
+            supabase=supabase,
+            option_ids=selected_option_ids,
+        )
     user_profile, profile_sources = resolve_user_profile(
         input_user_profile=input_user_profile,
+        db_trip_plan=db_trip_plan,
         db_travel_profile=db_travel_profile,
         db_onboarding_choices=db_onboarding_choices,
     )
@@ -457,6 +519,7 @@ def run_report(output_file: TextIO) -> None:
         data={
             "input_file": str(INPUT_FILE),
             "output_file": str(OUTPUT_FILE),
+            "trip_plan_source": profile_sources["trip_plan_source"],
             "travel_profile_source": profile_sources["travel_profile_source"],
             "onboarding_choice_source": profile_sources["onboarding_choice_source"],
         },
@@ -470,6 +533,7 @@ def run_report(output_file: TextIO) -> None:
     print_key_value_block(
         title="Kết quả bước 1:",
         data={
+            "id_trip_plan": user_profile.get("id_trip_plan"),
             "id_user": user_profile["id_user"],
             "id_province": user_profile["id_province"],
             "start_date": user_profile["start_date"],
@@ -482,8 +546,10 @@ def run_report(output_file: TextIO) -> None:
             "topics": user_profile.get("topics"),
             "behavior_count": user_profile.get("behavior_count"),
             "place_fetch_limit": run_settings.get("place_fetch_limit"),
+            "db_trip_plan_found": db_trip_plan is not None,
             "db_user_travel_profile_found": db_travel_profile is not None,
             "db_user_onboarding_choice_count": len(db_onboarding_choices),
+            "db_trip_interest_choice_count": len(trip_interest_choice_rows),
         },
     )
 
@@ -571,6 +637,53 @@ def run_report(output_file: TextIO) -> None:
 
     print_step(
         step_number=4,
+        title="Trip Planner Interest",
+        purpose="Doc trip_interest_choice va mapping tag de tao trip_weight, sau do ket hop voi user_interest_tag thanh effective_interest_weight.",
+    )
+    trip_interest_profile = build_trip_interest_profile(
+        trip_interest_choice_rows=trip_interest_choice_rows,
+        trip_interest_option_tag_rows=trip_interest_option_tag_rows,
+    )
+    effective_interest_result = build_effective_interest_state(
+        user_interest_state=user_interest_state,
+        trip_weight_map=trip_interest_profile["normalized_tag_weights"],
+        trip_tag_info_map=trip_interest_profile["trip_tag_info_map"],
+    )
+    effective_interest_state = effective_interest_result["effective_interest_state"]
+    print_key_value_block(
+        title="Ket qua buoc 4:",
+        data={
+            "selected_trip_interest_option_count": len(trip_interest_profile["selected_options"]),
+            "trip_raw_tag_count": len(trip_interest_profile["raw_tag_weights"]),
+            "trip_normalized_tag_count": len(trip_interest_profile["normalized_tag_weights"]),
+            "effective_interest_tag_count": len(effective_interest_result["effective_weight_map"]),
+            "effective_interest_alpha": effective_interest_result["alpha"],
+            "effective_interest_beta": effective_interest_result["beta"],
+        },
+    )
+    write_named_items(
+        output_file=output_file,
+        title="FULL Selected trip interest options",
+        items=trip_interest_profile["selected_options"],
+    )
+    write_weight_map(
+        output_file=output_file,
+        title="FULL Trip raw tag weights",
+        weight_map=trip_interest_profile["raw_tag_weights"],
+    )
+    write_weight_map(
+        output_file=output_file,
+        title="FULL Trip normalized tag weights",
+        weight_map=trip_interest_profile["normalized_tag_weights"],
+    )
+    write_weight_map(
+        output_file=output_file,
+        title="FULL Effective interest weights",
+        weight_map=effective_interest_result["effective_weight_map"],
+    )
+
+    print_step(
+        step_number=5,
         title="Tính TagMatch Và Xếp Hạng Địa Điểm",
         purpose="Lấy place_tag cho candidate places, tính TagMatch với hồ sơ sở thích user và xếp hạng giảm dần theo module1_score.",
     )
@@ -586,12 +699,13 @@ def run_report(output_file: TextIO) -> None:
     enriched_places = attach_place_tags_to_places(final_places, place_tag_rows)
     ranked_places = rank_places_by_tag_match(
         places=enriched_places,
-        user_interest_state=user_interest_state,
+        user_interest_state=effective_interest_state,
+        weight_field="effective_weight",
     )
     places_with_tags = [place for place in ranked_places if place.get("place_tag")]
     places_without_tags = [place for place in ranked_places if not place.get("place_tag")]
     print_key_value_block(
-        title="Kết quả bước 4:",
+        title="Kết quả bước 5:",
         data={
             "candidate_place_count": len(ranked_places),
             "place_tag_row_count": len(place_tag_rows),
@@ -617,7 +731,7 @@ def run_report(output_file: TextIO) -> None:
     )
 
     print_step(
-        step_number=5,
+        step_number=6,
         title="Diversity Slot-Based Theo Subcategory",
         purpose="Khong lay top global sau TagMatch. He thong xep hang trong tung subcategory, cap slot cho tung subcategory, roi lay top place theo slot de tao final candidate pool cho Module 2.",
     )
@@ -626,14 +740,18 @@ def run_report(output_file: TextIO) -> None:
         ranked_places=ranked_places,
         total_days=total_days,
         user_selected_interests=user_selected_interests,
+        trip_selected_options=trip_interest_profile["selected_options"],
+        trip_option_subcategory_rows=trip_interest_option_subcategory_rows,
     )
     diversified_top_k = diversity_result["diversified_top_k"]
     diversity_config = diversity_result["config"]
     diversity_summary = diversity_result["summary"]
     print_key_value_block(
-        title="Ket qua buoc 5 - Diversity config:",
+        title="Ket qua buoc 6 - Diversity config:",
         data={
             "user_selected_interests": user_selected_interests,
+            "priority_source": diversity_config.get("priority_source"),
+            "selected_trip_interest_options": diversity_config.get("selected_trip_interest_options"),
             "profile": diversity_config["profile"],
             "top_k_for_module2": diversity_config["top_k"],
             "related_place_category_count": diversity_config["related_place_category_count"],
@@ -647,7 +765,7 @@ def run_report(output_file: TextIO) -> None:
         },
     )
     print_key_value_block(
-        title="Ket qua buoc 5 - Diversity summary:",
+        title="Ket qua buoc 6 - Diversity summary:",
         data={
             "ranked_pool_count": len(ranked_places),
             "final_diversified_count": len(diversified_top_k),
@@ -663,6 +781,7 @@ def run_report(output_file: TextIO) -> None:
             "allocated_subcategory_count": len(diversity_summary["slot_by_subcategory"]),
             "coverage_addition_count": len(diversity_summary["coverage_additions"]),
             "fill_action_count": len(diversity_summary["fill_logs"]),
+            "trip_priority_subcategory_count": len(diversity_summary["trip_priority_by_subcategory"]),
             "strict_subcategory_violation_count": len(diversity_summary["strict_quota_violations"]["subcategory_violations"]),
             "strict_place_category_violation_count": len(diversity_summary["strict_quota_violations"]["place_category_violations"]),
             "missing_coverable_interest_count": len(diversity_summary["missing_coverable_interests_after"]),
@@ -712,7 +831,7 @@ def run_report(output_file: TextIO) -> None:
     write_text_line(output_file, "")
 
     print_step(
-        step_number=6,
+        step_number=7,
         title="Module 2 - Initial K-means Clustering",
         purpose="Nhan candidate pool sau Diversity, kiem tra du lieu, gan duration fallback va gom dia diem thanh cum ngay ban dau.",
     )
@@ -723,7 +842,7 @@ def run_report(output_file: TextIO) -> None:
         pace_level=user_profile.get("pace_level"),
     )
     print_key_value_block(
-        title="Kết quả bước 6:",
+        title="Kết quả bước 7:",
         data={
             **module2_result["limits"],
             **module2_result["summary"],
@@ -745,16 +864,16 @@ def run_report(output_file: TextIO) -> None:
     )
 
     print_step(
-        step_number=7,
+        step_number=8,
         title="Module 2 - Greedy Repair Và Kết Quả Cuối",
         purpose="Sửa các ngày thiếu điểm, quá nhiều điểm hoặc quá tải thời gian, sau đó trả day_clusters, backup_places và optional_places cho bước tối ưu tiếp theo.",
     )
     print_day_clusters_summary(
-        title="Kết quả bước 7 - Final day clusters after Greedy Repair:",
+        title="Kết quả bước 8 - Final day clusters after Greedy Repair:",
         day_clusters=module2_result["day_clusters"],
     )
     print_key_value_block(
-        title="Kết quả bước 7 - Summary:",
+        title="Kết quả bước 8 - Summary:",
         data={
             "main_day_cluster_count": len(module2_result["day_clusters"]),
             "selected_main_place_count": module2_result["summary"]["selected_main_place_count"],
