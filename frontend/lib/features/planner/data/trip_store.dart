@@ -63,9 +63,11 @@ class ActiveTrip {
   // ── Calendar helpers ────────────────────────────────────────────────────────
 
   /// Returns the midnight DateTime for a given zero-based day index.
-  DateTime dateForDay(int index) =>
-      DateTime(tripStartDate.year, tripStartDate.month, tripStartDate.day)
-          .add(Duration(days: index));
+  DateTime dateForDay(int index) => DateTime(
+    tripStartDate.year,
+    tripStartDate.month,
+    tripStartDate.day,
+  ).add(Duration(days: index));
 
   /// Parses an "HH:mm" string into a full DateTime on the correct calendar day.
   DateTime activityDateTime(int dayIndex, String time) {
@@ -112,10 +114,7 @@ class ActiveTrip {
     final now = DateTime.now();
     switch (status) {
       case TripStatus.upcoming:
-        return ActivityRef(
-          dayIndex: 0,
-          activity: days.first.activities.first,
-        );
+        return ActivityRef(dayIndex: 0, activity: days.first.activities.first);
       case TripStatus.inProgress:
         for (int d = 0; d < days.length; d++) {
           for (final act in days[d].activities) {
@@ -209,7 +208,7 @@ class TripStore extends ChangeNotifier {
 
       _activeTrip = ActiveTrip(
         title: title,
-        // TODO(backend): replace with persisted real itinerary data when
+        // Backend: replace with persisted real itinerary data when
         // trips are stored server-side. For now, mock data is always the
         // same so reconstructing from it is safe.
         days: TripPlannerMockData.tripDays,
@@ -299,8 +298,14 @@ class TripStore extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await Future.wait(<Future<bool>>[
         prefs.setString(_kTitle, _activeTrip!.title),
-        prefs.setString(_kActivatedAt, _activeTrip!.activatedAt.toIso8601String()),
-        prefs.setString(_kTripStartDate, _activeTrip!.tripStartDate.toIso8601String()),
+        prefs.setString(
+          _kActivatedAt,
+          _activeTrip!.activatedAt.toIso8601String(),
+        ),
+        prefs.setString(
+          _kTripStartDate,
+          _activeTrip!.tripStartDate.toIso8601String(),
+        ),
       ]);
     } catch (e) {
       debugPrint('TripStore._persist: failed — $e');

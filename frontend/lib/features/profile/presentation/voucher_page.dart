@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/profile/presentation/voucher_detail_page.dart';
 
 class VoucherPage extends StatefulWidget {
@@ -242,8 +243,8 @@ class _VoucherPageState extends State<VoucherPage> {
                         ),
                       ),
                     ),
-                    const Text(
-                      'Reward',
+                    Text(
+                      context.l10n.ui('Reward'),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 32,
@@ -287,16 +288,17 @@ class _VoucherPageState extends State<VoucherPage> {
                   duration: const Duration(milliseconds: 260),
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SizeTransition(
-                        sizeFactor: animation,
-                        axisAlignment: -1,
-                        child: child,
-                      ),
-                    );
-                  },
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SizeTransition(
+                            sizeFactor: animation,
+                            axisAlignment: -1,
+                            child: child,
+                          ),
+                        );
+                      },
                   child: _showMyVouchers
                       ? _MyVoucherList(
                           key: const ValueKey<String>('my-vouchers'),
@@ -324,15 +326,15 @@ class _RewardProfileRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: <Widget>[
-        _AvatarCircle(),
-        SizedBox(width: 10),
+        const _AvatarCircle(),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
+              const Text(
                 'John Anderson',
                 style: TextStyle(
                   color: Colors.white,
@@ -340,14 +342,14 @@ class _RewardProfileRow extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Row(
                 children: <Widget>[
-                  _TierIcon(),
-                  SizedBox(width: 6),
+                  const _TierIcon(),
+                  const SizedBox(width: 6),
                   Text(
-                    'Gold Tier',
-                    style: TextStyle(
+                    context.l10n.ui('Gold Tier'),
+                    style: const TextStyle(
                       color: Color(0xFFFFE08B),
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -387,9 +389,7 @@ class _RewardHeroSection extends StatelessWidget {
                   ),
                 ),
               ),
-              Expanded(
-                child: Container(color: const Color(0xFFF3F5F7)),
-              ),
+              Expanded(child: Container(color: const Color(0xFFF3F5F7))),
             ],
           ),
           const Positioned(
@@ -480,19 +480,19 @@ class _RewardSummaryCard extends StatelessWidget {
               color: const Color(0xFF67C6F3),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Available Points',
-                  style: TextStyle(
+                  context.l10n.ui('Available Points'),
+                  style: const TextStyle(
                     fontSize: 16,
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                SizedBox(height: 8),
-                Text(
+                const SizedBox(height: 8),
+                const Text(
                   '12,500',
                   style: TextStyle(
                     fontSize: 52,
@@ -501,10 +501,10 @@ class _RewardSummaryCard extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'Use to redeem vouchers',
-                  style: TextStyle(
+                  context.l10n.ui('Use to redeem vouchers'),
+                  style: const TextStyle(
                     fontSize: 15,
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
@@ -518,9 +518,9 @@ class _RewardSummaryCard extends StatelessWidget {
             children: <Widget>[
               const _TierIcon(),
               const SizedBox(width: 6),
-              const Text(
-                'Gold',
-                style: TextStyle(
+              Text(
+                context.l10n.ui('Gold'),
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF0F1F3A),
@@ -534,9 +534,9 @@ class _RewardSummaryCard extends StatelessWidget {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text(
-                  'View Benefits >',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.ui('View Benefits >'),
+                  style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFF67C6F3),
                     fontWeight: FontWeight.w600,
@@ -556,11 +556,11 @@ class _RewardSummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          const Row(
+          Row(
             children: <Widget>[
               Expanded(
                 child: Text(
-                  '45,000 / 70,000 pts',
+                  context.l10n.ui('45,000 / 70,000 pts'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -575,7 +575,7 @@ class _RewardSummaryCard extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    '25,000 to Platinum',
+                    context.l10n.ui('25,000 to Platinum'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -623,17 +623,17 @@ class _VoucherPinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Row(
+          Row(
             children: <Widget>[
-              Icon(
+              const Icon(
                 Icons.card_giftcard_rounded,
                 size: 19,
                 color: Color(0xFF81D4FA),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
-                'Vouchers',
-                style: TextStyle(
+                context.l10n.ui('Vouchers'),
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF0F1F3A),
@@ -710,14 +710,14 @@ class _VoucherTabs extends StatelessWidget {
               children: <Widget>[
                 Expanded(
                   child: _TabTextButton(
-                    label: 'Redeem Voucher',
+                    label: context.l10n.ui('Redeem Voucher'),
                     selected: !showMyVouchers,
                     onTap: onSelectRedeem,
                   ),
                 ),
                 Expanded(
                   child: _TabTextButton(
-                    label: 'My Vouchers (3)',
+                    label: context.l10n.ui('My Vouchers (3)'),
                     selected: showMyVouchers,
                     onTap: onSelectMyVoucher,
                   ),
@@ -754,9 +754,7 @@ class _TabTextButton extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: selected
-                ? const Color(0xFF67C6F3)
-                : const Color(0xFF35465E),
+            color: selected ? const Color(0xFF67C6F3) : const Color(0xFF35465E),
           ),
           child: Text(label),
         ),
@@ -853,11 +851,7 @@ class _RedeemVoucherCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Positioned(
-                    top: 7,
-                    left: 8,
-                    child: _TagPill(label: item.tag),
-                  ),
+                  Positioned(top: 7, left: 8, child: _TagPill(label: item.tag)),
                 ],
               ),
               Padding(
@@ -870,7 +864,7 @@ class _RedeemVoucherCard extends StatelessWidget {
                       child: Align(
                         alignment: Alignment.topLeft,
                         child: Text(
-                          item.title,
+                          context.l10n.ui(item.title),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -901,9 +895,9 @@ class _RedeemVoucherCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 2),
-                        const Text(
-                          'points',
-                          style: TextStyle(
+                        Text(
+                          context.l10n.ui('points'),
+                          style: const TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w500,
                             color: Color(0xFF98A0AA),
@@ -926,9 +920,9 @@ class _RedeemVoucherCard extends StatelessWidget {
                           ),
                           padding: EdgeInsets.zero,
                         ),
-                        child: const Text(
-                          'Redeem Now',
-                          style: TextStyle(
+                        child: Text(
+                          context.l10n.ui('Redeem Now'),
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
@@ -966,10 +960,7 @@ class _MyVoucherList extends StatelessWidget {
           const SizedBox(height: 12),
       itemBuilder: (BuildContext context, int index) {
         final _VoucherItem item = items[index];
-        return _MyVoucherCard(
-          item: item,
-          onTap: () => onOpenDetail(item),
-        );
+        return _MyVoucherCard(item: item, onTap: () => onOpenDetail(item));
       },
     );
   }
@@ -1036,7 +1027,7 @@ class _MyVoucherCard extends StatelessWidget {
                         _TagPill(label: item.tag),
                         const SizedBox(height: 8),
                         Text(
-                          item.title,
+                          context.l10n.ui(item.title),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -1053,7 +1044,7 @@ class _MyVoucherCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Exp: ${item.expiry}',
+                              '${context.l10n.ui('Exp')}: ${item.expiry}',
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: Color(0xFF5B6674),
@@ -1069,10 +1060,14 @@ class _MyVoucherCard extends StatelessWidget {
                               child: Container(
                                 height: 34,
                                 alignment: Alignment.centerLeft,
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(9),
-                                  border: Border.all(color: const Color(0xFFD5DCE4)),
+                                  border: Border.all(
+                                    color: const Color(0xFFD5DCE4),
+                                  ),
                                 ),
                                 child: Text(
                                   item.code,
@@ -1111,9 +1106,12 @@ class _MyVoucherCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text(
-                    'Use Now',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  child: Text(
+                    context.l10n.ui('Use Now'),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -1148,7 +1146,7 @@ class _TagPill extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            label,
+            context.l10n.ui(label),
             style: const TextStyle(
               fontSize: 13,
               color: Color(0xFF6AA9CC),

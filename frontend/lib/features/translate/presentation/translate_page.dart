@@ -1,7 +1,8 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/translate/data/openai_translation_service.dart';
 import 'package:go_router/go_router.dart';
 
@@ -87,7 +88,8 @@ class _TranslatePageState extends State<TranslatePage>
   ];
 
   final TextEditingController _inputController = TextEditingController();
-  final OpenAITranslationService _translationService = OpenAITranslationService();
+  final OpenAITranslationService _translationService =
+      OpenAITranslationService();
   _LanguageOption _source = _allLanguages[2];
   _LanguageOption _target = _allLanguages[1];
   bool _isListening = false;
@@ -198,18 +200,19 @@ class _TranslatePageState extends State<TranslatePage>
   }
 
   Future<void> _openLanguageSheet({required bool selectingSource}) async {
-    final _LanguageOption? selected = await showModalBottomSheet<_LanguageOption>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return _LanguagePickerSheet(
-          languages: _allLanguages,
-          selectedCode: selectingSource ? _source.code : _target.code,
-          allowAutoDetect: selectingSource,
+    final _LanguageOption? selected =
+        await showModalBottomSheet<_LanguageOption>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (BuildContext context) {
+            return _LanguagePickerSheet(
+              languages: _allLanguages,
+              selectedCode: selectingSource ? _source.code : _target.code,
+              allowAutoDetect: selectingSource,
+            );
+          },
         );
-      },
-    );
 
     if (selected == null) return;
 
@@ -279,12 +282,15 @@ class _TranslatePageState extends State<TranslatePage>
                         ),
                         splashRadius: 22,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                        constraints: const BoxConstraints(
+                          minWidth: 30,
+                          minHeight: 30,
+                        ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        'Translate',
-                        style: TextStyle(
+                      Text(
+                        context.l10n.ui('Translate'),
+                        style: const TextStyle(
                           fontSize: 33,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF1F2735),
@@ -312,7 +318,8 @@ class _TranslatePageState extends State<TranslatePage>
                           child: _LanguageChip(
                             language: _source,
                             isSource: true,
-                            onTap: () => _openLanguageSheet(selectingSource: true),
+                            onTap: () =>
+                                _openLanguageSheet(selectingSource: true),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -341,7 +348,8 @@ class _TranslatePageState extends State<TranslatePage>
                           child: _LanguageChip(
                             language: _target,
                             isSource: false,
-                            onTap: () => _openLanguageSheet(selectingSource: false),
+                            onTap: () =>
+                                _openLanguageSheet(selectingSource: false),
                           ),
                         ),
                       ],
@@ -386,11 +394,11 @@ class _TranslatePageState extends State<TranslatePage>
                       errorText: _translationError,
                     ),
                     const SizedBox(height: 12),
-                    const Align(
+                    Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'QUICK EXAMPLES',
-                        style: TextStyle(
+                        context.l10n.ui('QUICK EXAMPLES'),
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF7B8596),
@@ -398,15 +406,17 @@ class _TranslatePageState extends State<TranslatePage>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    ...List<Widget>.generate(_quickExamples.length, (int index) {
+                    ...List<Widget>.generate(_quickExamples.length, (
+                      int index,
+                    ) {
                       final String text = _quickExamples[index];
                       final _LanguageOption languageForItem = index < 2
                           ? _allLanguages[2]
                           : index == 2
-                              ? _allLanguages[4]
-                              : index == 3
-                                  ? _allLanguages[5]
-                                  : _allLanguages[3];
+                          ? _allLanguages[4]
+                          : index == 3
+                          ? _allLanguages[5]
+                          : _allLanguages[3];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _QuickExampleTile(
@@ -450,9 +460,7 @@ class _LanguageChip extends StatelessWidget {
           color: isSource ? const Color(0xFFEAF5FF) : const Color(0xFFF0FBF2),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSource
-                ? const Color(0xFFAEDBFB)
-                : const Color(0xFFC3ECCA),
+            color: isSource ? const Color(0xFFAEDBFB) : const Color(0xFFC3ECCA),
           ),
         ),
         child: Row(
@@ -571,23 +579,26 @@ class _InputCard extends StatelessWidget {
             controller: controller,
             onChanged: onChanged,
             maxLines: 3,
-            decoration: const InputDecoration(
-              hintText: 'Enter text to translate...',
-              hintStyle: TextStyle(fontSize: 16, color: Color(0xFFA6B0BF)),
+            decoration: InputDecoration(
+              hintText: context.l10n.ui('Enter text to translate...'),
+              hintStyle: const TextStyle(
+                fontSize: 16,
+                color: Color(0xFFA6B0BF),
+              ),
               border: InputBorder.none,
             ),
             style: const TextStyle(fontSize: 17, color: Color(0xFF1D2A3B)),
           ),
-                    if (isListening)
-            const Padding(
-              padding: EdgeInsets.only(top: 4, bottom: 6),
+          if (isListening)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 6),
               child: Row(
                 children: <Widget>[
-                  _ListeningWaveIndicator(),
-                  SizedBox(width: 8),
+                  const _ListeningWaveIndicator(),
+                  const SizedBox(width: 8),
                   Text(
-                    'Listening...',
-                    style: TextStyle(
+                    context.l10n.ui('Listening...'),
+                    style: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFFFF7B7B),
                       fontWeight: FontWeight.w600,
@@ -609,12 +620,12 @@ class _InputCard extends StatelessWidget {
   }
 }
 
-
 class _ListeningWaveIndicator extends StatefulWidget {
   const _ListeningWaveIndicator();
 
   @override
-  State<_ListeningWaveIndicator> createState() => _ListeningWaveIndicatorState();
+  State<_ListeningWaveIndicator> createState() =>
+      _ListeningWaveIndicatorState();
 }
 
 class _ListeningWaveIndicatorState extends State<_ListeningWaveIndicator>
@@ -645,7 +656,8 @@ class _ListeningWaveIndicatorState extends State<_ListeningWaveIndicator>
         builder: (BuildContext context, Widget? child) {
           return Row(
             children: List<Widget>.generate(5, (int index) {
-              final double phase = (_controller.value + index * 0.14) * math.pi * 2;
+              final double phase =
+                  (_controller.value + index * 0.14) * math.pi * 2;
               final double barHeight = 4 + (math.sin(phase).abs() * 8);
               return Padding(
                 padding: const EdgeInsets.only(right: 2),
@@ -686,10 +698,10 @@ class _OutputCard extends StatelessWidget {
     final String bodyText = hasError
         ? errorText!
         : isLoading
-            ? 'Translating...'
-            : hasTranslation
-                ? translatedText
-                : 'Translation appears here';
+        ? context.l10n.ui('Translating...')
+        : hasTranslation
+        ? translatedText
+        : context.l10n.ui('Translation appears here');
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 154),
@@ -727,14 +739,17 @@ class _OutputCard extends StatelessWidget {
               ] else if (hasTranslation && !hasError) ...<Widget>[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: const Text(
-                    'DONE',
-                    style: TextStyle(
+                  child: Text(
+                    context.l10n.ui('DONE'),
+                    style: const TextStyle(
                       fontSize: 10,
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -744,12 +759,16 @@ class _OutputCard extends StatelessWidget {
               ],
               const Spacer(),
               if (hasTranslation) ...<Widget>[
-                const Icon(Icons.volume_up_outlined, size: 16, color: Colors.white),
+                const Icon(
+                  Icons.volume_up_outlined,
+                  size: 16,
+                  color: Colors.white,
+                ),
                 const SizedBox(width: 8),
                 const Icon(Icons.copy_rounded, size: 16, color: Colors.white),
               ],
             ],
-            ),
+          ),
           const SizedBox(height: 12),
           Text(
             bodyText,
@@ -758,12 +777,11 @@ class _OutputCard extends StatelessWidget {
               color: hasError
                   ? const Color(0xFFFDF2F2)
                   : hasTranslation || isLoading
-                      ? Colors.white
-                      : const Color(0xA0EAF7FF),
-              fontWeight:
-                  hasTranslation || isLoading || hasError
-                      ? FontWeight.w600
-                      : FontWeight.w500,
+                  ? Colors.white
+                  : const Color(0xA0EAF7FF),
+              fontWeight: hasTranslation || isLoading || hasError
+                  ? FontWeight.w600
+                  : FontWeight.w500,
             ),
           ),
         ],
@@ -837,7 +855,9 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final List<_LanguageOption> options = widget.languages.where((_LanguageOption item) {
+    final List<_LanguageOption> options = widget.languages.where((
+      _LanguageOption item,
+    ) {
       if (!widget.allowAutoDetect && item.code == 'auto') return false;
       return item.name.toLowerCase().contains(_query.toLowerCase());
     }).toList();
@@ -863,10 +883,10 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
             padding: const EdgeInsets.fromLTRB(16, 16, 12, 8),
             child: Row(
               children: <Widget>[
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Select Language',
-                    style: TextStyle(
+                    context.l10n.ui('Select Language'),
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF242D3D),
@@ -875,7 +895,10 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                 ),
                 IconButton(
                   onPressed: () => context.pop(),
-                  icon: const Icon(Icons.close_rounded, color: Color(0xFFA4ACB9)),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Color(0xFFA4ACB9),
+                  ),
                 ),
               ],
             ),
@@ -894,14 +917,14 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                     _query = value;
                   });
                 },
-                decoration: const InputDecoration(
-                  hintText: 'Search language...',
-                  prefixIcon: Icon(
+                decoration: InputDecoration(
+                  hintText: context.l10n.ui('Search language...'),
+                  prefixIcon: const Icon(
                     Icons.search_rounded,
                     color: Color(0xFFB0B8C4),
                   ),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 11),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 11),
                 ),
               ),
             ),
@@ -916,10 +939,18 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                 return InkWell(
                   onTap: () => context.pop(item),
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 2,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
-                      color: selected ? const Color(0xFFEEF4FF) : Colors.transparent,
+                      color: selected
+                          ? const Color(0xFFEEF4FF)
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -931,7 +962,9 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                             item.name,
                             style: TextStyle(
                               fontSize: 17,
-                              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                              fontWeight: selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
                               color: selected
                                   ? const Color(0xFF2E74DA)
                                   : const Color(0xFF4A5567),
@@ -939,7 +972,10 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                           ),
                         ),
                         if (selected)
-                          const Icon(Icons.check_rounded, color: Color(0xFF4B9AF4)),
+                          const Icon(
+                            Icons.check_rounded,
+                            color: Color(0xFF4B9AF4),
+                          ),
                       ],
                     ),
                   ),
@@ -982,22 +1018,23 @@ class _RoundFlag extends StatelessWidget {
                 width: radius * 2 - 2,
                 height: radius * 2 - 2,
                 fit: BoxFit.cover,
-                errorBuilder: (
-                  BuildContext context,
-                  Object error,
-                  StackTrace? stackTrace,
-                ) => Container(
-                  color: const Color(0xFFEAF0F8),
-                  alignment: Alignment.center,
-                  child: Text(
-                    flagCode!.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF6F7D90),
+                errorBuilder:
+                    (
+                      BuildContext context,
+                      Object error,
+                      StackTrace? stackTrace,
+                    ) => Container(
+                      color: const Color(0xFFEAF0F8),
+                      alignment: Alignment.center,
+                      child: Text(
+                        flagCode!.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF6F7D90),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
               ),
             ),
     );

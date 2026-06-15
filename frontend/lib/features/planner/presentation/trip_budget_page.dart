@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
 
 class TripBudgetPage extends StatefulWidget {
@@ -92,11 +93,11 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
     return PlannerStepScaffold(
       currentStep: 5,
       badgeIcon: Icons.account_balance_wallet_outlined,
-      title: 'Choose your budget',
-      subtitle: 'Pick one option below to continue',
+      title: context.l10n.ui('Choose your budget'),
+      subtitle: context.l10n.ui('Pick one option below to continue'),
       onBack: () => context.pop(),
       nextEnabled: _canGenerate,
-      nextLabel: 'Generate',
+      nextLabel: context.l10n.ui('Generate'),
       onNext: _showGeneratePlaceholder,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -104,18 +105,20 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Text(
-              'Option 1: Enter daily budget',
-              style: TextStyle(
+            Text(
+              context.l10n.ui('Option 1: Enter daily budget'),
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF162235),
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Use an exact amount per day if you already know your spending limit.',
-              style: TextStyle(
+            Text(
+              context.l10n.ui(
+                'Use an exact amount per day if you already know your spending limit.',
+              ),
+              style: const TextStyle(
                 fontSize: 14.5,
                 fontStyle: FontStyle.italic,
                 color: Color(0xFF6F7B8A),
@@ -130,25 +133,29 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
             ),
             if (_hasTypedBudget) ...<Widget>[
               const SizedBox(height: 10),
-              const _SelectedBudgetHint(
-                label: 'Using exact daily budget. Price range will be ignored.',
+              _SelectedBudgetHint(
+                label: context.l10n.ui(
+                  'Using exact daily budget. Price range will be ignored.',
+                ),
               ),
             ],
             const SizedBox(height: 24),
             const _OptionDivider(),
             const SizedBox(height: 24),
-            const Text(
-              'Option 2: Choose price range',
-              style: TextStyle(
+            Text(
+              context.l10n.ui('Option 2: Choose price range'),
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF162235),
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Use a quick preset instead of typing an exact amount.',
-              style: TextStyle(
+            Text(
+              context.l10n.ui(
+                'Use a quick preset instead of typing an exact amount.',
+              ),
+              style: const TextStyle(
                 fontSize: 14.5,
                 fontStyle: FontStyle.italic,
                 color: Color(0xFF6F7B8A),
@@ -162,15 +169,17 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: _BudgetRangeCard(
-                  label: range,
+                  label: context.l10n.ui(range),
                   selected: selected,
                   onTap: () => _selectRange(range),
                 ),
               );
             }),
             if (_selectedRange != null)
-              const _SelectedBudgetHint(
-                label: 'Using price range. Typed daily budget will be ignored.',
+              _SelectedBudgetHint(
+                label: context.l10n.ui(
+                  'Using price range. Typed daily budget will be ignored.',
+                ),
               ),
           ],
         ),
@@ -220,7 +229,7 @@ class _BudgetInputField extends StatelessWidget {
             color: Color(0xFF9AA3B2),
             size: 22,
           ),
-          hintText: 'e.g. 800,000 VND per day',
+          hintText: context.l10n.ui('e.g. 800,000 VND per day'),
           hintStyle: const TextStyle(
             fontSize: 15.5,
             color: Color(0xFF9AA3B2),

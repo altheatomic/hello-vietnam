@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
@@ -99,7 +100,7 @@ class ThreadPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        store.errorMessage ?? 'Post not found',
+                        store.errorMessage ?? context.l10n.ui('Post not found'),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -109,7 +110,7 @@ class ThreadPage extends StatelessWidget {
                       const SizedBox(height: 12),
                       TextButton(
                         onPressed: () => context.pop(),
-                        child: const Text('Go back'),
+                        child: Text(context.l10n.ui('Go back')),
                       ),
                     ],
                   ),
@@ -120,7 +121,7 @@ class ThreadPage extends StatelessWidget {
             return Column(
               children: <Widget>[
                 ForumTopBar(
-                  title: 'Post',
+                  title: context.l10n.ui('Post'),
                   onBack: () => context.pop(),
                   onBookmark: () => context.push(AppRoutes.forumSaved),
                   onNotification: () =>

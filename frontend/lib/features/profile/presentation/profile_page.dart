@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -128,6 +129,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final AppStrings strings = context.l10n;
     final double topInset = MediaQuery.of(context).padding.top;
 
     return PopScope(
@@ -156,11 +158,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         color: Color(0xFF1C1C1C),
                       ),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'My Profile',
+                        strings.myProfile,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF121212),
@@ -247,17 +249,17 @@ class _ProfilePageState extends State<ProfilePage> {
                         children: <Widget>[
                           _SettingRow(
                             icon: Icons.workspace_premium_rounded,
-                            title: 'Upgrade Account',
+                            title: strings.upgradeAccount,
                             onTap: () => context.push(AppRoutes.upgradeAccount),
                           ),
                           _SettingRow(
                             icon: Icons.lock_outline_rounded,
-                            title: 'Change Password',
+                            title: strings.changePassword,
                             onTap: () => context.push(AppRoutes.changePassword),
                           ),
                           _SettingRow(
                             icon: Icons.favorite_border_rounded,
-                            title: 'Wishlist',
+                            title: strings.wishlist,
                             onTap: () => context.push(AppRoutes.wishlist),
                           ),
                           _SettingRow(
@@ -272,12 +274,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         children: <Widget>[
                           _SettingRow(
                             icon: Icons.translate_rounded,
-                            title: 'Language',
+                            title: strings.language,
                             onTap: () => context.push(AppRoutes.language),
                           ),
                           _SettingRow(
                             icon: Icons.monetization_on_outlined,
-                            title: 'Currency',
+                            title: strings.currency,
                             onTap: () => context.push(AppRoutes.currency),
                           ),
                         ],
@@ -287,7 +289,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         children: <Widget>[
                           _SettingSwitchRow(
                             icon: Icons.notifications_none_rounded,
-                            title: 'Notification',
+                            title: strings.notification,
                             value: _notificationEnabled,
                             onChanged: (bool value) {
                               setState(() {
@@ -297,14 +299,14 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           _SettingSwitchRow(
                             icon: Icons.shield_outlined,
-                            title: 'Delete user data',
+                            title: strings.deleteUserData,
                             value: _autoDeleteUserDataEnabled,
                             onChanged: _setAutoDeleteSetting,
                             onTap: () => context.push(AppRoutes.deleteUserData),
                           ),
                           _SettingRow(
                             icon: Icons.logout_rounded,
-                            title: 'Log out',
+                            title: strings.logOut,
                             iconColor: const Color(0xFFFF3B30),
                             textColor: const Color(0xFF1C1C1C),
                             showChevron: false,

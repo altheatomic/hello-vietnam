@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
 import 'package:hellovietnam/features/personalization/domain/travel_preferences.dart';
 
@@ -21,12 +22,24 @@ class TravelPreferencesSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isVietnamese =
+        AppLanguageScope.languageOf(context) == AppLanguage.vietnamese;
+    final String styleLabel = context.l10n
+        .ui(preferences.travelStyles.first.label)
+        .toLowerCase();
+    final String budgetLabel = context.l10n
+        .ui(preferences.budgetLevel.label)
+        .toLowerCase();
+    final String paceLabel = context.l10n
+        .ui(preferences.pace.label)
+        .toLowerCase();
     final String summaryText =
         description ??
-        'We are prioritizing cities and highlights around '
-            '${preferences.travelStyles.first.label.toLowerCase()}, '
-            '${preferences.budgetLevel.label.toLowerCase()} comfort, and a '
-            '${preferences.pace.label.toLowerCase()} rhythm.';
+        (isVietnamese
+            ? 'Chúng tôi đang ưu tiên thành phố và điểm nổi bật theo gu $styleLabel, ngân sách $budgetLabel và nhịp đi $paceLabel.'
+            : 'We are prioritizing cities and highlights around '
+                  '$styleLabel, $budgetLabel comfort, and a '
+                  '$paceLabel rhythm.');
 
     return GlassCard(
       borderRadius: 28,
@@ -40,7 +53,7 @@ class TravelPreferencesSummaryCard extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: Text(
-                  title,
+                  context.l10n.ui(title),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: const Color(0xFF1C3550),
                     fontWeight: FontWeight.w800,
@@ -59,7 +72,7 @@ class TravelPreferencesSummaryCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    buttonLabel,
+                    context.l10n.ui(buttonLabel),
                     style: const TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
@@ -95,7 +108,7 @@ class TravelPreferencesSummaryCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      label,
+                      context.l10n.ui(label),
                       style: const TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,

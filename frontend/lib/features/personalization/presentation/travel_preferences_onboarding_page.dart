@@ -30,7 +30,7 @@ class _TravelPreferencesOnboardingPageState
 
   final Set<TravelStyle> _selectedStyles = <TravelStyle>{};
   final Set<TravelCompanion> _selectedCompanions = <TravelCompanion>{};
-  BudgetLevel? _selectedBudget;
+  BudgetLevel _selectedBudget = BudgetLevel.moderate;
   TravelPace? _selectedPace;
   final Set<InterestTopic> _selectedTopics = <InterestTopic>{};
 
@@ -102,11 +102,9 @@ class _TravelPreferencesOnboardingPageState
                 expandToCell: true,
                 onTap: () {
                   setState(() {
-                    if (_selectedCompanions.contains(companion)) {
-                      _selectedCompanions.remove(companion);
-                    } else {
-                      _selectedCompanions.add(companion);
-                    }
+                    _selectedCompanions
+                      ..clear()
+                      ..add(companion);
                   });
                 },
               ),
@@ -114,29 +112,7 @@ class _TravelPreferencesOnboardingPageState
             .toList(growable: false),
       ),
       canContinue: _selectedCompanions.isNotEmpty,
-      helperText: 'Pick at least 1 companion style.',
-    ),
-    _StepConfig(
-      title: 'What budget feels comfortable?',
-      subtitle:
-          'We will tune recommendations so the app feels realistic from day one.',
-      body: Column(
-        children: BudgetLevel.values
-            .map(
-              (BudgetLevel level) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _LiquidRadioCard(
-                  label: level.label,
-                  subtitle: level.subtitle,
-                  selected: _selectedBudget == level,
-                  onTap: () => setState(() => _selectedBudget = level),
-                ),
-              ),
-            )
-            .toList(growable: false),
-      ),
-      canContinue: _selectedBudget != null,
-      helperText: 'Choose 1 budget level.',
+      helperText: 'Choose 1 companion style.',
     ),
     _StepConfig(
       title: 'How packed do you want your days to be?',
@@ -217,7 +193,7 @@ class _TravelPreferencesOnboardingPageState
   }
 
   Future<void> _save() async {
-    if (_selectedBudget == null || _selectedPace == null) {
+    if (_selectedPace == null) {
       return;
     }
 
@@ -227,23 +203,37 @@ class _TravelPreferencesOnboardingPageState
     final UserTravelPreferences preferences = UserTravelPreferences(
       travelStyles: _selectedStyles.toList(growable: false),
       companions: _selectedCompanions.toList(growable: false),
-      budgetLevel: _selectedBudget!,
+      budgetLevel: _selectedBudget,
       pace: _selectedPace!,
       topics: _selectedTopics.toList(growable: false),
       completedAt: DateTime.now(),
     );
 
-    await repository.saveCurrentUserPreferences(preferences, notify: false);
+    try {
+      await repository.saveCurrentUserPreferences(preferences, notify: false);
 
-    if (!mounted) {
-      return;
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _isSaving = false);
+      context.go(widget.returnRoute);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        repository.refresh();
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to save travel taste right now.\n$error'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
-
-    setState(() => _isSaving = false);
-    context.go(widget.returnRoute);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      repository.refresh();
-    });
   }
 
   @override

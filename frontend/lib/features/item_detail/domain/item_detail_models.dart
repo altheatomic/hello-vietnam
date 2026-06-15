@@ -1,4 +1,5 @@
 import 'detail_category.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 
 class ItemDetailRequest {
   final String id;
@@ -6,6 +7,7 @@ class ItemDetailRequest {
   final DetailCategory category;
   final List<String> fallbackImages;
   final String? fallbackImagePath;
+  final FavoriteType? favoriteType;
 
   const ItemDetailRequest({
     required this.id,
@@ -13,6 +15,7 @@ class ItemDetailRequest {
     required this.category,
     this.fallbackImages = const <String>[],
     this.fallbackImagePath,
+    this.favoriteType,
   });
 
   ItemDetailRequest copyWith({
@@ -21,6 +24,7 @@ class ItemDetailRequest {
     DetailCategory? category,
     List<String>? fallbackImages,
     String? fallbackImagePath,
+    FavoriteType? favoriteType,
   }) {
     return ItemDetailRequest(
       id: id ?? this.id,
@@ -28,6 +32,7 @@ class ItemDetailRequest {
       category: category ?? this.category,
       fallbackImages: fallbackImages ?? this.fallbackImages,
       fallbackImagePath: fallbackImagePath ?? this.fallbackImagePath,
+      favoriteType: favoriteType ?? this.favoriteType,
     );
   }
 }

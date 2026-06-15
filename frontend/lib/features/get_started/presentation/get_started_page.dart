@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 class GetStartedPage extends StatelessWidget {
   const GetStartedPage({super.key});
@@ -48,10 +49,10 @@ class GetStartedPage extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    const Text(
-                      'Explore Vietnam with',
+                    Text(
+                      context.l10n.ui('Explore Vietnam with'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
@@ -69,12 +70,12 @@ class GetStartedPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    const Text(
-                      'Explore local culture, traditional food, and '
-                      'meaningful travel experiences across Vietnam.\n'
-                      'Let us guide you through every journey.',
+                    Text(
+                      context.l10n.ui(
+                        'Explore local culture, traditional food, and meaningful travel experiences across Vietnam.\nLet us guide you through every journey.',
+                      ),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Color(0xFFF2F2F2),
                         fontSize: 15,
                         fontWeight: FontWeight.w400,
@@ -99,7 +100,7 @@ class GetStartedPage extends StatelessWidget {
                           ),
                         ),
                         onPressed: () => context.go(AppRoutes.login),
-                        child: const Text('Get Started'),
+                        child: Text(context.l10n.ui('Get Started')),
                       ),
                     ),
                   ],

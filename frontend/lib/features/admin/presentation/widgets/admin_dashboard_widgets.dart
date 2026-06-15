@@ -75,7 +75,7 @@ class AdminDashboardOverview extends StatelessWidget {
         const SizedBox(height: 28),
         const _AdminAreaHeader(
           icon: Icons.business_center_rounded,
-          title: 'Admin - Quản lý nghiệp vụ',
+          title: 'Admin - Business Operations',
           subtitle:
               'Track new places, trending destinations, user demand, and growth signals that should guide system development priorities.',
         ),
@@ -110,7 +110,7 @@ class AdminDashboardOverview extends StatelessWidget {
         const SizedBox(height: 30),
         const _AdminAreaHeader(
           icon: Icons.settings_suggest_rounded,
-          title: 'Admin - Quản lý hệ thống',
+          title: 'Admin - System Management',
           subtitle:
               'Monitor pending requests and tasks, reports, user volume, operational health, and feature adoption across the system.',
         ),

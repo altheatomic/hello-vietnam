@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
@@ -94,7 +95,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           child: Column(
             children: <Widget>[
               ForumTopBar(
-                title: 'Create post',
+                title: context.l10n.ui('Create post'),
                 onBack: () => context.pop(),
                 onBookmark: _openImagePicker,
                 onNotification: () {},
@@ -146,8 +147,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
                             maxLines: 8,
                             minLines: 6,
                             onChanged: (_) => setState(() {}),
-                            decoration: const InputDecoration(
-                              hintText: 'What do you want to share?',
+                            decoration: InputDecoration(
+                              hintText: context.l10n.ui(
+                                'What do you want to share?',
+                              ),
                               border: InputBorder.none,
                             ),
                             style: const TextStyle(

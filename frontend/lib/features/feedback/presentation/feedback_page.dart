@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/report/data/report_repository.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -16,31 +17,113 @@ class FeedbackPage extends StatefulWidget {
 class _FeedbackPageState extends State<FeedbackPage> {
   static const List<_IssueType> _issueTypes = <_IssueType>[
     _IssueType(
-      label: 'Incorrect data',
-      category: AppReportCategory.contentReport,
-      icon: Icons.error_outline_rounded,
-      color: Color(0xFFEF4444),
-    ),
-    _IssueType(
-      label: 'Missing information',
-      category: AppReportCategory.contentReport,
-      icon: Icons.assignment_late_outlined,
-      color: Color(0xFFF97316),
-    ),
-    _IssueType(
-      label: 'Inappropriate image/video',
-      category: AppReportCategory.contentReport,
-      icon: Icons.perm_media_outlined,
-      color: Color(0xFFA855F7),
-    ),
-    _IssueType(
-      label: 'Map/address issue',
+      label: 'Home',
+      featureArea: 'home',
       category: AppReportCategory.bugReport,
-      icon: Icons.location_on_outlined,
+      icon: Icons.home_outlined,
+      color: Color(0xFF0EA5E9),
+    ),
+    _IssueType(
+      label: 'Explore',
+      featureArea: 'explore',
+      category: AppReportCategory.bugReport,
+      icon: Icons.explore_outlined,
+      color: Color(0xFF22C55E),
+    ),
+    _IssueType(
+      label: 'City and place details',
+      featureArea: 'details',
+      category: AppReportCategory.contentReport,
+      icon: Icons.place_outlined,
       color: Color(0xFF3B82F6),
     ),
     _IssueType(
+      label: 'Trip Planner',
+      featureArea: 'trip_planner',
+      category: AppReportCategory.bugReport,
+      icon: Icons.luggage_outlined,
+      color: Color(0xFFF97316),
+    ),
+    _IssueType(
+      label: 'Saved Trips',
+      featureArea: 'saved_trips',
+      category: AppReportCategory.bugReport,
+      icon: Icons.bookmark_border_rounded,
+      color: Color(0xFF14B8A6),
+    ),
+    _IssueType(
+      label: 'Forum',
+      featureArea: 'forum',
+      category: AppReportCategory.bugReport,
+      icon: Icons.forum_outlined,
+      color: Color(0xFF8B5CF6),
+    ),
+    _IssueType(
+      label: 'Messages',
+      featureArea: 'messages',
+      category: AppReportCategory.bugReport,
+      icon: Icons.chat_bubble_outline_rounded,
+      color: Color(0xFF06B6D4),
+    ),
+    _IssueType(
+      label: 'Translate',
+      featureArea: 'translate',
+      category: AppReportCategory.bugReport,
+      icon: Icons.translate_outlined,
+      color: Color(0xFF6366F1),
+    ),
+    _IssueType(
+      label: 'Recommend',
+      featureArea: 'recommend',
+      category: AppReportCategory.bugReport,
+      icon: Icons.recommend_outlined,
+      color: Color(0xFFEC4899),
+    ),
+    _IssueType(
+      label: 'Popular Apps',
+      featureArea: 'popular_apps',
+      category: AppReportCategory.bugReport,
+      icon: Icons.apps_outlined,
+      color: Color(0xFF10B981),
+    ),
+    _IssueType(
+      label: 'AI Search',
+      featureArea: 'ai_search',
+      category: AppReportCategory.bugReport,
+      icon: Icons.auto_awesome_outlined,
+      color: Color(0xFFA855F7),
+    ),
+    _IssueType(
+      label: 'Wishlist',
+      featureArea: 'wishlist',
+      category: AppReportCategory.bugReport,
+      icon: Icons.favorite_border_rounded,
+      color: Color(0xFFFF5E7A),
+    ),
+    _IssueType(
+      label: 'Voucher',
+      featureArea: 'voucher',
+      category: AppReportCategory.paymentIssue,
+      icon: Icons.confirmation_number_outlined,
+      color: Color(0xFFEAB308),
+    ),
+    _IssueType(
+      label: 'Notifications',
+      featureArea: 'notifications',
+      category: AppReportCategory.bugReport,
+      icon: Icons.notifications_none_rounded,
+      color: Color(0xFFEF4444),
+    ),
+    _IssueType(
+      label: 'Profile and account',
+      featureArea: 'profile_account',
+      category: AppReportCategory.accountIssue,
+      icon: Icons.person_outline_rounded,
+      color: Color(0xFF64748B),
+    ),
+    _IssueType(
       label: 'Other',
+      featureArea: 'other',
       category: AppReportCategory.suggestion,
       icon: Icons.help_outline_rounded,
       color: Color(0xFF111827),
@@ -92,7 +175,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
         ReportSubmission(
           category: issue.category,
           targetType: AppReportTargetType.feature,
-          featureArea: 'home_report',
+          featureArea: issue.featureArea,
           content: _descriptionController.text,
           images: <Map<String, dynamic>>[
             for (final XFile image in _images)
@@ -146,22 +229,22 @@ class _FeedbackPageState extends State<FeedbackPage> {
                     icon: const Icon(Icons.arrow_back_ios_new_rounded),
                     color: const Color(0xFF1D293D),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          'Report an Issue',
-                          style: TextStyle(
+                          context.l10n.ui('Report an Issue'),
+                          style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF1D293D),
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'Help us improve the app',
-                          style: TextStyle(
+                          context.l10n.ui('Help us improve the app'),
+                          style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF90A1B9),
                           ),
@@ -185,7 +268,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     _RequiredLabel(
-                      title: 'Issue type',
+                      title: context.l10n.ui('Feature with issue'),
                       showError: _showIssueValidationError,
                     ),
                     const SizedBox(height: 12),
@@ -218,11 +301,11 @@ class _FeedbackPageState extends State<FeedbackPage> {
                       },
                     ),
                     const SizedBox(height: 26),
-                    const _SectionLabel('Description'),
+                    _SectionLabel(context.l10n.ui('Description')),
                     const SizedBox(height: 10),
                     _DescriptionBox(controller: _descriptionController),
                     const SizedBox(height: 18),
-                    const _SectionLabel('Image or video'),
+                    _SectionLabel(context.l10n.ui('Image or video')),
                     const SizedBox(height: 10),
                     _UploadBox(
                       images: _images,
@@ -246,9 +329,9 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                             ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(
+                            child: Text(
+                              context.l10n.ui('Cancel'),
+                              style: const TextStyle(
                                 color: Color(0xFF45556C),
                                 fontWeight: FontWeight.w600,
                               ),
@@ -282,8 +365,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
                               ),
                               child: Text(
                                 _isSubmitting
-                                    ? 'Submitting...'
-                                    : 'Submit Report',
+                                    ? context.l10n.ui('Submitting...')
+                                    : context.l10n.ui('Submit Report'),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700,
@@ -333,9 +416,9 @@ class _RequiredLabel extends StatelessWidget {
         ),
         if (showError) ...<Widget>[
           const SizedBox(width: 8),
-          const Text(
-            'Please select one',
-            style: TextStyle(
+          Text(
+            context.l10n.ui('Please select one'),
+            style: const TextStyle(
               color: Color(0xFFEF4444),
               fontWeight: FontWeight.w600,
             ),
@@ -404,7 +487,7 @@ class _IssueChip extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                issue.label,
+                context.l10n.ui(issue.label),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -446,10 +529,11 @@ class _DescriptionBoxState extends State<_DescriptionBox> {
             maxLength: 500,
             maxLines: 7,
             onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-              hintText:
-                  'Please describe the issue you encountered so we can fix it as quickly as possible...',
-              hintStyle: TextStyle(
+            decoration: InputDecoration(
+              hintText: context.l10n.ui(
+                'Please describe the issue you encountered so we can fix it as quickly as possible...',
+              ),
+              hintStyle: const TextStyle(
                 color: Color(0xFF90A1B9),
                 fontSize: 16,
                 height: 1.5,
@@ -496,17 +580,17 @@ class _UploadBox extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
-          child: const Column(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(
+              const Icon(
                 Icons.add_photo_alternate_outlined,
                 color: Color(0xFF3B82F6),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Upload image or video',
-                style: TextStyle(color: Color(0xFF90A1B9)),
+                context.l10n.ui('Upload image or video'),
+                style: const TextStyle(color: Color(0xFF90A1B9)),
               ),
             ],
           ),
@@ -603,9 +687,11 @@ class _SuccessDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Report Submitted!'),
-      content: const Text(
-        'Thank you for your report. Our team will review it as soon as possible.',
+      title: Text(context.l10n.ui('Report Submitted!')),
+      content: Text(
+        context.l10n.ui(
+          'Thank you for your report. Our team will review it as soon as possible.',
+        ),
       ),
       actions: <Widget>[
         FilledButton(
@@ -613,7 +699,7 @@ class _SuccessDialog extends StatelessWidget {
             Navigator.of(context).pop();
             onClose();
           },
-          child: const Text('Done'),
+          child: Text(context.l10n.ui('Done')),
         ),
       ],
     );
@@ -623,12 +709,14 @@ class _SuccessDialog extends StatelessWidget {
 class _IssueType {
   const _IssueType({
     required this.label,
+    required this.featureArea,
     required this.category,
     required this.icon,
     required this.color,
   });
 
   final String label;
+  final String featureArea;
   final AppReportCategory category;
   final IconData icon;
   final Color color;

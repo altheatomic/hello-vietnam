@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/notification/domain/app_notification.dart';
 import 'package:hellovietnam/features/notification/presentation/notification_action_handler.dart';
 import 'package:hellovietnam/features/notification/presentation/notification_controller.dart';
@@ -248,8 +249,8 @@ class _NotificationPageState extends State<NotificationPage> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(
-          content: Text('All notifications were cleared'),
+        SnackBar(
+          content: Text(context.l10n.ui('All notifications were cleared')),
           behavior: SnackBarBehavior.floating,
         ),
       );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:image_picker/image_picker.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -23,10 +24,26 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   static const String _defaultAvatarAsset = 'images/avatar/avatar.jpg';
   static const List<_AvatarPreset> _avatarPresets = <_AvatarPreset>[
-    _AvatarPreset(icon: Icons.person, color: Color(0xFFE7F3FF), iconColor: Color(0xFF8AA4C1)),
-    _AvatarPreset(icon: Icons.directions_car_filled_rounded, color: Color(0xFFFFE8DA), iconColor: Color(0xFF5F6E7A)),
-    _AvatarPreset(icon: Icons.flight_takeoff_rounded, color: Color(0xFFE7F7EF), iconColor: Color(0xFF6D9278)),
-    _AvatarPreset(icon: Icons.landscape_rounded, color: Color(0xFFF1E8FF), iconColor: Color(0xFF8370A8)),
+    _AvatarPreset(
+      icon: Icons.person,
+      color: Color(0xFFE7F3FF),
+      iconColor: Color(0xFF8AA4C1),
+    ),
+    _AvatarPreset(
+      icon: Icons.directions_car_filled_rounded,
+      color: Color(0xFFFFE8DA),
+      iconColor: Color(0xFF5F6E7A),
+    ),
+    _AvatarPreset(
+      icon: Icons.flight_takeoff_rounded,
+      color: Color(0xFFE7F7EF),
+      iconColor: Color(0xFF6D9278),
+    ),
+    _AvatarPreset(
+      icon: Icons.landscape_rounded,
+      color: Color(0xFFF1E8FF),
+      iconColor: Color(0xFF8370A8),
+    ),
   ];
 
   late final TextEditingController _emailController = TextEditingController(
@@ -96,7 +113,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
-                children: List<Widget>.generate(_avatarPresets.length, (int index) {
+                children: List<Widget>.generate(_avatarPresets.length, (
+                  int index,
+                ) {
                   final bool selected = index == _avatarIndex;
                   return GestureDetector(
                     onTap: () {
@@ -112,7 +131,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         color: _avatarPresets[index].color,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: selected ? const Color(0xFF69BCE8) : Colors.transparent,
+                          color: selected
+                              ? const Color(0xFF69BCE8)
+                              : Colors.transparent,
                           width: 2,
                         ),
                       ),
@@ -182,9 +203,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ).showSnackBar(const SnackBar(content: Text('Da go avatar da upload.')));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Go avatar that bai: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Go avatar that bai: $error')));
     } finally {
       if (mounted) {
         setState(() => _isUploadingAvatar = false);
@@ -225,11 +246,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       color: Color(0xFF1C1C1C),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Edit Profile',
+                      context.l10n.ui('Edit Profile'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF121212),
@@ -276,7 +297,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFDDDDDD)),
+                              border: Border.all(
+                                color: const Color(0xFFDDDDDD),
+                              ),
                             ),
                             child: const Icon(
                               Icons.edit,
@@ -296,7 +319,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 child: SizedBox(
                                   width: 28,
                                   height: 28,
-                                  child: CircularProgressIndicator(strokeWidth: 3),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                  ),
                                 ),
                               ),
                             ),
@@ -305,9 +330,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ),
                   ),
                   const SizedBox(height: 22),
-                  const Text(
-                    'Email',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.ui('Email'),
+                    style: const TextStyle(
                       color: Color(0xFF2AAEEB),
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -320,9 +345,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     decoration: _inputDecoration(),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Username',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.ui('Username'),
+                    style: const TextStyle(
                       color: Color(0xFF2AAEEB),
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -351,7 +376,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      child: const Text('Save'),
+                      child: Text(context.l10n.ui('Save')),
                     ),
                   ),
                 ],
@@ -442,17 +467,10 @@ class _PresetAvatar extends StatelessWidget {
             width: size,
             height: size,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Icon(
-              preset.icon,
-              size: size * 0.45,
-              color: preset.iconColor,
-            ),
+            errorBuilder: (context, error, stackTrace) =>
+                Icon(preset.icon, size: size * 0.45, color: preset.iconColor),
           )
-        : Icon(
-            preset.icon,
-            size: size * 0.45,
-            color: preset.iconColor,
-          );
+        : Icon(preset.icon, size: size * 0.45, color: preset.iconColor);
   }
 }
 

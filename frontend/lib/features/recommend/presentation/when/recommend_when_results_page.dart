@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import '../../data/recommend_mock_data.dart';
 import '../../domain/recommend_destination.dart';
 
@@ -292,7 +294,32 @@ class _SuggestionCard extends StatefulWidget {
 }
 
 class _SuggestionCardState extends State<_SuggestionCard> {
-  bool _isFavorite = false;
+  final WishlistController _wishlistController = WishlistController.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _wishlistController.ensureLoaded();
+  }
+
+  Future<void> _toggleFavorite() async {
+    try {
+      final bool? result = await _wishlistController.toggleFavorite(
+        type: FavoriteType.city,
+        rawItemId: widget.destination.id,
+        fallbackName: widget.destination.name,
+      );
+      if (!mounted || result != null) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to update wishlist.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -343,31 +370,41 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                     Positioned(
                       top: 10,
                       right: 10,
-                      child: GestureDetector(
-                        onTap: () => setState(() => _isFavorite = !_isFavorite),
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.95),
-                            shape: BoxShape.circle,
-                            boxShadow: <BoxShadow>[
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
-                                blurRadius: 8,
+                      child: AnimatedBuilder(
+                        animation: _wishlistController,
+                        builder: (BuildContext context, Widget? child) {
+                          final bool isFavorite = _wishlistController
+                              .isFavorite(
+                                type: FavoriteType.city,
+                                rawItemId: dest.id,
+                              );
+                          return GestureDetector(
+                            onTap: _toggleFavorite,
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.95),
+                                shape: BoxShape.circle,
+                                boxShadow: <BoxShadow>[
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 8,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: Icon(
-                            _isFavorite
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            size: 16,
-                            color: _isFavorite
-                                ? const Color(0xFFEF4444)
-                                : const Color(0xFF94A3B8),
-                          ),
-                        ),
+                              child: Icon(
+                                isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                size: 16,
+                                color: isFavorite
+                                    ? const Color(0xFFEF4444)
+                                    : const Color(0xFF94A3B8),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/report/data/report_repository.dart';
 
 Future<void> showReportIssueFlow(BuildContext context) async {
@@ -59,7 +60,7 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
 
   final TextEditingController _descriptionController = TextEditingController();
   final ReportRepository _repository = ReportRepository();
-  String? _selectedIssue;
+  _IssueType? _selectedIssue;
   bool _showIssueValidationError = false;
   int _issueValidationTick = 0;
   bool _isSubmitting = false;
@@ -85,7 +86,7 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
         ReportSubmission(
           category: _categoryForIssue(_selectedIssue!),
           targetType: AppReportTargetType.feature,
-          featureArea: 'wishlist',
+          featureArea: 'detail_report',
           content: _descriptionController.text,
         ),
       );
@@ -100,8 +101,8 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
     }
   }
 
-  AppReportCategory _categoryForIssue(String issue) {
-    switch (issue) {
+  AppReportCategory _categoryForIssue(_IssueType issue) {
+    switch (issue.label) {
       case 'Incorrect data':
       case 'Missing information':
       case 'Inappropriate image/video':
@@ -176,22 +177,22 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
                             Text(
-                              'Report an Issue',
-                              style: TextStyle(
+                              context.l10n.ui('Report an Issue'),
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF1D293D),
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
-                              'Help us improve the app',
-                              style: TextStyle(
+                              context.l10n.ui('Help us improve the app'),
+                              style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w400,
                                 color: Color(0xFF90A1B9),
@@ -229,9 +230,9 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         _RequiredLabel(
-                          title: 'Issue type',
+                          title: context.l10n.ui('Issue type'),
                           showError: _showIssueValidationError,
-                          errorText: 'Please select one',
+                          errorText: context.l10n.ui('Please select one'),
                         ),
                         const SizedBox(height: 12),
                         LayoutBuilder(
@@ -241,8 +242,7 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                               spacing: 8,
                               runSpacing: 8,
                               children: _issueTypes.map((item) {
-                                final bool selected =
-                                    _selectedIssue == item.label;
+                                final bool selected = _selectedIssue == item;
                                 return SizedBox(
                                   width: chipWidth,
                                   child: _IssueChip(
@@ -253,7 +253,7 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                                         _selectedIssue == null,
                                     onTap: () {
                                       setState(() {
-                                        _selectedIssue = item.label;
+                                        _selectedIssue = item;
                                         _showIssueValidationError = false;
                                         _issueValidationTick++;
                                       });
@@ -265,7 +265,7 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                           },
                         ),
                         const SizedBox(height: 20),
-                        const _SectionLabel(title: 'Description'),
+                        _SectionLabel(title: context.l10n.ui('Description')),
                         const SizedBox(height: 8),
                         Container(
                           decoration: BoxDecoration(
@@ -281,10 +281,11 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                                 maxLength: 500,
                                 maxLines: 6,
                                 onChanged: (_) => setState(() {}),
-                                decoration: const InputDecoration(
-                                  hintText:
-                                      'Please describe the issue you encountered so we can fix it as quickly as possible...',
-                                  hintStyle: TextStyle(
+                                decoration: InputDecoration(
+                                  hintText: context.l10n.ui(
+                                    'Please describe the issue you encountered so we can fix it as quickly as possible...',
+                                  ),
+                                  hintStyle: const TextStyle(
                                     color: Color(0xFF90A1B9),
                                     fontSize: 14,
                                     height: 1.6,
@@ -307,18 +308,20 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        const Row(
+                        Row(
                           children: <Widget>[
-                            Icon(
+                            const Icon(
                               Icons.keyboard_arrow_down_rounded,
                               size: 14,
                               color: Color(0xFF90A1B9),
                             ),
-                            SizedBox(width: 4),
+                            const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                'e.g. "When I tap the Save button on screen X, the app crashes"',
-                                style: TextStyle(
+                                context.l10n.ui(
+                                  'e.g. "When I tap the Save button on screen X, the app crashes"',
+                                ),
+                                style: const TextStyle(
                                   fontSize: 12,
                                   color: Color(0xFF90A1B9),
                                 ),
@@ -347,9 +350,9 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(
+                          child: Text(
+                            context.l10n.ui('Cancel'),
+                            style: const TextStyle(
                               color: Color(0xFF45556C),
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
@@ -384,7 +387,9 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                               ),
                             ),
                             child: Text(
-                              _isSubmitting ? 'Submitting...' : 'Submit Report',
+                              _isSubmitting
+                                  ? context.l10n.ui('Submitting...')
+                                  : context.l10n.ui('Submit Report'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -555,7 +560,7 @@ class _IssueChip extends StatelessWidget {
                     height: 1.25,
                   ),
                   child: Text(
-                    item.label,
+                    context.l10n.ui(item.label),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -637,29 +642,31 @@ class _ReportSuccessDialogState extends State<_ReportSuccessDialog> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Report Submitted!',
-              style: TextStyle(
+            Text(
+              context.l10n.ui('Report Submitted!'),
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF1D293D),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Thank you for your feedback.',
+            Text(
+              context.l10n.ui('Thank you for your feedback.'),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: Color(0xFF62748E),
                 height: 1.5,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Our team will review it and get back to you as soon as possible.',
+            Text(
+              context.l10n.ui(
+                'Our team will review it and get back to you as soon as possible.',
+              ),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: Color(0xFF62748E),
                 height: 1.5,
@@ -693,9 +700,9 @@ class _ReportSuccessDialogState extends State<_ReportSuccessDialog> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
-                  'Done',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.ui('Done'),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

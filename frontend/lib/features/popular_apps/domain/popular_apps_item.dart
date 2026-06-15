@@ -6,16 +6,20 @@ class PopularAppsItem {
     required this.name,
     required this.description,
     required this.category,
-    required this.logo,
-    required this.badgeColor,
-    required this.badgeTextColor,
+    required this.rating,
+    required this.downloads,
+    required this.logoUrl,
+    required this.gradientColors,
+    required this.accentColor,
   });
 
   final String id;
   final String name;
   final String description;
   final String category;
-  final String logo;
-  final Color badgeColor;
-  final Color badgeTextColor;
+  final double rating;
+  final String downloads;
+  final String logoUrl;
+  final List<Color> gradientColors;
+  final Color accentColor;
 }
