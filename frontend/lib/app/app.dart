@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'theme.dart';
+import 'theme_controller.dart';
 
 class App extends StatelessWidget {
   const App({super.key, required this.router});
@@ -9,10 +10,17 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      theme: buildTheme(),
-      routerConfig: router,
+    return AnimatedBuilder(
+      animation: ThemeController.instance,
+      builder: (BuildContext context, Widget? child) {
+        return MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          theme: buildTheme(),
+          darkTheme: buildDarkTheme(),
+          themeMode: ThemeController.instance.themeMode,
+          routerConfig: router,
+        );
+      },
     );
   }
 }

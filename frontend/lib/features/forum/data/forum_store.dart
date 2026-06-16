@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:hellovietnam/features/loyalty/data/loyalty_award_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -332,6 +333,14 @@ class ForumStore extends ChangeNotifier {
       imageFiles: imageFiles,
     );
     await refresh(notifyLoading: false);
+    unawaited(
+      LoyaltyAwardService.instance.award(
+        actionType: 'forum_post',
+        referenceTable: 'forum_post',
+        referenceId: postId,
+        description: 'Created a forum post',
+      ),
+    );
     return postId;
   }
 

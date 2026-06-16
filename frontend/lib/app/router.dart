@@ -753,13 +753,19 @@ class _CustomBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color background = isDark ? const Color(0xFF102A36) : Colors.white;
+    final Color shadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.28)
+        : Colors.black.withValues(alpha: 0.08);
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: background,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: shadowColor,
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -776,6 +782,7 @@ class _CustomBottomNav extends StatelessWidget {
               final branchIndex = i < 2 ? i : i - 1;
               final isSelected = branchIndex == currentIndex;
               return _buildNavItem(
+                context,
                 _items[i],
                 isSelected,
                 () => onTap(branchIndex),
@@ -787,8 +794,18 @@ class _CustomBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(_NavItem item, bool isSelected, VoidCallback onTap) {
-    final color = isSelected ? AppColors.primary : AppColors.textSecondary;
+  Widget _buildNavItem(
+    BuildContext context,
+    _NavItem item,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isSelected
+        ? AppColors.primaryLight
+        : isDark
+        ? const Color(0xFF9BB7C5)
+        : AppColors.textSecondary;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,

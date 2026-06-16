@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/notification/domain/app_notification.dart';
 import 'package:hellovietnam/features/notification/presentation/notification_action_handler.dart';
 import 'package:hellovietnam/features/notification/presentation/notification_controller.dart';
@@ -285,7 +286,10 @@ class _NotificationPageState extends State<NotificationPage> {
                     ),
                     if (_controller.isLoading)
                       const Expanded(
-                        child: Center(child: CircularProgressIndicator()),
+                        child: AppLoadingScreen(
+                          message: 'Loading notifications',
+                          compact: true,
+                        ),
                       )
                     else if (_controller.errorMessage != null)
                       Expanded(

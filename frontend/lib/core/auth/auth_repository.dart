@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:hellovietnam/features/loyalty/data/loyalty_award_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -28,8 +29,24 @@ class AuthRepository extends ChangeNotifier {
 
   AuthRepository._() {
     _user = _supabase.auth.currentUser;
+    if (_user != null) {
+      unawaited(
+        LoyaltyAwardService.instance.award(
+          actionType: 'daily_login',
+          description: 'Daily login',
+        ),
+      );
+    }
     _authSubscription = _supabase.auth.onAuthStateChange.listen((data) {
       _user = data.session?.user;
+      if (_user != null) {
+        unawaited(
+          LoyaltyAwardService.instance.award(
+            actionType: 'daily_login',
+            description: 'Daily login',
+          ),
+        );
+      }
       notifyListeners();
     });
   }

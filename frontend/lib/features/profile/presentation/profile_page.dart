@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/app/theme_controller.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -131,6 +132,10 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final AppStrings strings = context.l10n;
     final double topInset = MediaQuery.of(context).padding.top;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final _ProfileColors colors = _ProfileColors.forBrightness(
+      Theme.of(context).brightness,
+    );
 
     return PopScope(
       canPop: false,
@@ -140,11 +145,11 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF3F3F4),
+        backgroundColor: colors.background,
         body: Column(
           children: <Widget>[
             Container(
-              color: Colors.white,
+              color: colors.header,
               padding: EdgeInsets.fromLTRB(10, topInset + 8, 10, 10),
               child: SizedBox(
                 height: 48,
@@ -152,20 +157,20 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: <Widget>[
                     IconButton(
                       onPressed: () => context.go(AppRoutes.home),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.chevron_left,
                         size: 26,
-                        color: Color(0xFF1C1C1C),
+                        color: colors.primaryText,
                       ),
                     ),
                     Expanded(
                       child: Text(
                         strings.myProfile,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF121212),
+                          color: colors.primaryText,
                         ),
                       ),
                     ),
@@ -177,14 +182,14 @@ class _ProfilePageState extends State<ProfilePage> {
             Expanded(
               child: Container(
                 width: double.infinity,
-                color: const Color(0xFFF3F3F4),
+                color: colors.background,
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(14, 12, 14, 92),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Material(
-                        color: Colors.white,
+                        color: colors.card,
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           onTap: _openEditProfile,
@@ -218,26 +223,26 @@ class _ProfilePageState extends State<ProfilePage> {
                                     children: <Widget>[
                                       Text(
                                         _username,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700,
-                                          color: Color(0xFF1A1A1A),
+                                          color: colors.primaryText,
                                         ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         _email,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 14,
-                                          color: Color(0xFF9B9B9B),
+                                          color: colors.secondaryText,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                const Icon(
+                                Icon(
                                   Icons.chevron_right_rounded,
-                                  color: Color(0xFF1D1D1D),
+                                  color: colors.chevron,
                                 ),
                               ],
                             ),
@@ -287,6 +292,17 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(height: 14),
                       _SectionCard(
                         children: <Widget>[
+                          AnimatedBuilder(
+                            animation: ThemeController.instance,
+                            builder: (BuildContext context, Widget? child) {
+                              return _SettingSwitchRow(
+                                icon: Icons.dark_mode_outlined,
+                                title: context.l10n.ui('Dark theme'),
+                                value: ThemeController.instance.isDarkMode,
+                                onChanged: ThemeController.instance.setDarkMode,
+                              );
+                            },
+                          ),
                           _SettingSwitchRow(
                             icon: Icons.notifications_none_rounded,
                             title: strings.notification,
@@ -308,7 +324,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             icon: Icons.logout_rounded,
                             title: strings.logOut,
                             iconColor: const Color(0xFFFF3B30),
-                            textColor: const Color(0xFF1C1C1C),
+                            textColor: isDark
+                                ? colors.primaryText
+                                : const Color(0xFF1C1C1C),
                             showChevron: false,
                             onTap: _onLogout,
                           ),
@@ -380,9 +398,12 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _ProfileColors colors = _ProfileColors.forBrightness(
+      Theme.of(context).brightness,
+    );
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
@@ -412,6 +433,9 @@ class _SettingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _ProfileColors colors = _ProfileColors.forBrightness(
+      Theme.of(context).brightness,
+    );
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -419,7 +443,13 @@ class _SettingRow extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
         child: Row(
           children: <Widget>[
-            Icon(icon, size: 20, color: iconColor),
+            Icon(
+              icon,
+              size: 20,
+              color: iconColor == const Color(0xFFB3B3B3)
+                  ? colors.mutedIcon
+                  : iconColor,
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
@@ -427,12 +457,14 @@ class _SettingRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: textColor,
+                  color: textColor == const Color(0xFF1E1E1E)
+                      ? colors.primaryText
+                      : textColor,
                 ),
               ),
             ),
             if (showChevron)
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF1D1D1D)),
+              Icon(Icons.chevron_right_rounded, color: colors.chevron),
           ],
         ),
       ),
@@ -457,6 +489,9 @@ class _SettingSwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _ProfileColors colors = _ProfileColors.forBrightness(
+      Theme.of(context).brightness,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 10, 8),
       child: Row(
@@ -469,15 +504,15 @@ class _SettingSwitchRow extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Row(
                   children: <Widget>[
-                    Icon(icon, size: 20, color: const Color(0xFFB3B3B3)),
+                    Icon(icon, size: 20, color: colors.mutedIcon),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF1E1E1E),
+                          color: colors.primaryText,
                         ),
                       ),
                     ),
@@ -495,7 +530,7 @@ class _SettingSwitchRow extends StatelessWidget {
               activeThumbColor: const Color(0xFF58B7E8),
               activeTrackColor: const Color(0xFFBEE7FA),
               inactiveThumbColor: const Color(0xFFFFFFFF),
-              inactiveTrackColor: const Color(0xFFE3E3E3),
+              inactiveTrackColor: colors.inactiveSwitchTrack,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
@@ -515,4 +550,52 @@ class _AvatarPreset {
   final IconData icon;
   final Color color;
   final Color iconColor;
+}
+
+class _ProfileColors {
+  const _ProfileColors({
+    required this.background,
+    required this.header,
+    required this.card,
+    required this.primaryText,
+    required this.secondaryText,
+    required this.mutedIcon,
+    required this.chevron,
+    required this.inactiveSwitchTrack,
+  });
+
+  final Color background;
+  final Color header;
+  final Color card;
+  final Color primaryText;
+  final Color secondaryText;
+  final Color mutedIcon;
+  final Color chevron;
+  final Color inactiveSwitchTrack;
+
+  factory _ProfileColors.forBrightness(Brightness brightness) {
+    if (brightness == Brightness.dark) {
+      return const _ProfileColors(
+        background: Color(0xFF071A24),
+        header: Color(0xFF0B202B),
+        card: Color(0xFF102A36),
+        primaryText: Color(0xFFE6F7FF),
+        secondaryText: Color(0xFF93AEBB),
+        mutedIcon: Color(0xFF7E97A5),
+        chevron: Color(0xFFCDE8F4),
+        inactiveSwitchTrack: Color(0xFF2D4652),
+      );
+    }
+
+    return const _ProfileColors(
+      background: Color(0xFFF3F3F4),
+      header: Colors.white,
+      card: Colors.white,
+      primaryText: Color(0xFF121212),
+      secondaryText: Color(0xFF9B9B9B),
+      mutedIcon: Color(0xFFB3B3B3),
+      chevron: Color(0xFF1D1D1D),
+      inactiveSwitchTrack: Color(0xFFE3E3E3),
+    );
+  }
 }

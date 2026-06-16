@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
+import 'package:hellovietnam/features/loyalty/data/loyalty_award_service.dart';
 import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -117,47 +119,6 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
     ),
   ];
 
-  static const List<_VoucherOption> _availableVouchers = <_VoucherOption>[
-    _VoucherOption(
-      code: 'WELCOME2024',
-      title: 'Welcome Discount',
-      description: 'Get \$2 off on your first premium subscription',
-      discountLabel: '\$2 OFF',
-      expiryLabel: 'Active for 1 year',
-      type: 'fixed',
-      value: 200,
-    ),
-    _VoucherOption(
-      code: 'PREMIUM10',
-      title: '10% Off Premium',
-      description: 'Save 10% on any premium plan',
-      discountLabel: '10% OFF',
-      expiryLabel: 'Active for 1 year',
-      type: 'percent',
-      value: 10,
-      minAmountMinor: 1500,
-    ),
-    _VoucherOption(
-      code: 'HOLIDAY15',
-      title: 'Holiday Special',
-      description: '15% off for holiday season',
-      discountLabel: '15% OFF',
-      expiryLabel: 'Active for 1 year',
-      type: 'percent',
-      value: 15,
-    ),
-    _VoucherOption(
-      code: 'PREMIUM200',
-      title: 'Premium Max Saver',
-      description: 'Up to \$20 off premium plans from \$19.99',
-      discountLabel: 'UP TO \$20 OFF',
-      expiryLabel: 'Active for 1 year',
-      type: 'fixed',
-      value: 2000,
-      minAmountMinor: 1999,
-    ),
-  ];
-
   final SubscriptionRepository _repository = SubscriptionRepository();
   final TextEditingController _voucherController = TextEditingController();
 
@@ -197,6 +158,7 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
       final SubscriptionPlanInfo plan = await _planFuture;
       final SubscriptionPurchaseResult result = await _repository
           .confirmStripeCheckout(sessionId: sessionId);
+      await _awardSubscriptionPurchase(result);
       if (!mounted) return;
       final _PaymentMethod method = _methods.firstWhere(
         (_PaymentMethod item) => item.id == 'visa',
@@ -253,7 +215,6 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
         .loadLoyaltySubscriptionVouchers(plan: plan);
     final List<_VoucherOption> vouchers = <_VoucherOption>[
       ...loyaltyVouchers.map(_VoucherOption.fromRepository),
-      ..._availableVouchers,
     ];
     if (!mounted) return;
 
@@ -277,6 +238,22 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
       _voucherPreview = selected;
       _voucherController.text = selected.code;
     });
+  }
+
+  Future<void> _awardSubscriptionPurchase(
+    SubscriptionPurchaseResult result,
+  ) async {
+    await LoyaltyAwardService.instance.award(
+      actionType: 'subscription_purchase',
+      referenceTable: 'payment',
+      referenceId: result.paymentId,
+      description: 'Purchased premium subscription',
+      metadata: <String, dynamic>{
+        'subscription_id': result.subscriptionId,
+        'final_amount_minor': result.finalAmountMinor,
+        if (result.voucherCode != null) 'voucher_code': result.voucherCode,
+      },
+    );
   }
 
   void _continueToConfirmation(SubscriptionPlanInfo plan) {
@@ -352,8 +329,9 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
           ),
           Expanded(
             child: _isConfirmingCheckout
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF11BED4)),
+                ? const AppLoadingScreen(
+                    message: 'Confirming payment',
+                    compact: true,
                   )
                 : FutureBuilder<SubscriptionPlanInfo>(
                     future: _planFuture,
@@ -1448,6 +1426,7 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
 
       final SubscriptionPurchaseResult? result = checkout.purchaseResult;
       if (checkout.isCompleted && result != null) {
+        await _awardSubscriptionPurchase(result);
         _showSuccess(result);
         return;
       }
@@ -1516,6 +1495,22 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
           formatMoney: widget.formatMoney,
         ),
       ),
+    );
+  }
+
+  Future<void> _awardSubscriptionPurchase(
+    SubscriptionPurchaseResult result,
+  ) async {
+    await LoyaltyAwardService.instance.award(
+      actionType: 'subscription_purchase',
+      referenceTable: 'payment',
+      referenceId: result.paymentId,
+      description: 'Purchased premium subscription',
+      metadata: <String, dynamic>{
+        'subscription_id': result.subscriptionId,
+        'final_amount_minor': result.finalAmountMinor,
+        if (result.voucherCode != null) 'voucher_code': result.voucherCode,
+      },
     );
   }
 

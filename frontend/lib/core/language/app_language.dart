@@ -348,6 +348,7 @@ class AppStrings {
     'Following': 'Đang theo dõi',
     'Type your answer': 'Nhập câu trả lời',
     'All notifications were cleared': 'Đã xóa tất cả thông báo',
+    'Dark theme': 'Giao diện tối',
     'Popular Apps': 'Ứng dụng',
     'App not found': 'Không tìm thấy ứng dụng',
     'Payment confirmed': 'Đã xác nhận thanh toán',

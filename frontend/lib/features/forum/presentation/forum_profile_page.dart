@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
@@ -67,7 +68,10 @@ class ForumProfilePage extends StatelessWidget {
                 : store.profileById(targetAuthorId);
             if (profile == null) {
               if (store.isLoading) {
-                return const Center(child: CircularProgressIndicator());
+                return const AppLoadingScreen(
+                  message: 'Loading profile',
+                  compact: true,
+                );
               }
 
               return Center(

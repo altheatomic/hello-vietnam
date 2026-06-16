@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hellovietnam/features/notification/data/notification_repository.dart';
+import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/loyalty_award_service.dart';
 import '../data/loyalty_models.dart';
 import '../data/loyalty_repository.dart';
 
@@ -70,28 +72,55 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
     }
   }
 
-  Future<void> _earnPoints(String actionType) async {
+  void _openEarnDestination(LoyaltyRule rule) {
+    final String? route = _routeForAction(rule.actionType);
+    if (route == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Daily login is awarded automatically.')),
+      );
+      return;
+    }
+
+    context.push(route);
+  }
+
+  String? _routeForAction(String actionType) {
+    switch (actionType) {
+      case 'daily_login':
+        return null;
+      case 'wishlist_add':
+        return AppRoutes.wishlist;
+      case 'forum_post':
+        return AppRoutes.forumCreate;
+      case 'review_submit':
+        return AppRoutes.recommend;
+      case 'check_in':
+        return AppRoutes.explore;
+      case 'subscription_purchase':
+        return AppRoutes.upgradeAccount;
+      default:
+        return AppRoutes.home;
+    }
+  }
+
+  Future<void> _earnTestPoints() async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      final LoyaltyTransaction transaction = await _repository.earnPoints(
-        actionType: actionType,
-        description: 'Manual loyalty test action',
-      );
-      if (_loyaltyNotificationsEnabled && transaction.pointChange > 0) {
-        MockNotificationRepository.instance.addLoyaltyPointsNotification(
-          points: transaction.pointChange,
-          actionLabel: transaction.description ?? 'Loyalty points',
-        );
-      }
+      final LoyaltyTransaction? transaction = await LoyaltyAwardService.instance
+          .award(
+            actionType: 'test_bonus',
+            description: 'Test loyalty bonus (+500)',
+            metadata: <String, dynamic>{'temporary': true},
+          );
       if (!mounted) return;
       _refresh();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            transaction.status == 'pending'
-                ? 'Loyalty request sent for review.'
-                : 'Loyalty updated successfully.',
+            transaction == null
+                ? 'Unable to add test loyalty points.'
+                : 'Added ${transaction.pointChange} test loyalty points.',
           ),
         ),
       );
@@ -122,7 +151,10 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
                     _Header(onBack: () => context.pop(), onRefresh: _refresh),
                     Expanded(
                       child: snapshot.connectionState == ConnectionState.waiting
-                          ? const Center(child: CircularProgressIndicator())
+                          ? const AppLoadingScreen(
+                              message: 'Loading loyalty rewards',
+                              compact: true,
+                            )
                           : snapshot.hasError
                           ? _ErrorState(
                               error: snapshot.error.toString(),
@@ -136,7 +168,8 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
                               onToggleLoyaltyNotifications:
                                   _setNotificationPreference,
                               onRefresh: () async => _refresh(),
-                              onEarn: _earnPoints,
+                              onEarn: _openEarnDestination,
+                              onEarnTestPoints: _earnTestPoints,
                               onRedeemTokens: (int amount) => _runAction(
                                 () => _repository
                                     .redeemPointsToTokens(amount)
@@ -204,6 +237,7 @@ class _Content extends StatelessWidget {
     required this.onToggleLoyaltyNotifications,
     required this.onRefresh,
     required this.onEarn,
+    required this.onEarnTestPoints,
     required this.onRedeemTokens,
     required this.onRedeemVoucher,
   });
@@ -213,7 +247,8 @@ class _Content extends StatelessWidget {
   final bool loyaltyNotificationsEnabled;
   final ValueChanged<bool> onToggleLoyaltyNotifications;
   final Future<void> Function() onRefresh;
-  final ValueChanged<String> onEarn;
+  final ValueChanged<LoyaltyRule> onEarn;
+  final VoidCallback onEarnTestPoints;
   final ValueChanged<int> onRedeemTokens;
   final ValueChanged<String> onRedeemVoucher;
 
@@ -242,6 +277,8 @@ class _Content extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           _EarnPointsCard(rules: data.rules, busy: busy, onEarn: onEarn),
+          const SizedBox(height: 14),
+          _TestLoyaltyCard(busy: busy, onAdd: onEarnTestPoints),
           const SizedBox(height: 14),
           _ExchangeCard(
             account: account,
@@ -439,14 +476,15 @@ class _EarnPointsCard extends StatelessWidget {
 
   final List<LoyaltyRule> rules;
   final bool busy;
-  final ValueChanged<String> onEarn;
+  final ValueChanged<LoyaltyRule> onEarn;
 
   @override
   Widget build(BuildContext context) {
     final List<LoyaltyRule> earnRules = rules
         .where(
           (LoyaltyRule rule) =>
-              rule.pointAmount > 0 || rule.tierPointAmount > 0,
+              rule.actionType != 'test_bonus' &&
+              (rule.pointAmount > 0 || rule.tierPointAmount > 0),
         )
         .take(6)
         .toList();
@@ -460,22 +498,52 @@ class _EarnPointsCard extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
-          ...earnRules.map(
-            (LoyaltyRule rule) => _ActionRow(
-              icon: Icons.add_circle_outline_rounded,
+          ...earnRules.map((LoyaltyRule rule) {
+            final bool isDailyLogin = rule.actionType == 'daily_login';
+            return _ActionRow(
+              icon: isDailyLogin
+                  ? Icons.login_rounded
+                  : Icons.arrow_forward_rounded,
               title: rule.name,
               subtitle:
                   '+${rule.pointAmount} points, +${rule.tierPointAmount} tier points'
-                  '${rule.requiresApproval ? ' . Needs review' : ''}',
-              buttonLabel: 'Earn',
-              enabled: !busy,
-              onTap: () => onEarn(rule.actionType),
-            ),
-          ),
-          const SizedBox(height: 6),
+                  '${rule.requiresApproval ? ' . Needs review' : ''}'
+                  '${isDailyLogin ? ' . Automatic' : ''}',
+              buttonLabel: isDailyLogin ? 'Auto' : 'Go',
+              enabled: !busy && !isDailyLogin,
+              onTap: () => onEarn(rule),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _TestLoyaltyCard extends StatelessWidget {
+  const _TestLoyaltyCard({required this.busy, required this.onAdd});
+
+  final bool busy;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
           const Text(
-            'Note: these buttons are useful for testing. Production flows should call earnPoints from login, wishlist, forum, review, check-in, and subscription success events.',
-            style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+            'Add loyalty for testing',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          _ActionRow(
+            icon: Icons.bug_report_outlined,
+            title: 'Add 500 test points',
+            subtitle: '+500 points, +500 tier points. Temporary test action.',
+            buttonLabel: 'Add',
+            enabled: !busy,
+            onTap: onAdd,
           ),
         ],
       ),

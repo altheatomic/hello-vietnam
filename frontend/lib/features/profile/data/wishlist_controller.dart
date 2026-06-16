@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:hellovietnam/features/loyalty/data/loyalty_award_service.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 
 class WishlistController extends ChangeNotifier {
@@ -56,6 +59,15 @@ class WishlistController extends ChangeNotifier {
       );
       _setLocalFavorite(key, isFavorite);
       await refresh();
+      if (isFavorite && !previous) {
+        unawaited(
+          _awardWishlistPoints(
+            type: type,
+            itemId: rawItemId,
+            fallbackName: fallbackName,
+          ),
+        );
+      }
       return isFavorite;
     } catch (_) {
       _setLocalFavorite(key, previous);
@@ -83,6 +95,9 @@ class WishlistController extends ChangeNotifier {
         isFavorite: isFavorite,
       );
       await refresh();
+      if (isFavorite && !previous) {
+        unawaited(_awardWishlistPoints(type: type, itemId: itemId));
+      }
     } catch (_) {
       _setLocalFavorite(key, previous);
       rethrow;
@@ -124,5 +139,23 @@ class WishlistController extends ChangeNotifier {
 
   String _key(FavoriteType type, String rawItemId) {
     return '${type.dbValue}:${rawItemId.trim()}';
+  }
+
+  Future<void> _awardWishlistPoints({
+    required FavoriteType type,
+    required String itemId,
+    String? fallbackName,
+  }) async {
+    await LoyaltyAwardService.instance.award(
+      actionType: 'wishlist_add',
+      referenceTable: 'wishlist',
+      description: 'Added item to wishlist',
+      metadata: <String, dynamic>{
+        'favorite_type': type.dbValue,
+        'item_id': itemId.trim(),
+        if (fallbackName?.trim().isNotEmpty == true)
+          'name': fallbackName!.trim(),
+      },
+    );
   }
 }

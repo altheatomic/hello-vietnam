@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import 'package:hellovietnam/features/report/presentation/report_issue_popup.dart';
 
@@ -590,10 +591,9 @@ class _WishlistPageState extends State<WishlistPage> {
             const SizedBox(height: 14),
             Expanded(
               child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF2EB9F8),
-                      ),
+                  ? const AppLoadingScreen(
+                      message: 'Loading wishlist',
+                      compact: true,
                     )
                   : _loadError != null
                   ? _WishlistStatusView(

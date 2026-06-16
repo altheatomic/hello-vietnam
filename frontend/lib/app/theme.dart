@@ -96,3 +96,93 @@ ThemeData buildTheme() {
     ),
   );
 }
+
+ThemeData buildDarkTheme() {
+  const Color darkBackground = Color(0xFF071A24);
+  const Color darkSurface = Color(0xFF102A36);
+  const Color darkSurfaceHigh = Color(0xFF173746);
+  const Color darkText = Color(0xFFE6F7FF);
+  const Color darkTextSecondary = Color(0xFF9BB7C5);
+
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      brightness: Brightness.dark,
+      surface: darkSurface,
+    ),
+    scaffoldBackgroundColor: darkBackground,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      titleTextStyle: TextStyle(
+        fontSize: 26,
+        fontWeight: FontWeight.w800,
+        color: AppColors.primaryLight,
+      ),
+      iconTheme: IconThemeData(color: darkText),
+    ),
+    cardTheme: const CardThemeData(
+      color: darkSurface,
+      surfaceTintColor: Colors.transparent,
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.primaryLight;
+        }
+        return Colors.white;
+      }),
+      trackColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.primary.withValues(alpha: 0.5);
+        }
+        return darkSurfaceHigh;
+      }),
+    ),
+    textTheme: const TextTheme(
+      headlineLarge: TextStyle(
+        fontSize: 26,
+        fontWeight: FontWeight.w800,
+        color: darkText,
+      ),
+      headlineMedium: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        color: darkText,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: darkText,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: darkText,
+      ),
+      bodyLarge: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        color: darkText,
+      ),
+      bodyMedium: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: darkTextSecondary,
+      ),
+      bodySmall: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        color: darkTextSecondary,
+      ),
+      labelMedium: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: darkTextSecondary,
+      ),
+    ),
+  );
+}
