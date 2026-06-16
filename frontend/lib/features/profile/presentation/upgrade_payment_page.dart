@@ -1,10 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
-import 'package:web/web.dart' as web;
+import 'package:url_launcher/url_launcher.dart';
 
 class _PaymentMethod {
   const _PaymentMethod({
@@ -1441,7 +1442,7 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
         if (checkoutUrl == null || checkoutUrl.isEmpty) {
           throw Exception('Checkout URL was not returned.');
         }
-        web.window.location.href = checkoutUrl;
+        await _openCheckoutUrl(checkoutUrl);
         return;
       }
 
@@ -1467,12 +1468,35 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
   }
 
   String _checkoutReturnUrl(String planCode, {required bool success}) {
-    final String origin = Uri.base.origin;
     final String encodedPlan = Uri.encodeComponent(planCode);
+    if (!kIsWeb) {
+      if (success) {
+        return 'com.example.hellovietnam://upgrade-payment?plan=$encodedPlan&stripe_session_id={CHECKOUT_SESSION_ID}';
+      }
+      return 'com.example.hellovietnam://upgrade-payment?plan=$encodedPlan&stripe_cancelled=1';
+    }
+
+    final String origin = Uri.base.origin;
     if (success) {
       return '$origin/#/upgrade-payment?plan=$encodedPlan&stripe_session_id={CHECKOUT_SESSION_ID}';
     }
     return '$origin/#/upgrade-payment?plan=$encodedPlan&stripe_cancelled=1';
+  }
+
+  Future<void> _openCheckoutUrl(String checkoutUrl) async {
+    final Uri? uri = Uri.tryParse(checkoutUrl);
+    if (uri == null) {
+      throw Exception('Checkout URL is invalid.');
+    }
+
+    final bool launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+      webOnlyWindowName: kIsWeb ? '_self' : null,
+    );
+    if (!launched) {
+      throw Exception('Could not open checkout page.');
+    }
   }
 
   void _showSuccess(SubscriptionPurchaseResult result) {
