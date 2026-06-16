@@ -1471,9 +1471,9 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
     final String encodedPlan = Uri.encodeComponent(planCode);
     if (!kIsWeb) {
       if (success) {
-        return 'com.example.hellovietnam://upgrade-payment?plan=$encodedPlan&stripe_session_id={CHECKOUT_SESSION_ID}';
+        return 'intent://upgrade-payment?plan=$encodedPlan&stripe_session_id={CHECKOUT_SESSION_ID}#Intent;scheme=com.example.hellovietnam;package=com.example.hellovietnam;end';
       }
-      return 'com.example.hellovietnam://upgrade-payment?plan=$encodedPlan&stripe_cancelled=1';
+      return 'intent://upgrade-payment?plan=$encodedPlan&stripe_cancelled=1#Intent;scheme=com.example.hellovietnam;package=com.example.hellovietnam;end';
     }
 
     final String origin = Uri.base.origin;

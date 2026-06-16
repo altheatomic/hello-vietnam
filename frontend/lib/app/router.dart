@@ -183,11 +183,27 @@ GoRouter buildRouter() {
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: true,
     initialLocation: AppRoutes.getStarted,
+    onException: (BuildContext context, GoRouterState state, GoRouter router) {
+      final String? deepLinkLocation = appRouteLocationFromDeepLink(state.uri);
+      if (deepLinkLocation != null) {
+        router.go(deepLinkLocation);
+        return;
+      }
+      router.go(AppRoutes.home);
+    },
     refreshListenable: Listenable.merge(<Listenable>[
       AuthRepository.instance,
       TravelPreferencesRepository.instance,
+      DeepLinkState.instance,
     ]),
     redirect: (context, state) {
+      final String? directDeepLinkLocation = appRouteLocationFromDeepLink(
+        state.uri,
+      );
+      if (directDeepLinkLocation != null) {
+        return directDeepLinkLocation;
+      }
+
       final String location = state.matchedLocation;
       final bool loggedIn = AuthRepository.instance.isLoggedIn;
       final TravelPreferencesRepository preferencesRepository =
@@ -202,6 +218,11 @@ GoRouter buildRouter() {
       // Check if we should navigate to forgot password page (from deep link)
       if (shouldNavigateToForgotPassword()) {
         return AppRoutes.forgotPassword;
+      }
+
+      final String? upgradePaymentLocation = consumeUpgradePaymentDeepLink();
+      if (upgradePaymentLocation != null) {
+        return upgradePaymentLocation;
       }
 
       if (isOnboardingRoute && !loggedIn) {
