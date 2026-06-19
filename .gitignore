@@ -53,6 +53,7 @@ windows/
 macos/
 linux/
 
+.claude/
 claude.md
 tree.txt
 plan.md 

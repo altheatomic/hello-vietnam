@@ -7,13 +7,14 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 
 class TripDayDetailPage extends StatelessWidget {
-  const TripDayDetailPage({super.key, required this.dayIndex});
+  const TripDayDetailPage({super.key, required this.dayIndex, this.dayData});
 
   final int dayIndex;
+  final TripPlannerDayData? dayData;
 
   @override
   Widget build(BuildContext context) {
-    final TripPlannerDayData day = TripPlannerMockData.dayAt(dayIndex);
+    final TripPlannerDayData day = dayData ?? TripPlannerMockData.dayAt(dayIndex);
 
     return Scaffold(
       body: Container(

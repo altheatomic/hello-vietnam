@@ -7,6 +7,9 @@ import '../features/item_detail/domain/item_detail_models.dart';
 
 import '../features/home/presentation/home_page.dart';
 import '../features/planner/presentation/business_location_page.dart';
+import '../features/planner/data/models/trip_plan_response.dart';
+import '../features/planner/data/trip_wizard_data.dart';
+import '../features/planner/presentation/trip_planner_mock_data.dart';
 import '../features/planner/presentation/trip_budget_page.dart';
 import '../features/planner/presentation/trip_day_detail_page.dart';
 import '../features/planner/presentation/trip_duration_page.dart';
@@ -575,15 +578,21 @@ GoRouter buildRouter() {
                   ),
                   GoRoute(
                     path: 'duration',
-                    builder: (context, state) => const TripDurationPage(),
+                    builder: (context, state) => TripDurationPage(
+                      wizard: state.extra as TripWizardData?,
+                    ),
                   ),
                   GoRoute(
                     path: 'interest',
-                    builder: (context, state) => const TripInterestPage(),
+                    builder: (context, state) => TripInterestPage(
+                      wizard: state.extra as TripWizardData?,
+                    ),
                   ),
                   GoRoute(
                     path: 'budget',
-                    builder: (context, state) => const TripBudgetPage(),
+                    builder: (context, state) => TripBudgetPage(
+                      wizard: state.extra as TripWizardData?,
+                    ),
                   ),
                   GoRoute(
                     path: 'saved',
@@ -591,7 +600,9 @@ GoRouter buildRouter() {
                   ),
                   GoRoute(
                     path: 'result',
-                    builder: (context, state) => const TripResultPage(),
+                    builder: (context, state) => TripResultPage(
+                      plan: state.extra as TripPlanResponse?,
+                    ),
                     routes: [
                       GoRoute(
                         path: 'day/:dayIndex',
@@ -601,6 +612,7 @@ GoRouter buildRouter() {
                                 state.pathParameters['dayIndex'] ?? '',
                               ) ??
                               0,
+                          dayData: state.extra as TripPlannerDayData?,
                         ),
                         routes: [
                           GoRoute(

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
 
 class TripInterestPage extends StatefulWidget {
-  const TripInterestPage({super.key});
+  const TripInterestPage({super.key, this.wizard});
+
+  final TripWizardData? wizard;
 
   @override
   State<TripInterestPage> createState() => _TripInterestPageState();
@@ -51,7 +54,7 @@ class _TripInterestPageState extends State<TripInterestPage> {
   }
 
   void _showNextPlaceholder() {
-    context.push(AppRoutes.tripPlannerBudget);
+    context.push(AppRoutes.tripPlannerBudget, extra: widget.wizard);
   }
 
   @override
