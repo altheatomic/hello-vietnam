@@ -47,14 +47,16 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /android/gradle.properties
+android/local.properties
+android/key.properties
 
 # Not used platforms
 windows/
 macos/
 linux/
 
-.claude/
 claude.md
+.claude/
 tree.txt
 plan.md 
 spec.md
@@ -62,3 +64,16 @@ spec.md
 backend/node_modules/
 backend/supabase/.temp/
 backend/crawldata/.env
+
+# ===== Secrets =====
+.env
+*.env
+!.env.example
+
+# ===== Python / cf_service =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+venv/
+.venv/
