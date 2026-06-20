@@ -31,7 +31,7 @@ def fetch_places_required_filter(
         supabase
         .table("place")
         .select(select_fields)
-        .eq("id_province", province_id)
+        .eq("old_province", province_id)
         .eq("status", "active")
         .eq("place_subcategory.is_itinerary_eligible", True)
         .filter("latitude", "not.is", "null")

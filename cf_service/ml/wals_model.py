@@ -41,13 +41,14 @@ def train_wals(A: np.ndarray):
 
 def compute_cf_scores(U, V, user_ids, place_ids, A, top_k=500) -> list:
     results = []
+    effective_k = min(top_k, len(place_ids))
     for ui, user_id in enumerate(user_ids):
         raw_scores = sigmoid(V @ U[ui])
 
         interacted = np.where(A[ui] > 0)[0]
         raw_scores[interacted] = -1.0
 
-        top_indices = np.argpartition(raw_scores, -top_k)[-top_k:]
+        top_indices = np.argpartition(raw_scores, -effective_k)[-effective_k:]
         top_indices = top_indices[np.argsort(raw_scores[top_indices])[::-1]]
 
         for pi in top_indices:
