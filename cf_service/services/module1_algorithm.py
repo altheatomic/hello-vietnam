@@ -525,6 +525,7 @@ def rank_places_by_tag_match(
 def build_trip_interest_profile(
     trip_interest_choice_rows: list[dict],
     trip_interest_option_tag_rows: list[dict],
+    id_tag_map: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     selected_option_map: dict[str, dict] = {}
     for row in trip_interest_choice_rows:
@@ -562,7 +563,7 @@ def build_trip_interest_profile(
         option_info = selected_option_map.get(option_id)
         if not option_info:
             continue
-        tag_code = extract_tag_code(row)
+        tag_code = extract_tag_code(row, id_tag_map)
         if not tag_code:
             continue
         raw_weight = float(row.get("raw_weight") or 0.0)

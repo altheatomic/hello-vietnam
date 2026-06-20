@@ -30,6 +30,9 @@ class TripRepository {
       if (request.startDate != null) 'start_date': request.startDate,
       'sa_runs':     request.saRuns,
       'save_plan':   request.savePlan,
+      if (request.interestOptionIds != null &&
+          request.interestOptionIds!.isNotEmpty)
+        'interest_option_ids': request.interestOptionIds,
     };
     final data = await _post('/api/trips/plan', body);
     return TripPlanResponse.fromJson(data);

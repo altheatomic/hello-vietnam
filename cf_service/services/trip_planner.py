@@ -9,6 +9,15 @@ TripPlannerService – orchestrates the full planning pipeline:
   [Module 2]    build_module2_result (K-Means + Greedy Repair)
   [Module 3]    optimize_day_route + estimate_travel_minutes + _assign_slots
   [Persist]     save_plan
+
+Trip-level interest (optional):
+  If interest_option_ids is supplied, trip_planner fetches the matching
+  trip_interest_option rows and their tag/subcategory mappings, blends them
+  with the user's onboarding-level interest state via build_effective_interest_state(),
+  and passes trip_selected_options + trip_option_subcategory_rows to
+  apply_diversity_selection() for subcategory-slot boosting.
+  If interest_option_ids is absent or empty, the pipeline is identical to
+  the previous behaviour (onboarding-level only).
 """
 
 import datetime
@@ -17,6 +26,8 @@ from db.place_repository import fetch_places_required_filter
 from db.queries_plan import save_plan
 from services.filters import filter_places_with_fallback
 from services.module1_algorithm import (
+    build_effective_interest_state,
+    build_trip_interest_profile,
     build_user_interest_state_from_rows,
     rank_places_by_tag_match,
 )
@@ -28,6 +39,9 @@ from services.module1_repository import (
     fetch_already_rated_places,
     fetch_cf_scores_for_user,
     fetch_place_tags_for_places,
+    fetch_trip_interest_option_subcategories,
+    fetch_trip_interest_option_tags,
+    fetch_trip_interest_options_by_ids,
     fetch_user_interest_tags,
     fetch_user_onboarding_choices,
     fetch_user_travel_profile,
@@ -77,12 +91,13 @@ class TripPlannerService:
 
     async def plan(
         self,
-        id_user:     str,
-        id_province: str,
-        n_days:      int,
-        start_at:    datetime.date,
-        sa_runs:     int  = 5,
-        save:        bool = True,
+        id_user:             str,
+        id_province:         str,
+        n_days:              int,
+        start_at:            datetime.date,
+        sa_runs:             int        = 5,
+        save:                bool       = True,
+        interest_option_ids: list[str] | None = None,
     ) -> dict:
         supabase = self.supabase
         end_date = start_at + datetime.timedelta(days=n_days - 1)
@@ -114,8 +129,51 @@ class TripPlannerService:
             interest_tag_rows, tag_map, id_tag_map
         )
 
+        # ── [Trip-level interest blend] ───────────────────────────────────────
+        # Default: onboarding-level only (identical behaviour to before)
+        weight_field = "final_weight"
+        trip_selected_options = None
+        trip_option_subcategory_rows = None
+
+        if interest_option_ids:
+            options = fetch_trip_interest_options_by_ids(supabase, interest_option_ids)
+            active_options = [o for o in options if o.get("is_active")]
+            active_option_ids = [o["id_trip_interest_option"] for o in active_options]
+
+            if active_options:
+                # Build synthetic choice rows (no trip_plan FK needed)
+                trip_interest_choice_rows = [
+                    {
+                        "id_trip_interest_option": o["id_trip_interest_option"],
+                        "selection_order":         i + 1,
+                        "source":                  "user_selected",
+                        "trip_interest_option":    o,
+                    }
+                    for i, o in enumerate(active_options)
+                ]
+
+                option_tag_rows         = fetch_trip_interest_option_tags(supabase, active_option_ids)
+                option_subcategory_rows = fetch_trip_interest_option_subcategories(supabase, active_option_ids)
+
+                trip_profile = build_trip_interest_profile(
+                    trip_interest_choice_rows, option_tag_rows,
+                    id_tag_map=id_tag_map,
+                )
+                effective_result = build_effective_interest_state(
+                    user_interest_state,
+                    trip_profile["normalized_tag_weights"],
+                    trip_profile["trip_tag_info_map"],
+                )
+                user_interest_state      = effective_result["effective_interest_state"]
+                weight_field             = "effective_weight"
+                trip_selected_options    = trip_interest_choice_rows
+                trip_option_subcategory_rows = option_subcategory_rows
+
+        # ── [Rank by tag match] ───────────────────────────────────────────────
         ranked = rank_places_by_tag_match(
-            places_with_tags, user_interest_state, id_tag_map=id_tag_map
+            places_with_tags, user_interest_state,
+            weight_field=weight_field,
+            id_tag_map=id_tag_map,
         )
         ranked = [p for p in ranked if str(p["id_place"]) not in already_rated]
 
@@ -138,7 +196,11 @@ class TripPlannerService:
             c["option_code"] for c in onboarding_choices if c.get("option_code")
         ]
 
-        diversity_result = apply_diversity_selection(ranked, n_days, user_selected_interests)
+        diversity_result = apply_diversity_selection(
+            ranked, n_days, user_selected_interests,
+            trip_selected_options=trip_selected_options,
+            trip_option_subcategory_rows=trip_option_subcategory_rows,
+        )
         top_places = diversity_result["diversified_top_k"]
 
         # ── [Module 2 – Greedy Repair] ────────────────────────────────────────
@@ -179,10 +241,12 @@ class TripPlannerService:
             "id_plan": id_plan,
             "days": days,
             "debug": {
-                "filter_report": filter_report,
-                "cf_coverage": round(len(cf_scores) / max(len(filtered_places), 1), 4),
-                "alpha": alpha,
-                "m2_summary": m2_result.get("summary"),
-                "diversity_summary": diversity_result.get("summary", {}).get("final_selected_count"),
+                "filter_report":      filter_report,
+                "cf_coverage":        round(len(cf_scores) / max(len(filtered_places), 1), 4),
+                "alpha":              alpha,
+                "weight_field":       weight_field,
+                "trip_interest_used": bool(trip_selected_options),
+                "m2_summary":         m2_result.get("summary"),
+                "diversity_summary":  diversity_result.get("summary", {}).get("final_selected_count"),
             },
         }

@@ -10,7 +10,7 @@ Dependency injection:
 import datetime
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
 
 from db.connection import get_db
 from db.supabase_client import get_supabase
@@ -21,12 +21,13 @@ router = APIRouter()
 # ── Request models ────────────────────────────────────────────────────────────
 
 class TripPlanRequest(BaseModel):
-    id_user:     str
-    id_province: str
-    n_days:      int
-    start_date:  Optional[str] = None   # 'YYYY-MM-DD'; defaults to today
-    sa_runs:     int  = 5
-    save_plan:   bool = True
+    id_user:             str
+    id_province:         str
+    n_days:              int
+    start_date:          Optional[str]       = None   # 'YYYY-MM-DD'; defaults to today
+    sa_runs:             int                 = 5
+    save_plan:           bool                = True
+    interest_option_ids: Optional[List[str]] = None   # trip-level interest (UUIDs)
 
 
 # ── Trip planning ─────────────────────────────────────────────────────────────
@@ -49,6 +50,7 @@ async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
         start_at=start_at,
         sa_runs=req.sa_runs,
         save=req.save_plan,
+        interest_option_ids=req.interest_option_ids,
     )
     return result
 

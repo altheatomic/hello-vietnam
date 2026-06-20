@@ -200,6 +200,39 @@ def fetch_already_rated_places(supabase: Any, user_id: str) -> set[str]:
     return {str(r["id_item"]) for r in (response.data or [])}
 
 
+# ── Trip interest options (request-scoped, no trip_plan FK required) ─────────
+
+def fetch_trip_interest_options_by_ids(
+    supabase: Any,
+    option_ids: list[str],
+    chunk_size: int = 100,
+) -> list[dict]:
+    """Fetch trip_interest_option rows directly by ID — used for
+    request-scoped flow, bypasses trip_interest_choice table."""
+    if not option_ids:
+        return []
+    rows: list[dict] = []
+    for start_index in range(0, len(option_ids), chunk_size):
+        chunk = option_ids[start_index:start_index + chunk_size]
+        response = (
+            supabase
+            .table("trip_interest_option")
+            .select(
+                """
+                id_trip_interest_option,
+                option_code,
+                display_name,
+                display_order,
+                is_active
+                """
+            )
+            .in_("option_code", chunk)
+            .execute()
+        )
+        rows.extend(response.data or [])
+    return rows
+
+
 # ── Write pipeline (Phase 2) ──────────────────────────────────────────────────
 
 def replace_user_interest_tags(supabase: Any, user_id: str, rows: list[dict]) -> None:

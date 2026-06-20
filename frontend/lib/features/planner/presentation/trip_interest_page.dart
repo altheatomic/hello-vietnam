@@ -74,6 +74,7 @@ class _TripInterestPageState extends State<TripInterestPage> {
           idProvince: idProvince,
           nDays: nDays,
           startDate: wizard?.startDate,
+          interestOptionIds: _selectedIds.toList(),
         ),
       );
       if (!mounted) return;
