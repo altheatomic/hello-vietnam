@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/admin/presentation/admin_shell.dart';
+import '../features/admin/domain/admin_content.dart';
 import '../features/admin/presentation/pages/admin_canned_replies_page.dart';
+import '../features/admin/presentation/pages/admin_content_page.dart';
 import '../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../features/admin/presentation/pages/admin_food_page.dart';
 import '../features/admin/presentation/pages/admin_popular_app_page.dart';
@@ -15,6 +17,11 @@ class AdminWebRoutes {
   static const cannedReplies = '/admin/canned-replies';
   static const reports = '/admin/reports';
   static const food = '/admin/food';
+  static const provinces = '/admin/provinces';
+  static const places = '/admin/places';
+  static const activities = '/admin/activities';
+  static const cultures = '/admin/cultures';
+  static const localProducts = '/admin/local-products';
   static const popularApps = '/admin/popular-apps';
 }
 
@@ -55,6 +62,32 @@ GoRouter buildAdminWebRouter() {
           GoRoute(
             path: AdminWebRoutes.food,
             builder: (c, s) => const AdminFoodPage(),
+          ),
+          GoRoute(
+            path: AdminWebRoutes.provinces,
+            builder: (c, s) =>
+                const AdminContentPage(config: AdminContentConfigs.province),
+          ),
+          GoRoute(
+            path: AdminWebRoutes.places,
+            builder: (c, s) =>
+                const AdminContentPage(config: AdminContentConfigs.place),
+          ),
+          GoRoute(
+            path: AdminWebRoutes.activities,
+            builder: (c, s) =>
+                const AdminContentPage(config: AdminContentConfigs.activity),
+          ),
+          GoRoute(
+            path: AdminWebRoutes.cultures,
+            builder: (c, s) =>
+                const AdminContentPage(config: AdminContentConfigs.culture),
+          ),
+          GoRoute(
+            path: AdminWebRoutes.localProducts,
+            builder: (c, s) => const AdminContentPage(
+              config: AdminContentConfigs.localProduct,
+            ),
           ),
           GoRoute(
             path: AdminWebRoutes.popularApps,

@@ -2,6 +2,8 @@ import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_repository.dart';
 import '../features/admin/presentation/admin_shell.dart';
+import '../features/admin/domain/admin_content.dart';
+import '../features/admin/presentation/pages/admin_content_page.dart';
 import '../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../features/admin/presentation/pages/admin_user_page.dart';
 //import '../features/admin/presentation/pages/admin_canned_replies_page.dart';
@@ -19,6 +21,11 @@ class AdminRoutes {
   static const reports = '/admin/reports';
   static const feedback = '/admin/feedback';
   static const food = '/admin/food';
+  static const provinces = '/admin/provinces';
+  static const places = '/admin/places';
+  static const activities = '/admin/activities';
+  static const cultures = '/admin/cultures';
+  static const localProducts = '/admin/local-products';
   static const popularApps = '/admin/popular-apps';
 }
 
@@ -65,6 +72,32 @@ GoRouter buildAdminRouter() {
           GoRoute(
             path: AdminRoutes.food,
             builder: (c, s) => const AdminFoodPage(),
+          ),
+          GoRoute(
+            path: AdminRoutes.provinces,
+            builder: (c, s) =>
+                const AdminContentPage(config: AdminContentConfigs.province),
+          ),
+          GoRoute(
+            path: AdminRoutes.places,
+            builder: (c, s) =>
+                const AdminContentPage(config: AdminContentConfigs.place),
+          ),
+          GoRoute(
+            path: AdminRoutes.activities,
+            builder: (c, s) =>
+                const AdminContentPage(config: AdminContentConfigs.activity),
+          ),
+          GoRoute(
+            path: AdminRoutes.cultures,
+            builder: (c, s) =>
+                const AdminContentPage(config: AdminContentConfigs.culture),
+          ),
+          GoRoute(
+            path: AdminRoutes.localProducts,
+            builder: (c, s) => const AdminContentPage(
+              config: AdminContentConfigs.localProduct,
+            ),
           ),
           GoRoute(
             path: AdminRoutes.popularApps,

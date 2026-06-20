@@ -28,6 +28,15 @@ type FoodTypePayload = {
   colorIndex?: number;
 };
 
+type FoodListOptions = {
+  page: number;
+  pageSize: number;
+  query: string;
+  typeId: string | null;
+  sortField: string | null;
+  sortDirection: string | null;
+};
+
 type FoodTranslationHints = {
   foodIdColumn: string;
   languageColumn: string | null;
@@ -113,8 +122,15 @@ export async function handleAdminFoodRequest(req: Request): Promise<Response> {
     switch (action) {
       case "listFoods": {
         const language = stringValue(payload.language) ?? DEFAULT_LANGUAGE;
-        const foods = await service.listFoods(language);
-        return jsonResponse({ foods });
+        const result = await service.listFoods(language, {
+          page: positiveInteger(payload.page, 1),
+          pageSize: positiveInteger(payload.pageSize, 8, 100),
+          query: stringValue(payload.query)?.trim() ?? "",
+          typeId: stringValue(payload.typeId)?.trim() || null,
+          sortField: stringValue(payload.sortField),
+          sortDirection: stringValue(payload.sortDirection),
+        });
+        return jsonResponse(result);
       }
       case "listFoodTypes": {
         const language = stringValue(payload.language) ?? DEFAULT_LANGUAGE;
@@ -184,9 +200,27 @@ class AdminFoodService {
 
   constructor(private readonly client: ReturnType<typeof createClient>) {}
 
-  async listFoods(language: string): Promise<JsonObject[]> {
-    const foodRows = await selectRows(this.client, FOOD_TABLE);
+  async listFoods(
+    language: string,
+    options: FoodListOptions,
+  ): Promise<{ foods: JsonObject[]; total: number }> {
+    await this.ensureFoodColumns();
+    const foodPage = await selectFoodRowsPage(
+      this.client,
+      FOOD_TABLE,
+      {
+        idColumn: this.foodIdColumn,
+        nameColumn: this.foodNameColumn,
+        typeColumn: this.foodTypeColumn,
+        cityColumn: this.foodCityColumn,
+      },
+      options,
+    );
+    const foodRows = foodPage.rows;
     this.hydrateFoodColumnsFromRows(foodRows);
+    const foodIds = foodRows
+      .map((row) => stringValue(row[this.foodIdColumn]))
+      .filter((id): id is string => Boolean(id));
 
     const foodTransHints = await this.ensureFoodTranslationHints();
     const preferredFoodTranslations =
@@ -195,6 +229,7 @@ class AdminFoodService {
         foodTransHints.foodIdColumn,
         foodTransHints.languageColumn,
         language,
+        foodIds,
       );
 
     const foodTranslationByFoodId = indexByStringKey(
@@ -259,7 +294,7 @@ class AdminFoodService {
       });
     }
 
-    return foods;
+    return { foods, total: foodPage.total };
   }
 
   async listFoodTypes(language: string): Promise<JsonObject[]> {
@@ -695,8 +730,11 @@ class AdminFoodService {
     entityIdColumn: string,
     languageColumn: string | null,
     preferredLanguage: string,
+    entityIds?: string[],
   ): Promise<JsonObject[]> {
-    const rows = await selectRows(this.client, table);
+    const rows = entityIds
+      ? await selectRowsByIds(this.client, table, entityIdColumn, entityIds)
+      : await selectRows(this.client, table);
     if (rows.length === 0) return rows;
 
     const hasLanguageColumn = languageColumn
@@ -856,6 +894,21 @@ function requireFoodTypePayload(value: unknown): FoodTypePayload {
   };
 }
 
+function positiveInteger(
+  value: unknown,
+  fallback: number,
+  max = Number.MAX_SAFE_INTEGER,
+): number {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+      ? Number.parseInt(value, 10)
+      : Number.NaN;
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(Math.trunc(parsed), max);
+}
+
 async function selectRows(
   client: ReturnType<typeof createClient>,
   table: string,
@@ -869,6 +922,68 @@ async function selectRows(
   const { data, error } = await query;
   if (error) throw new Error(`${table}: ${error.message}`);
   return (data ?? []) as JsonObject[];
+}
+
+async function selectRowsByIds(
+  client: ReturnType<typeof createClient>,
+  table: string,
+  idColumn: string,
+  ids: string[],
+): Promise<JsonObject[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await client
+    .from(table)
+    .select("*")
+    .in(idColumn, ids);
+  if (error) throw new Error(`${table}: ${error.message}`);
+  return (data ?? []) as JsonObject[];
+}
+
+async function selectFoodRowsPage(
+  client: ReturnType<typeof createClient>,
+  table: string,
+  columns: {
+    idColumn: string;
+    nameColumn: string;
+    typeColumn: string;
+    cityColumn: string;
+  },
+  options: FoodListOptions,
+): Promise<{ rows: JsonObject[]; total: number }> {
+  const page = Math.max(1, options.page);
+  const pageSize = Math.min(Math.max(1, options.pageSize), 100);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = client.from(table).select("*", { count: "exact" });
+  if (options.typeId) {
+    query = query.eq(columns.typeColumn, options.typeId);
+  }
+
+  const search = options.query.trim();
+  if (search.length > 0) {
+    const escaped = search.replaceAll("%", "\\%").replaceAll(",", "\\,");
+    query = query.ilike(columns.nameColumn, `%${escaped}%`);
+  }
+
+  const sortColumn = (() => {
+    switch (options.sortField) {
+      case "name":
+        return columns.nameColumn;
+      case "city":
+        return columns.cityColumn;
+      default:
+        return columns.idColumn;
+    }
+  })();
+  const ascending = options.sortDirection !== "descending";
+
+  const { data, error, count } = await query
+    .order(sortColumn, { ascending })
+    .range(from, to);
+  if (error) throw new Error(`${table}: ${error.message}`);
+
+  return { rows: (data ?? []) as JsonObject[], total: count ?? 0 };
 }
 
 async function insertSingle(

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hellovietnam/app/admin_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Figma palette
 const _figmaBlue = Color(0xFF81D4FA);
@@ -25,6 +26,9 @@ class AdminLoginPage extends StatefulWidget {
 }
 
 class _AdminLoginPageState extends State<AdminLoginPage> {
+  static const String _rememberKey = 'admin_login_remember';
+  static const String _rememberedEmailKey = 'admin_login_email';
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
@@ -33,6 +37,12 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   bool _passwordError = false;
   bool _isLoading = false;
   String? _generalError;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreRememberedLogin();
+  }
 
   @override
   void dispose() {
@@ -66,6 +76,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         email: email,
         password: password,
       );
+      await _persistRememberedLogin(email);
       if (!mounted) return;
       context.go(AdminRoutes.dashboard);
     } catch (e) {
@@ -84,6 +95,29 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         _generalError = errorMessage;
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _restoreRememberedLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final remember = prefs.getBool(_rememberKey) ?? false;
+    final email = prefs.getString(_rememberedEmailKey) ?? '';
+    if (!mounted) return;
+    setState(() {
+      _rememberMe = remember;
+      if (remember && email.isNotEmpty) {
+        _emailController.text = email;
+      }
+    });
+  }
+
+  Future<void> _persistRememberedLogin(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_rememberKey, _rememberMe);
+    if (_rememberMe) {
+      await prefs.setString(_rememberedEmailKey, email);
+    } else {
+      await prefs.remove(_rememberedEmailKey);
     }
   }
 

@@ -69,7 +69,9 @@ import '../features/admin/presentation/pages/admin_canned_replies_page.dart';
 import '../features/admin/presentation/pages/admin_report_page.dart';
 import '../features/admin/presentation/pages/admin_feedback_page.dart';
 import '../features/admin/presentation/pages/admin_food_page.dart';
+import '../features/admin/presentation/pages/admin_content_page.dart';
 import '../features/admin/presentation/pages/admin_popular_app_page.dart';
+import '../features/admin/domain/admin_content.dart';
 import '../features/personalization/data/travel_preferences_repository.dart';
 import '../features/personalization/presentation/travel_preferences_onboarding_page.dart';
 
@@ -166,6 +168,11 @@ class AppRoutes {
   static const adminReports = '/admin/reports';
   static const adminFeedback = '/admin/feedback';
   static const adminFood = '/admin/food';
+  static const adminProvinces = '/admin/provinces';
+  static const adminPlaces = '/admin/places';
+  static const adminActivities = '/admin/activities';
+  static const adminCultures = '/admin/cultures';
+  static const adminLocalProducts = '/admin/local-products';
   static const adminPopularApps = '/admin/popular-apps';
   static const deleteUserData = '$profile/delete-user-data';
 
@@ -565,6 +572,49 @@ GoRouter buildRouter() {
             pageBuilder: (c, s) => NoTransitionPage<void>(
               key: s.pageKey,
               child: const AdminFoodPage(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.adminProvinces,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminContentPage(
+                config: AdminContentConfigs.province,
+              ),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.adminPlaces,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminContentPage(config: AdminContentConfigs.place),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.adminActivities,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminContentPage(
+                config: AdminContentConfigs.activity,
+              ),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.adminCultures,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminContentPage(
+                config: AdminContentConfigs.culture,
+              ),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.adminLocalProducts,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminContentPage(
+                config: AdminContentConfigs.localProduct,
+              ),
             ),
           ),
           GoRoute(

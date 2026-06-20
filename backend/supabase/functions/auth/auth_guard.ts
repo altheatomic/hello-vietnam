@@ -32,3 +32,24 @@ export async function requireAuthenticatedUserId(
 
   return user.id;
 }
+
+export async function requireRole(
+  client: ReturnType<typeof createClient>,
+  userId: string,
+  role: string,
+): Promise<void> {
+  const { data, error } = await client
+    .from("user_account")
+    .select("role")
+    .eq("id_user", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new AuthorizationError("Forbidden.", 403);
+  }
+
+  const actualRole = String(data?.role ?? "").toLowerCase();
+  if (actualRole !== role.toLowerCase()) {
+    throw new AuthorizationError("Forbidden.", 403);
+  }
+}

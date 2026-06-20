@@ -53,6 +53,36 @@ class AdminSidebar extends StatefulWidget {
       route: '/admin/food',
     ),
     _NavDestination(
+      label: 'Province',
+      icon: Icons.location_city_outlined,
+      selectedIcon: Icons.location_city_rounded,
+      route: '/admin/provinces',
+    ),
+    _NavDestination(
+      label: 'Place',
+      icon: Icons.place_outlined,
+      selectedIcon: Icons.place_rounded,
+      route: '/admin/places',
+    ),
+    _NavDestination(
+      label: 'Activity',
+      icon: Icons.directions_run_outlined,
+      selectedIcon: Icons.directions_run_rounded,
+      route: '/admin/activities',
+    ),
+    _NavDestination(
+      label: 'Culture',
+      icon: Icons.museum_outlined,
+      selectedIcon: Icons.museum_rounded,
+      route: '/admin/cultures',
+    ),
+    _NavDestination(
+      label: 'Local Product',
+      icon: Icons.inventory_2_outlined,
+      selectedIcon: Icons.inventory_2_rounded,
+      route: '/admin/local-products',
+    ),
+    _NavDestination(
       label: 'Popular Apps',
       icon: Icons.apps_outlined,
       selectedIcon: Icons.apps_rounded,

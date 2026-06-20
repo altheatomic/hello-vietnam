@@ -1,6 +1,17 @@
+// ignore_for_file: use_null_aware_elements
+
+import 'dart:math' show min;
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/admin_food.dart';
+
+class AdminFoodPageResult {
+  const AdminFoodPageResult({required this.foods, required this.totalCount});
+
+  final List<AdminFood> foods;
+  final int totalCount;
+}
 
 class AdminFoodRepository {
   AdminFoodRepository({SupabaseClient? client})
@@ -10,24 +21,31 @@ class AdminFoodRepository {
   static const String _defaultLanguage = 'en';
   static const Duration _cacheTtl = Duration(seconds: 45);
 
-  static DateTime? _foodsCachedAt;
   static DateTime? _typesCachedAt;
-  static List<AdminFood>? _foodsCache;
   static List<FoodType>? _typesCache;
 
   final SupabaseClient _client;
 
-  Future<List<AdminFood>> fetchFoods({
+  Future<AdminFoodPageResult> fetchFoods({
     String language = _defaultLanguage,
-    bool forceRefresh = false,
+    required int page,
+    required int pageSize,
+    String query = '',
+    String? typeId,
+    String? sortField,
+    String? sortDirection,
   }) async {
-    if (!forceRefresh && _isFresh(_foodsCachedAt) && _foodsCache != null) {
-      return List<AdminFood>.from(_foodsCache!);
-    }
-
     final data = await _invokeAction(
       action: 'listFoods',
-      payload: <String, dynamic>{'language': language},
+      payload: <String, dynamic>{
+        'language': language,
+        'page': page,
+        'pageSize': pageSize,
+        'query': query,
+        if (typeId != null) 'typeId': typeId,
+        if (sortField != null) 'sortField': sortField,
+        if (sortDirection != null) 'sortDirection': sortDirection,
+      },
     );
 
     final List<dynamic> rawFoods =
@@ -41,9 +59,21 @@ class AdminFoodRepository {
         )
         .toList(growable: false);
 
-    _foodsCache = foods;
-    _foodsCachedAt = DateTime.now();
-    return List<AdminFood>.from(foods);
+    final total = (data['total'] as num?)?.toInt();
+    if (total != null) {
+      return AdminFoodPageResult(foods: foods, totalCount: total);
+    }
+
+    final fallbackFoods = _clientSideFallbackPage(
+      foods: foods,
+      page: page,
+      pageSize: pageSize,
+      query: query,
+      typeId: typeId,
+      sortField: sortField,
+      sortDirection: sortDirection,
+    );
+    return fallbackFoods;
   }
 
   Future<List<FoodType>> fetchFoodTypes({
@@ -218,6 +248,53 @@ class AdminFoodRepository {
     );
   }
 
+  AdminFoodPageResult _clientSideFallbackPage({
+    required List<AdminFood> foods,
+    required int page,
+    required int pageSize,
+    required String query,
+    required String? typeId,
+    required String? sortField,
+    required String? sortDirection,
+  }) {
+    final normalizedQuery = query.trim().toLowerCase();
+    final filtered = foods
+        .where((food) {
+          final matchesType = typeId == null || food.typeId == typeId;
+          final matchesQuery =
+              normalizedQuery.isEmpty ||
+              food.name.toLowerCase().contains(normalizedQuery) ||
+              food.city.toLowerCase().contains(normalizedQuery);
+          return matchesType && matchesQuery;
+        })
+        .toList(growable: false);
+
+    int compareText(String left, String right) =>
+        left.toLowerCase().compareTo(right.toLowerCase());
+
+    filtered.sort((left, right) {
+      final base = switch (sortField) {
+        'name' => compareText(left.name, right.name),
+        'city' => compareText(left.city, right.city),
+        _ => compareText(left.id, right.id),
+      };
+      return sortDirection == 'descending' ? -base : base;
+    });
+
+    final start = (page - 1) * pageSize;
+    if (start >= filtered.length) {
+      return AdminFoodPageResult(
+        foods: const <AdminFood>[],
+        totalCount: filtered.length,
+      );
+    }
+    final end = min(start + pageSize, filtered.length);
+    return AdminFoodPageResult(
+      foods: filtered.sublist(start, end),
+      totalCount: filtered.length,
+    );
+  }
+
   Map<String, dynamic> _readMap(Map<String, dynamic> json, String key) {
     final dynamic value = json[key];
     if (value is Map<String, dynamic>) return value;
@@ -246,8 +323,8 @@ class AdminFoodRepository {
   }
 
   static void _invalidateFoodsCache() {
-    _foodsCache = null;
-    _foodsCachedAt = null;
+    // Food lists are page-loaded from the edge function, so there is no full
+    // list cache to clear. Keep this hook for write operations.
   }
 
   static void _invalidateTypesCache() {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' show min;
 
 import 'package:flutter/material.dart';
@@ -31,10 +32,12 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
   final List<FoodType> _types = <FoodType>[];
 
   final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
   String? _filterTypeId;
   _FoodSortField? _activeSortField;
   _FoodSortDirection? _activeSortDirection;
   bool _isLoading = true;
+  int _totalCount = 0;
   int _currentPage = 1;
   static const int _pageSize = 8;
 
@@ -46,6 +49,7 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -57,17 +61,33 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
 
     try {
       final results = await Future.wait([
-        _repository.fetchFoods(),
+        _repository.fetchFoods(
+          page: _currentPage,
+          pageSize: _pageSize,
+          query: _searchController.text,
+          typeId: _filterTypeId,
+          sortField: switch (_activeSortField) {
+            _FoodSortField.name => 'name',
+            _FoodSortField.city => 'city',
+            null => null,
+          },
+          sortDirection: switch (_activeSortDirection) {
+            _FoodSortDirection.ascending => 'ascending',
+            _FoodSortDirection.descending => 'descending',
+            null => null,
+          },
+        ),
         _repository.fetchFoodTypes(),
       ]);
-      final foods = results[0] as List<AdminFood>;
+      final foodPage = results[0] as AdminFoodPageResult;
       final types = results[1] as List<FoodType>;
 
       if (!mounted) return;
       setState(() {
         _foods
           ..clear()
-          ..addAll(foods);
+          ..addAll(foodPage.foods);
+        _totalCount = foodPage.totalCount;
         _types
           ..clear()
           ..addAll(types);
@@ -166,6 +186,7 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     return filtered;
   }
 
+  // ignore: unused_element
   List<AdminFood> get _paged {
     final all = _filtered;
     final start = (_currentPage - 1) * _pageSize;
@@ -175,28 +196,40 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
   }
 
   int get _totalPages =>
-      (_filtered.length / _pageSize).ceil().clamp(1, double.maxFinite).toInt();
+      (_totalCount / _pageSize).ceil().clamp(1, double.maxFinite).toInt();
 
-  void _onSearchChanged(String _) => setState(() => _currentPage = 1);
+  void _onSearchChanged(String _) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      setState(() => _currentPage = 1);
+      _loadData(showLoader: false);
+    });
+  }
 
-  void _onTypeFilterChanged(String? id) => setState(() {
-    _filterTypeId = id;
-    _currentPage = 1;
-  });
+  void _onTypeFilterChanged(String? id) {
+    setState(() {
+      _filterTypeId = id;
+      _currentPage = 1;
+    });
+    _loadData(showLoader: false);
+  }
 
-  void _onSortSelected(_FoodSortField field, _FoodSortMenuAction action) =>
-      setState(() {
-        if (action == _FoodSortMenuAction.defaultOrder) {
-          _activeSortField = null;
-          _activeSortDirection = null;
-        } else {
-          _activeSortField = field;
-          _activeSortDirection = action == _FoodSortMenuAction.ascending
-              ? _FoodSortDirection.ascending
-              : _FoodSortDirection.descending;
-        }
-        _currentPage = 1;
-      });
+  void _onSortSelected(_FoodSortField field, _FoodSortMenuAction action) {
+    setState(() {
+      if (action == _FoodSortMenuAction.defaultOrder) {
+        _activeSortField = null;
+        _activeSortDirection = null;
+      } else {
+        _activeSortField = field;
+        _activeSortDirection = action == _FoodSortMenuAction.ascending
+            ? _FoodSortDirection.ascending
+            : _FoodSortDirection.descending;
+      }
+      _currentPage = 1;
+    });
+    _loadData(showLoader: false);
+  }
 
   // ── CRUD ───────────────────────────────────────────────────────────────────
 
@@ -216,10 +249,8 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     try {
       final created = await _repository.createFood(food: result);
       if (!mounted) return;
-      setState(() {
-        _foods.insert(0, created);
-        _currentPage = 1;
-      });
+      setState(() => _currentPage = 1);
+      await _loadData(showLoader: false);
       _showSnack('"${created.name}" added.');
     } catch (e) {
       _showSnack('Create food failed: $e');
@@ -237,10 +268,7 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     try {
       final updated = await _repository.updateFood(food: result);
       if (!mounted) return;
-      setState(() {
-        final idx = _foods.indexWhere((f) => f.id == updated.id);
-        if (idx != -1) _foods[idx] = updated;
-      });
+      await _loadData(showLoader: false);
       _showSnack('"${updated.name}" updated.');
     } catch (e) {
       _showSnack('Update food failed: $e');
@@ -277,12 +305,7 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
     try {
       await _repository.deleteFood(food.id);
       if (!mounted) return;
-      setState(() {
-        _foods.removeWhere((f) => f.id == food.id);
-        if (_currentPage > _totalPages) {
-          _currentPage = _totalPages;
-        }
-      });
+      await _loadData(showLoader: false);
       _showSnack('"${food.name}" deleted.');
     } catch (e) {
       _showSnack('Delete food failed: $e');
@@ -350,9 +373,6 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
-    final paged = _paged;
-
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
@@ -433,7 +453,7 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
                         ),
                       ),
                     )
-                  : filtered.isEmpty
+                  : _foods.isEmpty
                   ? const Padding(
                       padding: EdgeInsets.symmetric(vertical: 36),
                       child: EmptyState(
@@ -444,7 +464,7 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
                   : Column(
                       children: [
                         _FoodTable(
-                          foods: paged,
+                          foods: _foods,
                           resolveType: _resolveType,
                           activeSortField: _activeSortField,
                           activeSortDirection: _activeSortDirection,
@@ -459,10 +479,12 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
                           child: _TableFooter(
                             currentPage: _currentPage,
                             totalPages: _totalPages,
-                            totalItems: filtered.length,
+                            totalItems: _totalCount,
                             pageSize: _pageSize,
-                            onPageChanged: (p) =>
-                                setState(() => _currentPage = p),
+                            onPageChanged: (p) {
+                              setState(() => _currentPage = p);
+                              _loadData(showLoader: false);
+                            },
                           ),
                         ),
                       ],
