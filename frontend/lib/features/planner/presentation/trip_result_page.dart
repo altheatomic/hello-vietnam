@@ -5,18 +5,55 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 
-class TripResultPage extends StatelessWidget {
+class TripResultPage extends StatefulWidget {
   const TripResultPage({super.key, this.plan});
 
   final TripPlanResponse? plan;
 
   @override
+  State<TripResultPage> createState() => _TripResultPageState();
+}
+
+class _TripResultPageState extends State<TripResultPage> {
+  bool _isSaving = false;
+
+  Future<void> _handleSave() async {
+    final idPlan = widget.plan?.idPlan;
+    if (idPlan == null) {
+      _showSnackBar('No plan ID — please generate again.');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      await TripRepository().savePlan(idPlan);
+      if (!mounted) return;
+      _showSnackBar('Trip saved!');
+      context.push(AppRoutes.tripPlannerSaved);
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Could not save trip. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final days = plan != null
-        ? _convertPlan(plan!)
+    final days = widget.plan != null
+        ? _convertPlan(widget.plan!)
         : TripPlannerMockData.tripDays;
 
     final totalActivities =
@@ -79,11 +116,8 @@ class TripResultPage extends StatelessWidget {
                       children: <Widget>[
                         Expanded(
                           child: _ActionButton(
-                            label: 'Save',
-                            onTap: () {
-                              _showToast(context, 'Saved trip');
-                              context.push(AppRoutes.tripPlannerSaved);
-                            },
+                            label: _isSaving ? 'Saving…' : 'Save',
+                            onTap: _isSaving ? null : _handleSave,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -91,13 +125,13 @@ class TripResultPage extends StatelessWidget {
                           child: _ActionButton(
                             label: 'Download',
                             onTap: () =>
-                                _showToast(context, 'Download started'),
+                                _showSnackBar('Download started'),
                           ),
                         ),
                         const SizedBox(width: 12),
                         _IconActionButton(
                           icon: Icons.share_outlined,
-                          onTap: () => _showToast(context, 'Share options'),
+                          onTap: () => _showSnackBar('Share options'),
                         ),
                       ],
                     ),
@@ -169,14 +203,6 @@ class TripResultPage extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static void _showToast(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-      );
   }
 }
 
@@ -260,7 +286,7 @@ class _ActionButton extends StatelessWidget {
   const _ActionButton({required this.label, required this.onTap});
 
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

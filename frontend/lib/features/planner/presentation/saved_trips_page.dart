@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 
 class SavedTripsPage extends StatefulWidget {
   const SavedTripsPage({super.key});
@@ -13,121 +15,83 @@ class SavedTripsPage extends StatefulWidget {
 }
 
 class _SavedTripsPageState extends State<SavedTripsPage> {
-  final List<_SavedTrip> _trips = <_SavedTrip>[
-    _SavedTrip(
-      id: 'trip-hoian',
-      monthLabel: 'April 2026',
-      title: 'Hoi An Heritage Escape',
-      destination: 'Hoi An',
-      tripType: 'Leisure',
-      dateLabel: '16 Apr • 3 days 2 nights',
-      budgetLabel: '900,000 VND / day',
-      accentColors: const <Color>[
-        Color(0xFFFFD6B5),
-        Color(0xFFFFF1C8),
-        Color(0xFFCFF5F6),
-      ],
-      stops: <_SavedStop>[
-        _SavedStop(
-          id: 'hoian-1',
-          timeLabel: '08:00',
-          title: 'Japanese Covered Bridge',
-          note: 'Architecture and old town walk',
-          isCompleted: true,
-        ),
-        _SavedStop(
-          id: 'hoian-2',
-          timeLabel: '12:30',
-          title: 'Riverside Lunch Market',
-          note: 'Try cao lau and local desserts',
-          isCompleted: false,
-        ),
-        _SavedStop(
-          id: 'hoian-3',
-          timeLabel: '18:30',
-          title: 'Lantern Boat Ride',
-          note: 'Evening activity on Thu Bon River',
-          isCompleted: false,
-        ),
-      ],
-    ),
-    _SavedTrip(
-      id: 'trip-dalat',
-      monthLabel: 'April 2026',
-      title: 'Da Lat Cool Weather Weekend',
-      destination: 'Da Lat',
-      tripType: 'Leisure',
-      dateLabel: '22 Apr • 2 days 1 night',
-      budgetLabel: 'Standard range',
-      accentColors: const <Color>[
-        Color(0xFFE5F7F4),
-        Color(0xFFDDF4FF),
-        Color(0xFFF1ECFF),
-      ],
-      stops: <_SavedStop>[
-        _SavedStop(
-          id: 'dalat-1',
-          timeLabel: '07:30',
-          title: 'Pine Hill Sunrise Spot',
-          note: 'Coffee stop with valley view',
-          isCompleted: false,
-        ),
-        _SavedStop(
-          id: 'dalat-2',
-          timeLabel: '10:00',
-          title: 'Domaine de Marie Church',
-          note: 'Photo stop and short sightseeing',
-          isCompleted: false,
-        ),
-        _SavedStop(
-          id: 'dalat-3',
-          timeLabel: '15:00',
-          title: 'Night Market Walk',
-          note: 'Street food and souvenirs',
-          isCompleted: false,
-        ),
-      ],
-    ),
-    _SavedTrip(
-      id: 'trip-hanoi',
-      monthLabel: 'March 2026',
-      title: 'Hanoi Culture Sprint',
-      destination: 'Hanoi',
-      tripType: 'Business',
-      dateLabel: '28 Mar • 1 day',
-      budgetLabel: '1,200,000 VND / day',
-      accentColors: const <Color>[
-        Color(0xFFDDEBFF),
-        Color(0xFFE3FBFF),
-        Color(0xFFF4F2FF),
-      ],
-      stops: <_SavedStop>[
-        _SavedStop(
-          id: 'hanoi-1',
-          timeLabel: '09:00',
-          title: 'Temple of Literature',
-          note: 'Morning cultural visit',
-          isCompleted: true,
-        ),
-        _SavedStop(
-          id: 'hanoi-2',
-          timeLabel: '13:00',
-          title: 'Old Quarter Food Tour',
-          note: 'Lunch tasting route',
-          isCompleted: true,
-        ),
-        _SavedStop(
-          id: 'hanoi-3',
-          timeLabel: '17:30',
-          title: 'Hoan Kiem Lake',
-          note: 'Late afternoon walk',
-          isCompleted: true,
-        ),
-      ],
-    ),
-  ];
+  List<_SavedTrip> _trips = <_SavedTrip>[];
+  bool _isLoading = true;
 
   _TripFilter _selectedFilter = _TripFilter.all;
+
+  static const List<List<Color>> _palettes = <List<Color>>[
+    <Color>[Color(0xFFFFD6B5), Color(0xFFFFF1C8), Color(0xFFCFF5F6)],
+    <Color>[Color(0xFFE5F7F4), Color(0xFFDDF4FF), Color(0xFFF1ECFF)],
+    <Color>[Color(0xFFDDEBFF), Color(0xFFE3FBFF), Color(0xFFF4F2FF)],
+  ];
+
+  static const List<String> _monthNames = <String>[
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
+  static const List<String> _shortMonths = <String>[
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedTrips();
+  }
+
+  Future<void> _loadSavedTrips() async {
+    try {
+      final items = await TripRepository().listSavedPlans();
+      if (!mounted) return;
+      setState(() {
+        _trips = items.asMap().entries
+            .map((MapEntry<int, SavedPlanItem> e) => _fromItem(e.key, e.value))
+            .toList();
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showMessage('Could not load saved trips.');
+    }
+  }
+
+  static _SavedTrip _fromItem(int index, SavedPlanItem item) {
+    final DateTime createdAt =
+        DateTime.tryParse(item.createdAt) ?? DateTime.now();
+    final String monthLabel =
+        '${_monthNames[createdAt.month - 1]} ${createdAt.year}';
+
+    final DateTime? startDate = DateTime.tryParse(item.startAt);
+    final int nDays = int.tryParse(item.duration) ?? 1;
+    final String dateLabel = startDate != null
+        ? '${startDate.day} ${_shortMonths[startDate.month - 1]} • '
+            '$nDays ${nDays == 1 ? 'day' : 'days'}'
+        : '$nDays days';
+
+    return _SavedTrip(
+      id: item.idPlan,
+      monthLabel: monthLabel,
+      title: item.customTitle ?? 'Your Vietnam Adventure',
+      destination: item.provinceName.isEmpty ? 'Vietnam' : item.provinceName,
+      tripType: 'Leisure',
+      dateLabel: dateLabel,
+      budgetLabel: 'Standard range',
+      accentColors: _palettes[index % _palettes.length],
+      stops: item.stops
+          .map((SavedPlanStop s) => _SavedStop(
+                id: s.id,
+                timeLabel: s.timeLabel,
+                title: s.title,
+                note: s.note,
+                isCompleted: false,
+              ))
+          .toList(),
+    );
+  }
 
   List<_SavedTrip> get _visibleTrips {
     return _trips.where((_SavedTrip trip) {

@@ -26,8 +26,13 @@ class TripPlanRequest(BaseModel):
     n_days:              int
     start_date:          Optional[str]       = None   # 'YYYY-MM-DD'; defaults to today
     sa_runs:             int                 = 5
-    save_plan:           bool                = False
+    save_plan:           bool                = True
     interest_option_ids: Optional[List[str]] = None   # trip-level interest (UUIDs)
+
+
+class SavePlanRequest(BaseModel):
+    id_user:      str
+    custom_title: Optional[str] = None
 
 
 # ── Trip planning ─────────────────────────────────────────────────────────────
@@ -70,6 +75,23 @@ async def list_plans(id_user: str, supabase=Depends(get_supabase)):
     from db.queries_plan import list_plans as _list_plans
 
     return {"plans": _list_plans(supabase, id_user)}
+
+
+@router.post("/api/trips/{id_plan}/save")
+async def save_trip(id_plan: str, req: SavePlanRequest, supabase=Depends(get_supabase)):
+    from db.queries_plan import mark_plan_saved
+
+    result = mark_plan_saved(supabase, id_plan, req.id_user, req.custom_title)
+    if not result:
+        raise HTTPException(status_code=404, detail="Plan not found or not owned by user.")
+    return result
+
+
+@router.get("/api/trips/saved")
+async def get_saved_plans(id_user: str, supabase=Depends(get_supabase)):
+    from db.queries_plan import fetch_saved_plans
+
+    return {"plans": fetch_saved_plans(supabase, id_user)}
 
 
 # ── Admin: CF retrain ─────────────────────────────────────────────────────────

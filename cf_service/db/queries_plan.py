@@ -128,6 +128,92 @@ def get_plan(supabase: Any, id_plan: str) -> dict:
     }
 
 
+def mark_plan_saved(
+    supabase: Any,
+    id_plan: str,
+    id_user: str,
+    custom_title: str = None,
+) -> dict:
+    update_data: dict = {"status": "saved"}
+    if custom_title:
+        update_data["custom_title"] = custom_title
+
+    resp = (
+        supabase
+        .table("plan")
+        .update(update_data)
+        .eq("id_plan", id_plan)
+        .eq("id_user", id_user)
+        .execute()
+    )
+    if not (resp.data or []):
+        return {}
+    return {"id_plan": id_plan, "status": "saved"}
+
+
+def fetch_saved_plans(supabase: Any, id_user: str) -> list:
+    plans_resp = (
+        supabase
+        .table("plan")
+        .select("id_plan, custom_title, duration, start_at, end_at, city_province, created_at")
+        .eq("id_user", id_user)
+        .eq("status", "saved")
+        .order("created_at", desc=True)
+        .limit(50)
+        .execute()
+    )
+    plans = plans_resp.data or []
+    if not plans:
+        return []
+
+    plan_ids = [str(p["id_plan"]) for p in plans]
+
+    stops_resp = (
+        supabase
+        .table("plan_component")
+        .select("id_component, id_plan, day, slot, visit_order, place(id_place, name)")
+        .in_("id_plan", plan_ids)
+        .eq("day", 1)
+        .order("visit_order")
+        .execute()
+    )
+    stops_by_plan: dict = {}
+    for s in (stops_resp.data or []):
+        pid = str(s["id_plan"])
+        place_data = s.get("place") or {}
+        stops_by_plan.setdefault(pid, []).append({
+            "id": str(s["id_component"]),
+            "slot": s.get("slot") or "",
+            "time_label": _slot_to_time(s.get("slot") or ""),
+            "title": place_data.get("name") or "",
+            "note": "",
+        })
+
+    result = []
+    for p in plans:
+        pid = str(p["id_plan"])
+        result.append({
+            "id_plan": pid,
+            "custom_title": p.get("custom_title"),
+            "duration": p.get("duration") or "",
+            "start_at": str(p["start_at"]),
+            "end_at": str(p["end_at"]),
+            "province_name": "",  # join not needed for display; can be added later
+            "created_at": str(p["created_at"]),
+            "stops": stops_by_plan.get(pid, []),
+        })
+    return result
+
+
+def _slot_to_time(slot: str) -> str:
+    return {
+        "morning": "08:00",
+        "afternoon": "13:00",
+        "evening": "17:00",
+        "lunch": "12:00",
+    }.get(slot.lower(), "09:00")
+
+
 def list_plans(supabase: Any, id_user: str) -> list:
     resp = (
         supabase

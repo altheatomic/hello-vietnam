@@ -52,6 +52,22 @@ class TripRepository {
         .toList();
   }
 
+  Future<void> savePlan(String idPlan, {String? customTitle}) async {
+    await _post('/api/trips/$idPlan/save', <String, dynamic>{
+      'id_user': _userId,
+      'custom_title': customTitle,
+    });
+  }
+
+  Future<List<SavedPlanItem>> listSavedPlans() async {
+    final data = await _get('/api/trips/saved', {'id_user': _userId});
+    final raw  = data['plans'] as List<dynamic>? ?? <dynamic>[];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(SavedPlanItem.fromJson)
+        .toList();
+  }
+
   // ── Internal ──────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> _post(

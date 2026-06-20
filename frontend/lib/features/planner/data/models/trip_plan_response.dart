@@ -107,6 +107,73 @@ class TripPlanPlace {
   }
 }
 
+/// One stop (place) inside a saved plan card, from `GET /api/trips/saved`.
+class SavedPlanStop {
+  const SavedPlanStop({
+    required this.id,
+    required this.slot,
+    required this.timeLabel,
+    required this.title,
+    required this.note,
+  });
+
+  final String id;
+  final String slot;
+  final String timeLabel;
+  final String title;
+  final String note;
+
+  factory SavedPlanStop.fromJson(Map<String, dynamic> json) {
+    return SavedPlanStop(
+      id:        json['id']         as String? ?? '',
+      slot:      json['slot']       as String? ?? '',
+      timeLabel: json['time_label'] as String? ?? '',
+      title:     json['title']      as String? ?? '',
+      note:      json['note']       as String? ?? '',
+    );
+  }
+}
+
+/// One saved plan item from `GET /api/trips/saved`.
+class SavedPlanItem {
+  const SavedPlanItem({
+    required this.idPlan,
+    this.customTitle,
+    required this.duration,
+    required this.startAt,
+    required this.endAt,
+    required this.provinceName,
+    required this.createdAt,
+    required this.stops,
+  });
+
+  final String idPlan;
+  final String? customTitle;
+  final String duration;
+  final String startAt;
+  final String endAt;
+  final String provinceName;
+  final String createdAt;
+  final List<SavedPlanStop> stops;
+
+  factory SavedPlanItem.fromJson(Map<String, dynamic> json) {
+    final rawStops = json['stops'] as List<dynamic>? ?? <dynamic>[];
+    return SavedPlanItem(
+      idPlan:       json['id_plan']       as String? ?? '',
+      customTitle:  json['custom_title']  as String?,
+      duration:     json['duration']      as String? ?? '',
+      startAt:      json['start_at']      as String? ?? '',
+      endAt:        json['end_at']        as String? ?? '',
+      provinceName: json['province_name'] as String? ?? '',
+      createdAt:    json['created_at']    as String? ?? '',
+      stops: rawStops
+          .whereType<Map<String, dynamic>>()
+          .map(SavedPlanStop.fromJson)
+          .toList(),
+    );
+  }
+}
+
 /// Summary item from `GET /api/trips/plans`.
 class TripPlanSummary {
   const TripPlanSummary({
