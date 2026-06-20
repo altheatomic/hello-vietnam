@@ -56,15 +56,16 @@ def save_plan(
     return id_plan
 
 
-def get_plan(supabase: Any, id_plan: str) -> dict:
-    plan_resp = (
+def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
+    query = (
         supabase
         .table("plan")
         .select("id_plan, duration, start_at, end_at, city_province, created_at")
         .eq("id_plan", id_plan)
-        .limit(1)
-        .execute()
     )
+    if id_user:
+        query = query.eq("id_user", id_user)
+    plan_resp = query.limit(1).execute()
     plan_rows = plan_resp.data or []
     if not plan_rows:
         return {}
@@ -74,21 +75,8 @@ def get_plan(supabase: Any, id_plan: str) -> dict:
         supabase
         .table("plan_component")
         .select(
-            """
-            day,
-            slot,
-            visit_order,
-            estimated_travel_minutes,
-            cb_score,
-            cf_score,
-            final_score,
-            place (
-                id_place,
-                name,
-                latitude,
-                longitude
-            )
-            """
+            "day,slot,visit_order,estimated_travel_minutes,cb_score,"
+            "cf_score,final_score,place(id_place,name,latitude,longitude)"
         )
         .eq("id_plan", id_plan)
         .order("day")
@@ -97,16 +85,23 @@ def get_plan(supabase: Any, id_plan: str) -> dict:
     )
     component_rows = components_resp.data or []
 
+    start_date = plan_row["start_at"]
+    if isinstance(start_date, datetime.date) and not isinstance(start_date, datetime.datetime):
+        start_date_obj = start_date
+    else:
+        start_date_obj = datetime.datetime.fromisoformat(str(start_date)).date()
+
     days_map: dict[int, list] = {}
     for r in component_rows:
         d = int(r["day"])
         place_data = r.get("place") or {}
         days_map.setdefault(d, []).append({
             "day": d,
-            "slot": r.get("slot"),
+            "order": r.get("visit_order"),
             "visit_order": r.get("visit_order"),
+            "slot": r.get("slot"),
             "estimated_travel_minutes": r.get("estimated_travel_minutes"),
-            "tag_match": r.get("cb_score"),   # cb_score column stores tag_match value
+            "tag_match": r.get("cb_score"),
             "cf_score": r.get("cf_score"),
             "final_score": r.get("final_score"),
             "id_place": place_data.get("id_place"),
@@ -122,7 +117,11 @@ def get_plan(supabase: Any, id_plan: str) -> dict:
         "city_province": str(plan_row.get("city_province") or ""),
         "created_at": str(plan_row["created_at"]),
         "days": [
-            {"day": d, "places": places}
+            {
+                "day": d,
+                "date": (start_date_obj + datetime.timedelta(days=d - 1)).isoformat(),
+                "places": places,
+            }
             for d, places in sorted(days_map.items())
         ],
     }

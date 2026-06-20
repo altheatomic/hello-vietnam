@@ -10,6 +10,7 @@ import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_dat
 const String _kTitle = 'trip_store.title';
 const String _kActivatedAt = 'trip_store.activated_at';
 const String _kTripStartDate = 'trip_store.trip_start_date';
+const String _kIdPlan = 'trip_store.id_plan';
 
 // ── Public types ──────────────────────────────────────────────────────────────
 
@@ -41,10 +42,12 @@ class ActiveTrip {
     required this.days,
     required this.activatedAt,
     required this.tripStartDate,
+    this.idPlan,
   });
 
   final String title;
   final List<TripPlannerDayData> days;
+  final String? idPlan;
 
   /// Exact timestamp when the user tapped "Start Trip".
   final DateTime activatedAt;
@@ -215,6 +218,7 @@ class TripStore extends ChangeNotifier {
         days: TripPlannerMockData.tripDays,
         activatedAt: activatedAt,
         tripStartDate: tripStartDate,
+        idPlan: prefs.getString(_kIdPlan),
       );
       _lastStatus = _activeTrip!.status;
       _startTimer();
@@ -235,6 +239,7 @@ class TripStore extends ChangeNotifier {
   void startTrip({
     required String title,
     required List<TripPlannerDayData> days,
+    String? idPlan,
   }) {
     final now = DateTime.now();
     _activeTrip = ActiveTrip(
@@ -242,6 +247,7 @@ class TripStore extends ChangeNotifier {
       days: days,
       activatedAt: now,
       tripStartDate: DateTime(now.year, now.month, now.day),
+      idPlan: idPlan,
     );
     _lastStatus = _activeTrip!.status;
     _persist(); // fire-and-forget; failure is non-fatal
@@ -297,11 +303,15 @@ class TripStore extends ChangeNotifier {
     if (_activeTrip == null) return;
     try {
       final prefs = await SharedPreferences.getInstance();
-      await Future.wait(<Future<bool>>[
+      final futures = <Future<bool>>[
         prefs.setString(_kTitle, _activeTrip!.title),
         prefs.setString(_kActivatedAt, _activeTrip!.activatedAt.toIso8601String()),
         prefs.setString(_kTripStartDate, _activeTrip!.tripStartDate.toIso8601String()),
-      ]);
+      ];
+      if (_activeTrip!.idPlan != null) {
+        futures.add(prefs.setString(_kIdPlan, _activeTrip!.idPlan!));
+      }
+      await Future.wait(futures);
     } catch (e) {
       debugPrint('TripStore._persist: failed — $e');
     }
@@ -314,6 +324,7 @@ class TripStore extends ChangeNotifier {
         prefs.remove(_kTitle),
         prefs.remove(_kActivatedAt),
         prefs.remove(_kTripStartDate),
+        prefs.remove(_kIdPlan),
       ]);
     } catch (e) {
       debugPrint('TripStore._clearPersistence: failed — $e');

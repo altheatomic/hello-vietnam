@@ -141,6 +141,7 @@ class _TripResultPageState extends State<TripResultPage> {
                         TripStore.instance.startTrip(
                           title: 'Your Vietnam Adventure',
                           days: days,
+                          idPlan: widget.plan?.idPlan,
                         );
                         context.go(AppRoutes.home);
                       },

@@ -82,7 +82,7 @@ async def get_nearby_places(
 async def get_plan(id_plan: str, id_user: str, supabase=Depends(get_supabase)):
     from db.queries_plan import get_plan as _get_plan
 
-    plan = _get_plan(supabase, id_plan)
+    plan = _get_plan(supabase, id_plan, id_user=id_user)
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found.")
     return plan

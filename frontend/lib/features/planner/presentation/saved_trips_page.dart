@@ -42,6 +42,17 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
     _loadSavedTrips();
   }
 
+  Future<void> _openItinerary(String idPlan) async {
+    try {
+      final plan = await TripRepository().getPlan(idPlan);
+      if (!mounted) return;
+      context.push(AppRoutes.tripPlannerResult, extra: plan);
+    } catch (_) {
+      if (!mounted) return;
+      _showMessage('Could not load itinerary. Please try again.');
+    }
+  }
+
   Future<void> _loadSavedTrips() async {
     try {
       final items = await TripRepository().listSavedPlans();
@@ -301,9 +312,7 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                                     trip: trip,
                                     onToggleStop: (String stopId) =>
                                         _toggleStop(trip.id, stopId),
-                                    onOpenPlan: () => context.push(
-                                      AppRoutes.tripPlannerResult,
-                                    ),
+                                    onOpenPlan: () => _openItinerary(trip.id),
                                     onPlanAgain: () =>
                                         context.go(AppRoutes.tripPlanner),
                                     onTripTapped: () => _showMessage(

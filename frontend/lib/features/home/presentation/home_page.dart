@@ -25,6 +25,7 @@ import 'widgets/feature_grid.dart';
 import 'widgets/recommendation_section.dart';
 import 'widgets/recommendation_card.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -42,6 +43,26 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadFeaturedContent();
+  }
+
+  Future<void> _viewPlan(ActiveTrip trip) async {
+    final idPlan = trip.idPlan;
+    if (idPlan == null) {
+      context.push(
+        AppRoutes.tripPlannerDayDetailPath(trip.relevantActivity.dayIndex),
+      );
+      return;
+    }
+    try {
+      final plan = await TripRepository().getPlan(idPlan);
+      if (!mounted) return;
+      context.push(AppRoutes.tripPlannerResult, extra: plan);
+    } catch (_) {
+      if (!mounted) return;
+      context.push(
+        AppRoutes.tripPlannerDayDetailPath(trip.relevantActivity.dayIndex),
+      );
+    }
   }
 
   Future<void> _loadFeaturedContent() async {
@@ -257,11 +278,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       child: ActiveTripCard(
                         trip: trip,
-                        onViewOrRoute: () => context.push(
-                          AppRoutes.tripPlannerDayDetailPath(
-                            trip.relevantActivity.dayIndex,
-                          ),
-                        ),
+                        onViewOrRoute: () => _viewPlan(trip),
                         onEnd: TripStore.instance.endTrip,
                       ),
                     );

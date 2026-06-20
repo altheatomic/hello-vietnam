@@ -59,7 +59,7 @@ def fetch_nearby_amenities(
     for sub in subcategory_names:
         places = sorted(by_cat.get(sub, []), key=lambda x: x["distance_km"])
         result.extend(places[:limit_per_category])
-    return result
+    return sorted(result, key=lambda x: x["distance_km"])
 
 
 def fetch_places_required_filter(
