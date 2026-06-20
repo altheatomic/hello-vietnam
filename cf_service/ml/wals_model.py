@@ -42,18 +42,31 @@ def train_wals(A: np.ndarray):
 def compute_cf_scores(U, V, user_ids, place_ids, A, top_k=500) -> list:
     results = []
     effective_k = min(top_k, len(place_ids))
+
     for ui, user_id in enumerate(user_ids):
         raw_scores = sigmoid(V @ U[ui])
-
         interacted = np.where(A[ui] > 0)[0]
-        raw_scores[interacted] = -1.0
 
-        top_indices = np.argpartition(raw_scores, -effective_k)[-effective_k:]
-        top_indices = top_indices[np.argsort(raw_scores[top_indices])[::-1]]
+        scores_excl = raw_scores.copy()
+        scores_excl[interacted] = -1.0
 
-        for pi in top_indices:
-            if raw_scores[pi] < 0:
-                break
-            results.append((user_id, place_ids[pi], float(raw_scores[pi])))
+        top_idx = np.argpartition(scores_excl, -effective_k)[-effective_k:]
+        top_idx = top_idx[np.argsort(scores_excl[top_idx])[::-1]]
+
+        user_results = [
+            (user_id, place_ids[pi], float(scores_excl[pi]))
+            for pi in top_idx if scores_excl[pi] >= 0
+        ]
+
+        if not user_results:
+            # Fallback: all places interacted — re-suggest by raw score
+            fallback_idx = np.argpartition(raw_scores, -effective_k)[-effective_k:]
+            fallback_idx = fallback_idx[np.argsort(raw_scores[fallback_idx])[::-1]]
+            user_results = [
+                (user_id, place_ids[pi], float(raw_scores[pi]))
+                for pi in fallback_idx
+            ]
+
+        results.extend(user_results)
 
     return results

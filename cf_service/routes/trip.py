@@ -26,7 +26,7 @@ class TripPlanRequest(BaseModel):
     n_days:              int
     start_date:          Optional[str]       = None   # 'YYYY-MM-DD'; defaults to today
     sa_runs:             int                 = 5
-    save_plan:           bool                = True
+    save_plan:           bool                = False
     interest_option_ids: Optional[List[str]] = None   # trip-level interest (UUIDs)
 
 
