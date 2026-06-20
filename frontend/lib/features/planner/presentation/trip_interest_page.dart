@@ -18,13 +18,13 @@ class TripInterestPage extends StatefulWidget {
 class _TripInterestPageState extends State<TripInterestPage> {
   static const List<_InterestOption> _options = <_InterestOption>[
     _InterestOption(
-      id: 'culture',
+      id: 'culture_history',
       emoji: '🏛️',
       title: 'Culture & History',
       subtitle: 'Museums, temples, heritage',
     ),
     _InterestOption(
-      id: 'nature',
+      id: 'nature_outdoor',
       emoji: '🌿',
       title: 'Nature & Outdoor',
       subtitle: 'Hiking, beaches, parks',
@@ -43,7 +43,7 @@ class _TripInterestPageState extends State<TripInterestPage> {
     ),
   ];
 
-  final Set<String> _selectedIds = <String>{'entertainment'};
+  final Set<String> _selectedIds = <String>{};
   bool _isLoading = false;
 
   void _toggleOption(String id) {
@@ -74,6 +74,7 @@ class _TripInterestPageState extends State<TripInterestPage> {
           idProvince: idProvince,
           nDays: nDays,
           startDate: wizard?.startDate,
+          savePlan: true,
           interestOptionIds: _selectedIds.toList(),
         ),
       );

@@ -137,8 +137,10 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
   Widget build(BuildContext context) {
     final Map<String, List<_SavedTrip>> groupedTrips =
         <String, List<_SavedTrip>>{};
-    for (final _SavedTrip trip in _visibleTrips) {
-      groupedTrips.putIfAbsent(trip.monthLabel, () => <_SavedTrip>[]).add(trip);
+    if (!_isLoading) {
+      for (final _SavedTrip trip in _visibleTrips) {
+        groupedTrips.putIfAbsent(trip.monthLabel, () => <_SavedTrip>[]).add(trip);
+      }
     }
 
     return Scaffold(
@@ -247,7 +249,12 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                       ),
                     ),
                   ),
-                  if (groupedTrips.isEmpty)
+                  if (_isLoading)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (groupedTrips.isEmpty)
                     const SliverFillRemaining(
                       hasScrollBody: false,
                       child: _EmptySavedTripsState(),

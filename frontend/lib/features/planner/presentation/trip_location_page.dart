@@ -48,7 +48,7 @@ class _TripLocationPageState extends State<TripLocationPage> {
   Future<void> _loadProvinces() async {
     try {
       final rows = await Supabase.instance.client
-          .from('province')
+          .from('old_province')
           .select('id_province, name')
           .order('name');
       if (!mounted) return;

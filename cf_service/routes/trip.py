@@ -26,7 +26,7 @@ class TripPlanRequest(BaseModel):
     n_days:              int
     start_date:          Optional[str]       = None   # 'YYYY-MM-DD'; defaults to today
     sa_runs:             int                 = 5
-    save_plan:           bool                = True
+    save_plan:           bool                = False
     interest_option_ids: Optional[List[str]] = None   # trip-level interest (UUIDs)
 
 
@@ -39,6 +39,7 @@ class SavePlanRequest(BaseModel):
 
 @router.post("/api/trips/plan")
 async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
+    print(f"[DEBUG] plan request: {req.dict()}")
     from services.trip_planner import TripPlannerService
 
     start_at = (
@@ -57,6 +58,8 @@ async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
         save=req.save_plan,
         interest_option_ids=req.interest_option_ids,
     )
+    # print(f"[DEBUG] response days count: {len(result.get('days', []))}")
+    # print(f"[DEBUG] response: {result}")
     return result
 
 
