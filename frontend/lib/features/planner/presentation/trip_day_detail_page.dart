@@ -4,7 +4,26 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/utils/maps_launcher.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
+
+void _openDayRoute(List<TripPlannerActivityData> activities) {
+  if (activities.isEmpty) return;
+  if (activities.length == 1) {
+    openGoogleMapsPin(lat: activities.first.lat, lng: activities.first.lng);
+    return;
+  }
+  final first = activities.first;
+  final last = activities.last;
+  final middle = activities.sublist(1, activities.length - 1);
+  openGoogleMapsDirections(
+    originLat: first.lat,
+    originLng: first.lng,
+    destLat: last.lat,
+    destLng: last.lng,
+    waypoints: middle.map((a) => (lat: a.lat, lng: a.lng)).toList(),
+  );
+}
 
 class TripDayDetailPage extends StatelessWidget {
   const TripDayDetailPage({super.key, required this.dayIndex, this.dayData});
@@ -72,10 +91,7 @@ class TripDayDetailPage extends StatelessWidget {
                     const SizedBox(height: 22),
                     _GradientActionButton(
                       label: 'Create Trip on Google Maps',
-                      onTap: () => context.push(
-                        AppRoutes.tripPlannerMapPath(dayIndex, 0),
-                        extra: day.activities.isNotEmpty ? day.activities[0] : null,
-                      ),
+                      onTap: () => _openDayRoute(day.activities),
                     ),
                     const SizedBox(height: 22),
                     ...day.activities.asMap().entries.map(
