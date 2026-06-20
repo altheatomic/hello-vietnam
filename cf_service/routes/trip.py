@@ -63,6 +63,21 @@ async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
     return result
 
 
+_NEARBY_SUBCATEGORIES = ["Y tế / Bệnh viện", "Nhà thuốc", "Bến xe / Sân bay / Ga tàu"]
+
+
+@router.get("/api/places/nearby")
+async def get_nearby_places(
+    lat: float,
+    lng: float,
+    limit: int = 3,
+    supabase=Depends(get_supabase),
+):
+    from db.place_repository import fetch_nearby_amenities
+    places = fetch_nearby_amenities(supabase, lat, lng, _NEARBY_SUBCATEGORIES, limit_per_category=limit)
+    return {"places": places}
+
+
 @router.get("/api/trips/plan/{id_plan}")
 async def get_plan(id_plan: str, id_user: str, supabase=Depends(get_supabase)):
     from db.queries_plan import get_plan as _get_plan

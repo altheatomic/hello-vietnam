@@ -23,6 +23,8 @@ class TripPlannerMockData {
           description:
               "Explore Vietnam's first national university, a beautiful example of traditional Vietnamese architecture and Confucian heritage.",
           distanceLabel: 'Around 800 meters',
+          lat: 21.0285,
+          lng: 105.8357,
           tips: <String>[
             'Arrive early to avoid crowds',
             'Dress modestly for temple visit',
@@ -34,18 +36,24 @@ class TripPlannerMockData {
               subtitle: 'Hospital',
               distance: '140m',
               eta: '2 mins',
+              lat: 21.0287,
+              lng: 105.8340,
             ),
             TripPlannerNearbyPlace(
               title: 'Hospital 2',
               subtitle: 'Hospital',
               distance: '450m',
               eta: '5 mins',
+              lat: 21.0301,
+              lng: 105.8372,
             ),
             TripPlannerNearbyPlace(
               title: 'Long Chau Pharmacy',
               subtitle: 'Pharmacy',
               distance: '680m',
               eta: '8 mins',
+              lat: 21.0265,
+              lng: 105.8390,
             ),
           ],
         ),
@@ -395,6 +403,8 @@ class TripPlannerActivityData {
     required this.distanceLabel,
     required this.tips,
     required this.nearbyPlaces,
+    this.lat = 0.0,
+    this.lng = 0.0,
   });
 
   final String title;
@@ -405,6 +415,8 @@ class TripPlannerActivityData {
   final String distanceLabel;
   final List<String> tips;
   final List<TripPlannerNearbyPlace> nearbyPlaces;
+  final double lat;
+  final double lng;
 }
 
 class TripPlannerNearbyPlace {
@@ -413,10 +425,14 @@ class TripPlannerNearbyPlace {
     required this.subtitle,
     required this.distance,
     required this.eta,
+    this.lat = 0.0,
+    this.lng = 0.0,
   });
 
   final String title;
   final String subtitle;
   final String distance;
   final String eta;
+  final double lat;
+  final double lng;
 }

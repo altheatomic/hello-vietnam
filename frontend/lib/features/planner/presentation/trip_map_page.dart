@@ -4,6 +4,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/utils/maps_launcher.dart';
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 
 class TripMapPage extends StatelessWidget {
@@ -11,17 +13,17 @@ class TripMapPage extends StatelessWidget {
     super.key,
     required this.dayIndex,
     required this.activityIndex,
+    this.activity,
   });
 
   final int dayIndex;
   final int activityIndex;
+  final TripPlannerActivityData? activity;
 
   @override
   Widget build(BuildContext context) {
-    final TripPlannerActivityData activity = TripPlannerMockData.activityAt(
-      dayIndex,
-      activityIndex,
-    );
+    final TripPlannerActivityData activity = this.activity ??
+        TripPlannerMockData.activityAt(dayIndex, activityIndex);
 
     return Scaffold(
       body: Container(
@@ -140,7 +142,9 @@ class TripMapPage extends StatelessWidget {
                               ],
                             ),
                             child: Text(
-                              activity.nearbyPlaces.first.eta,
+                              activity.nearbyPlaces.isNotEmpty
+                                  ? activity.nearbyPlaces.first.eta
+                                  : '–',
                               style: const TextStyle(
                                 fontSize: 19,
                                 fontWeight: FontWeight.w700,
@@ -180,7 +184,7 @@ class TripMapPage extends StatelessWidget {
                         ),
                         Align(
                           alignment: Alignment.bottomCenter,
-                          child: _ResultSheet(places: activity.nearbyPlaces),
+                          child: _ResultSheet(activity: activity),
                         ),
                       ],
                     ),
@@ -195,10 +199,64 @@ class TripMapPage extends StatelessWidget {
   }
 }
 
-class _ResultSheet extends StatelessWidget {
-  const _ResultSheet({required this.places});
+class _ResultSheet extends StatefulWidget {
+  const _ResultSheet({required this.activity});
 
-  final List<TripPlannerNearbyPlace> places;
+  final TripPlannerActivityData activity;
+
+  @override
+  State<_ResultSheet> createState() => _ResultSheetState();
+}
+
+class _ResultSheetState extends State<_ResultSheet> {
+  List<TripPlannerNearbyPlace> _places = <TripPlannerNearbyPlace>[];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final double lat = widget.activity.lat;
+    final double lng = widget.activity.lng;
+    if (lat == 0.0 && lng == 0.0) {
+      // Fallback to mock nearbyPlaces when no real coords available
+      if (mounted) {
+        setState(() {
+          _places = widget.activity.nearbyPlaces;
+          _loading = false;
+        });
+      }
+      return;
+    }
+    try {
+      final nearby = await TripRepository().getNearbyPlaces(lat, lng);
+      if (!mounted) return;
+      setState(() {
+        _places = nearby
+            .map((p) => TripPlannerNearbyPlace(
+                  title: p.name,
+                  subtitle: p.subcategoryName,
+                  distance: p.distanceKm < 1
+                      ? '${(p.distanceKm * 1000).round()}m'
+                      : '${p.distanceKm.toStringAsFixed(1)}km',
+                  eta: '${p.estimatedMinutes} mins',
+                  lat: p.latitude,
+                  lng: p.longitude,
+                ))
+            .toList();
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _places = widget.activity.nearbyPlaces;
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -266,15 +324,28 @@ class _ResultSheet extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Expanded(
-            child: ListView.separated(
-              physics: const BouncingScrollPhysics(),
-              itemCount: places.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (BuildContext context, int index) {
-                final TripPlannerNearbyPlace place = places[index];
-                return _NearbyPlaceTile(place: place);
-              },
-            ),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+                : _places.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No nearby places found.',
+                          style: TextStyle(color: Color(0xFF8A95A5)),
+                        ),
+                      )
+                    : ListView.separated(
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: _places.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        itemBuilder: (BuildContext context, int index) {
+                          final TripPlannerNearbyPlace place = _places[index];
+                          return _NearbyPlaceTile(
+                            place: place,
+                            originLat: widget.activity.lat,
+                            originLng: widget.activity.lng,
+                          );
+                        },
+                      ),
           ),
         ],
       ),
@@ -283,9 +354,15 @@ class _ResultSheet extends StatelessWidget {
 }
 
 class _NearbyPlaceTile extends StatelessWidget {
-  const _NearbyPlaceTile({required this.place});
+  const _NearbyPlaceTile({
+    required this.place,
+    required this.originLat,
+    required this.originLng,
+  });
 
   final TripPlannerNearbyPlace place;
+  final double originLat;
+  final double originLng;
 
   @override
   Widget build(BuildContext context) {
@@ -364,16 +441,12 @@ class _NearbyPlaceTile extends StatelessWidget {
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () {
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    SnackBar(
-                      content: Text('Routing to ${place.title}'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-              },
+              onTap: () => openGoogleMapsDirections(
+                originLat: originLat,
+                originLng: originLng,
+                destLat: place.lat,
+                destLng: place.lng,
+              ),
               borderRadius: BorderRadius.circular(999),
               child: Ink(
                 padding: const EdgeInsets.symmetric(

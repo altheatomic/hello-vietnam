@@ -174,6 +174,39 @@ class SavedPlanItem {
   }
 }
 
+/// Nearby amenity from `GET /api/places/nearby`.
+class NearbyPlace {
+  const NearbyPlace({
+    required this.idPlace,
+    required this.name,
+    required this.subcategoryName,
+    required this.latitude,
+    required this.longitude,
+    required this.distanceKm,
+    required this.estimatedMinutes,
+  });
+
+  final String idPlace;
+  final String name;
+  final String subcategoryName;
+  final double latitude;
+  final double longitude;
+  final double distanceKm;
+  final int estimatedMinutes;
+
+  factory NearbyPlace.fromJson(Map<String, dynamic> json) {
+    return NearbyPlace(
+      idPlace:           json['id_place']           as String? ?? '',
+      name:              json['name']               as String? ?? '',
+      subcategoryName:   json['subcategory_name']   as String? ?? '',
+      latitude:          (json['latitude']          as num?)?.toDouble() ?? 0.0,
+      longitude:         (json['longitude']         as num?)?.toDouble() ?? 0.0,
+      distanceKm:        (json['distance_km']       as num?)?.toDouble() ?? 0.0,
+      estimatedMinutes:  (json['estimated_minutes'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
 /// Summary item from `GET /api/trips/plans`.
 class TripPlanSummary {
   const TripPlanSummary({

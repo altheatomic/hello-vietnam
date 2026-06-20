@@ -79,7 +79,7 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
       destination: item.provinceName.isEmpty ? 'Vietnam' : item.provinceName,
       tripType: 'Leisure',
       dateLabel: dateLabel,
-      budgetLabel: 'Standard range',
+
       accentColors: _palettes[index % _palettes.length],
       stops: item.stops
           .map((SavedPlanStop s) => _SavedStop(
@@ -541,23 +541,10 @@ class _SavedTripCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: _InfoPill(
-                        icon: Icons.account_balance_wallet_outlined,
-                        label: trip.budgetLabel,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _InfoPill(
-                        icon: Icons.checklist_rounded,
-                        label:
-                            '${trip.completedStops}/${trip.stops.length} completed',
-                      ),
-                    ),
-                  ],
+                _InfoPill(
+                  icon: Icons.checklist_rounded,
+                  label:
+                      '${trip.completedStops}/${trip.stops.length} completed',
                 ),
                 const SizedBox(height: 14),
                 ClipRRect(
@@ -991,7 +978,6 @@ class _SavedTrip {
     required this.destination,
     required this.tripType,
     required this.dateLabel,
-    required this.budgetLabel,
     required this.accentColors,
     required this.stops,
   });
@@ -1002,7 +988,6 @@ class _SavedTrip {
   final String destination;
   final String tripType;
   final String dateLabel;
-  final String budgetLabel;
   final List<Color> accentColors;
   final List<_SavedStop> stops;
 
@@ -1045,7 +1030,6 @@ class _SavedTrip {
       destination: destination,
       tripType: tripType,
       dateLabel: dateLabel,
-      budgetLabel: budgetLabel,
       accentColors: accentColors,
       stops: List<_SavedStop>.generate(stops.length, (int index) {
         final _SavedStop stop = stops[index];

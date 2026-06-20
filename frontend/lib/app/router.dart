@@ -629,6 +629,7 @@ GoRouter buildRouter() {
                                     state.pathParameters['activityIndex'] ?? '',
                                   ) ??
                                   0,
+                              activity: state.extra as TripPlannerActivityData?,
                             ),
                           ),
                         ],

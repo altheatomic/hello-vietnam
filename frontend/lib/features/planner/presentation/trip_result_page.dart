@@ -231,6 +231,8 @@ List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
             : '',
         tips: const <String>[],
         nearbyPlaces: const <TripPlannerNearbyPlace>[],
+        lat: p.latitude ?? 0.0,
+        lng: p.longitude ?? 0.0,
       );
     }).toList();
 

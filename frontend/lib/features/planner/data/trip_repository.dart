@@ -52,6 +52,16 @@ class TripRepository {
         .toList();
   }
 
+  Future<List<NearbyPlace>> getNearbyPlaces(double lat, double lng, {int limit = 3}) async {
+    final data = await _get('/api/places/nearby', {
+      'lat': lat.toString(),
+      'lng': lng.toString(),
+      'limit': limit.toString(),
+    });
+    final raw = data['places'] as List<dynamic>? ?? <dynamic>[];
+    return raw.whereType<Map<String, dynamic>>().map(NearbyPlace.fromJson).toList();
+  }
+
   Future<void> savePlan(String idPlan, {String? customTitle}) async {
     await _post('/api/trips/$idPlan/save', <String, dynamic>{
       'id_user': _userId,

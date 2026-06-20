@@ -74,6 +74,7 @@ class TripDayDetailPage extends StatelessWidget {
                       label: 'Create Trip on Google Maps',
                       onTap: () => context.push(
                         AppRoutes.tripPlannerMapPath(dayIndex, 0),
+                        extra: day.activities.isNotEmpty ? day.activities[0] : null,
                       ),
                     ),
                     const SizedBox(height: 22),
@@ -84,6 +85,7 @@ class TripDayDetailPage extends StatelessWidget {
                           activity: entry.value,
                           onDirections: () => context.push(
                             AppRoutes.tripPlannerMapPath(dayIndex, entry.key),
+                            extra: entry.value,
                           ),
                         ),
                       ),
