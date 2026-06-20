@@ -75,10 +75,9 @@ async def list_plans(id_user: str, supabase=Depends(get_supabase)):
 # ── Admin: CF retrain ─────────────────────────────────────────────────────────
 
 @router.post("/admin/cf/retrain")
-async def trigger_cf_retrain(background_tasks: BackgroundTasks,
-                              conn=Depends(get_db)):
+async def trigger_cf_retrain(background_tasks: BackgroundTasks):
     from jobs.cf_retrain import run_cf_retrain
-    background_tasks.add_task(run_cf_retrain, conn, triggered_by='admin')
+    background_tasks.add_task(run_cf_retrain, triggered_by='admin')
     return {"status": "queued", "message": "CF re-train job started in background."}
 
 

@@ -10,6 +10,7 @@ import '../features/admin/presentation/pages/admin_feedback_page.dart';
 import '../features/admin/presentation/pages/admin_food_page.dart';
 import '../features/admin/presentation/pages/admin_popular_app_page.dart';
 import '../features/admin/presentation/pages/admin_login_page.dart';
+import '../features/admin/presentation/pages/admin_cf_retrain_page.dart';
 
 class AdminRoutes {
   static const login = '/admin/login';
@@ -20,6 +21,7 @@ class AdminRoutes {
   static const feedback = '/admin/feedback';
   static const food = '/admin/food';
   static const popularApps = '/admin/popular-apps';
+  static const cfRetrain = '/admin/cf-retrain';
 }
 
 GoRouter buildAdminRouter() {
@@ -69,6 +71,10 @@ GoRouter buildAdminRouter() {
           GoRoute(
             path: AdminRoutes.popularApps,
             builder: (c, s) => const AdminPopularAppPage(),
+          ),
+          GoRoute(
+            path: AdminRoutes.cfRetrain,
+            builder: (c, s) => const AdminCfRetrainPage(),
           ),
         ],
       ),

@@ -71,6 +71,7 @@ import '../features/admin/presentation/pages/admin_report_page.dart';
 import '../features/admin/presentation/pages/admin_feedback_page.dart';
 import '../features/admin/presentation/pages/admin_food_page.dart';
 import '../features/admin/presentation/pages/admin_popular_app_page.dart';
+import '../features/admin/presentation/pages/admin_cf_retrain_page.dart';
 import '../features/personalization/data/travel_preferences_repository.dart';
 import '../features/personalization/presentation/travel_preferences_onboarding_page.dart';
 
@@ -166,6 +167,7 @@ class AppRoutes {
   static const adminFeedback = '/admin/feedback';
   static const adminFood = '/admin/food';
   static const adminPopularApps = '/admin/popular-apps';
+  static const adminCfRetrain = '/admin/cf-retrain';
   static const deleteUserData = '$profile/delete-user-data';
 
   static String forumPostPath(String postId) => '/forum/post/$postId';
@@ -543,6 +545,13 @@ GoRouter buildRouter() {
             pageBuilder: (c, s) => NoTransitionPage<void>(
               key: s.pageKey,
               child: const AdminPopularAppPage(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.adminCfRetrain,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminCfRetrainPage(),
             ),
           ),
         ],

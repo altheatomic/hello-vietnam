@@ -13,6 +13,7 @@ Flow:
 
 import uuid
 import datetime
+from db.connection import get_pool
 from ml.matrix_a   import build_matrix_A
 from ml.wals_model import train_wals, compute_cf_scores
 
@@ -92,24 +93,26 @@ async def _log_failure(conn, log_id: str, error: str) -> None:
     """, log_id, error)
 
 
-async def run_cf_retrain(conn, triggered_by: str = 'cron') -> dict:
-    log_id = await _log_start(conn, triggered_by)
+async def run_cf_retrain(triggered_by: str = 'cron') -> dict:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        log_id = await _log_start(conn, triggered_by)
 
-    try:
-        events = await _load_events_from_db(conn)
-        A, user_ids, place_ids = build_matrix_A(events)
+        try:
+            events = await _load_events_from_db(conn)
+            A, user_ids, place_ids = build_matrix_A(events)
 
-        if len(user_ids) == 0 or len(place_ids) == 0:
-            raise ValueError("No events found – cannot train model.")
+            if len(user_ids) == 0 or len(place_ids) == 0:
+                raise ValueError("No events found – cannot train model.")
 
-        U, V    = train_wals(A)
-        scores  = compute_cf_scores(U, V, user_ids, place_ids, A, top_k=500)
+            U, V    = train_wals(A)
+            scores  = compute_cf_scores(U, V, user_ids, place_ids, A, top_k=500)
 
-        await _save_cf_scores(conn, scores)
-        await _log_success(conn, log_id, len(scores))
+            await _save_cf_scores(conn, scores)
+            await _log_success(conn, log_id, len(scores))
 
-        return {'status': 'success', 'rows_written': len(scores), 'error': None}
+            return {'status': 'success', 'rows_written': len(scores), 'error': None}
 
-    except Exception as e:
-        await _log_failure(conn, log_id, str(e))
-        return {'status': 'failed', 'rows_written': 0, 'error': str(e)}
+        except Exception as e:
+            await _log_failure(conn, log_id, str(e))
+            return {'status': 'failed', 'rows_written': 0, 'error': str(e)}

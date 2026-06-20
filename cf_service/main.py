@@ -17,6 +17,7 @@ from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()  # picks up .env in cwd if present
 
@@ -26,16 +27,23 @@ from routes.trip import router as trip_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # TODO: uncomment khi có DATABASE_URL
-    # await init_pool()
+    await init_pool()
     yield
-    # await close_pool()
+    await close_pool()
 
 
 app = FastAPI(
     title="Hello Vietnam – CF & Trip Planner Service",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(trip_router)
