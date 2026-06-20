@@ -3,8 +3,11 @@ cf_service/main.py
 FastAPI entry point for the CF + trip-planner service.
 
 Environment variables (put in .env or set externally):
-  DATABASE_URL  — asyncpg-compatible Supabase connection string
-                  e.g. postgresql://postgres:<password>@db.<project>.supabase.co:5432/postgres
+  SUPABASE_URL              — Supabase project URL
+                              e.g. https://<project>.supabase.co
+  SUPABASE_SERVICE_ROLE_KEY — Supabase service role key (server-side only, never expose to frontend)
+  DATABASE_URL              — asyncpg-compatible Supabase connection string (used only by CF retrain job)
+                              e.g. postgresql://postgres:<password>@db.<project>.supabase.co:5432/postgres
 
 Run locally:
   uvicorn main:app --reload --port 8000

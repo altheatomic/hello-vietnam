@@ -1,111 +1,151 @@
 """
 db/queries_plan.py
-Save / load trip plan in plan + plan_component tables.
+Save / load trip plan using supabase-py (sync).
+
+Table column notes (from migration 20260606000100_plan_trip_schema.sql):
+  plan.city_province = uuid FK to city_province(id_city)  ← stores id_province value
+  plan.duration      = text (number of days as string)
+  plan_component.cb_score = numeric ← stores tag_match value from new pipeline
 """
 
 import uuid
 import datetime
+from typing import Any
 
 
-async def save_plan(conn,
-                    id_user:     str,
-                    id_province: str,
-                    n_days:      int,
-                    start_at:    datetime.date,
-                    days:        list) -> str:
+def save_plan(
+    supabase: Any,
+    id_user: str,
+    id_province: str,
+    n_days: int,
+    start_at: datetime.date,
+    days: list,
+) -> str:
     id_plan = str(uuid.uuid4())
-    end_at  = start_at + datetime.timedelta(days=n_days - 1)
+    end_at = start_at + datetime.timedelta(days=n_days - 1)
 
-    await conn.execute("""
-        INSERT INTO plan (id_plan, id_user, duration, start_at, end_at, city_province)
-        VALUES ($1, $2, $3, $4, $5, $6)
-    """, id_plan, id_user, str(n_days), start_at, end_at, id_province)
+    supabase.table("plan").insert({
+        "id_plan": id_plan,
+        "id_user": id_user,
+        "duration": str(n_days),
+        "start_at": start_at.isoformat(),
+        "end_at": end_at.isoformat(),
+        "city_province": id_province,
+    }).execute()
 
     rows = []
     for day in days:
-        for place in day['places']:
-            rows.append((
-                str(uuid.uuid4()),
-                id_plan,
-                day['day'],
-                place.get('slot'),
-                place['id_place'],
-                place['order'],
-                place.get('slot'),
-                place.get('estimated_travel_minutes'),
-                place.get('cb_score'),
-                place.get('cf_score'),
-                place.get('final_score'),
-            ))
+        for place in day["places"]:
+            rows.append({
+                "id_component": str(uuid.uuid4()),
+                "id_plan": id_plan,
+                "day": day["day"],
+                "time_part": place.get("slot"),
+                "id_place": place["id_place"],
+                "visit_order": place.get("order"),
+                "slot": place.get("slot"),
+                "estimated_travel_minutes": place.get("estimated_travel_minutes"),
+                "cb_score": place.get("tag_match"),   # tag_match stored in cb_score column
+                "cf_score": place.get("cf_score"),
+                "final_score": place.get("final_score"),
+            })
 
-    await conn.executemany("""
-        INSERT INTO plan_component (
-            id_component, id_plan, day, time_part,
-            id_place, visit_order, slot,
-            estimated_travel_minutes,
-            cb_score, cf_score, final_score
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    """, rows)
+    if rows:
+        supabase.table("plan_component").insert(rows).execute()
 
     return id_plan
 
 
-async def get_plan(conn, id_plan: str) -> dict:
-    plan_row = await conn.fetchrow("""
-        SELECT id_plan, duration, start_at, end_at, city_province, created_at
-        FROM plan WHERE id_plan = $1
-    """, id_plan)
-
-    if not plan_row:
+def get_plan(supabase: Any, id_plan: str) -> dict:
+    plan_resp = (
+        supabase
+        .table("plan")
+        .select("id_plan, duration, start_at, end_at, city_province, created_at")
+        .eq("id_plan", id_plan)
+        .limit(1)
+        .execute()
+    )
+    plan_rows = plan_resp.data or []
+    if not plan_rows:
         return {}
+    plan_row = plan_rows[0]
 
-    component_rows = await conn.fetch("""
-        SELECT
-            pc.day, pc.slot, pc.visit_order,
-            pc.estimated_travel_minutes,
-            pc.cb_score, pc.cf_score, pc.final_score,
-            p.id_place, p.name, p.latitude, p.longitude
-        FROM plan_component pc
-        JOIN place p ON pc.id_place = p.id_place
-        WHERE pc.id_plan = $1
-        ORDER BY pc.day, pc.visit_order
-    """, id_plan)
+    components_resp = (
+        supabase
+        .table("plan_component")
+        .select(
+            """
+            day,
+            slot,
+            visit_order,
+            estimated_travel_minutes,
+            cb_score,
+            cf_score,
+            final_score,
+            place (
+                id_place,
+                name,
+                latitude,
+                longitude
+            )
+            """
+        )
+        .eq("id_plan", id_plan)
+        .order("day")
+        .order("visit_order")
+        .execute()
+    )
+    component_rows = components_resp.data or []
 
-    days_map: dict = {}
+    days_map: dict[int, list] = {}
     for r in component_rows:
-        d = r['day']
-        days_map.setdefault(d, []).append(dict(r))
+        d = int(r["day"])
+        place_data = r.get("place") or {}
+        days_map.setdefault(d, []).append({
+            "day": d,
+            "slot": r.get("slot"),
+            "visit_order": r.get("visit_order"),
+            "estimated_travel_minutes": r.get("estimated_travel_minutes"),
+            "tag_match": r.get("cb_score"),   # cb_score column stores tag_match value
+            "cf_score": r.get("cf_score"),
+            "final_score": r.get("final_score"),
+            "id_place": place_data.get("id_place"),
+            "name": place_data.get("name"),
+            "latitude": place_data.get("latitude"),
+            "longitude": place_data.get("longitude"),
+        })
 
     return {
-        'id_plan':       str(plan_row['id_plan']),
-        'start_at':      str(plan_row['start_at'].date()),
-        'end_at':        str(plan_row['end_at'].date()),
-        'city_province': plan_row['city_province'],
-        'created_at':    str(plan_row['created_at']),
-        'days': [
-            {'day': d, 'places': places}
+        "id_plan": str(plan_row["id_plan"]),
+        "start_at": str(plan_row["start_at"]),
+        "end_at": str(plan_row["end_at"]),
+        "city_province": str(plan_row.get("city_province") or ""),
+        "created_at": str(plan_row["created_at"]),
+        "days": [
+            {"day": d, "places": places}
             for d, places in sorted(days_map.items())
         ],
     }
 
 
-async def list_plans(conn, id_user: str) -> list:
-    rows = await conn.fetch("""
-        SELECT id_plan, duration, start_at, end_at, city_province, created_at
-        FROM plan
-        WHERE id_user = $1
-        ORDER BY created_at DESC
-        LIMIT 50
-    """, id_user)
-
+def list_plans(supabase: Any, id_user: str) -> list:
+    resp = (
+        supabase
+        .table("plan")
+        .select("id_plan, duration, start_at, end_at, city_province, created_at")
+        .eq("id_user", id_user)
+        .order("created_at", desc=True)
+        .limit(50)
+        .execute()
+    )
     return [
         {
-            'id_plan':       str(r['id_plan']),
-            'duration':      r['duration'],
-            'start_at':      str(r['start_at'].date()),
-            'end_at':        str(r['end_at'].date()),
-            'city_province': r['city_province'],
-            'created_at':    str(r['created_at']),
+            "id_plan": str(r["id_plan"]),
+            "duration": r.get("duration"),
+            "start_at": str(r["start_at"]),
+            "end_at": str(r["end_at"]),
+            "city_province": str(r.get("city_province") or ""),
+            "created_at": str(r["created_at"]),
         }
-        for r in rows
+        for r in (resp.data or [])
     ]

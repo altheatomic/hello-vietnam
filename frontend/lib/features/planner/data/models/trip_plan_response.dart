@@ -1,4 +1,4 @@
-/// Response from `action: planTrip` / `GET /api/trips/plan/:id`.
+/// Response from `POST /api/trips/plan`.
 ///
 /// Shape returned by cf_service:
 /// {
@@ -6,7 +6,7 @@
 ///   "days": [
 ///     {
 ///       "day": 1,
-///       "date": "2026-06-07",
+///       "date": "2026-07-01",
 ///       "places": [
 ///         {
 ///           "order": 1,
@@ -16,9 +16,9 @@
 ///           "latitude": 16.0,
 ///           "longitude": 108.0,
 ///           "estimated_travel_minutes": 12,
-///           "cb_score": 0.75,
-///           "cf_score": 0.62,
-///           "final_score": 0.70
+///           "tag_match": 0.25,
+///           "cf_score": 0.0,
+///           "final_score": 0.25
 ///         }
 ///       ]
 ///     }
@@ -75,7 +75,7 @@ class TripPlanPlace {
     this.latitude,
     this.longitude,
     this.estimatedTravelMinutes,
-    this.cbScore,
+    this.tagMatch,
     this.cfScore,
     this.finalScore,
   });
@@ -87,7 +87,7 @@ class TripPlanPlace {
   final double? latitude;
   final double? longitude;
   final int? estimatedTravelMinutes;
-  final double? cbScore;
+  final double? tagMatch;
   final double? cfScore;
   final double? finalScore;
 
@@ -100,14 +100,14 @@ class TripPlanPlace {
       latitude:                 (json['latitude'] as num?)?.toDouble(),
       longitude:                (json['longitude'] as num?)?.toDouble(),
       estimatedTravelMinutes:   (json['estimated_travel_minutes'] as num?)?.toInt(),
-      cbScore:                  (json['cb_score'] as num?)?.toDouble(),
+      tagMatch:                 (json['tag_match'] as num?)?.toDouble(),
       cfScore:                  (json['cf_score'] as num?)?.toDouble(),
       finalScore:               (json['final_score'] as num?)?.toDouble(),
     );
   }
 }
 
-/// Summary item from `action: listPlans`.
+/// Summary item from `GET /api/trips/plans`.
 class TripPlanSummary {
   const TripPlanSummary({
     required this.idPlan,

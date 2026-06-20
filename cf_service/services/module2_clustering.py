@@ -14,6 +14,7 @@ from sklearn.cluster import KMeans
 SLOT_LABELS = ['morning', 'afternoon', 'evening']
 
 
+# DEPRECATED — superseded by services/module2_algorithm.build_module2_result() (Greedy Repair)
 def _kmeans_cluster(places: list, n_days: int) -> dict:
     coords = [[p['latitude'], p['longitude']] for p in places]
     km     = KMeans(n_clusters=n_days, n_init=10, random_state=42)
@@ -25,12 +26,14 @@ def _kmeans_cluster(places: list, n_days: int) -> dict:
     return clusters
 
 
+# DEPRECATED — superseded by services/module2_algorithm.build_module2_result() (Greedy Repair)
 def _centroid(places: list) -> tuple:
     lats = [p['latitude']  for p in places]
     lons = [p['longitude'] for p in places]
     return (sum(lats) / len(lats), sum(lons) / len(lons))
 
 
+# DEPRECATED — superseded by services/module2_algorithm.build_module2_result() (Greedy Repair)
 def _euclidean(place: dict, centroid: tuple) -> float:
     return math.sqrt(
         (place['latitude']  - centroid[0]) ** 2 +
@@ -38,6 +41,7 @@ def _euclidean(place: dict, centroid: tuple) -> float:
     )
 
 
+# DEPRECATED — superseded by Greedy Repair in services/module2_algorithm.py
 def _balance_clusters(clusters: dict, n_days: int) -> dict:
     for _ in range(n_days * 5):
         sizes = {d: len(v) for d, v in clusters.items()}
@@ -60,6 +64,7 @@ def _assign_slots(day_places: list) -> None:
             place['slot'] = SLOT_LABELS[min(i // per_slot, 2)]
 
 
+# DEPRECATED — superseded by services/module2_algorithm.build_module2_result()
 def cluster_into_days(places: list, n_days: int) -> dict:
     if not places:
         return {d + 1: [] for d in range(n_days)}

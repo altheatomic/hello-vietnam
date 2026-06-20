@@ -10,7 +10,6 @@ import '../features/planner/presentation/business_location_page.dart';
 import '../features/planner/data/models/trip_plan_response.dart';
 import '../features/planner/data/trip_wizard_data.dart';
 import '../features/planner/presentation/trip_planner_mock_data.dart';
-import '../features/planner/presentation/trip_budget_page.dart';
 import '../features/planner/presentation/trip_day_detail_page.dart';
 import '../features/planner/presentation/trip_duration_page.dart';
 import '../features/planner/presentation/trip_interest_page.dart';
@@ -85,7 +84,6 @@ class AppRoutes {
   static const tripPlannerBusinessLocation = '/trip-planner/business-location';
   static const tripPlannerDuration = '/trip-planner/duration';
   static const tripPlannerInterest = '/trip-planner/interest';
-  static const tripPlannerBudget = '/trip-planner/budget';
   static const tripPlannerSaved = '/trip-planner/saved';
   static const tripPlannerResult = '/trip-planner/result';
   static const tripPlannerDayDetail = '/trip-planner/result/day/:dayIndex';
@@ -585,12 +583,6 @@ GoRouter buildRouter() {
                   GoRoute(
                     path: 'interest',
                     builder: (context, state) => TripInterestPage(
-                      wizard: state.extra as TripWizardData?,
-                    ),
-                  ),
-                  GoRoute(
-                    path: 'budget',
-                    builder: (context, state) => TripBudgetPage(
                       wizard: state.extra as TripWizardData?,
                     ),
                   ),

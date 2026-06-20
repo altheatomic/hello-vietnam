@@ -14,31 +14,34 @@ class TripRepository {
   // static const String _functionName = 'trip-planner';
   static const String _cfBaseUrl = 'http://localhost:8000';
 
+  // Hardcoded for demo — replace with real auth when ready.
+  static const String _testUserId = 'e4bb33fb-5f1b-49a6-9a00-93c67183afde';
+
   final SupabaseClient _client;
 
-  String? get _userId => _client.auth.currentUser?.id;
+  String get _userId =>
+      _client.auth.currentUser?.id ?? _testUserId;
 
   Future<TripPlanResponse> planTrip(TripPlanRequest request) async {
     final body = <String, dynamic>{
-      'id_user':    _userId ?? '',
+      'id_user':     _userId,
       'id_province': request.idProvince,
-      'n_days':     request.nDays,
+      'n_days':      request.nDays,
       if (request.startDate != null) 'start_date': request.startDate,
-      'top_n':      request.topN,
-      'sa_runs':    request.saRuns,
-      'save_plan':  request.savePlan,
+      'sa_runs':     request.saRuns,
+      'save_plan':   request.savePlan,
     };
     final data = await _post('/api/trips/plan', body);
     return TripPlanResponse.fromJson(data);
   }
 
   Future<TripPlanResponse> getPlan(String idPlan) async {
-    final data = await _get('/api/trips/plan/$idPlan', {'id_user': _userId ?? ''});
+    final data = await _get('/api/trips/plan/$idPlan', {'id_user': _userId});
     return TripPlanResponse.fromJson(data);
   }
 
   Future<List<TripPlanSummary>> listPlans() async {
-    final data = await _get('/api/trips/plans', {'id_user': _userId ?? ''});
+    final data = await _get('/api/trips/plans', {'id_user': _userId});
     final raw  = data['plans'] as List<dynamic>? ?? <dynamic>[];
     return raw
         .whereType<Map<String, dynamic>>()

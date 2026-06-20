@@ -3,7 +3,6 @@ class TripPlanRequest {
     required this.idProvince,
     required this.nDays,
     this.startDate,
-    this.topN = 40,
     this.saRuns = 5,
     this.savePlan = true,
   });
@@ -11,17 +10,14 @@ class TripPlanRequest {
   final String idProvince;
   final int nDays;
   final String? startDate; // 'YYYY-MM-DD'
-  final int topN;
   final int saRuns;
   final bool savePlan;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'action':     'planTrip',
-        'idProvince': idProvince,
-        'nDays':      nDays,
-        if (startDate != null) 'startDate': startDate,
-        'topN':       topN,
-        'saRuns':     saRuns,
-        'savePlan':   savePlan,
+        'id_province': idProvince,
+        'n_days':      nDays,
+        if (startDate != null) 'start_date': startDate,
+        'sa_runs':     saRuns,
+        'save_plan':   savePlan,
       };
 }

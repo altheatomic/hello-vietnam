@@ -13,6 +13,7 @@ Dynamic alpha (CB weight):
 
 # ── CB score ──────────────────────────────────────────────────────────────────
 
+# DEPRECATED — superseded by module1_algorithm.rank_places_by_tag_match() + CF blend in trip_planner.py
 def compute_cb_score(place: dict,
                      user_profile: dict,
                      place_tags: dict,
@@ -83,6 +84,7 @@ def _compute_alpha(cf_map: dict, total_places: int) -> float:
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
+# DEPRECATED — superseded by module1_algorithm.rank_places_by_tag_match() + CF blend in trip_planner.py
 def select_candidates(places: list,
                       user_profile: dict,
                       place_tags: dict,

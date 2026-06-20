@@ -1,6 +1,10 @@
 """
 routes/trip.py
 FastAPI endpoints for trip planning and admin CF retrain.
+
+Dependency injection:
+  - Planning endpoints  → supabase-py client (sync, per-request)
+  - CF retrain endpoint → asyncpg conn (kept for background job compatibility)
 """
 
 import datetime
@@ -9,6 +13,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from db.connection import get_db
+from db.supabase_client import get_supabase
 
 router = APIRouter()
 
@@ -20,7 +25,6 @@ class TripPlanRequest(BaseModel):
     id_province: str
     n_days:      int
     start_date:  Optional[str] = None   # 'YYYY-MM-DD'; defaults to today
-    top_n:       int  = 40
     sa_runs:     int  = 5
     save_plan:   bool = True
 
@@ -28,7 +32,7 @@ class TripPlanRequest(BaseModel):
 # ── Trip planning ─────────────────────────────────────────────────────────────
 
 @router.post("/api/trips/plan")
-async def plan_trip(req: TripPlanRequest, conn=Depends(get_db)):
+async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
     from services.trip_planner import TripPlannerService
 
     start_at = (
@@ -37,34 +41,33 @@ async def plan_trip(req: TripPlanRequest, conn=Depends(get_db)):
         else datetime.date.today()
     )
 
-    svc    = TripPlannerService(conn)
+    svc = TripPlannerService(supabase)
     result = await svc.plan(
-        id_user     = req.id_user,
-        id_province = req.id_province,
-        n_days      = req.n_days,
-        start_at    = start_at,
-        top_n       = req.top_n,
-        sa_runs     = req.sa_runs,
-        save        = req.save_plan,
+        id_user=req.id_user,
+        id_province=req.id_province,
+        n_days=req.n_days,
+        start_at=start_at,
+        sa_runs=req.sa_runs,
+        save=req.save_plan,
     )
     return result
 
 
 @router.get("/api/trips/plan/{id_plan}")
-async def get_plan(id_plan: str, id_user: str, conn=Depends(get_db)):
+async def get_plan(id_plan: str, id_user: str, supabase=Depends(get_supabase)):
     from db.queries_plan import get_plan as _get_plan
 
-    plan = await _get_plan(conn, id_plan)
+    plan = _get_plan(supabase, id_plan)
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found.")
     return plan
 
 
 @router.get("/api/trips/plans")
-async def list_plans(id_user: str, conn=Depends(get_db)):
+async def list_plans(id_user: str, supabase=Depends(get_supabase)):
     from db.queries_plan import list_plans as _list_plans
 
-    return {"plans": await _list_plans(conn, id_user)}
+    return {"plans": _list_plans(supabase, id_user)}
 
 
 # ── Admin: CF retrain ─────────────────────────────────────────────────────────

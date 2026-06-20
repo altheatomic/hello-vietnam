@@ -1,107 +1,188 @@
 """
 services/trip_planner.py
-TripPlannerService – orchestrates Module 1 → 2 → 3 and formats the response.
+TripPlannerService – orchestrates the full planning pipeline:
+
+  [Filtering]   fetch_places_required_filter → filter_places_with_fallback
+  [Module 1]    fetch tags + user interest → rank_places_by_tag_match
+  [CF Blend]    fetch_cf_scores_for_user → dynamic alpha blend → re-sort
+  [Diversity]   apply_diversity_selection (slot-based subcategory allocation)
+  [Module 2]    build_module2_result (K-Means + Greedy Repair)
+  [Module 3]    optimize_day_route + estimate_travel_minutes + _assign_slots
+  [Persist]     save_plan
 """
 
 import datetime
-from db.queries_places import (
-    get_places_by_province,
-    get_user_profile,
-    get_cf_scores_for_user,
-    get_place_tags,
-    get_already_rated_places,
-)
-from db.queries_plan import save_plan
 
-from services.module1_candidate import select_candidates
-from services.module2_clustering import cluster_into_days
-from services.module3_optimizer  import optimize_day_route, estimate_travel_minutes
+from db.place_repository import fetch_places_required_filter
+from db.queries_plan import save_plan
+from services.filters import filter_places_with_fallback
+from services.module1_algorithm import (
+    build_user_interest_state_from_rows,
+    rank_places_by_tag_match,
+)
+from services.module1_diversity import apply_diversity_selection
+from services.module1_repository import (
+    attach_place_tags_to_places,
+    build_tag_map,
+    fetch_active_tags,
+    fetch_already_rated_places,
+    fetch_cf_scores_for_user,
+    fetch_place_tags_for_places,
+    fetch_user_interest_tags,
+    fetch_user_onboarding_choices,
+    fetch_user_travel_profile,
+)
+from services.module2_algorithm import build_module2_result
+from services.module2_clustering import _assign_slots
+from services.module3_optimizer import estimate_travel_minutes, optimize_day_route
+
+
+def _compute_alpha(cf_scores: dict, total_places: int) -> float:
+    if total_places == 0:
+        return 1.0
+    coverage = len(cf_scores) / total_places
+    if coverage == 0:    return 1.0
+    if coverage < 0.10:  return 0.7
+    if coverage < 0.30:  return 0.5
+    return 0.3
+
+
+def _derive_start_point(places: list) -> dict:
+    if not places:
+        return {"latitude": 16.0, "longitude": 108.0}
+    avg_lat = sum(float(p["latitude"])  for p in places) / len(places)
+    avg_lon = sum(float(p["longitude"]) for p in places) / len(places)
+    return {"latitude": avg_lat, "longitude": avg_lon}
+
+
+def _format_place(place: dict, order: int) -> dict:
+    return {
+        "order":                    order,
+        "id_place":                 str(place["id_place"]),
+        "name":                     place.get("name"),
+        "slot":                     place.get("slot"),
+        "latitude":                 place.get("latitude"),
+        "longitude":                place.get("longitude"),
+        "estimated_travel_minutes": place.get("estimated_travel_minutes"),
+        "tag_match":                place.get("tag_match"),
+        "cf_score":                 place.get("cf_score"),
+        "final_score":              place.get("final_score"),
+    }
 
 
 class TripPlannerService:
 
-    def __init__(self, conn):
-        self.conn = conn
+    def __init__(self, supabase):
+        self.supabase = supabase
 
-    async def plan(self,
-                   id_user:     str,
-                   id_province: str,
-                   n_days:      int,
-                   start_at:    datetime.date,
-                   top_n:       int  = 40,
-                   sa_runs:     int  = 5,
-                   save:        bool = True) -> dict:
+    async def plan(
+        self,
+        id_user:     str,
+        id_province: str,
+        n_days:      int,
+        start_at:    datetime.date,
+        sa_runs:     int  = 5,
+        save:        bool = True,
+    ) -> dict:
+        supabase = self.supabase
+        end_date = start_at + datetime.timedelta(days=n_days - 1)
 
-        conn = self.conn
-
-        # ── Module 1: Candidate selection ────────────────────────────────────
-        places        = await get_places_by_province(conn, id_province)
-        user_profile  = await get_user_profile(conn, id_user)
-        cf_map        = await get_cf_scores_for_user(conn, id_user, id_province)
-        already_rated = await get_already_rated_places(conn, id_user)
-
-        place_ids_all = [str(p['id_place']) for p in places]
-        place_tags    = await get_place_tags(conn, place_ids_all)
-
-        candidates = select_candidates(
-            places        = places,
-            user_profile  = user_profile,
-            place_tags    = place_tags,
-            cf_map        = cf_map,
-            already_rated = already_rated,
-            top_n         = top_n,
+        # ── [Filtering] ───────────────────────────────────────────────────────
+        required_places = fetch_places_required_filter(supabase, id_province)
+        user_profile = fetch_user_travel_profile(supabase, id_user)
+        filtered_places, filter_report = filter_places_with_fallback(
+            required_places, user_profile or {}, n_days
         )
 
-        # ── Module 2: Cluster into days ───────────────────────────────────────
-        clusters = cluster_into_days(candidates, n_days)
+        # ── [Module 1 – TagMatch] ─────────────────────────────────────────────
+        tags = fetch_active_tags(supabase)
+        tag_map = build_tag_map(tags)
+        # {id_tag (str) → tag_code} for rows that only carry UUID (no nested tag object)
+        id_tag_map = {
+            str(tag["id_tag"]): tag["tag_code"]
+            for tag in tags
+            if tag.get("id_tag") and tag.get("tag_code")
+        }
 
-        # ── Module 3: Optimise each day's route ───────────────────────────────
-        start_point = _derive_start_point(candidates)
-        days        = []
+        place_ids = [str(p["id_place"]) for p in filtered_places]
+        place_tag_rows = fetch_place_tags_for_places(supabase, place_ids)
+        places_with_tags = attach_place_tags_to_places(filtered_places, place_tag_rows)
 
-        for day_number in range(1, n_days + 1):
-            day_places = clusters.get(day_number, [])
+        interest_tag_rows = fetch_user_interest_tags(supabase, id_user)
+        already_rated = fetch_already_rated_places(supabase, id_user)
+        user_interest_state = build_user_interest_state_from_rows(
+            interest_tag_rows, tag_map, id_tag_map
+        )
 
+        ranked = rank_places_by_tag_match(
+            places_with_tags, user_interest_state, id_tag_map=id_tag_map
+        )
+        ranked = [p for p in ranked if str(p["id_place"]) not in already_rated]
+
+        # ── [CF Blend] ────────────────────────────────────────────────────────
+        cf_scores = fetch_cf_scores_for_user(supabase, id_user, place_ids)
+        alpha = _compute_alpha(cf_scores, len(filtered_places))
+
+        for place in ranked:
+            tag_match = float(place.get("tag_match") or 0.0)
+            cf = cf_scores.get(str(place["id_place"]), 0.0)
+            place["cf_score"]   = round(cf, 6)
+            place["alpha_used"] = alpha
+            place["final_score"] = round(alpha * tag_match + (1 - alpha) * cf, 6)
+
+        ranked.sort(key=lambda p: -p["final_score"])
+
+        # ── [Diversity] ───────────────────────────────────────────────────────
+        onboarding_choices = fetch_user_onboarding_choices(supabase, id_user)
+        user_selected_interests = [
+            c["option_code"] for c in onboarding_choices if c.get("option_code")
+        ]
+
+        diversity_result = apply_diversity_selection(ranked, n_days, user_selected_interests)
+        top_places = diversity_result["diversified_top_k"]
+
+        # ── [Module 2 – Greedy Repair] ────────────────────────────────────────
+        pace_level = (user_profile or {}).get("pace_level")
+        m2_result = build_module2_result(
+            top_places,
+            start_date=str(start_at),
+            end_date=str(end_date),
+            pace_level=pace_level,
+        )
+        day_clusters = m2_result["day_clusters"]
+
+        # ── [Module 3 – Route optimization] ───────────────────────────────────
+        start_point = _derive_start_point(top_places)
+        days = []
+
+        for day_cluster in day_clusters:
+            day_places = day_cluster["places"]
             optimized = optimize_day_route(start_point, day_places, sa_runs=sa_runs)
             optimized = estimate_travel_minutes(optimized, start_point)
+            _assign_slots(optimized)
 
             days.append({
-                'day':    day_number,
-                'date':   str(start_at + datetime.timedelta(days=day_number - 1)),
-                'places': [_format_place(p, order=i + 1)
-                           for i, p in enumerate(optimized)],
+                "day":    day_cluster["day"],
+                "date":   day_cluster["date"],
+                "places": [_format_place(p, order=i + 1) for i, p in enumerate(optimized)],
             })
 
             if optimized:
                 start_point = optimized[-1]
 
-        # ── Persist ───────────────────────────────────────────────────────────
+        # ── [Persist] ─────────────────────────────────────────────────────────
         id_plan = None
         if save and days:
-            id_plan = await save_plan(conn, id_user, id_province,
-                                      n_days, start_at, days)
+            id_plan = save_plan(supabase, id_user, id_province, n_days, start_at, days)
 
-        return {'id_plan': id_plan, 'days': days}
-
-
-def _derive_start_point(candidates: list) -> dict:
-    if not candidates:
-        return {'latitude': 16.0, 'longitude': 108.0}
-    avg_lat = sum(p['latitude']  for p in candidates) / len(candidates)
-    avg_lon = sum(p['longitude'] for p in candidates) / len(candidates)
-    return {'latitude': avg_lat, 'longitude': avg_lon}
-
-
-def _format_place(place: dict, order: int) -> dict:
-    return {
-        'order':                    order,
-        'id_place':                 str(place['id_place']),
-        'name':                     place.get('name'),
-        'slot':                     place.get('slot'),
-        'latitude':                 place.get('latitude'),
-        'longitude':                place.get('longitude'),
-        'estimated_travel_minutes': place.get('estimated_travel_minutes'),
-        'cb_score':                 place.get('cb_score'),
-        'cf_score':                 place.get('cf_score'),
-        'final_score':              place.get('final_score'),
-    }
+        return {
+            "id_plan": id_plan,
+            "days": days,
+            "debug": {
+                "filter_report": filter_report,
+                "cf_coverage": round(len(cf_scores) / max(len(filtered_places), 1), 4),
+                "alpha": alpha,
+                "m2_summary": m2_result.get("summary"),
+                "diversity_summary": diversity_result.get("summary", {}).get("final_selected_count"),
+            },
+        }
