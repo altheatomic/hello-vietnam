@@ -3,7 +3,8 @@ services/module3_optimizer.py
 Module 3 – Daily route optimizer.
 
 Algorithm: Greedy nearest-neighbour init → Simulated Annealing refinement.
-Distance: Haversine (real-world km).
+Distance cost: schedule-aware (travel + wait + violation penalty) via route_cost_with_schedule().
+Greedy init still uses pure haversine distance (fast, directionally correct).
 SA neighbour moves: swap + reverse-segment + insert.
 """
 
@@ -28,7 +29,7 @@ def _dist(a: dict, b: dict) -> float:
     return haversine_km(a['latitude'], a['longitude'], b['latitude'], b['longitude'])
 
 
-# ── Route cost ────────────────────────────────────────────────────────────────
+# ── Pure distance cost (kept for reference / unit tests) ──────────────────────
 
 def route_cost(start: dict, route: list) -> float:
     if not route:
@@ -39,7 +40,7 @@ def route_cost(start: dict, route: list) -> float:
     return total
 
 
-# ── Greedy init ───────────────────────────────────────────────────────────────
+# ── Greedy init (pure distance — fast, directionally correct) ─────────────────
 
 def greedy_route(start: dict, places: list) -> list:
     unvisited = places.copy()
@@ -55,8 +56,8 @@ def greedy_route(start: dict, places: list) -> list:
 # ── SA neighbour moves ────────────────────────────────────────────────────────
 
 def _move_swap(route):
-    i, j  = random.sample(range(len(route)), 2)
-    new   = route.copy()
+    i, j = random.sample(range(len(route)), 2)
+    new  = route.copy()
     new[i], new[j] = new[j], new[i]
     return new
 
@@ -83,9 +84,13 @@ _MOVES = [_move_swap, _move_reverse_segment, _move_insert]
 
 # ── Simulated Annealing ───────────────────────────────────────────────────────
 
-def _simulated_annealing(start, initial_route,
+def _simulated_annealing(cost_fn, initial_route,
                           T_initial=1.0, T_min=0.0001,
                           alpha=0.9, I_multiplier=20, seed=None):
+    """
+    cost_fn(route) → float  — must be pure (no side effects / dict mutations).
+    Greedy init and SA moves only shuffle the list; cost_fn reads place dicts.
+    """
     if seed is not None:
         random.seed(seed)
 
@@ -94,7 +99,7 @@ def _simulated_annealing(start, initial_route,
         return initial_route
 
     current_route = initial_route.copy()
-    current_cost  = route_cost(start, current_route)
+    current_cost  = cost_fn(current_route)
     best_route    = current_route.copy()
     best_cost     = current_cost
     T, I          = T_initial, I_multiplier * n
@@ -102,7 +107,7 @@ def _simulated_annealing(start, initial_route,
     while T > T_min:
         for _ in range(I):
             new_route = random.choice(_MOVES)(current_route)
-            new_cost  = route_cost(start, new_route)
+            new_cost  = cost_fn(new_route)
             delta     = new_cost - current_cost
 
             if delta < 0:
@@ -118,31 +123,53 @@ def _simulated_annealing(start, initial_route,
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def optimize_day_route(start: dict, places: list, sa_runs: int = 5) -> list:
+def optimize_day_route(
+    start: dict,
+    places: list,
+    sa_runs: int = 5,
+) -> tuple[list, dict]:
+    """
+    Returns (best_route, schedule_result).
+
+    schedule_result is the output of build_day_schedule() applied to
+    best_route — it includes 'schedule', 'total_travel_minutes',
+    'total_wait_minutes', 'violation_count'.
+
+    Import is deferred (inside function) to avoid circular dependency:
+      schedule_builder → (no imports from module3)
+      module3_optimizer → schedule_builder
+    """
+    from services.schedule_builder import build_day_schedule, route_cost_with_schedule
+
     if not places:
-        return []
+        return [], build_day_schedule([], start)
     if len(places) == 1:
-        return places
+        return places, build_day_schedule(places, start)
+
+    def cost_fn(route: list) -> float:
+        return route_cost_with_schedule(route, start)
 
     initial_route = greedy_route(start, places)
     best_route    = initial_route
-    best_cost     = route_cost(start, initial_route)
+    best_cost     = cost_fn(initial_route)
 
     for seed in range(sa_runs):
         candidate = _simulated_annealing(
-            start, initial_route,
+            cost_fn, initial_route,
             T_initial=1.0, T_min=0.0001, alpha=0.9,
             I_multiplier=20, seed=seed,
         )
-        cost = route_cost(start, candidate)
+        cost = cost_fn(candidate)
         if cost < best_cost:
             best_cost, best_route = cost, candidate
 
-    return best_route
+    schedule_result = build_day_schedule(best_route, start_point=start)
+    return best_route, schedule_result
 
 
 def estimate_travel_minutes(route: list, start: dict,
                             avg_speed_kmh: float = 30.0) -> list:
+    """Kept for backwards compatibility — build_day_schedule now fills this."""
     prev = start
     for place in route:
         km      = _dist(prev, place)

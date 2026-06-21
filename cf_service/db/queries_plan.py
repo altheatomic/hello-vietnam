@@ -36,6 +36,8 @@ def save_plan(
     rows = []
     for day in days:
         for place in day["places"]:
+            if place.get("type") == "lunch_break" or "id_place" not in place:
+                continue
             rows.append({
                 "id_component": str(uuid.uuid4()),
                 "id_plan": id_plan,

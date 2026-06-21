@@ -7,7 +7,7 @@ TripPlannerService – orchestrates the full planning pipeline:
   [CF Blend]    fetch_cf_scores_for_user → dynamic alpha blend → re-sort
   [Diversity]   apply_diversity_selection (slot-based subcategory allocation)
   [Module 2]    build_module2_result (K-Means + Greedy Repair)
-  [Module 3]    optimize_day_route + estimate_travel_minutes + _assign_slots
+  [Module 3]    optimize_day_route (SA with schedule-aware cost + time windows)
   [Persist]     save_plan
 
 Trip-level interest (optional):
@@ -47,8 +47,7 @@ from services.module1_repository import (
     fetch_user_travel_profile,
 )
 from services.module2_algorithm import build_module2_result
-from services.module3_optimizer import estimate_travel_minutes, optimize_day_route
-from services.schedule_builder import build_day_schedule
+from services.module3_optimizer import optimize_day_route
 
 
 def _compute_alpha(cf_scores: dict, total_places: int) -> float:
@@ -79,6 +78,8 @@ def _format_place(place: dict, order: int) -> dict:
         "start_time":                 place.get("start_time"),
         "end_time":                   place.get("end_time"),
         "warning":                    place.get("warning"),
+        "timespan":                   place.get("timespan"),
+        "timeclose":                  place.get("timeclose"),
         "latitude":                   place.get("latitude"),
         "longitude":                  place.get("longitude"),
         "estimated_travel_minutes":   place.get("estimated_travel_minutes"),
@@ -233,13 +234,13 @@ class TripPlannerService:
 
         for day_cluster in day_clusters:
             day_places = day_cluster["places"]
-            optimized = optimize_day_route(start_point, day_places, sa_runs=sa_runs)
-            optimized = estimate_travel_minutes(optimized, start_point)
-            scheduled = build_day_schedule(optimized)
+            best_route, schedule_result = optimize_day_route(
+                start_point, day_places, sa_runs=sa_runs
+            )
 
-            formatted = []
+            formatted   = []
             place_order = 1
-            for entry in scheduled:
+            for entry in schedule_result["schedule"]:
                 if entry.get("type") == "lunch_break":
                     formatted.append(_format_lunch_break(entry))
                 else:
@@ -252,8 +253,8 @@ class TripPlannerService:
                 "places": formatted,
             })
 
-            if optimized:
-                start_point = optimized[-1]
+            if best_route:
+                start_point = best_route[-1]
 
         # ── [Persist] ─────────────────────────────────────────────────────────
         id_plan = None
