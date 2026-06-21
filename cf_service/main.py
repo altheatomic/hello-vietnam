@@ -23,6 +23,7 @@ load_dotenv()  # picks up .env in cwd if present
 
 from db.connection import close_pool, init_pool
 from routes.trip import router as trip_router
+from routes.events import router as events_router
 
 
 @asynccontextmanager
@@ -47,6 +48,7 @@ app.add_middleware(
 )
 
 app.include_router(trip_router)
+app.include_router(events_router)
 
 
 @app.get("/health")

@@ -47,15 +47,55 @@ async def _load_events_from_db(conn) -> dict:
         for r in plan_rows
     ]
 
+    review_rows = await conn.fetch("""
+        SELECT id_user, id_item AS place_id
+        FROM rate_item
+        WHERE item_type = 'place'
+          AND review IS NOT NULL
+          AND review != ''
+    """)
+    reviews = [
+        {'user_id': str(r['id_user']), 'place_id': str(r['place_id'])}
+        for r in review_rows
+    ]
+
+    event_rows = await conn.fetch("""
+        SELECT id_user, id_place AS place_id, event_type
+        FROM user_event_log
+    """)
+    view_thumbnails = [
+        {'user_id': str(r['id_user']), 'place_id': str(r['place_id'])}
+        for r in event_rows if r['event_type'] == 'view_thumbnail'
+    ]
+    view_details = [
+        {'user_id': str(r['id_user']), 'place_id': str(r['place_id'])}
+        for r in event_rows if r['event_type'] == 'view_detail'
+    ]
+    view_all_photos = [
+        {'user_id': str(r['id_user']), 'place_id': str(r['place_id'])}
+        for r in event_rows if r['event_type'] == 'view_all_photos'
+    ]
+    shares = [
+        {'user_id': str(r['id_user']), 'place_id': str(r['place_id'])}
+        for r in event_rows if r['event_type'] == 'share'
+    ]
+
+    print(
+        f"[CF] events loaded — ratings={len(ratings)}, favorites={len(favorites)}, "
+        f"plans={len(plans)}, reviews={len(reviews)}, "
+        f"view_thumbnail={len(view_thumbnails)}, view_detail={len(view_details)}, "
+        f"view_all_photos={len(view_all_photos)}, share={len(shares)}"
+    )
+
     return {
-        'view_thumbnails':  [],
-        'view_details':     [],
-        'view_all_photos':  [],
+        'view_thumbnails':  view_thumbnails,
+        'view_details':     view_details,
+        'view_all_photos':  view_all_photos,
         'favorites':        favorites,
         'plans':            plans,
-        'shares':           [],
+        'shares':           shares,
         'ratings':          ratings,
-        'reviews':          [],
+        'reviews':          reviews,
     }
 
 
