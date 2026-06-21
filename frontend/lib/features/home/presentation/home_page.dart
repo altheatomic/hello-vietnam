@@ -401,7 +401,7 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
 
-                const SizedBox(height: 4),
+                const SizedBox(height: 20),
 
                 // ── Best Destination ─────────────────────────
                 Padding(
