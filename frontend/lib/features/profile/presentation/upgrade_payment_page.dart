@@ -313,7 +313,9 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
     final bool isDark = _paymentIsDark(context);
 
     return Scaffold(
-      backgroundColor: isDark ? _paymentDarkBackground : const Color(0xFFEFFBFC),
+      backgroundColor: isDark
+          ? _paymentDarkBackground
+          : const Color(0xFFEFFBFC),
       body: Column(
         children: <Widget>[
           Container(
@@ -1604,7 +1606,9 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
     final bool isDark = _paymentIsDark(context);
 
     return Scaffold(
-      backgroundColor: isDark ? _paymentDarkBackground : const Color(0xFFEFFBFC),
+      backgroundColor: isDark
+          ? _paymentDarkBackground
+          : const Color(0xFFEFFBFC),
       body: Column(
         children: <Widget>[
           _SimpleGradientHeader(
@@ -1872,10 +1876,7 @@ class _ConfirmationSummaryCard extends StatelessWidget {
               ),
               Text(
                 formatMoney(data.plan.priceMinor),
-                style: TextStyle(
-                  color: text,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(color: text, fontWeight: FontWeight.w800),
               ),
             ],
           ),
@@ -1902,10 +1903,7 @@ class _ConfirmationSummaryCard extends StatelessWidget {
                       ),
                       Text(
                         context.l10n.ui('Discount applied'),
-                        style: TextStyle(
-                          color: muted,
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(color: muted, fontSize: 13),
                       ),
                     ],
                   ),
@@ -1973,17 +1971,11 @@ class _ConfirmPaymentMethodCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   context.l10n.ui('Payment Method'),
-                  style: TextStyle(
-                    color: muted,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: muted, fontSize: 13),
                 ),
                 Text(
                   method.label,
-                  style: TextStyle(
-                    color: text,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(color: text, fontWeight: FontWeight.w800),
                 ),
               ],
             ),
@@ -2079,7 +2071,9 @@ class _ImportantInfoCard extends StatelessWidget {
                 Text(
                   context.l10n.ui('Important Information'),
                   style: TextStyle(
-                    color: isDark ? const Color(0xFFFCD34D) : const Color(0xFF92400E),
+                    color: isDark
+                        ? const Color(0xFFFCD34D)
+                        : const Color(0xFF92400E),
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -2089,7 +2083,9 @@ class _ImportantInfoCard extends StatelessWidget {
                     'Your subscription will automatically renew. You can cancel anytime from your account settings.',
                   ),
                   style: TextStyle(
-                    color: isDark ? const Color(0xFFF6D38A) : const Color(0xFFB45309),
+                    color: isDark
+                        ? const Color(0xFFF6D38A)
+                        : const Color(0xFFB45309),
                     height: 1.45,
                     fontWeight: FontWeight.w500,
                   ),
@@ -2285,7 +2281,9 @@ class _PaymentSuccessPage extends StatelessWidget {
     final bool isDark = _paymentIsDark(context);
 
     return Scaffold(
-      backgroundColor: isDark ? _paymentDarkBackground : const Color(0xFFEFFBFC),
+      backgroundColor: isDark
+          ? _paymentDarkBackground
+          : const Color(0xFFEFFBFC),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 34, 24, 28),
@@ -2432,24 +2430,27 @@ class _SuccessTransactionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color text = _paymentText(context);
+    final Color muted = _paymentMuted(context);
+
     return _GlassPanel(
       padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
       child: Column(
         children: <Widget>[
           Text(
             context.l10n.ui('Transaction ID'),
-            style: const TextStyle(color: Color(0xFF667085), fontSize: 16),
+            style: TextStyle(color: muted, fontSize: 16),
           ),
           const SizedBox(height: 8),
           Text(
             transactionId,
-            style: const TextStyle(
-              color: Color(0xFF1F2937),
+            style: TextStyle(
+              color: text,
               fontSize: 22,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const Divider(height: 38, color: Color(0xFFE5E7EB)),
+          Divider(height: 38, color: _paymentBorder(context)),
           _SuccessDetailRow(
             icon: Icons.workspace_premium_rounded,
             iconColor: Color(0xFFFFD84D),
@@ -2484,20 +2485,20 @@ class _SuccessTransactionCard extends StatelessWidget {
             label: 'Date',
             value: dateLabel,
           ),
-          const Divider(height: 32, color: Color(0xFFE5E7EB)),
+          Divider(height: 32, color: _paymentBorder(context)),
           Row(
             children: <Widget>[
               Text(
                 context.l10n.ui('Valid Until'),
-                style: const TextStyle(color: Color(0xFF667085), fontSize: 16),
+                style: TextStyle(color: muted, fontSize: 16),
               ),
               const Spacer(),
               Flexible(
                 child: Text(
                   validUntilLabel,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    color: Color(0xFF1F2937),
+                  style: TextStyle(
+                    color: text,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
@@ -2534,6 +2535,8 @@ class _SuccessDetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 22),
       child: Row(
@@ -2542,7 +2545,7 @@ class _SuccessDetailRow extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: bgColor,
+              color: isDark ? iconColor.withValues(alpha: 0.14) : bgColor,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: iconColor, size: 30),
@@ -2554,8 +2557,8 @@ class _SuccessDetailRow extends StatelessWidget {
               children: <Widget>[
                 Text(
                   context.l10n.ui(label),
-                  style: const TextStyle(
-                    color: Color(0xFF667085),
+                  style: TextStyle(
+                    color: _paymentMuted(context),
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -2563,7 +2566,7 @@ class _SuccessDetailRow extends StatelessWidget {
                 Text(
                   value,
                   style: TextStyle(
-                    color: valueColor ?? const Color(0xFF1F2937),
+                    color: valueColor ?? _paymentText(context),
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
@@ -2575,7 +2578,7 @@ class _SuccessDetailRow extends StatelessWidget {
             Text(
               trailing!,
               style: TextStyle(
-                color: trailingColor ?? const Color(0xFF667085),
+                color: trailingColor ?? _paymentMuted(context),
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -2599,15 +2602,23 @@ class _BenefitsActivatedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB).withValues(alpha: 0.92),
+        color: isDark
+            ? const Color(0xFF2A2111).withValues(alpha: 0.88)
+            : const Color(0xFFFFFBEB).withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFFDE68A)),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFFF59E0B).withValues(alpha: 0.34)
+              : const Color(0xFFFDE68A),
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.10),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
@@ -2618,8 +2629,8 @@ class _BenefitsActivatedCard extends StatelessWidget {
         children: <Widget>[
           Text(
             '✨ ${context.l10n.ui('Premium Benefits Activated')}',
-            style: const TextStyle(
-              color: Color(0xFF1F2937),
+            style: TextStyle(
+              color: isDark ? const Color(0xFFFCD34D) : const Color(0xFF1F2937),
               fontSize: 20,
               fontWeight: FontWeight.w900,
             ),
@@ -2647,8 +2658,10 @@ class _BenefitsActivatedCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       '${_icons[index]}  ${context.l10n.ui(_items[index])}',
-                      style: const TextStyle(
-                        color: Color(0xFF475569),
+                      style: TextStyle(
+                        color: isDark
+                            ? const Color(0xFFF6D38A)
+                            : const Color(0xFF475569),
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2676,11 +2689,13 @@ class _SecondaryActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Material(
-      color: Colors.white.withValues(alpha: 0.88),
+      color: _paymentSurface(context),
       borderRadius: BorderRadius.circular(18),
       elevation: 8,
-      shadowColor: const Color(0x2264748B),
+      shadowColor: Colors.black.withValues(alpha: isDark ? 0.24 : 0.10),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
@@ -2689,12 +2704,12 @@ class _SecondaryActionButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(icon, color: const Color(0xFF334155), size: 26),
+              Icon(icon, color: _paymentText(context), size: 26),
               const SizedBox(width: 12),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Color(0xFF334155),
+                style: TextStyle(
+                  color: _paymentText(context),
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                 ),
@@ -2774,14 +2789,21 @@ class _PrivilegesDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         decoration: BoxDecoration(
-          color: AppColors.primaryLight,
+          color: isDark ? _paymentDarkSurface : AppColors.primaryLight,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.10)
+                : Colors.transparent,
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -2817,16 +2839,18 @@ class _PrivilegesDialog extends StatelessWidget {
                   vertical: 16,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(AppConstants.cardRadius),
                 ),
                 child: Text(
                   privilege,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: isDark ? _paymentDarkText : AppColors.textPrimary,
                   ),
                 ),
               ),
