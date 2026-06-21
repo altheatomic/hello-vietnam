@@ -50,19 +50,27 @@ class RecommendWhenResultsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<RecommendDestination> results = _filtered;
     final double topInset = MediaQuery.of(context).padding.top;
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEAFBFF),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: <Color>[
-              const Color(0xFFE9FBFF),
-              const Color(0xFFF5FDFF),
-              Colors.white.withValues(alpha: 0.98),
-            ],
+            colors: isDark
+                ? const <Color>[
+                    Color(0xFF020B10),
+                    Color(0xFF07161D),
+                    Color(0xFF020B10),
+                  ]
+                : <Color>[
+                    const Color(0xFFE9FBFF),
+                    const Color(0xFFF5FDFF),
+                    Colors.white.withValues(alpha: 0.98),
+                  ],
           ),
         ),
         child: results.isEmpty
@@ -87,14 +95,16 @@ class RecommendWhenResultsPage extends StatelessWidget {
                             icon: Icons.arrow_back_ios_new_rounded,
                             onTap: () => Navigator.of(context).pop(),
                           ),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'Recommendation',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF2EA7F8),
+                                color: isDark
+                                    ? const Color(0xFF87CEEB)
+                                    : const Color(0xFF2EA7F8),
                               ),
                             ),
                           ),
@@ -142,18 +152,28 @@ class _TopCircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Material(
-      color: Colors.white.withValues(alpha: 0.96),
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : Colors.white.withValues(alpha: 0.96),
       shape: const CircleBorder(),
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
+      shadowColor: Colors.black.withValues(alpha: isDark ? 0.28 : 0.08),
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
           width: 28,
           height: 28,
-          child: Icon(icon, size: 13, color: const Color(0xFF64748B)),
+          child: Icon(
+            icon,
+            size: 13,
+            color: isDark
+                ? Theme.of(context).colorScheme.onSurface
+                : const Color(0xFF64748B),
+          ),
         ),
       ),
     );
@@ -173,6 +193,12 @@ class _EditableDateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color primaryText = Theme.of(context).colorScheme.onSurface;
+    final Color mutedText = isDark
+        ? const Color(0xFFA9BCC7)
+        : const Color(0xFF94A3B8);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -181,9 +207,15 @@ class _EditableDateCard extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.96),
+            color: isDark
+                ? const Color(0xFF0B1A22).withValues(alpha: 0.96)
+                : Colors.white.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFCDEDF9)),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : const Color(0xFFCDEDF9),
+            ),
             boxShadow: <BoxShadow>[
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.06),
@@ -216,19 +248,19 @@ class _EditableDateCard extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       rangeLabel,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF374151),
+                        color: primaryText,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       durationLabel,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF94A3B8),
+                        color: mutedText,
                       ),
                     ),
                   ],
@@ -273,7 +305,9 @@ class _DateCardHeaderDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     return Container(
-      color: const Color(0xFFEAFBFF).withValues(alpha: 0.98),
+      color: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF020B10).withValues(alpha: 0.96)
+          : const Color(0xFFEAFBFF).withValues(alpha: 0.98),
       child: child,
     );
   }
@@ -324,6 +358,7 @@ class _SuggestionCardState extends State<_SuggestionCard> {
   @override
   Widget build(BuildContext context) {
     final RecommendDestination dest = widget.destination;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
       color: Colors.transparent,
@@ -333,11 +368,18 @@ class _SuggestionCardState extends State<_SuggestionCard> {
         borderRadius: BorderRadius.circular(20),
         child: Ink(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.98),
+            color: isDark
+                ? const Color(0xFF0B1A22).withValues(alpha: 0.96)
+                : Colors.white.withValues(alpha: 0.98),
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.transparent,
+            ),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
+                color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.08),
                 blurRadius: 16,
                 offset: const Offset(0, 7),
               ),
@@ -427,10 +469,12 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                         dest.shortDescription,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
                           height: 1.5,
-                          color: Color(0xFF64748B),
+                          color: isDark
+                              ? const Color(0xFFA9BCC7)
+                              : const Color(0xFF64748B),
                         ),
                       ),
                     ],

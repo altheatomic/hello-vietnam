@@ -133,6 +133,21 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final double bottomInset = media.viewInsets.bottom;
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final Color sheetColor = isDark ? const Color(0xFF07161D) : Colors.white;
+    final Color surfaceColor = isDark
+        ? const Color(0xFF0B1F29)
+        : const Color(0xFFF8FAFC);
+    final Color borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : const Color(0xFFE2E8F0);
+    final Color primaryText = isDark
+        ? theme.colorScheme.onSurface
+        : const Color(0xFF1D293D);
+    final Color secondaryText = isDark
+        ? const Color(0xFFA9BCC7)
+        : const Color(0xFF90A1B9);
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
@@ -140,9 +155,17 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: media.size.height * 0.9),
         child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: sheetColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: borderColor, width: 1)),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.16),
+                blurRadius: 28,
+                offset: const Offset(0, -8),
+              ),
+            ],
           ),
           child: SafeArea(
             top: false,
@@ -154,7 +177,9 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.20)
+                        : const Color(0xFFE2E8F0),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -183,19 +208,19 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                           children: <Widget>[
                             Text(
                               context.l10n.ui('Report an Issue'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF1D293D),
+                                color: primaryText,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               context.l10n.ui('Help us improve the app'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w400,
-                                color: Color(0xFF90A1B9),
+                                color: secondaryText,
                               ),
                             ),
                           ],
@@ -207,14 +232,16 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                         child: Container(
                           width: 32,
                           height: 32,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF1F5F9),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : const Color(0xFFF1F5F9),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.close_rounded,
                             size: 18,
-                            color: Color(0xFF64748B),
+                            color: secondaryText,
                           ),
                         ),
                       ),
@@ -222,7 +249,7 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                Divider(height: 1, color: borderColor),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -269,9 +296,9 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                         const SizedBox(height: 8),
                         Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: surfaceColor,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: borderColor),
                           ),
                           padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                           child: Column(
@@ -293,14 +320,19 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                                   border: InputBorder.none,
                                   counterText: '',
                                 ),
+                                style: TextStyle(
+                                  color: primaryText,
+                                  fontSize: 14,
+                                  height: 1.5,
+                                ),
                               ),
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: Text(
                                   '${_descriptionController.text.length}/500',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: Color(0xFF90A1B9),
+                                    color: secondaryText,
                                   ),
                                 ),
                               ),
@@ -335,8 +367,9 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                 ),
                 Container(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
-                  decoration: const BoxDecoration(
-                    border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+                  decoration: BoxDecoration(
+                    color: sheetColor.withValues(alpha: 0.96),
+                    border: Border(top: BorderSide(color: borderColor)),
                   ),
                   child: Row(
                     children: <Widget>[
@@ -345,15 +378,20 @@ class _ReportIssueBottomSheetState extends State<_ReportIssueBottomSheet> {
                           onPressed: () => Navigator.of(context).pop(false),
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(48),
-                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                            side: BorderSide(color: borderColor),
+                            backgroundColor: isDark
+                                ? Colors.white.withValues(alpha: 0.04)
+                                : Colors.transparent,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
                           child: Text(
                             context.l10n.ui('Cancel'),
-                            style: const TextStyle(
-                              color: Color(0xFF45556C),
+                            style: TextStyle(
+                              color: isDark
+                                  ? const Color(0xFFD7E6EE)
+                                  : const Color(0xFF45556C),
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                             ),
@@ -424,15 +462,20 @@ class _RequiredLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color labelColor = isDark
+        ? Theme.of(context).colorScheme.onSurface
+        : const Color(0xFF314158);
+
     return Row(
       children: <Widget>[
         RichText(
           text: TextSpan(
             text: title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF314158),
+              color: labelColor,
             ),
             children: const <TextSpan>[
               TextSpan(
@@ -468,12 +511,16 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w600,
-        color: Color(0xFF314158),
+        color: isDark
+            ? Theme.of(context).colorScheme.onSurface
+            : const Color(0xFF314158),
       ),
     );
   }
@@ -494,6 +541,20 @@ class _IssueChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color surfaceColor = isDark
+        ? const Color(0xFF0B1F29)
+        : const Color(0xFFF8FAFC);
+    final Color selectedFill = isDark
+        ? item.accentColor.withValues(alpha: 0.13)
+        : item.accentColor.withValues(alpha: 0.03);
+    final Color borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : const Color(0xFFE2E8F0);
+    final Color bodyText = isDark
+        ? const Color(0xFFD7E6EE)
+        : const Color(0xFF45556C);
+
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
@@ -509,17 +570,17 @@ class _IssueChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: highlightAsError
-                ? const Color(0xFFFFF5F5)
+                ? (isDark ? const Color(0xFF2B1116) : const Color(0xFFFFF5F5))
                 : selected
-                ? item.accentColor.withValues(alpha: 0.03)
-                : const Color(0xFFF8FAFC),
+                ? selectedFill
+                : surfaceColor,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: highlightAsError
                   ? const Color(0xFFEF4444)
                   : selected
                   ? item.accentColor
-                  : const Color(0xFFE2E8F0),
+                  : borderColor,
             ),
             boxShadow: (selected && !highlightAsError)
                 ? <BoxShadow>[
@@ -553,9 +614,7 @@ class _IssueChip extends StatelessWidget {
                   curve: Curves.easeInOut,
                   style: TextStyle(
                     fontSize: 12,
-                    color: selected
-                        ? item.accentColor
-                        : const Color(0xFF45556C),
+                    color: selected ? item.accentColor : bodyText,
                     fontWeight: FontWeight.w500,
                     height: 1.25,
                   ),
@@ -603,6 +662,15 @@ class _ReportSuccessDialogState extends State<_ReportSuccessDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color surfaceColor = isDark ? const Color(0xFF07161D) : Colors.white;
+    final Color primaryText = isDark
+        ? Theme.of(context).colorScheme.onSurface
+        : const Color(0xFF1D293D);
+    final Color secondaryText = isDark
+        ? const Color(0xFFA9BCC7)
+        : const Color(0xFF62748E);
+
     return Dialog(
       elevation: 0,
       backgroundColor: Colors.transparent,
@@ -610,13 +678,18 @@ class _ReportSuccessDialogState extends State<_ReportSuccessDialog> {
       child: Container(
         width: 352,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: surfaceColor,
           borderRadius: BorderRadius.circular(24),
-          boxShadow: const <BoxShadow>[
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.10)
+                : Colors.transparent,
+          ),
+          boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Color(0x33000000),
+              color: Colors.black.withValues(alpha: isDark ? 0.46 : 0.20),
               blurRadius: 60,
-              offset: Offset(0, 20),
+              offset: const Offset(0, 20),
             ),
           ],
         ),
@@ -644,21 +717,17 @@ class _ReportSuccessDialogState extends State<_ReportSuccessDialog> {
             const SizedBox(height: 20),
             Text(
               context.l10n.ui('Report Submitted!'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1D293D),
+                color: primaryText,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               context.l10n.ui('Thank you for your feedback.'),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF62748E),
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 14, color: secondaryText, height: 1.5),
             ),
             const SizedBox(height: 4),
             Text(
@@ -666,11 +735,7 @@ class _ReportSuccessDialogState extends State<_ReportSuccessDialog> {
                 'Our team will review it and get back to you as soon as possible.',
               ),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF62748E),
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 14, color: secondaryText, height: 1.5),
             ),
             const SizedBox(height: 18),
             DecoratedBox(

@@ -9,12 +9,7 @@ class DeleteUserDataPage extends StatefulWidget {
   State<DeleteUserDataPage> createState() => _DeleteUserDataPageState();
 }
 
-enum _DeleteDataStep {
-  selectTrip,
-  reviewData,
-  confirmDeletion,
-  success,
-}
+enum _DeleteDataStep { selectTrip, reviewData, confirmDeletion, success }
 
 class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
   static const Color _primaryBlue = Color(0xFF81D4FA);
@@ -31,7 +26,8 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
     _DeleteDataOption(
       id: 'travel-preferences',
       title: 'Travel preferences for recommendations',
-      description: 'Data about your preferences (including bookmarked places, cuisines,...)',
+      description:
+          'Data about your preferences (including bookmarked places, cuisines,...)',
       icon: Icons.favorite_border_rounded,
     ),
     _DeleteDataOption(
@@ -53,7 +49,9 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
   final Set<String> _selectedDataIds = <String>{};
 
   void _showRequiredMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _handleTopBack() {
@@ -166,7 +164,8 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop:
-          _step == _DeleteDataStep.selectTrip || _step == _DeleteDataStep.success,
+          _step == _DeleteDataStep.selectTrip ||
+          _step == _DeleteDataStep.success,
       onPopInvokedWithResult: (bool didPop, Object? result) {
         if (didPop) {
           return;
@@ -184,7 +183,7 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
           child: Column(
             children: <Widget>[
@@ -235,10 +234,7 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
         const Text(
           'Choose trips that you want to delete.',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            color: Color(0xFF2B2B2B),
-          ),
+          style: TextStyle(fontSize: 16, color: Color(0xFF2B2B2B)),
         ),
         const SizedBox(height: 24),
         ..._trips.map((trip) {
@@ -351,20 +347,13 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
         const Text(
           'You are about to delete the selected personal data related\nto this trip.',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            color: Color(0xFF2B2B2B),
-            height: 1.4,
-          ),
+          style: TextStyle(fontSize: 16, color: Color(0xFF2B2B2B), height: 1.4),
         ),
         const SizedBox(height: 24),
         ...selectedItems.map((item) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: _SummaryRow(
-              icon: item.icon,
-              title: item.title,
-            ),
+            child: _SummaryRow(icon: item.icon, title: item.title),
           );
         }),
         if (selectedItems.isEmpty)
@@ -373,10 +362,7 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
             child: Text(
               'No data selected yet.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF8E8E8E),
-              ),
+              style: TextStyle(fontSize: 14, color: Color(0xFF8E8E8E)),
             ),
           ),
         const SizedBox(height: 14),
@@ -427,10 +413,7 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
         const Text(
           'Your selected personal data has been deleted.',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            color: Color(0xFF2B2B2B),
-          ),
+          style: TextStyle(fontSize: 16, color: Color(0xFF2B2B2B)),
         ),
         const SizedBox(height: 26),
         Center(
@@ -557,10 +540,7 @@ class _SelectableRow extends StatelessWidget {
 }
 
 class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({
-    required this.icon,
-    required this.title,
-  });
+  const _SummaryRow({required this.icon, required this.title});
 
   final IconData icon;
   final String title;
@@ -694,10 +674,7 @@ class _ChoiceCircle extends StatelessWidget {
 }
 
 class _TripOption {
-  const _TripOption({
-    required this.id,
-    required this.title,
-  });
+  const _TripOption({required this.id, required this.title});
 
   final String id;
   final String title;

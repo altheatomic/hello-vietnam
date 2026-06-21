@@ -13,10 +13,13 @@ class WishlistController extends ChangeNotifier {
 
   final WishlistRepository _repository = WishlistRepository();
   final Set<String> _favoriteKeys = <String>{};
+  List<WishlistRepositoryItem> _items = const <WishlistRepositoryItem>[];
   bool _isLoaded = false;
   Future<void>? _loadFuture;
 
   bool get isLoaded => _isLoaded;
+  List<WishlistRepositoryItem> get items =>
+      List<WishlistRepositoryItem>.unmodifiable(_items);
 
   bool isFavorite({required FavoriteType type, required String rawItemId}) {
     return _favoriteKeys.contains(_key(type, rawItemId));
@@ -107,6 +110,7 @@ class WishlistController extends ChangeNotifier {
   Future<void> _load() async {
     if (AuthRepository.instance.user == null) {
       _favoriteKeys.clear();
+      _items = const <WishlistRepositoryItem>[];
       _isLoaded = true;
       notifyListeners();
       return;
@@ -115,6 +119,7 @@ class WishlistController extends ChangeNotifier {
     try {
       final List<WishlistRepositoryItem> items = await _repository
           .fetchWishlist();
+      _items = items;
       _favoriteKeys
         ..clear()
         ..addAll(

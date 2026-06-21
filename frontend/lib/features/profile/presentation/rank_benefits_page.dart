@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -85,7 +85,8 @@ class _RankBenefitsPageState extends State<RankBenefitsPage> {
     ),
   ];
 
-  bool _isUnlocked(_TierBenefitData tier) => _currentPoints >= tier.requiredPoints;
+  bool _isUnlocked(_TierBenefitData tier) =>
+      _currentPoints >= tier.requiredPoints;
 
   String _formatPoints(int value) {
     final String raw = value.toString();
@@ -105,7 +106,7 @@ class _RankBenefitsPageState extends State<RankBenefitsPage> {
     final double topInset = MediaQuery.of(context).padding.top;
     final double bottomInset = MediaQuery.of(context).padding.bottom;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: EdgeInsets.only(bottom: bottomInset + 120),
         child: Column(
@@ -241,7 +242,9 @@ class _RankBenefitsPageState extends State<RankBenefitsPage> {
                           width: 28,
                           height: 28,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEAA700).withValues(alpha: 0.42),
+                            color: const Color(
+                              0xFFEAA700,
+                            ).withValues(alpha: 0.42),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -314,9 +317,14 @@ class _RankBenefitsPageState extends State<RankBenefitsPage> {
                       expanded: expanded,
                       unlocked: unlocked,
                       currentPoints: _currentPoints,
-                      remainingPoints: math.max(0, tier.requiredPoints - _currentPoints),
+                      remainingPoints: math.max(
+                        0,
+                        tier.requiredPoints - _currentPoints,
+                      ),
                       formattedCurrentPoints: _formatPoints(_currentPoints),
-                      formattedRequiredPoints: _formatPoints(tier.requiredPoints),
+                      formattedRequiredPoints: _formatPoints(
+                        tier.requiredPoints,
+                      ),
                       onTap: () {
                         setState(() {
                           _expandedIndex = expanded ? null : index;
@@ -426,7 +434,9 @@ class _TierCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: tier.isCurrent ? const Color(0xFF68C6F3) : const Color(0xFFE3E7ED),
+          color: tier.isCurrent
+              ? const Color(0xFF68C6F3)
+              : const Color(0xFFE3E7ED),
           width: tier.isCurrent ? 1.6 : 1,
         ),
         boxShadow: <BoxShadow>[
@@ -473,7 +483,10 @@ class _TierCard extends StatelessWidget {
                             if (tier.isCurrent) ...<Widget>[
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF8FD5F7),
                                   borderRadius: BorderRadius.circular(999),
@@ -577,16 +590,22 @@ class _TierCard extends StatelessWidget {
                                     value: (currentPoints / tier.requiredPoints)
                                         .clamp(0, 1),
                                     backgroundColor: const Color(0xFFE0E5EC),
-                                    valueColor: const AlwaysStoppedAnimation<Color>(
-                                      Color(0xFFFFBC00),
-                                    ),
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          Color(0xFFFFBC00),
+                                        ),
                                   ),
                                 ),
                                 const SizedBox(height: 10),
                               ],
                               Container(
                                 width: double.infinity,
-                                padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+                                padding: const EdgeInsets.fromLTRB(
+                                  10,
+                                  9,
+                                  10,
+                                  9,
+                                ),
                                 decoration: BoxDecoration(
                                   color: tier.benefitBackground,
                                   borderRadius: BorderRadius.circular(10),
@@ -605,7 +624,9 @@ class _TierCard extends StatelessWidget {
                                     const SizedBox(height: 6),
                                     ...tier.benefits.map((String benefit) {
                                       return Padding(
-                                        padding: const EdgeInsets.only(bottom: 4),
+                                        padding: const EdgeInsets.only(
+                                          bottom: 4,
+                                        ),
                                         child: Row(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
@@ -613,7 +634,9 @@ class _TierCard extends StatelessWidget {
                                             Container(
                                               width: 14,
                                               height: 14,
-                                              margin: const EdgeInsets.only(top: 1),
+                                              margin: const EdgeInsets.only(
+                                                top: 1,
+                                              ),
                                               decoration: BoxDecoration(
                                                 color: tier.accentColor,
                                                 shape: BoxShape.circle,
@@ -644,7 +667,10 @@ class _TierCard extends StatelessWidget {
                               ),
                               if (showLockNeed) ...<Widget>[
                                 const SizedBox(height: 10),
-                                const Divider(height: 1, color: Color(0xFFE8ECF1)),
+                                const Divider(
+                                  height: 1,
+                                  color: Color(0xFFE8ECF1),
+                                ),
                                 const SizedBox(height: 8),
                                 Center(
                                   child: RichText(
@@ -663,7 +689,9 @@ class _TierCard extends StatelessWidget {
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),
-                                        const TextSpan(text: ' more points to unlock'),
+                                        const TextSpan(
+                                          text: ' more points to unlock',
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -717,4 +745,3 @@ class _TierBenefitData {
   final List<String> benefits;
   final IconData icon;
 }
-

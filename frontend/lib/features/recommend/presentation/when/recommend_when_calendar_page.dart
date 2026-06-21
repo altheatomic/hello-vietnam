@@ -12,26 +12,33 @@ class RecommendWhenCalendarPage extends StatefulWidget {
       _RecommendWhenCalendarPageState();
 }
 
-class _RecommendWhenCalendarPageState
-    extends State<RecommendWhenCalendarPage> {
+class _RecommendWhenCalendarPageState extends State<RecommendWhenCalendarPage> {
   DateTimeRange? _selectedRange;
 
   @override
   Widget build(BuildContext context) {
     final double topInset = MediaQuery.of(context).padding.top;
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEAFBFF),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: <Color>[
-              const Color(0xFFE9FBFF),
-              const Color(0xFFF6FDFF),
-              Colors.white.withValues(alpha: 0.98),
-            ],
+            colors: isDark
+                ? const <Color>[
+                    Color(0xFF020B10),
+                    Color(0xFF07161D),
+                    Color(0xFF020B10),
+                  ]
+                : <Color>[
+                    const Color(0xFFE9FBFF),
+                    const Color(0xFFF6FDFF),
+                    Colors.white.withValues(alpha: 0.98),
+                  ],
           ),
         ),
         child: Column(
@@ -49,14 +56,14 @@ class _RecommendWhenCalendarPageState
                     icon: Icons.arrow_back_ios_new_rounded,
                     onTap: () => Navigator.of(context).pop(),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       "When's your trip?",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1F2937),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -90,15 +97,16 @@ class _RecommendWhenCalendarPageState
                     child: ElevatedButton(
                       onPressed: _selectedRange != null
                           ? () => context.push(
-                                AppRoutes.recommendWhenResults,
-                                extra: _selectedRange,
-                              )
+                              AppRoutes.recommendWhenResults,
+                              extra: _selectedRange,
+                            )
                           : null,
                       style: ElevatedButton.styleFrom(
                         elevation: 0,
                         backgroundColor: const Color(0xFF2EA7F8),
-                        disabledBackgroundColor: const Color(0xFF2EA7F8)
-                            .withValues(alpha: 0.35),
+                        disabledBackgroundColor: const Color(
+                          0xFF2EA7F8,
+                        ).withValues(alpha: 0.35),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -131,18 +139,28 @@ class _CircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Material(
-      color: Colors.white.withValues(alpha: 0.96),
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : Colors.white.withValues(alpha: 0.96),
       shape: const CircleBorder(),
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.12),
+      shadowColor: Colors.black.withValues(alpha: isDark ? 0.30 : 0.12),
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
           width: 40,
           height: 40,
-          child: Icon(icon, color: const Color(0xFF6B7280), size: 20),
+          child: Icon(
+            icon,
+            color: isDark
+                ? Theme.of(context).colorScheme.onSurface
+                : const Color(0xFF6B7280),
+            size: 20,
+          ),
         ),
       ),
     );

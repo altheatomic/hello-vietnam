@@ -17,12 +17,35 @@ class ForumColors {
   static const Color tealLight = Color(0xFFF0FDFA);
   static const Color textPrimary = Color(0xFF111827);
   static const Color textMuted = Color(0xFF6B7280);
+  static const Color darkBackground = Color(0xFF020B10);
+  static const Color darkSurface = Color(0xFF07161D);
+  static const Color darkSurfaceHigh = Color(0xFF0E2530);
+  static const Color darkText = Color(0xFFF5FBFF);
+  static const Color darkMuted = Color(0xFFA9BCC7);
 
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
     colors: <Color>[cyanPrimary, bluePrimary],
   );
+
+  static bool isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  static Color foreground(BuildContext context) =>
+      isDark(context) ? darkText : textPrimary;
+
+  static Color muted(BuildContext context) =>
+      isDark(context) ? darkMuted : textMuted;
+
+  static Color action(BuildContext context) => isDark(context)
+      ? darkMuted.withValues(alpha: 0.78)
+      : AppColors.textSecondary;
+
+  static Color glassBorder(BuildContext context, {double lightAlpha = 0.64}) =>
+      isDark(context)
+      ? Colors.white.withValues(alpha: 0.10)
+      : Colors.white.withValues(alpha: lightAlpha);
 }
 
 String formatCompactNumber(int value) {
@@ -45,40 +68,62 @@ class ForumBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
+    final bool isDark = ForumColors.isDark(context);
 
     return Stack(
       children: <Widget>[
         Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: <Color>[
-                ForumColors.blueLight,
-                ForumColors.cyanLight,
-                ForumColors.tealLight,
-              ],
+              colors: isDark
+                  ? const <Color>[
+                      ForumColors.darkBackground,
+                      Color(0xFF03131A),
+                      Color(0xFF020B10),
+                    ]
+                  : const <Color>[
+                      ForumColors.blueLight,
+                      ForumColors.cyanLight,
+                      ForumColors.tealLight,
+                    ],
             ),
           ),
         ),
-        _BlurCircle(
-          top: 120,
-          left: -20,
-          size: 220,
-          color: const Color(0x3360A5FA),
-        ),
-        _BlurCircle(
-          top: size.height * 0.28,
-          right: -40,
-          size: 260,
-          color: const Color(0x332DD4BF),
-        ),
-        _BlurCircle(
-          bottom: 80,
-          left: size.width * 0.22,
-          size: 300,
-          color: const Color(0x1A22D3EE),
-        ),
+        if (!isDark) ...<Widget>[
+          _BlurCircle(
+            top: 120,
+            left: -20,
+            size: 220,
+            color: const Color(0x3360A5FA),
+          ),
+          _BlurCircle(
+            top: size.height * 0.28,
+            right: -40,
+            size: 260,
+            color: const Color(0x332DD4BF),
+          ),
+          _BlurCircle(
+            bottom: 80,
+            left: size.width * 0.22,
+            size: 300,
+            color: const Color(0x1A22D3EE),
+          ),
+        ] else ...<Widget>[
+          _BlurCircle(
+            top: 96,
+            right: -88,
+            size: 240,
+            color: ForumColors.cyanPrimary.withValues(alpha: 0.08),
+          ),
+          _BlurCircle(
+            bottom: 72,
+            left: -80,
+            size: 260,
+            color: ForumColors.bluePrimary.withValues(alpha: 0.07),
+          ),
+        ],
         child,
       ],
     );
@@ -110,6 +155,8 @@ class ForumTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double topInset = MediaQuery.of(context).padding.top;
+    final bool isDark = ForumColors.isDark(context);
+    final Color iconColor = ForumColors.foreground(context);
 
     return ClipRect(
       child: BackdropFilter(
@@ -122,13 +169,19 @@ class ForumTopBar extends StatelessWidget {
             12,
           ),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.42),
+            color: isDark
+                ? ForumColors.darkBackground.withValues(alpha: 0.78)
+                : Colors.white.withValues(alpha: 0.42),
             border: Border(
-              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.55)),
+              bottom: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.white.withValues(alpha: 0.55),
+              ),
             ),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
+                color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.08),
                 blurRadius: 18,
                 offset: const Offset(0, 6),
               ),
@@ -143,20 +196,16 @@ class ForumTopBar extends StatelessWidget {
                   width: 32,
                   height: 32,
                 ),
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: ForumColors.textPrimary,
-                  size: 22,
-                ),
+                icon: Icon(Icons.arrow_back, color: iconColor, size: 22),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 19,
                     fontWeight: FontWeight.w700,
-                    color: ForumColors.textPrimary,
+                    color: iconColor,
                   ),
                 ),
               ),
@@ -175,7 +224,9 @@ class ForumTopBar extends StatelessWidget {
                   child: ForumAvatar(
                     imageUrl: avatarUrl,
                     size: 34,
-                    borderColor: Colors.white.withValues(alpha: 0.72),
+                    borderColor: Colors.white.withValues(
+                      alpha: isDark ? 0.18 : 0.72,
+                    ),
                   ),
                 ),
               ],
@@ -212,6 +263,8 @@ class ForumProfileTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double topInset = MediaQuery.of(context).padding.top;
+    final bool isDark = ForumColors.isDark(context);
+    final Color foreground = ForumColors.foreground(context);
 
     return ClipRect(
       child: BackdropFilter(
@@ -224,13 +277,19 @@ class ForumProfileTopBar extends StatelessWidget {
             12,
           ),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.42),
+            color: isDark
+                ? ForumColors.darkBackground.withValues(alpha: 0.78)
+                : Colors.white.withValues(alpha: 0.42),
             border: Border(
-              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.55)),
+              bottom: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.white.withValues(alpha: 0.55),
+              ),
             ),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
+                color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.08),
                 blurRadius: 18,
                 offset: const Offset(0, 6),
               ),
@@ -248,11 +307,7 @@ class ForumProfileTopBar extends StatelessWidget {
                     width: 32,
                     height: 32,
                   ),
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: ForumColors.textPrimary,
-                    size: 22,
-                  ),
+                  icon: Icon(Icons.arrow_back, color: foreground, size: 22),
                 ),
               ),
               const SizedBox(width: 12),
@@ -262,18 +317,18 @@ class ForumProfileTopBar extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
-                        color: ForumColors.textPrimary,
+                        color: foreground,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
-                        color: AppColors.textSecondary,
+                        color: ForumColors.muted(context),
                       ),
                     ),
                   ],
@@ -296,7 +351,9 @@ class ForumProfileTopBar extends StatelessWidget {
                         child: ForumAvatar(
                           imageUrl: avatarUrl,
                           size: 44,
-                          borderColor: Colors.white.withValues(alpha: 0.72),
+                          borderColor: Colors.white.withValues(
+                            alpha: isDark ? 0.18 : 0.72,
+                          ),
                         ),
                       ),
                     ],
@@ -323,21 +380,23 @@ class ForumPostComposerPrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = ForumColors.isDark(context);
+
     return GlassCard(
-      borderRadius: 24,
+      borderRadius: 30,
       blur: 14,
-      opacity: 0.52,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.64)),
+      opacity: 0.58,
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      border: Border.all(color: ForumColors.glassBorder(context)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         child: Row(
           children: <Widget>[
             ForumAvatar(
               imageUrl: avatarUrl,
               size: 42,
-              borderColor: Colors.white.withValues(alpha: 0.75),
+              borderColor: Colors.white.withValues(alpha: isDark ? 0.18 : 0.75),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -347,22 +406,28 @@ class ForumPostComposerPrompt extends StatelessWidget {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.white.withValues(alpha: 0.62),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.62),
+                    color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.62),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   'Share your Vietnam moment...',
-                  style: TextStyle(fontSize: 14, color: ForumColors.textMuted),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: ForumColors.muted(context),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 10),
-            const Icon(
+            Icon(
               Icons.add_photo_alternate_outlined,
-              color: ForumColors.bluePrimary,
+              color: isDark ? AppColors.primaryLight : ForumColors.bluePrimary,
             ),
           ],
         ),
@@ -401,12 +466,16 @@ class ForumPostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color textColor = ForumColors.foreground(context);
+    final Color mutedColor = ForumColors.muted(context);
+    final Color actionColor = ForumColors.action(context);
+
     return GlassCard(
       borderRadius: 26,
       blur: 14,
-      opacity: 0.52,
+      opacity: 0.58,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.64)),
+      border: Border.all(color: ForumColors.glassBorder(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -425,7 +494,9 @@ class ForumPostCard extends StatelessWidget {
                       child: ForumAvatar(
                         imageUrl: post.author.avatarUrl,
                         size: 46,
-                        borderColor: Colors.white.withValues(alpha: 0.75),
+                        borderColor: Colors.white.withValues(
+                          alpha: ForumColors.isDark(context) ? 0.18 : 0.75,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -442,10 +513,10 @@ class ForumPostCard extends StatelessWidget {
                                   child: Text(
                                     post.author.name,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w700,
-                                      color: ForumColors.textPrimary,
+                                      color: textColor,
                                     ),
                                   ),
                                 ),
@@ -458,10 +529,7 @@ class ForumPostCard extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               post.timeAgo,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: ForumColors.textMuted,
-                              ),
+                              style: TextStyle(fontSize: 12, color: mutedColor),
                             ),
                           ],
                         ),
@@ -477,10 +545,10 @@ class ForumPostCard extends StatelessWidget {
                     if (showMoreButton)
                       IconButton(
                         onPressed: onMore,
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.more_vert_rounded,
                           size: 20,
-                          color: ForumColors.textMuted,
+                          color: mutedColor,
                         ),
                       ),
                   ],
@@ -488,10 +556,10 @@ class ForumPostCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   post.content,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     height: 1.45,
-                    color: ForumColors.textPrimary,
+                    color: textColor,
                   ),
                 ),
                 if (post.imageUrls.isNotEmpty) ...<Widget>[
@@ -508,28 +576,20 @@ class ForumPostCard extends StatelessWidget {
                 icon: post.isLiked
                     ? Icons.favorite_rounded
                     : Icons.favorite_border_rounded,
-                color: post.isLiked
-                    ? const Color(0xFFEF4444)
-                    : AppColors.textSecondary,
+                color: post.isLiked ? const Color(0xFFEF4444) : actionColor,
                 onTap: onLike,
               ),
               const SizedBox(width: 6),
               Text(
                 '${post.likes}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 14, color: actionColor),
               ),
               const Spacer(),
               _ActionIcon(icon: Icons.mode_comment_outlined, onTap: onComment),
               const SizedBox(width: 6),
               Text(
                 '${post.comments}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 14, color: actionColor),
               ),
               const Spacer(),
               _ActionIcon(
@@ -538,7 +598,7 @@ class ForumPostCard extends StatelessWidget {
                     : Icons.bookmark_border_rounded,
                 color: post.isBookmarked
                     ? ForumColors.bluePrimary
-                    : AppColors.textSecondary,
+                    : actionColor,
                 onTap: onBookmark,
               ),
               const Spacer(),
@@ -675,6 +735,8 @@ class _ForumPostMoreMenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color foreground = ForumColors.foreground(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(22),
@@ -682,15 +744,15 @@ class _ForumPostMoreMenuTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
         child: Row(
           children: <Widget>[
-            Icon(icon, size: 28, color: ForumColors.textPrimary),
+            Icon(icon, size: 28, color: foreground),
             const SizedBox(width: 18),
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: ForumColors.textPrimary,
+                  color: foreground,
                 ),
               ),
             ),
@@ -717,12 +779,16 @@ class ForumCommentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color textColor = ForumColors.foreground(context);
+    final Color mutedColor = ForumColors.muted(context);
+    final Color actionColor = ForumColors.action(context);
+
     return GlassCard(
       borderRadius: 24,
       blur: 14,
       opacity: 0.5,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.64)),
+      border: Border.all(color: ForumColors.glassBorder(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -734,7 +800,9 @@ class ForumCommentCard extends StatelessWidget {
                 child: ForumAvatar(
                   imageUrl: comment.author.avatarUrl,
                   size: 42,
-                  borderColor: Colors.white.withValues(alpha: 0.72),
+                  borderColor: Colors.white.withValues(
+                    alpha: ForumColors.isDark(context) ? 0.18 : 0.72,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -749,19 +817,16 @@ class ForumCommentCard extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         comment.author.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: ForumColors.textPrimary,
+                          color: textColor,
                         ),
                       ),
                       if (comment.author.isVerified) const _VerifiedBadge(),
                       Text(
                         comment.timeAgo,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: ForumColors.textMuted,
-                        ),
+                        style: TextStyle(fontSize: 13, color: mutedColor),
                       ),
                     ],
                   ),
@@ -772,11 +837,7 @@ class ForumCommentCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             comment.content,
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.45,
-              color: ForumColors.textPrimary,
-            ),
+            style: TextStyle(fontSize: 14, height: 1.45, color: textColor),
           ),
           const SizedBox(height: 10),
           Row(
@@ -785,18 +846,13 @@ class ForumCommentCard extends StatelessWidget {
                 icon: comment.isLiked
                     ? Icons.favorite_rounded
                     : Icons.favorite_border_rounded,
-                color: comment.isLiked
-                    ? const Color(0xFFEF4444)
-                    : AppColors.textSecondary,
+                color: comment.isLiked ? const Color(0xFFEF4444) : actionColor,
                 onTap: onLike,
               ),
               const SizedBox(width: 4),
               Text(
                 '${comment.likes}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 14, color: actionColor),
               ),
               const SizedBox(width: 18),
               _ActionIcon(icon: Icons.reply_outlined, onTap: onReply),
@@ -820,16 +876,22 @@ class ForumNotificationSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = ForumColors.isDark(context);
+    final Color textColor = ForumColors.foreground(context);
+    final Color mutedColor = ForumColors.muted(context);
+
     return GlassCard(
       borderRadius: 40,
       blur: 18,
       opacity: 0.68,
       padding: EdgeInsets.zero,
-      border: Border.all(color: Colors.white.withValues(alpha: 0.78)),
+      border: Border.all(
+        color: ForumColors.glassBorder(context, lightAlpha: 0.78),
+      ),
       child: Column(
         children: <Widget>[
-          const Padding(
-            padding: EdgeInsets.fromLTRB(22, 22, 22, 14),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 14),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -837,19 +899,22 @@ class ForumNotificationSheet extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
-                  color: ForumColors.textPrimary,
+                  color: textColor,
                 ),
               ),
             ),
           ),
-          Divider(height: 1, color: Colors.white.withValues(alpha: 0.64)),
+          Divider(
+            height: 1,
+            color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.64),
+          ),
           Flexible(
             child: ListView.separated(
               padding: EdgeInsets.zero,
               itemCount: notifications.length,
               separatorBuilder: (_, _) => Divider(
                 height: 1,
-                color: Colors.white.withValues(alpha: 0.52),
+                color: Colors.white.withValues(alpha: isDark ? 0.07 : 0.52),
               ),
               itemBuilder: (BuildContext context, int index) {
                 final ForumNotificationItem item = notifications[index];
@@ -863,7 +928,9 @@ class ForumNotificationSheet extends StatelessWidget {
                         ForumAvatar(
                           imageUrl: item.actor.avatarUrl,
                           size: 58,
-                          borderColor: Colors.white.withValues(alpha: 0.76),
+                          borderColor: Colors.white.withValues(
+                            alpha: isDark ? 0.18 : 0.76,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -876,10 +943,10 @@ class ForumNotificationSheet extends StatelessWidget {
                                     child: Text(
                                       item.actor.name,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 17,
                                         fontWeight: FontWeight.w700,
-                                        color: ForumColors.textPrimary,
+                                        color: textColor,
                                       ),
                                     ),
                                   ),
@@ -892,17 +959,17 @@ class ForumNotificationSheet extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 item.message,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
-                                  color: ForumColors.textPrimary,
+                                  color: textColor,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 item.timeAgo,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
-                                  color: ForumColors.textMuted,
+                                  color: mutedColor,
                                 ),
                               ),
                             ],
@@ -935,12 +1002,18 @@ class ForumProfileHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = ForumColors.isDark(context);
+    final Color textColor = ForumColors.foreground(context);
+    final Color mutedColor = ForumColors.muted(context);
+
     return GlassCard(
       borderRadius: 30,
       blur: 16,
       opacity: 0.52,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.68)),
+      border: Border.all(
+        color: ForumColors.glassBorder(context, lightAlpha: 0.68),
+      ),
       child: Column(
         children: <Widget>[
           Row(
@@ -949,7 +1022,9 @@ class ForumProfileHeaderCard extends StatelessWidget {
               ForumAvatar(
                 imageUrl: profile.author.avatarUrl,
                 size: 92,
-                borderColor: Colors.white.withValues(alpha: 0.8),
+                borderColor: Colors.white.withValues(
+                  alpha: isDark ? 0.18 : 0.8,
+                ),
               ),
               const SizedBox(width: 18),
               Expanded(
@@ -961,10 +1036,10 @@ class ForumProfileHeaderCard extends StatelessWidget {
                         Flexible(
                           child: Text(
                             profile.author.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 30,
                               fontWeight: FontWeight.w800,
-                              color: ForumColors.textPrimary,
+                              color: textColor,
                             ),
                           ),
                         ),
@@ -981,10 +1056,7 @@ class ForumProfileHeaderCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       profile.author.handle,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: TextStyle(fontSize: 17, color: mutedColor),
                     ),
                   ],
                 ),
@@ -1001,7 +1073,10 @@ class ForumProfileHeaderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 22),
-          Divider(height: 1, color: Colors.white.withValues(alpha: 0.64)),
+          Divider(
+            height: 1,
+            color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.64),
+          ),
           const SizedBox(height: 22),
           Row(
             children: <Widget>[
@@ -1038,12 +1113,13 @@ class ForumFollowButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = ForumColors.isDark(context);
     final EdgeInsets padding = large
         ? const EdgeInsets.symmetric(horizontal: 18, vertical: 12)
         : const EdgeInsets.symmetric(horizontal: 14, vertical: 8);
 
     final TextStyle textStyle = TextStyle(
-      color: isFollowing ? ForumColors.textPrimary : Colors.white,
+      color: isFollowing ? ForumColors.foreground(context) : Colors.white,
       fontSize: large ? 17 : 13,
       fontWeight: FontWeight.w600,
     );
@@ -1055,9 +1131,13 @@ class ForumFollowButton extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.white.withValues(alpha: 0.55),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.62)),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: isDark ? 0.10 : 0.62),
+              ),
             ),
             child: Material(
               color: Colors.transparent,
@@ -1508,13 +1588,21 @@ class ForumTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = ForumColors.isDark(context);
+
     return Container(
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: AppConstants.pagePadding),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.24),
+        color: isDark
+            ? ForumColors.darkBackground.withValues(alpha: 0.88)
+            : Colors.white.withValues(alpha: 0.24),
         border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.55)),
+          bottom: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.white.withValues(alpha: 0.55),
+          ),
         ),
       ),
       child: TabBar(
@@ -1532,8 +1620,8 @@ class ForumTabBar extends StatelessWidget {
           fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
-        labelColor: ForumColors.textPrimary,
-        unselectedLabelColor: AppColors.textSecondary,
+        labelColor: ForumColors.foreground(context),
+        unselectedLabelColor: ForumColors.muted(context),
         tabs: const <Tab>[
           Tab(text: 'For you'),
           Tab(text: 'Following'),
@@ -1590,12 +1678,14 @@ class _HeaderIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color color = ForumColors.foreground(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.all(4),
-        child: Icon(icon, size: 24, color: ForumColors.textPrimary),
+        child: Icon(icon, size: 24, color: color),
       ),
     );
   }
@@ -1608,18 +1698,20 @@ class _NotificationIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color color = ForumColors.foreground(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Stack(
         clipBehavior: Clip.none,
         children: <Widget>[
-          const Padding(
-            padding: EdgeInsets.all(4),
+          Padding(
+            padding: const EdgeInsets.all(4),
             child: Icon(
               Icons.notifications_none_rounded,
               size: 24,
-              color: ForumColors.textPrimary,
+              color: color,
             ),
           ),
           Positioned(
@@ -1658,24 +1750,22 @@ class _VerifiedBadge extends StatelessWidget {
 }
 
 class _ActionIcon extends StatelessWidget {
-  const _ActionIcon({
-    required this.icon,
-    required this.onTap,
-    this.color = AppColors.textSecondary,
-  });
+  const _ActionIcon({required this.icon, required this.onTap, this.color});
 
   final IconData icon;
-  final Color color;
+  final Color? color;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final Color iconColor = color ?? ForumColors.action(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.all(4),
-        child: Icon(icon, size: 24, color: color),
+        child: Icon(icon, size: 24, color: iconColor),
       ),
     );
   }
@@ -1689,22 +1779,22 @@ class _ProfileMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color textColor = ForumColors.foreground(context);
+    final Color mutedColor = ForumColors.muted(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w800,
-            color: ForumColors.textPrimary,
+            color: textColor,
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
-        ),
+        Text(label, style: TextStyle(fontSize: 16, color: mutedColor)),
       ],
     );
   }

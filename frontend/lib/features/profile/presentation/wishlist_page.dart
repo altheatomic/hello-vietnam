@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
+import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart';
+import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
+import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
+import 'package:hellovietnam/features/item_detail/presentation/shared_item_detail_page.dart';
+import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import 'package:hellovietnam/features/report/presentation/report_issue_popup.dart';
 
@@ -13,8 +21,7 @@ class WishlistPage extends StatefulWidget {
 
 class _WishlistPageState extends State<WishlistPage> {
   WishlistType? _selectedType;
-  final Set<String> _favoriteIds = <String>{};
-  final WishlistRepository _wishlistRepository = WishlistRepository();
+  final WishlistController _wishlistController = WishlistController.instance;
   List<WishlistItem> _syncedItems = <WishlistItem>[];
   bool _isLoading = true;
   String? _loadError;
@@ -310,7 +317,14 @@ class _WishlistPageState extends State<WishlistPage> {
   @override
   void initState() {
     super.initState();
+    _wishlistController.addListener(_syncFromWishlistController);
     _loadWishlist();
+  }
+
+  @override
+  void dispose() {
+    _wishlistController.removeListener(_syncFromWishlistController);
+    super.dispose();
   }
 
   List<WishlistItem> get _filteredItems {
@@ -320,20 +334,99 @@ class _WishlistPageState extends State<WishlistPage> {
         .toList();
   }
 
-  Future<void> _openDetail(WishlistItem item) async {
-    final bool initialFavorite = _favoriteIds.contains(item.id);
-    final bool? finalFavorite = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder: (_) =>
-            WishlistDetailPage(item: item, initialFavorite: initialFavorite),
-      ),
-    );
+  void _openDetail(WishlistItem item) {
+    final FavoriteType favoriteType = _wishlistTypeToFavoriteType(item.type);
+    final List<String> fallbackImages = <String>[
+      if (item.coverImageUrl.trim().isNotEmpty) item.coverImageUrl,
+      ...item.galleryImageUrls.where((String image) => image.trim().isNotEmpty),
+    ];
 
-    if (!mounted) return;
-    if (finalFavorite == null || finalFavorite == initialFavorite) {
-      return;
+    switch (item.type) {
+      case WishlistType.city:
+        context.push(
+          AppRoutes.cityDetail,
+          extra: CityDetailRequest(
+            id: item.id,
+            name: item.title,
+            fallbackImages: fallbackImages,
+            fallbackImagePath: fallbackImages.isEmpty
+                ? null
+                : fallbackImages.first,
+            fallbackRating: item.rating,
+          ),
+        );
+        return;
+      case WishlistType.food:
+      case WishlistType.culture:
+      case WishlistType.activity:
+      case WishlistType.localProduct:
+        final DetailCategory category = _detailCategoryForWishlistType(
+          item.type,
+        );
+        context.push(
+          AppRoutes.detailPathForCategory(category),
+          extra: ItemDetailRequest(
+            id: item.id,
+            name: item.title,
+            category: category,
+            fallbackImages: fallbackImages,
+            fallbackImagePath: fallbackImages.isEmpty
+                ? null
+                : fallbackImages.first,
+            favoriteType: favoriteType,
+          ),
+        );
+        return;
+      case WishlistType.place:
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => SharedItemDetailPage(
+              detail: _itemDetailFromWishlistItem(item),
+              favoriteType: favoriteType,
+              favoriteRawId: item.id,
+              favoriteName: item.title,
+            ),
+          ),
+        );
+        return;
     }
-    await _onDetailFavoriteChanged(item, finalFavorite);
+  }
+
+  DetailCategory _detailCategoryForWishlistType(WishlistType type) {
+    switch (type) {
+      case WishlistType.food:
+        return DetailCategory.food;
+      case WishlistType.culture:
+        return DetailCategory.culture;
+      case WishlistType.activity:
+        return DetailCategory.activities;
+      case WishlistType.localProduct:
+        return DetailCategory.localProducts;
+      case WishlistType.city:
+      case WishlistType.place:
+        return DetailCategory.culture;
+    }
+  }
+
+  ItemDetail _itemDetailFromWishlistItem(WishlistItem item) {
+    final List<String> images = <String>[
+      if (item.coverImageUrl.trim().isNotEmpty) item.coverImageUrl,
+      ...item.galleryImageUrls.where((String image) => image.trim().isNotEmpty),
+    ];
+
+    return ItemDetail(
+      id: item.id,
+      name: item.title,
+      category: DetailCategory.culture,
+      images: images,
+      rating: item.rating,
+      isFavorite: true,
+      reviewCount: 0,
+      ratingLabel: item.rating.toStringAsFixed(1),
+      description: item.detailDescription,
+      whatToExpect: item.highlightsDescription,
+      reviews: const <ItemReview>[],
+    );
   }
 
   Future<void> _loadWishlist() async {
@@ -348,21 +441,15 @@ class _WishlistPageState extends State<WishlistPage> {
       setState(() {
         _isLoading = false;
         _syncedItems = <WishlistItem>[];
-        _favoriteIds.clear();
       });
       return;
     }
 
     try {
-      final repoItems = await _wishlistRepository.fetchWishlist();
+      await _wishlistController.refresh();
       if (!mounted) return;
-
-      final mappedItems = repoItems.map(_toWishlistItem).toList(growable: true);
       setState(() {
-        _syncedItems = mappedItems;
-        _favoriteIds
-          ..clear()
-          ..addAll(mappedItems.map((WishlistItem item) => item.id));
+        _syncedItems = _mappedControllerItems();
         _isLoading = false;
       });
     } catch (error) {
@@ -370,109 +457,56 @@ class _WishlistPageState extends State<WishlistPage> {
       setState(() {
         _isLoading = false;
         _syncedItems = <WishlistItem>[];
-        _favoriteIds.clear();
         _loadError = error.toString();
       });
     }
   }
 
-  Future<void> _toggleFavorite(String id) async {
-    WishlistItem? item;
-    for (final current in _syncedItems) {
-      if (current.id == id) {
-        item = current;
-        break;
-      }
-    }
-    if (item == null) return;
-    final targetItem = item;
-
+  Future<void> _toggleFavorite(WishlistItem item) async {
     final userId = AuthRepository.instance.user?.id;
     if (userId == null) {
       _showSnackBar('Please sign in to update wishlist.');
       return;
     }
 
-    final wasFavorite = _favoriteIds.contains(id);
-    if (!wasFavorite) {
-      return;
-    }
-
-    setState(() {
-      _favoriteIds.remove(id);
-      _syncedItems.removeWhere((WishlistItem current) => current.id == id);
-    });
-
     try {
-      await _wishlistRepository.setFavorite(
-        itemId: targetItem.id,
-        type: _wishlistTypeToFavoriteType(targetItem.type),
-        isFavorite: false,
+      final bool? result = await _wishlistController.toggleFavorite(
+        type: _wishlistTypeToFavoriteType(item.type),
+        rawItemId: item.id,
+        fallbackName: item.title,
       );
+      if (!mounted || result != null) return;
+      _showSnackBar('Please sign in to update wishlist.');
     } catch (error) {
       if (!mounted) return;
-      setState(() {
-        _favoriteIds.add(id);
-        if (_syncedItems.every((WishlistItem current) => current.id != id)) {
-          _syncedItems.add(targetItem);
-        }
-      });
       _showSnackBar('Update wishlist failed: $error');
     }
   }
 
-  Future<void> _onDetailFavoriteChanged(
-    WishlistItem item,
-    bool isFavorite,
-  ) async {
-    final userId = AuthRepository.instance.user?.id;
-    if (userId == null) {
-      _showSnackBar('Please sign in to update wishlist.');
-      return;
-    }
-
-    final wasFavorite = _favoriteIds.contains(item.id);
+  void _syncFromWishlistController() {
+    if (!mounted || _isLoading) return;
     setState(() {
-      if (isFavorite) {
-        _favoriteIds.add(item.id);
-        if (_syncedItems.every(
-          (WishlistItem current) => current.id != item.id,
-        )) {
-          _syncedItems.add(item);
-        }
-      } else {
-        _favoriteIds.remove(item.id);
-        _syncedItems.removeWhere(
-          (WishlistItem current) => current.id == item.id,
-        );
-      }
+      _syncedItems = _mappedControllerItems();
     });
+  }
 
-    try {
-      await _wishlistRepository.setFavorite(
-        itemId: item.id,
-        type: _wishlistTypeToFavoriteType(item.type),
-        isFavorite: isFavorite,
-      );
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        if (wasFavorite) {
-          _favoriteIds.add(item.id);
-          if (_syncedItems.every(
-            (WishlistItem current) => current.id != item.id,
-          )) {
-            _syncedItems.add(item);
-          }
-        } else {
-          _favoriteIds.remove(item.id);
-          _syncedItems.removeWhere(
-            (WishlistItem current) => current.id == item.id,
-          );
-        }
-      });
-      _showSnackBar('Update wishlist failed: $error');
-    }
+  List<WishlistItem> _mappedControllerItems() {
+    return _wishlistController.items
+        .where(
+          (WishlistRepositoryItem item) => _wishlistController.isFavorite(
+            type: item.type,
+            rawItemId: item.id,
+          ),
+        )
+        .map(_toWishlistItem)
+        .toList(growable: true);
+  }
+
+  bool _isFavorite(WishlistItem item) {
+    return _wishlistController.isFavorite(
+      type: _wishlistTypeToFavoriteType(item.type),
+      rawItemId: item.id,
+    );
   }
 
   WishlistItem _toWishlistItem(WishlistRepositoryItem item) {
@@ -538,57 +572,59 @@ class _WishlistPageState extends State<WishlistPage> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const SizedBox(height: 6),
-            SizedBox(
-              height: 52,
-              child: Stack(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 6),
+              child: Row(
                 children: <Widget>[
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 20,
-                        color: Color(0xFF2EB9F8),
+                  _WishlistGlassIconButton(
+                    icon: Icons.arrow_back_ios_new_rounded,
+                    onTap: () => Navigator.of(context).maybePop(),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Wishlist',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: isDark
+                            ? theme.colorScheme.onSurface
+                            : AppColors.primaryDark,
+                        letterSpacing: 0,
                       ),
                     ),
                   ),
-                  const Align(
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Wishlist',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 34,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF2EB9F8),
-                      ),
-                    ),
+                  _WishlistCategoryDropdown(
+                    selectedType: _selectedType,
+                    onChanged: (WishlistType? type) {
+                      setState(() => _selectedType = type);
+                    },
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 26),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: _WishlistCategoryDropdown(
-                  selectedType: _selectedType,
-                  onChanged: (WishlistType? type) {
-                    setState(() => _selectedType = type);
-                  },
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 16),
+              child: Text(
+                '${_filteredItems.length} saved ${_filteredItems.length == 1 ? 'item' : 'items'}',
+                style: TextStyle(
+                  color: isDark
+                      ? const Color(0xFFA9BCC7)
+                      : AppColors.textSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const SizedBox(height: 14),
             Expanded(
               child: _isLoading
                   ? const AppLoadingScreen(
@@ -614,17 +650,17 @@ class _WishlistPageState extends State<WishlistPage> {
                           : () => Navigator.of(context).maybePop(),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                      padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
                       itemCount: _filteredItems.length,
                       separatorBuilder: (BuildContext context, int index) =>
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                       itemBuilder: (BuildContext context, int index) {
                         final WishlistItem item = _filteredItems[index];
                         return _WishlistCard(
                           item: item,
-                          isFavorite: _favoriteIds.contains(item.id),
+                          isFavorite: _isFavorite(item),
                           onTap: () => _openDetail(item),
-                          onToggleFavorite: () => _toggleFavorite(item.id),
+                          onToggleFavorite: () => _toggleFavorite(item),
                         );
                       },
                     ),
@@ -637,31 +673,75 @@ class _WishlistPageState extends State<WishlistPage> {
 }
 
 class WishlistDetailPage extends StatefulWidget {
-  const WishlistDetailPage({
-    super.key,
-    required this.item,
-    required this.initialFavorite,
-  });
+  const WishlistDetailPage({super.key, required this.item});
 
   final WishlistItem item;
-  final bool initialFavorite;
 
   @override
   State<WishlistDetailPage> createState() => _WishlistDetailPageState();
 }
 
 class _WishlistDetailPageState extends State<WishlistDetailPage> {
-  late bool _isFavorite = widget.initialFavorite;
+  final WishlistController _wishlistController = WishlistController.instance;
+  late bool _isFavorite;
 
-  void _toggleFavorite() {
-    setState(() {
-      _isFavorite = !_isFavorite;
+  @override
+  void initState() {
+    super.initState();
+    _isFavorite = _wishlistController.isFavorite(
+      type: _favoriteTypeForWishlistType(widget.item.type),
+      rawItemId: widget.item.id,
+    );
+    _wishlistController.addListener(_syncFavoriteFromController);
+    _wishlistController.ensureLoaded().then((_) {
+      if (!mounted) return;
+      _syncFavoriteFromController();
     });
   }
 
-  void _handleBack() {
-    Navigator.of(context).pop(_isFavorite);
+  @override
+  void dispose() {
+    _wishlistController.removeListener(_syncFavoriteFromController);
+    super.dispose();
   }
+
+  void _syncFavoriteFromController() {
+    final bool next = _wishlistController.isFavorite(
+      type: _favoriteTypeForWishlistType(widget.item.type),
+      rawItemId: widget.item.id,
+    );
+    if (next == _isFavorite) return;
+    setState(() => _isFavorite = next);
+  }
+
+  Future<void> _toggleFavorite() async {
+    final bool previous = _isFavorite;
+    setState(() => _isFavorite = !previous);
+    try {
+      final bool? next = await _wishlistController.toggleFavorite(
+        type: _favoriteTypeForWishlistType(widget.item.type),
+        rawItemId: widget.item.id,
+        fallbackName: widget.item.title,
+      );
+      if (!mounted) return;
+      if (next == null) {
+        setState(() => _isFavorite = previous);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please sign in to update wishlist.')),
+        );
+        return;
+      }
+      setState(() => _isFavorite = next);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isFavorite = previous);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+    }
+  }
+
+  void _handleBack() => Navigator.of(context).pop();
 
   void _openAllImages(BuildContext context) {
     Navigator.of(context).push(
@@ -685,7 +765,7 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
       canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) {
         if (!didPop) {
-          Navigator.of(context).pop(_isFavorite);
+          Navigator.of(context).pop();
         }
       },
       child: Scaffold(
@@ -1186,6 +1266,9 @@ class _WishlistStatusView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1195,10 +1278,12 @@ class _WishlistStatusView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 height: 1.4,
-                color: Color(0xFF4C5A67),
+                color: isDark
+                    ? const Color(0xFFA9BCC7)
+                    : const Color(0xFF4C5A67),
               ),
             ),
             if (actionLabel != null && onActionTap != null) ...<Widget>[
@@ -1233,84 +1318,215 @@ class _WishlistCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Stack(
-              children: <Widget>[
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onTap,
-                  child: _NetworkImageWithFallback(
-                    imageUrl: item.coverImageUrl,
-                    width: double.infinity,
-                    height: 190,
-                  ),
-                ),
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: Listener(
-                      behavior: HitTestBehavior.opaque,
-                      onPointerDown: (_) => onToggleFavorite(),
-                      child: Center(
-                        child: Container(
-                          width: 26,
-                          height: 26,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            isFavorite ? Icons.favorite : Icons.favorite_border,
-                            size: 16,
-                            color: const Color(0xFFFF4D79),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final Color surface = isDark ? const Color(0xFF081820) : Colors.white;
+    final Color titleColor = isDark
+        ? theme.colorScheme.onSurface
+        : AppColors.primaryDark;
+    final Color bodyColor = isDark
+        ? const Color(0xFFA9BCC7)
+        : AppColors.textSecondary;
+    final Color borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.16)
+        : AppColors.primary.withValues(alpha: 0.28);
+    final Color innerBorderColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.85);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(26),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(26),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: borderColor, width: 1.25),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.32)
+                    : AppColors.primary.withValues(alpha: 0.11),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
+              ),
+              BoxShadow(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.02)
+                    : Colors.white.withValues(alpha: 0.72),
+                blurRadius: 1,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(8),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: innerBorderColor, width: 0.7),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  item.title,
-                  style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF2EB9F8),
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(25),
+                  ),
+                  child: Stack(
+                    children: <Widget>[
+                      _NetworkImageWithFallback(
+                        imageUrl: item.coverImageUrl,
+                        width: double.infinity,
+                        height: 184,
+                      ),
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: _WishlistGlassIconButton(
+                          icon: isFavorite
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          iconColor: const Color(0xFFFF4D79),
+                          onTap: onToggleFavorite,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  item.shortDescription,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    height: 1.45,
-                    color: Color(0xFF1F1F1F),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 23,
+                                fontWeight: FontWeight.w800,
+                                color: titleColor,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          _WishlistTypeChip(type: item.type),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        item.shortDescription,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.45,
+                          color: bodyColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WishlistTypeChip extends StatelessWidget {
+  const _WishlistTypeChip({required this.type});
+
+  final WishlistType type;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: isDark ? 0.20 : 0.12),
+        ),
+      ),
+      child: Text(
+        type.label,
+        style: TextStyle(
+          color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class _WishlistGlassIconButton extends StatelessWidget {
+  const _WishlistGlassIconButton({
+    required this.icon,
+    required this.onTap,
+    this.iconColor,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color foreground =
+        iconColor ??
+        (isDark
+            ? Theme.of(context).colorScheme.onSurface
+            : AppColors.primaryDark);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.white.withValues(alpha: 0.78),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : Colors.white.withValues(alpha: 0.90),
+            ),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.22)
+                    : Colors.black.withValues(alpha: 0.08),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: foreground, size: 20),
+        ),
       ),
     );
   }
@@ -1327,51 +1543,100 @@ class _WishlistCategoryDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color foreground = isDark
+        ? AppColors.primaryLight
+        : AppColors.primaryDark;
+
     return PopupMenuButton<WishlistType?>(
       initialValue: selectedType,
-      offset: const Offset(0, 46),
-      elevation: 10,
-      color: Colors.white,
-      surfaceTintColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      constraints: const BoxConstraints(minWidth: 168),
+      offset: const Offset(0, 48),
+      elevation: 0,
+      color: isDark ? const Color(0xFF0B1A22) : Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.black.withValues(alpha: isDark ? 0.30 : 0.12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : AppColors.primary.withValues(alpha: 0.14),
+        ),
+      ),
+      constraints: const BoxConstraints(minWidth: 172),
       onSelected: onChanged,
       itemBuilder: (BuildContext context) => <PopupMenuEntry<WishlistType?>>[
-        const PopupMenuItem<WishlistType?>(
+        PopupMenuItem<WishlistType?>(
           value: null,
-          child: Text('All Categories'),
+          child: Text(
+            'All Category',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
         ...WishlistType.values.map(
           (WishlistType type) => PopupMenuItem<WishlistType?>(
             value: type,
-            child: Text(type.label),
+            child: Text(
+              type.label,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ),
       ],
       child: Container(
-        height: 40,
+        height: 44,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.42),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.09)
+              : Colors.white.withValues(alpha: 0.86),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: const Color(0xFF7DD3FC), width: 1.2),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.13)
+                : AppColors.primary.withValues(alpha: 0.22),
+            width: 1.1,
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.24)
+                  : AppColors.primary.withValues(alpha: 0.10),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Text(
-              selectedType?.label ?? 'All Categories',
-              style: const TextStyle(
-                color: Color(0xFF2EB9F8),
-                fontSize: 19,
-                fontWeight: FontWeight.w500,
+            Icon(Icons.filter_list_rounded, color: foreground, size: 18),
+            const SizedBox(width: 7),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 112),
+              child: Text(
+                selectedType?.label ?? 'All Category',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                ),
               ),
             ),
-            const SizedBox(width: 7),
-            const Icon(
+            const SizedBox(width: 5),
+            Icon(
               Icons.keyboard_arrow_down_rounded,
-              color: Color(0xFF2EB9F8),
-              size: 20,
+              color: foreground,
+              size: 18,
             ),
           ],
         ),
@@ -1393,17 +1658,10 @@ class _CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return _WishlistGlassIconButton(
+      icon: icon,
+      iconColor: iconColor,
       onTap: onTap,
-      child: Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.86),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, size: 20, color: iconColor),
-      ),
     );
   }
 }
@@ -1491,6 +1749,23 @@ class _NetworkImageWithFallback extends StatelessWidget {
 }
 
 enum WishlistType { city, food, place, culture, activity, localProduct }
+
+FavoriteType _favoriteTypeForWishlistType(WishlistType type) {
+  switch (type) {
+    case WishlistType.city:
+      return FavoriteType.city;
+    case WishlistType.place:
+      return FavoriteType.place;
+    case WishlistType.food:
+      return FavoriteType.food;
+    case WishlistType.culture:
+      return FavoriteType.culture;
+    case WishlistType.activity:
+      return FavoriteType.activity;
+    case WishlistType.localProduct:
+      return FavoriteType.localProduct;
+  }
+}
 
 extension WishlistTypeLabel on WishlistType {
   String get label {

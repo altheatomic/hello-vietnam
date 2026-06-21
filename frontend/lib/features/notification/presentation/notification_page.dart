@@ -262,7 +262,7 @@ class _NotificationPageState extends State<NotificationPage> {
     final double topInset = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4FBFF),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: <Widget>[
           const Positioned.fill(child: _NotificationBackground()),

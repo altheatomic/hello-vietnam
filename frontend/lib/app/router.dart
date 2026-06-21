@@ -244,6 +244,7 @@ GoRouter buildRouter() {
         final bool needsPreferences =
             !preferencesRepository.hasCompletedCurrentUser;
         if (needsPreferences &&
+            !preferencesRepository.hasDeferredCurrentUserOnboarding &&
             location != AppRoutes.travelPreferencesOnboarding) {
           return AppRoutes.travelPreferencesOnboarding;
         }

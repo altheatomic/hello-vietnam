@@ -1,0 +1,2449 @@
+From e2e25dc61145abbf1d965a4ef1e4e5e0726f5c8c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Phan=20L=C3=AA=20=C4=90=E1=BB=A9c=20Anh?=
+ <haku@Phans-MacBook-Pro.local>
+Date: Sat, 30 May 2026 15:41:47 +0700
+Subject: [PATCH 1/5] Update upgrade account UI and language labels
+
+---
+ frontend/lib/core/language/app_language.dart  |  672 +++++++++
+ .../presentation/change_password_page.dart    |  115 +-
+ .../presentation/upgrade_account_page.dart    | 1292 +++++++++++++----
+ .../presentation/upgrade_payment_page.dart    |   32 +-
+ 4 files changed, 1786 insertions(+), 325 deletions(-)
+ create mode 100644 frontend/lib/core/language/app_language.dart
+
+diff --git a/frontend/lib/core/language/app_language.dart b/frontend/lib/core/language/app_language.dart
+new file mode 100644
+index 0000000..e3cdb83
+--- /dev/null
++++ b/frontend/lib/core/language/app_language.dart
+@@ -0,0 +1,672 @@
++import 'package:flutter/material.dart';
++
++import '../storage/local_storage.dart';
++
++enum AppLanguage {
++  english('en', 'English', 'English', 'gb'),
++  vietnamese('vi', 'Tiếng Việt', 'Vietnamese', 'vn');
++
++  const AppLanguage(
++    this.code,
++    this.nativeName,
++    this.englishName,
++    this.flagCode,
++  );
++
++  final String code;
++  final String nativeName;
++  final String englishName;
++  final String flagCode;
++
++  Locale get locale => Locale(code);
++
++  static AppLanguage fromCode(String? code) {
++    return AppLanguage.values.firstWhere(
++      (AppLanguage language) => language.code == code,
++      orElse: () => AppLanguage.english,
++    );
++  }
++}
++
++class AppLanguageController extends ChangeNotifier {
++  AppLanguageController._();
++
++  static final AppLanguageController instance = AppLanguageController._();
++  static const String _storageKey = 'app_language_code';
++
++  AppLanguage _language = AppLanguage.english;
++
++  AppLanguage get language => _language;
++  String get languageCode => _language.code;
++  Locale get locale => _language.locale;
++
++  Future<void> initialize() async {
++    final String? storedCode = LocalStorage.instance.getString(_storageKey);
++    _language = AppLanguage.fromCode(storedCode);
++  }
++
++  Future<void> setLanguage(AppLanguage language) async {
++    if (_language == language) return;
++    _language = language;
++    notifyListeners();
++    await LocalStorage.instance.setString(_storageKey, language.code);
++  }
++}
++
++class AppLanguageScope extends InheritedNotifier<AppLanguageController> {
++  const AppLanguageScope({
++    super.key,
++    required AppLanguageController controller,
++    required super.child,
++  }) : super(notifier: controller);
++
++  static AppLanguageController controllerOf(BuildContext context) {
++    final AppLanguageScope? scope = context
++        .dependOnInheritedWidgetOfExactType<AppLanguageScope>();
++    return scope?.notifier ?? AppLanguageController.instance;
++  }
++
++  static AppLanguage languageOf(BuildContext context) =>
++      controllerOf(context).language;
++}
++
++extension AppLanguageBuildContext on BuildContext {
++  AppLanguageController get languageController =>
++      AppLanguageScope.controllerOf(this);
++
++  AppStrings get l10n => AppStrings.of(AppLanguageScope.languageOf(this));
++}
++
++class AppStrings {
++  const AppStrings._(this.appLanguage);
++
++  final AppLanguage appLanguage;
++
++  static AppStrings of(AppLanguage language) => AppStrings._(language);
++
++  bool get _vi => appLanguage == AppLanguage.vietnamese;
++
++  String get appName => 'Hello Vietnam';
++  String get home => _vi ? 'Trang chủ' : 'Home';
++  String get tripPlanner => _vi ? 'Lịch trình' : 'Trip Planner';
++  String get forum => _vi ? 'Diễn đàn' : 'Forum';
++  String get profile => _vi ? 'Hồ sơ' : 'Profile';
++  String get translate => _vi ? 'Dịch' : 'Translate';
++  String get sendReport => _vi ? 'Báo lỗi' : 'Send Report';
++  String get recommend => _vi ? 'Gợi ý' : 'Recommend';
++  String get explore => _vi ? 'Khám phá' : 'Explore';
++  String get popularApps => _vi ? 'Ứng dụng' : 'Popular Apps';
++  String get aiSearch => 'AI Search';
++  String get searchDestinations =>
++      _vi ? 'Tìm điểm đến' : 'Search for destinations';
++  String get retune => _vi ? 'Chỉnh lại' : 'Retune';
++  String get pickedForYou => _vi ? 'Dành cho bạn' : 'Picked For You';
++  String get bestDestination => _vi ? 'Điểm đến nổi bật' : 'Best Destination';
++  String get bestDishes => _vi ? 'Món ngon nổi bật' : 'Best Dishes';
++  String get exploreTunedTitle =>
++      _vi ? 'Khám phá theo gu' : 'Explore, tuned to you';
++  String get exploreTunedDescription => _vi
++      ? 'Các chủ đề bạn thích được ưu tiên để món ăn, văn hóa, địa điểm và hoạt động hợp gu hơn.'
++      : 'We moved your preferred themes closer to the top so food, culture, places, and activities feel more personal from the first scroll.';
++
++  String get myProfile => _vi ? 'Hồ sơ của tôi' : 'My Profile';
++  String get upgradeAccount => _vi ? 'Nâng cấp tài khoản' : 'Upgrade Account';
++  String get changePassword => _vi ? 'Đổi mật khẩu' : 'Change Password';
++  String get wishlist => _vi ? 'Danh sách yêu thích' : 'Wishlist';
++  String get voucher => _vi ? 'Mã ưu đãi' : 'Voucher';
++  String get language => _vi ? 'Ngôn ngữ' : 'Language';
++  String get currency => _vi ? 'Tiền tệ' : 'Currency';
++  String get notification => _vi ? 'Thông báo' : 'Notification';
++  String get deleteUserData =>
++      _vi ? 'Xóa dữ liệu người dùng' : 'Delete user data';
++  String get logOut => _vi ? 'Đăng xuất' : 'Log out';
++
++  String get selectPreferredLanguage =>
++      _vi ? 'Chọn ngôn ngữ bạn muốn sử dụng' : 'Select your preferred language';
++  String get currentLanguage => _vi ? 'Ngôn ngữ hiện tại' : 'Current language';
++  String get appInterfaceLanguage =>
++      _vi ? 'Ngôn ngữ giao diện ứng dụng' : 'App interface language';
++  String get upcomingTrip => _vi ? 'Sắp đi' : 'Upcoming Trip';
++  String get activeTrip => _vi ? 'Đang đi' : 'Active Trip';
++  String get tripCompleted => _vi ? 'Đã hoàn tất' : 'Trip Completed';
++  String dayOf(int day, int totalDays) =>
++      _vi ? 'Ngày $day/$totalDays' : 'Day $day of $totalDays';
++  String stepOf(int step, int totalSteps) =>
++      _vi ? 'Bước $step/$totalSteps' : 'Step $step of $totalSteps';
++  String savedTripUpdated(String title) => _vi
++      ? '$title đã được cập nhật trong Chuyến đi đã lưu'
++      : '$title updated in Saved Trips';
++  String redeemPointsConfirm(String points, String title) => _vi
++      ? 'Đổi $points điểm để nhận "$title"?'
++      : 'Redeem $points points for "$title"?';
++  String expiryDate(String date) =>
++      _vi ? 'Ngày hết hạn: $date' : 'Expiry date: $date';
++  String needMorePoints(String points) =>
++      _vi ? 'Bạn cần thêm $points điểm' : 'You need $points more points';
++  String validForDays(int days) => _vi
++      ? 'Có hiệu lực trong $days ngày kể từ ngày đổi'
++      : 'Valid for $days days from redemption date';
++  String justPrice(String price) => _vi ? 'Chỉ $price \$' : 'Just $price \$';
++  String daysDone(int days) => _vi ? '$days ngày xong' : '$days days done';
++  String get firstStop => _vi ? 'Điểm đầu' : 'First stop';
++  String get nextStop => _vi ? 'Điểm tiếp' : 'Next stop';
++  String activitiesCompleted(int count, int days) => _vi
++      ? '$count hoạt động xong · $days ngày'
++      : '$count activities completed · $days days';
++  String get cancel => _vi ? 'Hủy' : 'Cancel';
++  String get viewPlan => _vi ? 'Xem lịch' : 'View Plan';
++  String get endTrip => _vi ? 'Kết thúc' : 'End Trip';
++  String get details => _vi ? 'Chi tiết' : 'Details';
++  String get dismiss => _vi ? 'Ẩn' : 'Dismiss';
++
++  String get retry => _vi ? 'Thử lại' : 'Retry';
++  String get signIn => _vi ? 'Đăng nhập' : 'Sign in';
++  String get allCategories => _vi ? 'Tất cả danh mục' : 'All Categories';
++  String get loadWishlistFailed =>
++      _vi ? 'Không tải được danh sách yêu thích.' : 'Load wishlist failed.';
++  String get pleaseSignInToUseWishlist => _vi
++      ? 'Vui lòng đăng nhập để dùng danh sách yêu thích.'
++      : 'Please sign in to use wishlist.';
++
++  String noItemInWishlist(String itemLabel) {
++    return _vi
++        ? 'Chưa có $itemLabel trong danh sách yêu thích.'
++        : 'No ${itemLabel.toLowerCase()} in wishlist.';
++  }
++
++  String wishlistTypeLabel(String typeCode) {
++    return switch (typeCode) {
++      'city' => _vi ? 'Thành phố' : 'City',
++      'food' => _vi ? 'Món ăn' : 'Food',
++      'place' => _vi ? 'Địa điểm' : 'Place',
++      'culture' => _vi ? 'Văn hóa' : 'Culture',
++      'activity' => _vi ? 'Hoạt động' : 'Activity',
++      'localProduct' => _vi ? 'Đặc sản địa phương' : 'Local product',
++      'item' => _vi ? 'mục' : 'item',
++      _ => _vi ? 'Mục' : 'Item',
++    };
++  }
++
++  String exploreCategoryLabel(String id) {
++    return switch (id) {
++      'activities' => _vi ? 'Hoạt động' : 'Activities',
++      'culture' => _vi ? 'Văn hóa' : 'Culture',
++      'food' => _vi ? 'Ẩm thực' : 'Food',
++      'local_products' => _vi ? 'Đặc sản' : 'Local Products',
++      _ => id,
++    };
++  }
++
++  String featureLabelForRoute(String route) {
++    return switch (route) {
++      '/trip-planner' => tripPlanner,
++      '/forum' => forum,
++      '/translate' => translate,
++      '/send-feedback' => sendReport,
++      '/recommend' => recommend,
++      '/explore' => explore,
++      '/popular-apps' => popularApps,
++      '/ai-search' => aiSearch,
++      _ => route,
++    };
++  }
++
++  String ui(String english) {
++    if (!_vi) return english;
++    return _viText[english] ?? english;
++  }
++
++  static const Map<String, String> _viText = <String, String>{
++    'Explore Vietnam with': 'Khám phá Việt Nam cùng',
++    'Explore local culture, traditional food, and meaningful travel experiences across Vietnam.\nLet us guide you through every journey.':
++        'Khám phá văn hóa, ẩm thực và trải nghiệm du lịch khắp Việt Nam.\nĐể chúng tôi đồng hành cùng bạn.',
++    'Get Started': 'Bắt đầu',
++    'Discover': 'Khám phá',
++    'Login to Start Your': 'Đăng nhập để bắt đầu',
++    'Amazing Trips': 'Chuyến đi tuyệt vời',
++    'Enter your email': 'Nhập email',
++    'Enter your password': 'Nhập mật khẩu',
++    'Enter your name': 'Nhập tên',
++    'Confirm password': 'Xác nhận mật khẩu',
++    'Enter your current password': 'Nhập mật khẩu hiện tại',
++    'Enter your new password': 'Nhập mật khẩu mới',
++    'Confirm your new password': 'Xác nhận mật khẩu mới',
++    'Please enter your email': 'Vui lòng nhập email',
++    'Please enter a valid email address': 'Email không hợp lệ',
++    'Please fill in all fields': 'Vui lòng nhập đầy đủ thông tin',
++    'Passwords do not match': 'Mật khẩu không khớp',
++    'Remember me': 'Ghi nhớ',
++    'Forgot Password?': 'Quên mật khẩu?',
++    'Forgot password?': 'Quên mật khẩu?',
++    'Continue': 'Tiếp tục',
++    'Next': 'Tiếp tục',
++    'Or': 'Hoặc',
++    'Or login with': 'Hoặc đăng nhập bằng',
++    'Sign in with Google': 'Đăng nhập với Google',
++    'Continue with Google': 'Tiếp tục với Google',
++    "Don't have an account? ": 'Chưa có tài khoản? ',
++    'Create an account': 'Tạo tài khoản',
++    'Create Account': 'Tạo tài khoản',
++    'Sign Up to Explore': 'Đăng ký để khám phá',
++    'Sign Up': 'Đăng ký',
++    'Sign up': 'Đăng ký',
++    'Already have an account? ': 'Đã có tài khoản? ',
++    'Login': 'Đăng nhập',
++    'Failed to sign in': 'Đăng nhập thất bại',
++    'Google sign in failed': 'Đăng nhập Google thất bại',
++    'Sign up failed': 'Đăng ký thất bại',
++    'Success! Please check your email for a confirmation link.':
++        'Thành công! Vui lòng kiểm tra email để xác nhận.',
++    'Google Sign-In is handled in Login page':
++        'Đăng nhập Google được thực hiện ở trang Đăng nhập',
++    'Save': 'Lưu',
++    'Edit Profile': 'Sửa hồ sơ',
++    'Email': 'Email',
++    'Username': 'Tên người dùng',
++    'Upgrade Account': 'Nâng cấp tài khoản',
++    'Upgrade account': 'Nâng cấp tài khoản',
++    'Change Password': 'Đổi mật khẩu',
++    'Change your password': 'Đổi mật khẩu của bạn',
++    'Congratulations!': 'Hoàn tất!',
++    'Your password has been changed': 'Mật khẩu đã được thay đổi',
++    'New password and confirm password do not match':
++        'Mật khẩu mới và xác nhận không khớp',
++    'New password must be different from current password':
++        'Mật khẩu mới phải khác mật khẩu hiện tại',
++    'Back to Login': 'Về đăng nhập',
++    'Create new password': 'Tạo mật khẩu mới',
++    'Check your email': 'Kiểm tra email',
++    'Reset Password': 'Đặt lại mật khẩu',
++    'Please enter your email to receive\npassword reset link':
++        'Nhập email để nhận\nliên kết đặt lại mật khẩu',
++    'Confirm email': 'Xác nhận email',
++    "We've sent a password reset link to\n":
++        'Chúng tôi đã gửi liên kết đặt lại mật khẩu đến\n',
++    '\n\n1. Click the link in your email\n2. You\'ll be redirected back here\n3. Click "I\'ve clicked the link" or "Refresh/Verify Session"':
++        '\n\n1. Bấm liên kết trong email\n2. Bạn sẽ quay lại đây\n3. Bấm "Tôi đã bấm liên kết" hoặc "Kiểm tra phiên"',
++    'I\'ve clicked the link': 'Tôi đã bấm liên kết',
++    'Refresh/Verify Session': 'Kiểm tra phiên',
++    'Didn\'t receive the email? ': 'Chưa nhận được email? ',
++    'Resend': 'Gửi lại',
++    'Create your new password': 'Tạo mật khẩu mới',
++    'Your password has been created': 'Mật khẩu đã được tạo',
++    'Send reset link': 'Gửi liên kết',
++    'Resend email': 'Gửi lại email',
++    'I clicked the link': 'Tôi đã bấm liên kết',
++    'Verify session': 'Kiểm tra phiên',
++    'Enter text to translate...': 'Nhập nội dung cần dịch...',
++    'Search language...': 'Tìm ngôn ngữ...',
++    'Translation': 'Bản dịch',
++    'Translate': 'Dịch',
++    'Clear': 'Xóa',
++    'QUICK EXAMPLES': 'VÍ DỤ NHANH',
++    'Listening...': 'Đang nghe...',
++    'Translating...': 'Đang dịch...',
++    'Translation appears here': 'Bản dịch sẽ hiện ở đây',
++    'DONE': 'XONG',
++    'Select Language': 'Chọn ngôn ngữ',
++    'Auto detect': 'Tự nhận diện',
++    'Vietnamese': 'Tiếng Việt',
++    'English': 'Tiếng Anh',
++    'Report an Issue': 'Báo lỗi',
++    'Help us improve the app': 'Giúp chúng tôi cải thiện ứng dụng',
++    'Issue type': 'Loại lỗi',
++    'Incorrect data': 'Dữ liệu sai',
++    'Missing information': 'Thiếu thông tin',
++    'Inappropriate image/video': 'Ảnh/video không phù hợp',
++    'Map/address issue': 'Lỗi bản đồ/địa chỉ',
++    'Other': 'Khác',
++    'Please select one': 'Vui lòng chọn một mục',
++    'Description': 'Mô tả',
++    'Image or video': 'Ảnh hoặc video',
++    'Upload image or video': 'Tải ảnh hoặc video',
++    'Please describe the issue you encountered so we can fix it as quickly as possible...':
++        'Mô tả lỗi bạn gặp để chúng tôi có thể sửa nhanh nhất...',
++    'e.g. "When I tap the Save button on screen X, the app crashes"':
++        'VD: "Khi tôi bấm nút Lưu ở màn X, app bị thoát"',
++    'Thank you for your report. Our team will review it as soon as possible.':
++        'Cảm ơn báo cáo của bạn. Đội ngũ sẽ xem xét sớm nhất có thể.',
++    'Cancel': 'Hủy',
++    'Submitting...': 'Đang gửi...',
++    'Submit Report': 'Gửi báo lỗi',
++    'Report Submitted!': 'Đã gửi báo lỗi!',
++    'Thank you for your feedback.': 'Cảm ơn phản hồi của bạn.',
++    'Our team will review it and get back to you as soon as possible.':
++        'Đội ngũ sẽ xem xét và phản hồi sớm nhất có thể.',
++    'Done': 'Xong',
++    'Messages': 'Tin nhắn',
++    'Create post': 'Tạo bài viết',
++    'Post': 'Bài viết',
++    'What do you want to share?': 'Bạn muốn chia sẻ gì?',
++    'Saved Posts': 'Bài đã lưu',
++    'Report Post': 'Báo cáo bài viết',
++    'Post not found': 'Không tìm thấy bài viết',
++    'Go back': 'Quay lại',
++    'Follow': 'Theo dõi',
++    'Following': 'Đang theo dõi',
++    'Type your answer': 'Nhập câu trả lời',
++    'All notifications were cleared': 'Đã xóa tất cả thông báo',
++    'Popular Apps': 'Ứng dụng',
++    'App not found': 'Không tìm thấy ứng dụng',
++    'Payment confirmed': 'Đã xác nhận thanh toán',
++    'Your premium subscription is active.': 'Gói Premium đã được kích hoạt.',
++    'Premium Account': 'Tài khoản Premium',
++    'Premium Account Privileges': 'Quyền lợi tài khoản Premium',
++    'Select your plan:': 'Chọn gói của bạn:',
++    '1 Month': '1 tháng',
++    '6 Months': '6 tháng',
++    '12 Months': '12 tháng',
++    'POPULAR': 'PHỔ BIẾN',
++    "What you'll get:": 'Bạn sẽ nhận được:',
++    '+ 2 more benefits': '+ 2 quyền lợi khác',
++    'Access to AI Object Identification': 'Nhận diện vật thể bằng AI',
++    'Practice Essential Vietnamese Phrases':
++        'Luyện tập các câu tiếng Việt cần thiết',
++    'Generate Personalized Itinerary': 'Tạo lịch trình cá nhân hóa',
++    'Many more exclusive voucher & coupon':
++        'Nhiều mã ưu đãi và coupon độc quyền hơn',
++    'Paid': 'Đã thanh toán',
++    'Voucher discount': 'Giảm giá voucher',
++    'OK': 'OK',
++    'Subtotal': 'Tạm tính',
++    'Total': 'Tổng cộng',
++    'Enter voucher code': 'Nhập mã voucher',
++    'Reward': 'Phần thưởng',
++    'Available Points': 'Điểm hiện có',
++    'Use to redeem vouchers': 'Dùng để đổi mã ưu đãi',
++    'View Benefits >': 'Xem quyền lợi >',
++    'Gold': 'Hạng Vàng',
++    'Gold Tier': 'Hạng Vàng',
++    '45,000 / 70,000 pts': '45.000 / 70.000 điểm',
++    '25,000 to Platinum': 'Còn 25.000 điểm đến Bạch kim',
++    'Vouchers': 'Mã ưu đãi',
++    'Redeem Voucher': 'Đổi mã ưu đãi',
++    'My Vouchers (3)': 'Mã của tôi (3)',
++    'Discount': 'Giảm giá',
++    'Shipping': 'Vận chuyển',
++    'Gift': 'Quà tặng',
++    'Cashback': 'Hoàn tiền',
++    'points': 'điểm',
++    'Redeem Now': 'Đổi ngay',
++    'Use Now': 'Dùng ngay',
++    'Exp': 'HSD',
++    'Voucher code copied': 'Đã sao chép mã ưu đãi',
++    'Confirm Redemption': 'Xác nhận đổi mã',
++    'Voucher Details': 'Chi tiết mã ưu đãi',
++    'Voucher Code': 'Mã ưu đãi',
++    'Copy': 'Sao chép',
++    'Points required': 'Điểm cần đổi',
++    'Your available points:': 'Điểm hiện có:',
++    'Redeem Points': 'Đổi điểm',
++    'Insufficient Points': 'Không đủ điểm',
++    'How to Use': 'Cách sử dụng',
++    'Copy the voucher code above': 'Sao chép mã ưu đãi phía trên',
++    'Apply the code at checkout': 'Nhập mã khi thanh toán',
++    'Enjoy your discount or benefit': 'Tận hưởng ưu đãi hoặc quyền lợi',
++    'Code can only be used once before expiry date':
++        'Mã chỉ dùng được một lần trước ngày hết hạn',
++    'Important': 'Lưu ý',
++    'This voucher cannot be exchanged for cash and is non-transferable. Please use before the expiration date.':
++        'Mã ưu đãi không thể quy đổi thành tiền mặt và không thể chuyển nhượng. Vui lòng sử dụng trước ngày hết hạn.',
++    '\$5 off on orders over \$20': 'Giảm \$5 cho đơn từ \$20',
++    'Free nationwide shipping': 'Miễn phí vận chuyển toàn quốc',
++    '\$10 off on orders over \$50': 'Giảm \$10 cho đơn từ \$50',
++    'Free gift with purchase': 'Tặng quà khi mua hàng',
++    '\$20 Premium voucher': 'Mã Premium trị giá \$20',
++    '20% cashback up to 80K': 'Hoàn tiền 20% tối đa 80K',
++    'Special discount voucher for orders valued at \$20 or more':
++        'Mã giảm giá đặc biệt cho đơn hàng từ \$20 trở lên',
++    'Valid for all products regardless of category':
++        'Áp dụng cho mọi sản phẩm, không phân biệt danh mục',
++    'Can be combined with free shipping voucher':
++        'Có thể dùng cùng mã miễn phí vận chuyển',
++    'Maximum discount of \$5 per order': 'Giảm tối đa \$5 mỗi đơn hàng',
++    'Apply free delivery to eligible orders nationwide':
++        'Áp dụng miễn phí giao hàng cho đơn đủ điều kiện trên toàn quốc',
++    'No minimum order value required in selected zones':
++        'Không yêu cầu giá trị đơn tối thiểu tại khu vực áp dụng',
++    'Cannot be combined with another shipping voucher':
++        'Không thể dùng cùng mã vận chuyển khác',
++    'Special discount voucher for orders valued at \$50 or more':
++        'Mã giảm giá đặc biệt cho đơn hàng từ \$50 trở lên',
++    'Maximum discount of \$10 per order': 'Giảm tối đa \$10 mỗi đơn hàng',
++    'Receive one surprise gift with qualifying purchase':
++        'Nhận một phần quà bất ngờ khi đơn hàng đủ điều kiện',
++    'Gift value may vary by campaign and stock':
++        'Giá trị quà tặng có thể thay đổi theo chiến dịch và tồn kho',
++    'Voucher can be redeemed once per account':
++        'Mỗi tài khoản chỉ đổi được mã này một lần',
++    'Premium voucher with \$20 discount for Premium package':
++        'Mã giảm \$20 cho gói Premium',
++    'Upgrade your experience with exclusive features':
++        'Nâng cấp trải nghiệm với các tính năng độc quyền',
++    '24/7 priority support from specialists':
++        'Hỗ trợ ưu tiên 24/7 từ chuyên viên',
++    'Many special benefits exclusively for Premium members':
++        'Nhiều quyền lợi đặc biệt dành riêng cho thành viên Premium',
++    'Can renew and accumulate more benefits':
++        'Có thể gia hạn và tích lũy thêm quyền lợi',
++    'Get 20% cashback on eligible orders (max 80K)':
++        'Hoàn tiền 20% cho đơn đủ điều kiện (tối đa 80K)',
++    'Cashback is credited within 24 hours after completion':
++        'Tiền hoàn sẽ được cộng trong vòng 24 giờ sau khi hoàn tất',
++    'Can be combined with selected platform offers':
++        'Có thể dùng cùng một số ưu đãi được chọn trên nền tảng',
++    'Spam': 'Spam',
++    'Harassment or hate speech': 'Quấy rối hoặc thù ghét',
++    'Inappropriate content': 'Nội dung không phù hợp',
++    'False information': 'Thông tin sai lệch',
++    'Violence or dangerous content': 'Bạo lực hoặc nguy hiểm',
++    'Search destination': 'Tìm điểm đến',
++    'Search destination...': 'Tìm điểm đến...',
++    'Search destinations': 'Tìm điểm đến',
++    'Recommendation': 'Gợi ý',
++    'Please choose: ✨': 'Chọn nhé: ✨',
++    'Popular Destinations': 'Điểm đến nổi bật',
++    'Business Location': 'Địa điểm công việc',
++    'Where will you be working?': 'Bạn sẽ làm việc ở đâu?',
++    'e.g. District 1, Ho Chi Minh City': 'VD: Quận 1, TP. Hồ Chí Minh',
++    'Choose your budget': 'Chọn ngân sách',
++    'Pick one option below to continue': 'Chọn một mức để tiếp tục',
++    'Generate': 'Tạo lịch trình',
++    'e.g. 800,000 VND per day': 'VD: 800.000 VND/ngày',
++    'Choose your travel dates': 'Chọn ngày đi',
++    "When's your trip?": 'Chuyến đi của bạn vào khi nào?',
++    'What is your interest?': 'Bạn thích gì?',
++    'Select your preferences (multiple choices)': 'Chọn sở thích của bạn',
++    'Culture & History': 'Văn hóa',
++    'Nature & Outdoor': 'Thiên nhiên',
++    'Adventure': 'Phiêu lưu',
++    'Entertainment': 'Giải trí',
++    'Leisure Trip': 'Du lịch',
++    'Business Trip': 'Công tác',
++    'Your Vietnam Adventure': 'Hành trình Việt Nam',
++    'Personalized Itinerary': 'Lịch trình cá nhân hóa',
++    "Let's create your perfect trip": 'Cùng tạo chuyến đi hoàn hảo của bạn',
++    'Trip Type': 'Loại chuyến đi',
++    'Saved Trips': 'Chuyến đi đã lưu',
++    'Pick up where you left off and tick places as you complete them.':
++        'Tiếp tục chuyến đi còn dang dở và đánh dấu các điểm đã hoàn thành.',
++    'Enter address': 'Nhập địa chỉ',
++    'We will suggest activities around your business location\nduring free time':
++        'Chúng tôi sẽ gợi ý hoạt động gần nơi làm việc\ntrong thời gian rảnh',
++    'Option 1: Enter daily budget': 'Cách 1: Nhập ngân sách/ngày',
++    'Use an exact amount per day if you already know your spending limit.':
++        'Dùng số tiền cụ thể nếu bạn đã biết giới hạn chi tiêu.',
++    'Using exact daily budget. Price range will be ignored.':
++        'Đang dùng ngân sách/ngày. Mức giá sẽ được bỏ qua.',
++    'Option 2: Choose price range': 'Cách 2: Chọn mức giá',
++    'Use a quick preset instead of typing an exact amount.':
++        'Chọn nhanh một mức thay vì nhập số tiền cụ thể.',
++    'Using price range. Typed daily budget will be ignored.':
++        'Đang dùng mức giá. Ngân sách đã nhập sẽ được bỏ qua.',
++    'What kind of trips feel most like you?':
++        'Kiểu chuyến đi nào hợp với bạn nhất?',
++    'Choose a few directions so we can shape your first suggestions.':
++        'Chọn vài hướng yêu thích để chúng tôi gợi ý phù hợp ngay từ đầu.',
++    'Pick at least 2 travel styles.': 'Chọn ít nhất 2 phong cách du lịch.',
++    'Who do you usually travel with?': 'Bạn thường đi cùng ai?',
++    'This helps us avoid suggestions that feel awkward or impractical.':
++        'Điều này giúp gợi ý thực tế và hợp hoàn cảnh hơn.',
++    'Pick at least 1 companion style.': 'Chọn ít nhất 1 kiểu đồng hành.',
++    'What budget feels comfortable?': 'Mức ngân sách nào phù hợp với bạn?',
++    'We will tune recommendations so the app feels realistic from day one.':
++        'Chúng tôi sẽ điều chỉnh gợi ý để app hữu ích ngay từ ngày đầu.',
++    'Choose 1 budget level.': 'Chọn 1 mức ngân sách.',
++    'How packed do you want your days to be?':
++        'Bạn muốn lịch mỗi ngày dày đến mức nào?',
++    'This controls whether we suggest slow days, balanced plans, or busier lists.':
++        'Mục này quyết định app sẽ gợi ý lịch thư thả, cân bằng hay nhiều hoạt động hơn.',
++    'Choose your preferred pace.': 'Chọn nhịp đi bạn muốn.',
++    'Pick the things you want to see more often':
++        'Chọn những điều bạn muốn thấy thường xuyên hơn',
++    'This final step powers your Home and Explore suggestions right away.':
++        'Bước cuối này sẽ cá nhân hóa gợi ý ở Trang chủ và Khám phá ngay.',
++    'Pick at least 3 topics.': 'Chọn ít nhất 3 chủ đề.',
++    'Back later': 'Để sau',
++    'Saving...': 'Đang lưu...',
++    'Finish': 'Hoàn tất',
++    'Your Travel Taste': 'Gu du lịch của bạn',
++    'You are telling us to prioritize': 'Bạn muốn chúng tôi ưu tiên',
++    'Tailored to your travel taste': 'Gợi ý theo gu du lịch của bạn',
++    'Refine': 'Chỉnh lại',
++    'Food': 'Ẩm thực',
++    'Culture': 'Văn hóa',
++    'Nature': 'Thiên nhiên',
++    'Relaxation': 'Thư giãn',
++    'Shopping': 'Mua sắm',
++    'Photography': 'Chụp ảnh',
++    'Local Life': 'Đời sống địa phương',
++    'Street food, specialties, local flavors':
++        'Món đường phố, đặc sản, hương vị địa phương',
++    'History, rituals, art, heritage': 'Lịch sử, nghi lễ, nghệ thuật, di sản',
++    'Mountains, beaches, gardens, scenery':
++        'Núi non, bãi biển, vườn cảnh, phong cảnh',
++    'Easy pacing, cafes, spa, slow travel':
++        'Nhịp đi thư thả, cà phê, spa, du lịch chậm',
++    'Energetic activities and new thrills':
++        'Hoạt động năng lượng và trải nghiệm mới',
++    'Markets, crafts, local finds': 'Chợ, đồ thủ công, món hay ở địa phương',
++    'Scenic spots and memorable visuals': 'Góc cảnh đẹp và khung hình đáng nhớ',
++    'Neighborhood vibes and authentic moments':
++        'Không khí khu phố và khoảnh khắc đời thường',
++    'Solo': 'Đi một mình',
++    'Couple': 'Cặp đôi',
++    'Friends': 'Bạn bè',
++    'Family': 'Gia đình',
++    'Seniors': 'Người lớn tuổi',
++    'Business': 'Công tác',
++    'Freedom and flexible pacing': 'Tự do và linh hoạt nhịp đi',
++    'Romantic and cozy suggestions': 'Gợi ý lãng mạn và ấm cúng',
++    'Fun group-friendly experiences': 'Trải nghiệm vui, hợp đi nhóm',
++    'Easy, safe, family-ready options': 'Lựa chọn dễ đi, an toàn, hợp gia đình',
++    'Comfortable and low-effort plans': 'Kế hoạch thoải mái, ít tốn sức',
++    'Efficient stops around a work trip':
++        'Điểm ghé hiệu quả quanh chuyến công tác',
++    'Affordable': 'Tiết kiệm',
++    'Budget': 'Tiết kiệm',
++    'Mid-range': 'Tầm trung',
++    'Comfort': 'Thoải mái',
++    'Standard': 'Tiêu chuẩn',
++    'Premium': 'Cao cấp',
++    'Smart spending and free gems': 'Chi tiêu thông minh và điểm miễn phí',
++    'Balanced value and comfort': 'Cân bằng giữa giá trị và thoải mái',
++    'More flexibility and polish': 'Linh hoạt hơn và chỉn chu hơn',
++    'Top picks and upgraded stays': 'Lựa chọn cao cấp và lưu trú nâng hạng',
++    'Easy': 'Nhẹ nhàng',
++    'Balanced': 'Cân bằng',
++    'Active': 'Năng động',
++    'Packed': 'Dày lịch',
++    'Slow mornings and room to breathe': 'Buổi sáng chậm rãi, có khoảng nghỉ',
++    'A healthy mix of must-sees and rest':
++        'Cân bằng giữa điểm phải đi và thời gian nghỉ',
++    'More stops and more movement': 'Nhiều điểm dừng và di chuyển hơn',
++    'Make the most of every hour': 'Tận dụng tối đa từng giờ',
++    'Street Food': 'Ẩm thực đường phố',
++    'Coffee': 'Cà phê',
++    'Museums': 'Bảo tàng',
++    'Temples': 'Đền chùa',
++    'Festivals': 'Lễ hội',
++    'Beaches': 'Bãi biển',
++    'Mountains': 'Núi',
++    'Night Markets': 'Chợ đêm',
++    'Workshops': 'Workshop',
++    'Handmade Goods': 'Đồ thủ công',
++    'Scenic Spots': 'Điểm ngắm cảnh',
++    'Wellness': 'Chăm sóc sức khỏe',
++    'What type of trip are you planning?':
++        'Bạn đang lên kế hoạch chuyến đi nào?',
++    'Relax, explore, and enjoy\nyour vacation':
++        'Thư giãn, khám phá và tận hưởng\nkỳ nghỉ',
++    'Meetings, conferences, and\nnetworking': 'Họp, hội nghị và\nkết nối',
++    'Museums, temples, heritage': 'Bảo tàng, đền chùa, di sản',
++    'Hiking, beaches, parks': 'Leo núi, biển, công viên',
++    'Sports, thrills, exploration': 'Thể thao, thử thách, khám phá',
++    'Shopping, nightlife, events': 'Mua sắm, đêm, sự kiện',
++    'Where do\nyou want\nto go?': 'Bạn muốn\nđi đâu?',
++    'When are\nyou free to\ntravel?': 'Khi nào\nbạn rảnh?',
++    'Where to?': 'Đi đâu?',
++    'Choose your dream destination': 'Chọn điểm đến mơ ước',
++    'Back': 'Quay lại',
++    'Delete': 'Xóa',
++    'Ok': 'OK',
++    'Personal Data': 'Dữ liệu cá nhân',
++    'All Images': 'Tất cả ảnh',
++    'Reviews': 'Đánh giá',
++    'What to expect': 'Trải nghiệm nổi bật',
++    'Best time to visit': 'Thời điểm đẹp nhất',
++    'Map placeholder': 'Bản đồ',
++    'Image placeholder': 'Hình ảnh',
++    'Please sign in to update wishlist.':
++        'Vui lòng đăng nhập để cập nhật yêu thích.',
++    'Please click the reset link in your email first, or try refreshing the page':
++        'Vui lòng bấm liên kết trong email trước, hoặc thử tải lại trang',
++    'Session verified! You can now set your new password.':
++        'Đã xác thực phiên. Bạn có thể đặt mật khẩu mới.',
++    'No active session found. Please click the reset link in your email.':
++        'Không tìm thấy phiên. Vui lòng bấm liên kết trong email.',
++    'Failed to verify session. Please try again.':
++        'Không thể xác thực phiên. Vui lòng thử lại.',
++    'Password reset email resent! Check your inbox.':
++        'Đã gửi lại email đặt mật khẩu. Kiểm tra hộp thư nhé.',
++    'Failed to resend email. Please try again.':
++        'Không thể gửi lại email. Vui lòng thử lại.',
++    'Too many reset emails sent. Please wait 1 hour before trying again.':
++        'Bạn đã gửi quá nhiều email. Vui lòng chờ 1 giờ rồi thử lại.',
++    'Password reset email sent! Check your inbox.':
++        'Đã gửi email đặt lại mật khẩu. Kiểm tra hộp thư nhé.',
++    'Failed to send reset email. Please try again.':
++        'Không thể gửi email đặt lại. Vui lòng thử lại.',
++    'Please click the reset link in your email first':
++        'Vui lòng bấm liên kết trong email trước',
++    'Password must be at least 6 characters long':
++        'Mật khẩu phải có ít nhất 6 ký tự',
++    'Password updated successfully': 'Đã cập nhật mật khẩu',
++    'Failed to update password. Please try again.':
++        'Không thể cập nhật mật khẩu. Vui lòng thử lại.',
++    'Discover Vietnamese Culture and\nLocal Specialties':
++        'Khám phá văn hóa Việt Nam và\nđặc sản địa phương',
++    'ACTIVITIES': 'HOẠT ĐỘNG',
++    'CULTURE': 'VĂN HÓA',
++    'FOOD': 'ẨM THỰC',
++    'LOCAL PRODUCTS': 'ĐẶC SẢN',
++    'Hands-on experiences and cultural activities':
++        'Trải nghiệm thực tế và hoạt động văn hóa',
++    'Traditional customs, heritage, and cultural practices':
++        'Phong tục truyền thống, di sản và thực hành văn hóa',
++    'Local dishes and culinary specialties from different regions':
++        'Món ăn địa phương và đặc sản ẩm thực từ nhiều vùng miền',
++    'Traditional goods and handcrafted regional products':
++        'Sản phẩm truyền thống và đồ thủ công địa phương',
++    'Floating market': 'Chợ nổi',
++    'Dropping water lanterns': 'Thả hoa đăng',
++    'Water puppetry': 'Múa rối nước',
++    'Traditional craft villages': 'Làng nghề truyền thống',
++    'Beef noodle soup': 'Phở bò',
++    'Pho': 'Phở',
++    'Banh mi': 'Bánh mì',
++    'Bun bo': 'Bún bò',
++    'Conical hats': 'Nón lá',
++    'Bat Trang pottery': 'Gốm Bát Tràng',
++  };
++}
+diff --git a/frontend/lib/features/profile/presentation/change_password_page.dart b/frontend/lib/features/profile/presentation/change_password_page.dart
+index 789a175..bc7c028 100644
+--- a/frontend/lib/features/profile/presentation/change_password_page.dart
++++ b/frontend/lib/features/profile/presentation/change_password_page.dart
+@@ -1,6 +1,7 @@
+ import 'package:flutter/material.dart';
+ import 'package:go_router/go_router.dart';
+ import 'package:hellovietnam/app/router.dart';
++import 'package:hellovietnam/core/language/app_language.dart';
+ 
+ class ChangePasswordPage extends StatefulWidget {
+   const ChangePasswordPage({super.key});
+@@ -10,11 +11,14 @@ class ChangePasswordPage extends StatefulWidget {
+ }
+ 
+ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+-  static const String _illustrationAsset = 'assets/images/Auth_Image/Password.png';
++  static const String _illustrationAsset =
++      'assets/images/Auth_Image/Password.png';
+ 
+-  final TextEditingController _currentPasswordController = TextEditingController();
++  final TextEditingController _currentPasswordController =
++      TextEditingController();
+   final TextEditingController _newPasswordController = TextEditingController();
+-  final TextEditingController _confirmPasswordController = TextEditingController();
++  final TextEditingController _confirmPasswordController =
++      TextEditingController();
+ 
+   bool _obscureCurrent = true;
+   bool _obscureNew = true;
+@@ -30,7 +34,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+   }
+ 
+   void _showSnack(String message) {
+-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
++    ScaffoldMessenger.of(
++      context,
++    ).showSnackBar(SnackBar(content: Text(context.l10n.ui(message))));
+   }
+ 
+   void _onSave() {
+@@ -61,7 +67,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+     return Scaffold(
+       backgroundColor: Colors.white,
+       body: SingleChildScrollView(
+-        child: _isSuccess ? _buildSuccessScreen(context) : _buildChangePasswordForm(context),
++        child: _isSuccess
++            ? _buildSuccessScreen(context)
++            : _buildChangePasswordForm(context),
+       ),
+     );
+   }
+@@ -84,7 +92,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+                     return const LinearGradient(
+                       begin: Alignment.topCenter,
+                       end: Alignment.bottomCenter,
+-                      colors: <Color>[Colors.white, Colors.white, Colors.transparent],
++                      colors: <Color>[
++                        Colors.white,
++                        Colors.white,
++                        Colors.transparent,
++                      ],
+                       stops: <double>[0.0, 0.75, 1.0],
+                     ).createShader(bounds);
+                   },
+@@ -95,11 +107,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+                     width: double.infinity,
+                     height: totalHeight,
+                     alignment: Alignment.topCenter,
+-                    errorBuilder: (
+-                      BuildContext context,
+-                      Object error,
+-                      StackTrace? stackTrace,
+-                    ) => const SizedBox.shrink(),
++                    errorBuilder:
++                        (
++                          BuildContext context,
++                          Object error,
++                          StackTrace? stackTrace,
++                        ) => const SizedBox.shrink(),
+                   ),
+                 ),
+               ),
+@@ -111,13 +124,17 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+                   children: <Widget>[
+                     IconButton(
+                       onPressed: () => context.pop(),
+-                      icon: const Icon(Icons.chevron_left, size: 30, color: Colors.black87),
++                      icon: const Icon(
++                        Icons.chevron_left,
++                        size: 30,
++                        color: Colors.black87,
++                      ),
+                     ),
+-                    const Expanded(
++                    Expanded(
+                       child: Text(
+-                        'Change Password',
++                        context.l10n.ui('Change Password'),
+                         textAlign: TextAlign.center,
+-                        style: TextStyle(
++                        style: const TextStyle(
+                           fontSize: 20,
+                           fontWeight: FontWeight.w700,
+                           color: Color(0xFF1A1A2E),
+@@ -137,10 +154,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+           child: Column(
+             crossAxisAlignment: CrossAxisAlignment.stretch,
+             children: <Widget>[
+-              const Text(
+-                'Change your password',
++              Text(
++                context.l10n.ui('Change your password'),
+                 textAlign: TextAlign.center,
+-                style: TextStyle(
++                style: const TextStyle(
+                   fontSize: 15,
+                   fontWeight: FontWeight.w600,
+                   color: Color(0xFF1A1A2E),
+@@ -149,13 +166,16 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+               const SizedBox(height: 24),
+               _buildTextField(
+                 controller: _currentPasswordController,
+-                hint: 'Enter your current password',
++                hint: context.l10n.ui('Enter your current password'),
+                 icon: Icons.lock_outline,
+                 obscure: _obscureCurrent,
+                 suffixIcon: IconButton(
+-                  onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
++                  onPressed: () =>
++                      setState(() => _obscureCurrent = !_obscureCurrent),
+                   icon: Icon(
+-                    _obscureCurrent ? Icons.visibility_off_outlined : Icons.visibility_outlined,
++                    _obscureCurrent
++                        ? Icons.visibility_off_outlined
++                        : Icons.visibility_outlined,
+                     color: Colors.grey.shade400,
+                   ),
+                 ),
+@@ -163,13 +183,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+               const SizedBox(height: 16),
+               _buildTextField(
+                 controller: _newPasswordController,
+-                hint: 'Enter your new password',
++                hint: context.l10n.ui('Enter your new password'),
+                 icon: Icons.lock_outline,
+                 obscure: _obscureNew,
+                 suffixIcon: IconButton(
+                   onPressed: () => setState(() => _obscureNew = !_obscureNew),
+                   icon: Icon(
+-                    _obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined,
++                    _obscureNew
++                        ? Icons.visibility_off_outlined
++                        : Icons.visibility_outlined,
+                     color: Colors.grey.shade400,
+                   ),
+                 ),
+@@ -177,19 +199,22 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+               const SizedBox(height: 16),
+               _buildTextField(
+                 controller: _confirmPasswordController,
+-                hint: 'Confirm your new password',
++                hint: context.l10n.ui('Confirm your new password'),
+                 icon: Icons.lock_outline,
+                 obscure: _obscureConfirm,
+                 suffixIcon: IconButton(
+-                  onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
++                  onPressed: () =>
++                      setState(() => _obscureConfirm = !_obscureConfirm),
+                   icon: Icon(
+-                    _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
++                    _obscureConfirm
++                        ? Icons.visibility_off_outlined
++                        : Icons.visibility_outlined,
+                     color: Colors.grey.shade400,
+                   ),
+                 ),
+               ),
+               const SizedBox(height: 24),
+-              _buildMainButton('Save', _onSave),
++              _buildMainButton(context.l10n.ui('Save'), _onSave),
+             ],
+           ),
+         ),
+@@ -211,20 +236,18 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+             width: 200,
+             height: 200,
+             fit: BoxFit.contain,
+-            errorBuilder: (
+-              BuildContext context,
+-              Object error,
+-              StackTrace? stackTrace,
+-            ) => const Icon(
+-              Icons.check_circle_outline,
+-              size: 80,
+-              color: Color(0xFF42A5F5),
+-            ),
++            errorBuilder:
++                (BuildContext context, Object error, StackTrace? stackTrace) =>
++                    const Icon(
++                      Icons.check_circle_outline,
++                      size: 80,
++                      color: Color(0xFF42A5F5),
++                    ),
+           ),
+         ),
+         const SizedBox(height: 40),
+-        const Text(
+-          'Congratulations!',
++        Text(
++          context.l10n.ui('Congratulations!'),
+           textAlign: TextAlign.center,
+           style: TextStyle(
+             fontSize: 24,
+@@ -234,17 +257,17 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+         ),
+         const SizedBox(height: 12),
+         Text(
+-          'Your password has been changed',
++          context.l10n.ui('Your password has been changed'),
+           textAlign: TextAlign.center,
+-          style: TextStyle(
+-            fontSize: 15,
+-            color: Colors.grey.shade500,
+-          ),
++          style: TextStyle(fontSize: 15, color: Colors.grey.shade500),
+         ),
+         const SizedBox(height: 40),
+         Padding(
+           padding: const EdgeInsets.symmetric(horizontal: 24),
+-          child: _buildMainButton('Back to Login', () => context.go(AppRoutes.login)),
++          child: _buildMainButton(
++            context.l10n.ui('Back to Login'),
++            () => context.go(AppRoutes.login),
++          ),
+         ),
+         const SizedBox(height: 50),
+       ],
+@@ -294,7 +317,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
+           backgroundColor: const Color(0xFF81D4FA),
+           foregroundColor: Colors.white,
+           elevation: 0,
+-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
++          shape: RoundedRectangleBorder(
++            borderRadius: BorderRadius.circular(14),
++          ),
+           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+         ),
+         child: Text(label),
+diff --git a/frontend/lib/features/profile/presentation/upgrade_account_page.dart b/frontend/lib/features/profile/presentation/upgrade_account_page.dart
+index 4177bbf..6e14cc1 100644
+--- a/frontend/lib/features/profile/presentation/upgrade_account_page.dart
++++ b/frontend/lib/features/profile/presentation/upgrade_account_page.dart
+@@ -1,27 +1,49 @@
++import 'dart:ui';
++
+ import 'package:flutter/material.dart';
+ import 'package:go_router/go_router.dart';
+ import 'package:hellovietnam/app/router.dart';
+-import 'package:hellovietnam/app/theme.dart';
+-import 'package:hellovietnam/core/config/app_constants.dart';
++import 'package:hellovietnam/core/language/app_language.dart';
+ 
+-// ── Data ─────────────────────────────────────────────────────────────
++const Color _primaryCyan = Color(0xFF2EB9F8);
++const Color _gradientStart = Color(0xFFEFF6FF);
++const Color _gradientMiddle = Color(0xFFECFEFF);
++const Color _gradientEnd = Color(0xFFF0FDFA);
++const Color _selectedCardStart = Color(0xFF22D3EE);
++const Color _selectedCardMiddle = Color(0xFF60A5FA);
++const Color _selectedCardEnd = Color(0xFF06B6D4);
++const Color _unselectedCardStart = Color(0xFF67E8F9);
++const Color _unselectedCardMiddle = Color(0xFF93C5FD);
++const Color _unselectedCardEnd = Color(0xFF5EEAD4);
+ 
+-class _Plan {
+-  const _Plan({required this.id, required this.duration, required this.label});
++class _SubscriptionPlan {
++  const _SubscriptionPlan({
++    required this.id,
++    required this.duration,
++    required this.price,
++    required this.months,
++    this.isPopular = false,
++  });
+ 
+   final String id;
+   final String duration;
+-
+-  /// Price line shown inside the card (e.g. "Just 4.99 $").
+-  final String label;
++  final String price;
++  final int months;
++  final bool isPopular;
+ }
+ 
+-// ── Page ─────────────────────────────────────────────────────────────
++class _PrivilegeItem {
++  const _PrivilegeItem({
++    required this.icon,
++    required this.title,
++    required this.color,
++  });
++
++  final String icon;
++  final String title;
++  final Color color;
++}
+ 
+-/// Pushed from Profile → "Upgrade Account".
+-///
+-/// Shows three subscription plans. Tapping "?" shows a dialog listing
+-/// Premium privileges. Tapping "Continue" pushes the payment method page.
+ class UpgradeAccountPage extends StatefulWidget {
+   const UpgradeAccountPage({super.key});
+ 
+@@ -29,164 +51,458 @@ class UpgradeAccountPage extends StatefulWidget {
+   State<UpgradeAccountPage> createState() => _UpgradeAccountPageState();
+ }
+ 
+-class _UpgradeAccountPageState extends State<UpgradeAccountPage> {
+-  static const List<_Plan> _plans = [
+-    _Plan(id: '1m', duration: '1 Month', label: 'Just 4.99 \$'),
+-    _Plan(id: '6m', duration: '6 Months', label: '19.99 \$'),
+-    _Plan(id: '12m', duration: '12 Months', label: '29.99 \$'),
++class _UpgradeAccountPageState extends State<UpgradeAccountPage>
++    with SingleTickerProviderStateMixin {
++  static const List<_SubscriptionPlan> _plans = <_SubscriptionPlan>[
++    _SubscriptionPlan(id: '1m', duration: '1 Month', price: '4.99', months: 1),
++    _SubscriptionPlan(
++      id: '6m',
++      duration: '6 Months',
++      price: '19.99',
++      months: 6,
++      isPopular: true,
++    ),
++    _SubscriptionPlan(
++      id: '12m',
++      duration: '12 Months',
++      price: '29.99',
++      months: 12,
++    ),
+   ];
+ 
+-  String _selectedId = '6m';
++  static const List<_PrivilegeItem> _privileges = <_PrivilegeItem>[
++    _PrivilegeItem(
++      icon: '🤖',
++      title: 'Access to AI Object Identification',
++      color: Color(0xFF2EB9F8),
++    ),
++    _PrivilegeItem(
++      icon: '💬',
++      title: 'Practice Essential Vietnamese Phrases',
++      color: Color(0xFF10B981),
++    ),
++    _PrivilegeItem(
++      icon: '✨',
++      title: 'Generate Personalized Itinerary',
++      color: Color(0xFFF59E0B),
++    ),
++    _PrivilegeItem(
++      icon: '🎁',
++      title: 'Many more exclusive voucher & coupon',
++      color: Color(0xFFEF4444),
++    ),
++  ];
+ 
+-  void _showPrivileges() {
+-    showDialog<void>(
+-      context: context,
+-      builder: (_) => const _PrivilegesDialog(),
+-    );
++  late final AnimationController _controller;
++  String _selectedPlanId = '6m';
++
++  @override
++  void initState() {
++    super.initState();
++    _controller = AnimationController(
++      vsync: this,
++      duration: const Duration(milliseconds: 1100),
++    )..forward();
++  }
++
++  @override
++  void dispose() {
++    _controller.dispose();
++    super.dispose();
++  }
++
++  void _onPlanSelected(String planId) {
++    setState(() => _selectedPlanId = planId);
+   }
+ 
+   void _onContinue() {
+-    context.push(AppRoutes.upgradePayment, extra: _selectedId);
++    context.push(AppRoutes.upgradePayment, extra: _selectedPlanId);
++  }
++
++  Future<void> _showPrivilegesModal() {
++    return showGeneralDialog<void>(
++      context: context,
++      barrierDismissible: true,
++      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
++      barrierColor: Colors.black.withValues(alpha: 0.4),
++      transitionDuration: const Duration(milliseconds: 300),
++      pageBuilder:
++          (BuildContext context, Animation<double> a1, Animation<double> a2) {
++            return Center(
++              child: _PrivilegesModal(
++                privileges: _privileges,
++                onClose: () => Navigator.of(context).pop(),
++              ),
++            );
++          },
++      transitionBuilder:
++          (
++            BuildContext context,
++            Animation<double> animation,
++            Animation<double> secondaryAnimation,
++            Widget child,
++          ) {
++            final Animation<double> curved = CurvedAnimation(
++              parent: animation,
++              curve: Curves.easeOutCubic,
++              reverseCurve: Curves.easeInCubic,
++            );
++            return BackdropFilter(
++              filter: ImageFilter.blur(
++                sigmaX: 4 * animation.value,
++                sigmaY: 4 * animation.value,
++              ),
++              child: FadeTransition(
++                opacity: curved,
++                child: SlideTransition(
++                  position: Tween<Offset>(
++                    begin: const Offset(0, 0.1),
++                    end: Offset.zero,
++                  ).animate(curved),
++                  child: ScaleTransition(
++                    scale: Tween<double>(begin: 0.95, end: 1).animate(curved),
++                    child: child,
++                  ),
++                ),
++              ),
++            );
++          },
++    );
+   }
+ 
+   @override
+   Widget build(BuildContext context) {
+-    final double topInset = MediaQuery.of(context).padding.top;
++    final MediaQueryData media = MediaQuery.of(context);
++    final double bottomInset = media.padding.bottom;
+ 
+     return Scaffold(
+-      backgroundColor: Colors.white,
+-      body: Column(
++      backgroundColor: _gradientStart,
++      body: Stack(
+         children: <Widget>[
+-          // ── Header — mirrors Profile/Currency header ──────────
+-          Container(
+-            color: Colors.white,
+-            padding: EdgeInsets.fromLTRB(10, topInset + 8, 10, 10),
+-            child: SizedBox(
+-              height: 48,
+-              child: Row(
+-                children: <Widget>[
+-                  IconButton(
+-                    onPressed: () => context.pop(),
+-                    icon: const Icon(
+-                      Icons.chevron_left,
+-                      size: 26,
+-                      color: Color(0xFF1C1C1C),
+-                    ),
+-                  ),
+-                  const Expanded(
+-                    child: Text(
+-                      'Upgrade Account',
+-                      textAlign: TextAlign.center,
+-                      style: TextStyle(
+-                        fontSize: 28,
+-                        fontWeight: FontWeight.w800,
+-                        color: Color(0xFF121212),
++          const Positioned.fill(child: _UpgradeBackground()),
++          CustomScrollView(
++            physics: const BouncingScrollPhysics(),
++            slivers: <Widget>[
++              SliverAppBar(
++                pinned: true,
++                automaticallyImplyLeading: false,
++                toolbarHeight: 72,
++                expandedHeight: media.padding.top + 72,
++                backgroundColor: Colors.transparent,
++                elevation: 0,
++                flexibleSpace: _GlassHeader(
++                  topPadding: media.padding.top,
++                  onBack: () => context.pop(),
++                  onHelp: _showPrivilegesModal,
++                ),
++              ),
++              SliverToBoxAdapter(
++                child: Padding(
++                  padding: EdgeInsets.fromLTRB(24, 32, 24, bottomInset + 112),
++                  child: Column(
++                    crossAxisAlignment: CrossAxisAlignment.start,
++                    children: <Widget>[
++                      Center(
++                        child: _Entrance(
++                          controller: _controller,
++                          begin: 0.18,
++                          end: 0.56,
++                          offset: Offset.zero,
++                          scaleBegin: 0.9,
++                          child: const _PremiumBadge(),
++                        ),
+                       ),
+-                    ),
+-                  ),
+-                  // Help button — dark square with "?" icon
+-                  GestureDetector(
+-                    onTap: _showPrivileges,
+-                    child: Container(
+-                      width: 36,
+-                      height: 36,
+-                      decoration: BoxDecoration(
+-                        color: AppColors.textPrimary,
+-                        borderRadius: BorderRadius.circular(8),
++                      const SizedBox(height: 38),
++                      _Entrance(
++                        controller: _controller,
++                        begin: 0.28,
++                        end: 0.64,
++                        offset: const Offset(-0.08, 0),
++                        child: Text(
++                          context.l10n.ui('Select your plan:'),
++                          style: const TextStyle(
++                            fontSize: 16,
++                            fontWeight: FontWeight.w800,
++                            color: Color(0xFF374151),
++                          ),
++                        ),
+                       ),
+-                      child: const Icon(
+-                        Icons.question_mark_rounded,
+-                        size: 20,
+-                        color: Colors.white,
++                      const SizedBox(height: 20),
++                      ...List<Widget>.generate(_plans.length, (int index) {
++                        final _SubscriptionPlan plan = _plans[index];
++                        return _Entrance(
++                          controller: _controller,
++                          begin: 0.36 + (index * 0.09),
++                          end: 0.72 + (index * 0.07),
++                          offset: const Offset(-0.08, 0),
++                          child: Padding(
++                            padding: const EdgeInsets.only(bottom: 16),
++                            child: _PlanCard(
++                              plan: plan,
++                              isSelected: plan.id == _selectedPlanId,
++                              onTap: () => _onPlanSelected(plan.id),
++                            ),
++                          ),
++                        );
++                      }),
++                      const SizedBox(height: 18),
++                      _Entrance(
++                        controller: _controller,
++                        begin: 0.72,
++                        end: 0.96,
++                        offset: const Offset(0, 0.08),
++                        child: _BenefitsPreviewCard(
++                          privileges: _privileges,
++                          onMoreTap: _showPrivilegesModal,
++                        ),
+                       ),
+-                    ),
++                    ],
+                   ),
+-                ],
++                ),
+               ),
++            ],
++          ),
++          Positioned(
++            left: 0,
++            right: 0,
++            bottom: 0,
++            child: _Entrance(
++              controller: _controller,
++              begin: 0.78,
++              end: 1,
++              offset: const Offset(0, 0.08),
++              child: _BottomContinueBar(onContinue: _onContinue),
+             ),
+           ),
++        ],
++      ),
++    );
++  }
++}
+ 
+-          // ── Plan banner ───────────────────────────────────────
+-          Container(
+-            width: double.infinity,
+-            color: AppColors.primaryLight.withValues(alpha: 0.25),
+-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+-            child: const Text(
+-              'Select your plan:',
+-              style: TextStyle(
+-                fontSize: 14,
+-                fontWeight: FontWeight.w500,
+-                color: AppColors.textPrimary,
+-              ),
+-            ),
++class _UpgradeBackground extends StatelessWidget {
++  const _UpgradeBackground();
++
++  @override
++  Widget build(BuildContext context) {
++    return DecoratedBox(
++      decoration: const BoxDecoration(
++        gradient: LinearGradient(
++          begin: Alignment.topLeft,
++          end: Alignment.bottomRight,
++          colors: <Color>[_gradientStart, _gradientMiddle, _gradientEnd],
++        ),
++      ),
++      child: Stack(
++        children: const <Widget>[
++          Positioned(
++            top: 80,
++            right: 40,
++            child: _BlurCircle(size: 112, color: Color(0x4D67E8F9)),
++          ),
++          Positioned(
++            bottom: 160,
++            left: 40,
++            child: _BlurCircle(size: 160, color: Color(0x4D93C5FD)),
++          ),
++          Positioned(
++            top: 360,
++            right: 80,
++            child: _BlurCircle(size: 96, color: Color(0x4D5EEAD4)),
+           ),
++          Positioned(
++            top: 260,
++            left: 92,
++            child: _BlurCircle(size: 128, color: Color(0x33DDD6FE)),
++          ),
++        ],
++      ),
++    );
++  }
++}
+ 
+-          // ── Plan cards ────────────────────────────────────────
+-          Expanded(
+-            child: Padding(
+-              padding: const EdgeInsets.fromLTRB(
+-                AppConstants.pagePadding,
+-                28,
+-                AppConstants.pagePadding,
+-                0,
+-              ),
+-              child: Column(
+-                children: _plans
+-                    .map(
+-                      (plan) => _PlanCard(
+-                        plan: plan,
+-                        isSelected: plan.id == _selectedId,
+-                        onTap: () => setState(() => _selectedId = plan.id),
+-                      ),
+-                    )
+-                    .toList(),
++class _BlurCircle extends StatelessWidget {
++  const _BlurCircle({required this.size, required this.color});
++
++  final double size;
++  final Color color;
++
++  @override
++  Widget build(BuildContext context) {
++    return ImageFiltered(
++      imageFilter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
++      child: Container(
++        width: size,
++        height: size,
++        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
++      ),
++    );
++  }
++}
++
++class _GlassHeader extends StatelessWidget {
++  const _GlassHeader({
++    required this.topPadding,
++    required this.onBack,
++    required this.onHelp,
++  });
++
++  final double topPadding;
++  final VoidCallback onBack;
++  final VoidCallback onHelp;
++
++  @override
++  Widget build(BuildContext context) {
++    return ClipRect(
++      child: BackdropFilter(
++        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
++        child: Container(
++          padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 14),
++          decoration: BoxDecoration(
++            gradient: LinearGradient(
++              colors: <Color>[
++                _gradientStart.withValues(alpha: 0.95),
++                _gradientMiddle.withValues(alpha: 0.95),
++                _gradientEnd.withValues(alpha: 0.95),
++              ],
++            ),
++            border: Border(
++              bottom: BorderSide(
++                color: Colors.white.withValues(alpha: 0.5),
++                width: 1,
+               ),
+             ),
+           ),
+-
+-          // ── Continue button ───────────────────────────────────
+-          SafeArea(
+-            top: false,
+-            child: Padding(
+-              padding: const EdgeInsets.fromLTRB(
+-                AppConstants.pagePadding,
+-                8,
+-                AppConstants.pagePadding,
+-                16,
++          child: Row(
++            children: <Widget>[
++              _CircleIconButton(
++                icon: Icons.arrow_back_rounded,
++                onTap: onBack,
++                tooltip: context.l10n.ui('Back'),
+               ),
+-              child: SizedBox(
+-                width: double.infinity,
+-                height: 48,
+-                child: ElevatedButton(
+-                  onPressed: _onContinue,
+-                  style: ElevatedButton.styleFrom(
+-                    backgroundColor: AppColors.primaryLight,
+-                    shape: RoundedRectangleBorder(
+-                      borderRadius: BorderRadius.circular(
+-                        AppConstants.cardRadius,
+-                      ),
+-                    ),
+-                    elevation: 0,
+-                  ),
+-                  child: const Text(
+-                    'Continue',
+-                    style: TextStyle(
+-                      fontSize: 16,
+-                      fontWeight: FontWeight.w600,
+-                      color: Colors.white,
+-                    ),
++              Expanded(
++                child: Text(
++                  context.l10n.ui('Upgrade Account'),
++                  textAlign: TextAlign.center,
++                  style: const TextStyle(
++                    fontSize: 20,
++                    height: 1,
++                    fontWeight: FontWeight.w900,
++                    color: Color(0xFF1F2937),
+                   ),
+                 ),
+               ),
+-            ),
++              _CircleIconButton(
++                icon: Icons.help_outline_rounded,
++                onTap: onHelp,
++                tooltip: context.l10n.ui('Premium Account Privileges'),
++              ),
++            ],
+           ),
+-        ],
++        ),
+       ),
+     );
+   }
+ }
+ 
+-// ── Plan card ─────────────────────────────────────────────────────────
++class _CircleIconButton extends StatelessWidget {
++  const _CircleIconButton({
++    required this.icon,
++    required this.onTap,
++    required this.tooltip,
++  });
++
++  final IconData icon;
++  final VoidCallback onTap;
++  final String tooltip;
++
++  @override
++  Widget build(BuildContext context) {
++    return Tooltip(
++      message: tooltip,
++      child: Material(
++        color: Colors.white.withValues(alpha: 0.8),
++        shape: const CircleBorder(),
++        elevation: 8,
++        shadowColor: Colors.black.withValues(alpha: 0.14),
++        child: InkWell(
++          onTap: onTap,
++          customBorder: const CircleBorder(),
++          child: SizedBox(
++            width: 40,
++            height: 40,
++            child: Icon(icon, size: 24, color: const Color(0xFF374151)),
++          ),
++        ),
++      ),
++    );
++  }
++}
++
++class _PremiumBadge extends StatelessWidget {
++  const _PremiumBadge();
++
++  @override
++  Widget build(BuildContext context) {
++    return Stack(
++      alignment: Alignment.center,
++      clipBehavior: Clip.none,
++      children: <Widget>[
++        Positioned.fill(
++          child: Transform.translate(
++            offset: const Offset(0, 18),
++            child: ImageFiltered(
++              imageFilter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
++              child: DecoratedBox(
++                decoration: BoxDecoration(
++                  borderRadius: BorderRadius.circular(16),
++                  color: const Color(0xFFFBBF24).withValues(alpha: 0.4),
++                ),
++              ),
++            ),
++          ),
++        ),
++        Container(
++          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
++          decoration: BoxDecoration(
++            gradient: const LinearGradient(
++              colors: <Color>[
++                Color(0xFFFCD34D),
++                Color(0xFFFDE047),
++                Color(0xFFFBBF24),
++              ],
++            ),
++            borderRadius: BorderRadius.circular(16),
++            boxShadow: <BoxShadow>[
++              BoxShadow(
++                color: const Color(0xFFFBBF24).withValues(alpha: 0.28),
++                blurRadius: 32,
++                offset: const Offset(0, 16),
++              ),
++            ],
++          ),
++          child: Row(
++            mainAxisSize: MainAxisSize.min,
++            children: <Widget>[
++              const Text('✨', style: TextStyle(fontSize: 20)),
++              const SizedBox(width: 10),
++              Text(
++                context.l10n.ui('Premium Account'),
++                style: const TextStyle(
++                  fontSize: 18,
++                  fontWeight: FontWeight.w900,
++                  color: Colors.white,
++                ),
++              ),
++              const SizedBox(width: 10),
++              const Text('✨', style: TextStyle(fontSize: 20)),
++            ],
++          ),
++        ),
++      ],
++    );
++  }
++}
+ 
+ class _PlanCard extends StatelessWidget {
+   const _PlanCard({
+@@ -195,189 +511,633 @@ class _PlanCard extends StatelessWidget {
+     required this.onTap,
+   });
+ 
+-  final _Plan plan;
++  final _SubscriptionPlan plan;
+   final bool isSelected;
+   final VoidCallback onTap;
+ 
+   @override
+   Widget build(BuildContext context) {
+-    return GestureDetector(
+-      onTap: onTap,
+-      child: AnimatedContainer(
+-        duration: AppConstants.defaultAnimation,
+-        margin: const EdgeInsets.only(bottom: 16),
+-        padding: const EdgeInsets.all(12),
+-        decoration: BoxDecoration(
+-          color: AppColors.primaryLight.withValues(alpha: 0.35),
+-          borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+-          border: Border.all(color: AppColors.primary, width: 1.5),
+-        ),
+-        child: Row(
+-          children: <Widget>[
+-            // ── Plan info pill ──────────────────────────────────
+-            Expanded(
+-              child: Container(
+-                padding: const EdgeInsets.symmetric(
+-                  horizontal: 16,
+-                  vertical: 12,
+-                ),
+-                decoration: BoxDecoration(
+-                  color: AppColors.primary,
+-                  borderRadius: BorderRadius.circular(
+-                    AppConstants.buttonRadius,
++    return Semantics(
++      button: true,
++      selected: isSelected,
++      label: context.l10n.ui(plan.duration),
++      child: GestureDetector(
++        onTap: onTap,
++        child: AnimatedScale(
++          duration: const Duration(milliseconds: 220),
++          curve: Curves.easeOutCubic,
++          scale: isSelected ? 1.02 : 1,
++          child: AnimatedContainer(
++            duration: const Duration(milliseconds: 260),
++            curve: Curves.easeOutCubic,
++            padding: const EdgeInsets.all(20),
++            decoration: BoxDecoration(
++              gradient: isSelected
++                  ? const LinearGradient(
++                      colors: <Color>[
++                        Color(0xFFCFFAFE),
++                        Color(0xFFDDEAFB),
++                        Color(0xFFCFFAFE),
++                      ],
++                    )
++                  : null,
++              color: isSelected ? null : Colors.white.withValues(alpha: 0.6),
++              borderRadius: BorderRadius.circular(16),
++              border: Border.all(
++                color: isSelected ? const Color(0xFF06B6D4) : Colors.white,
++                width: isSelected ? 2 : 1,
++              ),
++              boxShadow: <BoxShadow>[
++                BoxShadow(
++                  color: Colors.black.withValues(
++                    alpha: isSelected ? 0.12 : 0.08,
+                   ),
++                  blurRadius: isSelected ? 24 : 14,
++                  offset: Offset(0, isSelected ? 12 : 8),
+                 ),
+-                child: Column(
++              ],
++            ),
++            child: Stack(
++              clipBehavior: Clip.none,
++              children: <Widget>[
++                Row(
+                   children: <Widget>[
+-                    Text(
+-                      plan.duration,
+-                      textAlign: TextAlign.center,
+-                      style: const TextStyle(
+-                        fontSize: 16,
+-                        fontWeight: FontWeight.w700,
+-                        color: Colors.white,
++                    Expanded(
++                      child: Container(
++                        padding: const EdgeInsets.symmetric(
++                          horizontal: 16,
++                          vertical: 20,
++                        ),
++                        decoration: BoxDecoration(
++                          gradient: LinearGradient(
++                            begin: Alignment.topLeft,
++                            end: Alignment.bottomRight,
++                            colors: isSelected
++                                ? const <Color>[
++                                    _selectedCardStart,
++                                    _selectedCardMiddle,
++                                    _selectedCardEnd,
++                                  ]
++                                : const <Color>[
++                                    _unselectedCardStart,
++                                    _unselectedCardMiddle,
++                                    _unselectedCardEnd,
++                                  ],
++                          ),
++                          borderRadius: BorderRadius.circular(12),
++                        ),
++                        child: Column(
++                          crossAxisAlignment: CrossAxisAlignment.start,
++                          children: <Widget>[
++                            Text(
++                              context.l10n.ui(plan.duration),
++                              style: const TextStyle(
++                                fontSize: 18,
++                                fontWeight: FontWeight.w900,
++                                color: Colors.white,
++                              ),
++                            ),
++                            const SizedBox(height: 14),
++                            Text(
++                              context.l10n.justPrice(plan.price),
++                              style: TextStyle(
++                                fontSize: 16,
++                                fontWeight: FontWeight.w700,
++                                color: Colors.white.withValues(alpha: 0.9),
++                              ),
++                            ),
++                          ],
++                        ),
+                       ),
+                     ),
+-                    const SizedBox(height: 2),
+-                    Text(
+-                      plan.label,
+-                      textAlign: TextAlign.center,
+-                      style: const TextStyle(
+-                        fontSize: 14,
+-                        fontWeight: FontWeight.w500,
+-                        color: Colors.white,
++                    const SizedBox(width: 24),
++                    AnimatedContainer(
++                      duration: const Duration(milliseconds: 220),
++                      width: 48,
++                      height: 48,
++                      decoration: BoxDecoration(
++                        color: isSelected
++                            ? const Color(0xFF06C8DF)
++                            : const Color(0xFFE5E7EB),
++                        borderRadius: BorderRadius.circular(12),
++                        border: isSelected
++                            ? null
++                            : Border.all(
++                                color: const Color(0xFF9CA3AF),
++                                width: 2,
++                              ),
+                       ),
++                      child: isSelected
++                          ? const Icon(
++                              Icons.check_rounded,
++                              color: Colors.white,
++                              size: 32,
++                            )
++                          : null,
+                     ),
+                   ],
+                 ),
+-              ),
++                if (plan.isPopular)
++                  Positioned(
++                    top: -24,
++                    right: -24,
++                    child: Container(
++                      padding: const EdgeInsets.symmetric(
++                        horizontal: 12,
++                        vertical: 4,
++                      ),
++                      decoration: const BoxDecoration(
++                        gradient: LinearGradient(
++                          colors: <Color>[Color(0xFFEC4899), Color(0xFFF43F5E)],
++                        ),
++                        borderRadius: BorderRadius.only(
++                          bottomLeft: Radius.circular(12),
++                          topRight: Radius.circular(16),
++                        ),
++                      ),
++                      child: Text(
++                        context.l10n.ui('POPULAR'),
++                        style: const TextStyle(
++                          color: Colors.white,
++                          fontSize: 12,
++                          fontWeight: FontWeight.w900,
++                        ),
++                      ),
++                    ),
++                  ),
++              ],
+             ),
++          ),
++        ),
++      ),
++    );
++  }
++}
+ 
+-            const SizedBox(width: 14),
++class _BenefitsPreviewCard extends StatelessWidget {
++  const _BenefitsPreviewCard({
++    required this.privileges,
++    required this.onMoreTap,
++  });
+ 
+-            // ── Checkbox ────────────────────────────────────────
+-            AnimatedContainer(
+-              duration: AppConstants.defaultAnimation,
+-              width: 30,
+-              height: 30,
+-              decoration: BoxDecoration(
+-                color: isSelected
+-                    ? AppColors.primary
+-                    : AppColors.primaryLight.withValues(alpha: 0.45),
+-                borderRadius: BorderRadius.circular(6),
++  final List<_PrivilegeItem> privileges;
++  final VoidCallback onMoreTap;
++
++  @override
++  Widget build(BuildContext context) {
++    final List<_PrivilegeItem> previewItems = privileges.take(2).toList();
++    return _GlassPanel(
++      borderRadius: 16,
++      padding: const EdgeInsets.all(20),
++      child: Column(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: <Widget>[
++          Row(
++            children: <Widget>[
++              const Text('✨', style: TextStyle(fontSize: 16)),
++              const SizedBox(width: 10),
++              Text(
++                context.l10n.ui("What you'll get:"),
++                style: const TextStyle(
++                  fontSize: 14,
++                  fontWeight: FontWeight.w900,
++                  color: Color(0xFF374151),
++                ),
++              ),
++            ],
++          ),
++          const SizedBox(height: 14),
++          ...previewItems.map((PrivilegeItem item) {
++            return Padding(
++              padding: const EdgeInsets.only(bottom: 8),
++              child: _CompactPrivilegeRow(item: item),
++            );
++          }),
++          const SizedBox(height: 6),
++          InkWell(
++            onTap: onMoreTap,
++            borderRadius: BorderRadius.circular(8),
++            child: Padding(
++              padding: const EdgeInsets.symmetric(vertical: 4),
++              child: Text(
++                context.l10n.ui('+ 2 more benefits'),
++                style: const TextStyle(
++                  fontSize: 12,
++                  fontWeight: FontWeight.w700,
++                  color: _primaryCyan,
++                ),
+               ),
+-              child: isSelected
+-                  ? const Icon(
+-                      Icons.check_rounded,
+-                      size: 20,
+-                      color: Colors.white,
+-                    )
+-                  : null,
+             ),
+-          ],
+-        ),
++          ),
++        ],
+       ),
+     );
+   }
+ }
+ 
+-// ── Privileges dialog ─────────────────────────────────────────────────
++typedef PrivilegeItem = _PrivilegeItem;
+ 
+-/// Shown when the "?" help button is tapped.
+-class _PrivilegesDialog extends StatelessWidget {
+-  const _PrivilegesDialog();
++class _CompactPrivilegeRow extends StatelessWidget {
++  const _CompactPrivilegeRow({required this.item});
+ 
+-  static const List<String> _privileges = <String>[
+-    'Access to AI Object Identification',
+-    'Practice Essential Vietnamese Phrases',
+-    'Generate Personalized Itinerary',
+-    'Many more exclusive voucher & coupon',
+-  ];
++  final _PrivilegeItem item;
+ 
+   @override
+   Widget build(BuildContext context) {
+-    return Dialog(
+-      backgroundColor: Colors.transparent,
+-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
++    return Row(
++      children: <Widget>[
++        Container(
++          width: 24,
++          height: 24,
++          alignment: Alignment.center,
++          decoration: BoxDecoration(
++            color: item.color.withValues(alpha: 0.2),
++            shape: BoxShape.circle,
++          ),
++          child: Text(item.icon, style: const TextStyle(fontSize: 14)),
++        ),
++        const SizedBox(width: 10),
++        Expanded(
++          child: Text(
++            context.l10n.ui(item.title),
++            maxLines: 1,
++            overflow: TextOverflow.ellipsis,
++            style: const TextStyle(
++              fontSize: 12,
++              fontWeight: FontWeight.w600,
++              color: Color(0xFF4B5563),
++            ),
++          ),
++        ),
++      ],
++    );
++  }
++}
++
++class _BottomContinueBar extends StatelessWidget {
++  const _BottomContinueBar({required this.onContinue});
++
++  final VoidCallback onContinue;
++
++  @override
++  Widget build(BuildContext context) {
++    return ClipRect(
++      child: BackdropFilter(
++        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
++        child: Container(
++          padding: EdgeInsets.fromLTRB(
++            24,
++            16,
++            24,
++            MediaQuery.of(context).padding.bottom + 24,
++          ),
++          decoration: BoxDecoration(
++            gradient: LinearGradient(
++              colors: <Color>[
++                _gradientMiddle.withValues(alpha: 0.72),
++                _gradientEnd.withValues(alpha: 0.82),
++              ],
++            ),
++            border: Border(
++              top: BorderSide(color: Colors.white.withValues(alpha: 0.55)),
++            ),
++          ),
++          child: _GradientButton(
++            label: context.l10n.ui('Continue'),
++            height: 56,
++            onTap: onContinue,
++          ),
++        ),
++      ),
++    );
++  }
++}
++
++class _PrivilegesModal extends StatelessWidget {
++  const _PrivilegesModal({required this.privileges, required this.onClose});
++
++  final List<_PrivilegeItem> privileges;
++  final VoidCallback onClose;
++
++  @override
++  Widget build(BuildContext context) {
++    final double width = MediaQuery.of(context).size.width * 0.9;
++    return Material(
++      color: Colors.transparent,
+       child: Container(
+-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
++        width: width.clamp(0, 448).toDouble(),
++        margin: const EdgeInsets.symmetric(horizontal: 20),
+         decoration: BoxDecoration(
+-          color: AppColors.primaryLight,
+-          borderRadius: BorderRadius.circular(20),
++          gradient: const LinearGradient(
++            begin: Alignment.topLeft,
++            end: Alignment.bottomRight,
++            colors: <Color>[
++              Color(0xFFCFFAFE),
++              Color(0xFFDDEAFB),
++              Color(0xFFCFFAFE),
++            ],
++          ),
++          borderRadius: BorderRadius.circular(24),
++          border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
++          boxShadow: <BoxShadow>[
++            BoxShadow(
++              color: Colors.black.withValues(alpha: 0.22),
++              blurRadius: 32,
++              offset: const Offset(0, 18),
++            ),
++          ],
+         ),
+-        child: Column(
+-          mainAxisSize: MainAxisSize.min,
++        child: Stack(
+           children: <Widget>[
+-            // ── Close button ──────────────────────────────────
+-            Align(
+-              alignment: Alignment.centerRight,
+-              child: GestureDetector(
+-                onTap: () => Navigator.of(context).pop(),
+-                child: const Icon(
+-                  Icons.close_rounded,
+-                  size: 24,
+-                  color: Colors.white,
++            Padding(
++              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
++              child: Column(
++                mainAxisSize: MainAxisSize.min,
++                children: <Widget>[
++                  ShaderMask(
++                    shaderCallback: (Rect bounds) => const LinearGradient(
++                      colors: <Color>[
++                        Color(0xFFFBBF24),
++                        Color(0xFFFDE047),
++                        Color(0xFFF59E0B),
++                      ],
++                    ).createShader(bounds),
++                    child: Text(
++                      context.l10n.ui('Premium Account Privileges'),
++                      textAlign: TextAlign.center,
++                      style: const TextStyle(
++                        fontSize: 20,
++                        fontWeight: FontWeight.w900,
++                        color: Colors.white,
++                      ),
++                    ),
++                  ),
++                  const SizedBox(height: 34),
++                  ...List<Widget>.generate(privileges.length, (int index) {
++                    return _ModalPrivilegeCard(
++                      item: privileges[index],
++                      index: index,
++                    );
++                  }),
++                  const SizedBox(height: 20),
++                  _GradientButton(
++                    label: context.l10n.ui('Continue'),
++                    height: 48,
++                    onTap: onClose,
++                  ),
++                ],
++              ),
++            ),
++            Positioned(
++              top: 16,
++              right: 16,
++              child: Material(
++                color: Colors.white.withValues(alpha: 0.82),
++                shape: const CircleBorder(),
++                child: InkWell(
++                  onTap: onClose,
++                  customBorder: const CircleBorder(),
++                  child: const SizedBox(
++                    width: 32,
++                    height: 32,
++                    child: Icon(
++                      Icons.close_rounded,
++                      color: Color(0xFF4B5563),
++                      size: 22,
++                    ),
++                  ),
+                 ),
+               ),
+             ),
++          ],
++        ),
++      ),
++    );
++  }
++}
++
++class _ModalPrivilegeCard extends StatelessWidget {
++  const _ModalPrivilegeCard({required this.item, required this.index});
+ 
+-            const SizedBox(height: 4),
++  final _PrivilegeItem item;
++  final int index;
+ 
+-            // ── Title in gold — matches spec ──────────────────
+-            const Text(
+-              'Premium Account Privileges',
+-              textAlign: TextAlign.center,
+-              style: TextStyle(
+-                fontSize: 20,
+-                fontWeight: FontWeight.w800,
+-                color: AppColors.accentGold,
++  @override
++  Widget build(BuildContext context) {
++    return TweenAnimationBuilder<double>(
++      tween: Tween<double>(begin: 0, end: 1),
++      duration: Duration(milliseconds: 420 + (index * 80)),
++      curve: Curves.easeOutCubic,
++      builder: (BuildContext context, double value, Widget? child) {
++        return Opacity(
++          opacity: value,
++          child: Transform.translate(
++            offset: Offset(-20 * (1 - value), 0),
++            child: child,
++          ),
++        );
++      },
++      child: Container(
++        width: double.infinity,
++        margin: const EdgeInsets.only(bottom: 12),
++        padding: const EdgeInsets.all(16),
++        decoration: BoxDecoration(
++          color: Colors.white.withValues(alpha: 0.9),
++          borderRadius: BorderRadius.circular(16),
++          border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
++          boxShadow: <BoxShadow>[
++            BoxShadow(
++              color: Colors.black.withValues(alpha: 0.08),
++              blurRadius: 14,
++              offset: const Offset(0, 8),
++            ),
++          ],
++        ),
++        child: Row(
++          children: <Widget>[
++            Container(
++              width: 48,
++              height: 48,
++              alignment: Alignment.center,
++              decoration: BoxDecoration(
++                color: item.color.withValues(alpha: 0.16),
++                borderRadius: BorderRadius.circular(12),
++                boxShadow: <BoxShadow>[
++                  BoxShadow(
++                    color: item.color.withValues(alpha: 0.08),
++                    blurRadius: 8,
++                    offset: const Offset(0, 4),
++                  ),
++                ],
+               ),
++              child: Text(item.icon, style: const TextStyle(fontSize: 24)),
+             ),
++            const SizedBox(width: 12),
++            Expanded(
++              child: Text(
++                context.l10n.ui(item.title),
++                style: const TextStyle(
++                  fontSize: 14,
++                  height: 1.5,
++                  fontWeight: FontWeight.w800,
++                  color: Color(0xFF1F2937),
++                ),
++              ),
++            ),
++          ],
++        ),
++      ),
++    );
++  }
++}
+ 
+-            const SizedBox(height: 16),
++class _GradientButton extends StatelessWidget {
++  const _GradientButton({
++    required this.label,
++    required this.height,
++    required this.onTap,
++  });
++
++  final String label;
++  final double height;
++  final VoidCallback onTap;
+ 
+-            // ── Privilege cards ───────────────────────────────
+-            ..._privileges.map(
+-              (p) => Container(
+-                width: double.infinity,
+-                margin: const EdgeInsets.only(bottom: 10),
+-                padding: const EdgeInsets.symmetric(
+-                  horizontal: 16,
+-                  vertical: 16,
++  @override
++  Widget build(BuildContext context) {
++    return TweenAnimationBuilder<double>(
++      tween: Tween<double>(begin: 1, end: 1),
++      duration: const Duration(milliseconds: 200),
++      builder: (BuildContext context, double scale, Widget? child) {
++        return child!;
++      },
++      child: Material(
++        color: Colors.transparent,
++        child: InkWell(
++          onTap: onTap,
++          borderRadius: BorderRadius.circular(16),
++          child: Ink(
++            height: height,
++            width: double.infinity,
++            decoration: BoxDecoration(
++              gradient: const LinearGradient(
++                colors: <Color>[
++                  Color(0xFF22D3EE),
++                  Color(0xFF60A5FA),
++                  Color(0xFF06B6D4),
++                ],
++              ),
++              borderRadius: BorderRadius.circular(16),
++              boxShadow: <BoxShadow>[
++                BoxShadow(
++                  color: _primaryCyan.withValues(alpha: 0.24),
++                  blurRadius: 22,
++                  offset: const Offset(0, 12),
+                 ),
+-                decoration: BoxDecoration(
++              ],
++            ),
++            child: Center(
++              child: Text(
++                label,
++                style: const TextStyle(
++                  fontSize: 16,
++                  fontWeight: FontWeight.w900,
+                   color: Colors.white,
+-                  borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+-                ),
+-                child: Text(
+-                  p,
+-                  textAlign: TextAlign.center,
+-                  style: const TextStyle(
+-                    fontSize: 14,
+-                    fontWeight: FontWeight.w500,
+-                    color: AppColors.textPrimary,
+-                  ),
+                 ),
+               ),
+             ),
++          ),
++        ),
++      ),
++    );
++  }
++}
+ 
+-            const SizedBox(height: 6),
++class _GlassPanel extends StatelessWidget {
++  const _GlassPanel({
++    required this.child,
++    required this.padding,
++    required this.borderRadius,
++  });
+ 
+-            // ── Continue dismiss ──────────────────────────────
+-            GestureDetector(
+-              onTap: () => Navigator.of(context).pop(),
+-              child: const Text(
+-                'Continue',
+-                style: TextStyle(
+-                  fontSize: 15,
+-                  fontWeight: FontWeight.w600,
+-                  color: Colors.white,
+-                ),
++  final Widget child;
++  final EdgeInsetsGeometry padding;
++  final double borderRadius;
++
++  @override
++  Widget build(BuildContext context) {
++    return ClipRRect(
++      borderRadius: BorderRadius.circular(borderRadius),
++      child: BackdropFilter(
++        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
++        child: Container(
++          width: double.infinity,
++          padding: padding,
++          decoration: BoxDecoration(
++            color: Colors.white.withValues(alpha: 0.7),
++            borderRadius: BorderRadius.circular(borderRadius),
++            border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
++            boxShadow: <BoxShadow>[
++              BoxShadow(
++                color: Colors.black.withValues(alpha: 0.08),
++                blurRadius: 18,
++                offset: const Offset(0, 10),
+               ),
+-            ),
+-          ],
++            ],
++          ),
++          child: child,
+         ),
+       ),
+     );
+   }
+ }
++
++class _Entrance extends StatelessWidget {
++  const _Entrance({
++    required this.controller,
++    required this.begin,
++    required this.end,
++    required this.child,
++    this.offset = Offset.zero,
++    this.scaleBegin = 1,
++  });
++
++  final AnimationController controller;
++  final double begin;
++  final double end;
++  final Widget child;
++  final Offset offset;
++  final double scaleBegin;
++
++  @override
++  Widget build(BuildContext context) {
++    final Animation<double> curved = CurvedAnimation(
++      parent: controller,
++      curve: Interval(
++        begin,
++        end.clamp(begin + 0.01, 1).toDouble(),
++        curve: Curves.easeOutCubic,
++      ),
++    );
++
++    return AnimatedBuilder(
++      animation: curved,
++      child: child,
++      builder: (BuildContext context, Widget? child) {
++        final double value = curved.value;
++        return Opacity(
++          opacity: value,
++          child: Transform.translate(
++            offset: Offset(
++              offset.dx * (1 - value) * 240,
++              offset.dy * (1 - value) * 240,
++            ),
++            child: Transform.scale(
++              scale: scaleBegin + ((1 - scaleBegin) * value),
++              child: child,
++            ),
++          ),
++        );
++      },
++    );
++  }
++}
+diff --git a/frontend/lib/features/profile/presentation/upgrade_payment_page.dart b/frontend/lib/features/profile/presentation/upgrade_payment_page.dart
+index aa2b496..c2f53c8 100644
+--- a/frontend/lib/features/profile/presentation/upgrade_payment_page.dart
++++ b/frontend/lib/features/profile/presentation/upgrade_payment_page.dart
+@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
+ import 'package:go_router/go_router.dart';
+ import 'package:hellovietnam/app/theme.dart';
+ import 'package:hellovietnam/core/config/app_constants.dart';
++import 'package:hellovietnam/core/language/app_language.dart';
+ import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
+ 
+ class _PaymentMethod {
+@@ -135,16 +136,16 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
+       await showDialog<void>(
+         context: context,
+         builder: (BuildContext dialogContext) => AlertDialog(
+-          title: const Text('Payment confirmed'),
++          title: Text(context.l10n.ui('Payment confirmed')),
+           content: Text(
+-            'Your premium subscription is active.\n'
+-            'Paid: ${_formatMoney(result.finalAmountMinor)}'
+-            '${result.discountMinor > 0 ? '\nVoucher discount: ${_formatMoney(result.discountMinor)}' : ''}',
++            '${context.l10n.ui('Your premium subscription is active.')}\n'
++            '${context.l10n.ui('Paid')}: ${_formatMoney(result.finalAmountMinor)}'
++            '${result.discountMinor > 0 ? '\n${context.l10n.ui('Voucher discount')}: ${_formatMoney(result.discountMinor)}' : ''}',
+           ),
+           actions: <Widget>[
+             FilledButton(
+               onPressed: () => Navigator.of(dialogContext).pop(),
+-              child: const Text('OK'),
++              child: Text(context.l10n.ui('OK')),
+             ),
+           ],
+         ),
+@@ -184,11 +185,11 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
+                       color: Color(0xFF1C1C1C),
+                     ),
+                   ),
+-                  const Expanded(
++                  Expanded(
+                     child: Text(
+-                      'Upgrade account',
++                      context.l10n.ui('Upgrade account'),
+                       textAlign: TextAlign.center,
+-                      style: TextStyle(
++                      style: const TextStyle(
+                         fontSize: 28,
+                         fontWeight: FontWeight.w800,
+                         color: Color(0xFF121212),
+@@ -359,7 +360,10 @@ class _OrderSummaryCard extends StatelessWidget {
+             ),
+           ),
+           const SizedBox(height: 12),
+-          _AmountRow(label: 'Subtotal', value: formatMoney(plan.priceMinor)),
++          _AmountRow(
++            label: context.l10n.ui('Subtotal'),
++            value: formatMoney(plan.priceMinor),
++          ),
+           if (discountMinor > 0)
+             _AmountRow(
+               label: 'Voucher',
+@@ -367,7 +371,7 @@ class _OrderSummaryCard extends StatelessWidget {
+             ),
+           const Divider(height: 22),
+           _AmountRow(
+-            label: 'Total',
++            label: context.l10n.ui('Total'),
+             value: formatMoney(finalAmountMinor),
+             isStrong: true,
+           ),
+@@ -405,9 +409,9 @@ class _VoucherApplyCard extends StatelessWidget {
+       child: Column(
+         crossAxisAlignment: CrossAxisAlignment.start,
+         children: <Widget>[
+-          const Text(
+-            'Voucher',
+-            style: TextStyle(
++          Text(
++            context.l10n.ui('Voucher'),
++            style: const TextStyle(
+               fontSize: 15,
+               fontWeight: FontWeight.w700,
+               color: AppColors.textPrimary,
+@@ -422,7 +426,7 @@ class _VoucherApplyCard extends StatelessWidget {
+                   enabled: !hasVoucher,
+                   textCapitalization: TextCapitalization.characters,
+                   decoration: InputDecoration(
+-                    hintText: 'Enter voucher code',
++                    hintText: context.l10n.ui('Enter voucher code'),
+                     isDense: true,
+                     filled: true,
+                     fillColor: const Color(0xFFF4F7F9),
+-- 
+2.49.0
+

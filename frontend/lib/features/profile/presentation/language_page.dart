@@ -25,7 +25,7 @@ class _LanguagePageState extends State<LanguagePage> {
     final AppLanguage selectedLanguage = context.languageController.language;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),

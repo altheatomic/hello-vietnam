@@ -33,6 +33,24 @@ class SearchBarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final Color surfaceColor = isDark
+        ? theme.colorScheme.surface.withValues(alpha: 0.92)
+        : Colors.white;
+    final Color textColor = theme.colorScheme.onSurface;
+    final Color hintColor = isDark
+        ? const Color(0xFFA9BCC7)
+        : AppColors.textSecondary.withValues(alpha: 0.58);
+    final Color shadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.22)
+        : Colors.black.withValues(alpha: 0.06);
+    final BorderSide borderSide = BorderSide(
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : AppColors.primaryLight.withValues(alpha: 0.16),
+    );
+
     return Row(
       children: [
         // ── Search field ────────────────────────────────
@@ -40,11 +58,12 @@ class SearchBarWidget extends StatelessWidget {
           child: Container(
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: surfaceColor,
               borderRadius: BorderRadius.circular(45),
+              border: Border.fromBorderSide(borderSide),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
+                  color: shadowColor,
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -60,15 +79,13 @@ class SearchBarWidget extends StatelessWidget {
               onSubmitted: onSearch,
               textInputAction: TextInputAction.search,
               showCursor: !readOnly,
+              style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
               decoration: InputDecoration(
                 hintText: hintText,
-                hintStyle: TextStyle(
-                  color: AppColors.textSecondary.withValues(alpha: 0.5),
-                  fontSize: 14,
-                ),
+                hintStyle: TextStyle(color: hintColor, fontSize: 14),
                 prefixIcon: Icon(
                   Icons.search_rounded,
-                  color: AppColors.primary,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
                 ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
@@ -85,11 +102,12 @@ class SearchBarWidget extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: surfaceColor,
               borderRadius: BorderRadius.circular(45),
+              border: Border.fromBorderSide(borderSide),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
+                  color: shadowColor,
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -97,9 +115,9 @@ class SearchBarWidget extends StatelessWidget {
             ),
             child: IconButton(
               onPressed: onFilter,
-              icon: const Icon(
+              icon: Icon(
                 Icons.tune_rounded,
-                color: AppColors.primary,
+                color: isDark ? AppColors.primaryLight : AppColors.primary,
                 size: 22,
               ),
             ),

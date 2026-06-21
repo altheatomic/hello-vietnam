@@ -39,12 +39,16 @@ class _CitySectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
+        color: isDark
+            ? Theme.of(context).colorScheme.onSurface
+            : AppColors.textPrimary,
       ),
     );
   }
@@ -58,21 +62,26 @@ class _BestTimeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? theme.colorScheme.surface : Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.08),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
         ],
         border: Border.all(
-          color: AppColors.primaryLight.withValues(alpha: 0.32),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : AppColors.primaryLight.withValues(alpha: 0.32),
         ),
       ),
       child: Column(
@@ -103,10 +112,10 @@ class _BestTimeCard extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 14),
@@ -134,10 +143,10 @@ class _BestTimeCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       detail,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         height: 1.6,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),

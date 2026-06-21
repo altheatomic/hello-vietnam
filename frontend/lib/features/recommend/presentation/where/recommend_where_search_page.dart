@@ -84,14 +84,16 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
   @override
   Widget build(BuildContext context) {
     final statusBarHeight = MediaQuery.of(context).padding.top;
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
           // ── Search header (white, not blue — matches Figma 1.2) ──
           Container(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF020B10) : Colors.white,
             padding: EdgeInsets.fromLTRB(
               AppConstants.pagePadding,
               statusBarHeight + 8,
@@ -102,12 +104,14 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
-                  child: const Padding(
-                    padding: EdgeInsets.only(right: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 12),
                     child: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       size: 20,
-                      color: AppColors.primary,
+                      color: isDark
+                          ? AppColors.primaryLight
+                          : AppColors.primary,
                     ),
                   ),
                 ),
@@ -115,8 +119,15 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
                   child: Container(
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withValues(alpha: 0.15),
+                      color: isDark
+                          ? theme.colorScheme.surface.withValues(alpha: 0.92)
+                          : AppColors.primaryLight.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(45),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.transparent,
+                      ),
                     ),
                     child: TextField(
                       controller: _controller,
@@ -130,11 +141,7 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
                           color: AppColors.textSecondary.withValues(alpha: 0.6),
                           fontSize: 14,
                         ),
-                        prefixIcon: const Icon(
-                          Icons.search_rounded,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
+                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
                         suffixIcon: _controller.text.isNotEmpty
                             ? GestureDetector(
                                 onTap: _clearQuery,
@@ -152,6 +159,7 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
                           vertical: 12,
                         ),
                       ),
+                      style: TextStyle(color: theme.colorScheme.onSurface),
                     ),
                   ),
                 ),
@@ -159,7 +167,7 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
             ),
           ),
 
-          const Divider(height: 1, color: AppColors.divider),
+          Divider(height: 1, color: theme.dividerColor),
 
           // ── Results list ─────────────────────────────────────────
           Expanded(
@@ -172,11 +180,11 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
                 : ListView.separated(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: _results.length,
-                    separatorBuilder: (_, _) => const Divider(
+                    separatorBuilder: (_, _) => Divider(
                       height: 1,
                       indent: 62,
                       endIndent: AppConstants.pagePadding,
-                      color: AppColors.divider,
+                      color: theme.dividerColor,
                     ),
                     itemBuilder: (context, i) {
                       final dest = _results[i];
@@ -202,10 +210,10 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
                         ),
                         title: Text(
                           dest.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         subtitle: Text(

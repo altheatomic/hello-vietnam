@@ -78,9 +78,11 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
   @override
   Widget build(BuildContext context) {
     final statusBarH = MediaQuery.of(context).padding.top;
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
           // ── Top bar: back + search ─────────────────────
@@ -96,12 +98,14 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
                 // Back button
                 GestureDetector(
                   onTap: () => context.pop(),
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.all(4),
                     child: Icon(
                       Icons.chevron_left,
                       size: 28,
-                      color: AppColors.primary,
+                      color: isDark
+                          ? AppColors.primaryLight
+                          : AppColors.primary,
                     ),
                   ),
                 ),
@@ -129,7 +133,7 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
               itemCount: _suggestions.length,
               separatorBuilder: (context, index) => Divider(
                 height: 1,
-                color: Colors.grey.shade200,
+                color: theme.dividerColor,
                 indent: AppConstants.pagePadding,
                 endIndent: AppConstants.pagePadding,
               ),
@@ -144,9 +148,10 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
                     ),
                     child: Text(
                       suggestion,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
-                        color: Colors.black87,
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

@@ -211,7 +211,7 @@ class _VoucherPageState extends State<VoucherPage> {
     return MediaQuery(
       data: mq.copyWith(textScaler: TextScaler.noScaling),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF3F5F7),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: CustomScrollView(
           slivers: <Widget>[
             SliverAppBar(

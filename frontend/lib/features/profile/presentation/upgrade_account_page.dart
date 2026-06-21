@@ -16,6 +16,20 @@ const Color _selectedCardEnd = Color(0xFF06B6D4);
 const Color _unselectedCardStart = Color(0xFF67E8F9);
 const Color _unselectedCardMiddle = Color(0xFF93C5FD);
 const Color _unselectedCardEnd = Color(0xFF5EEAD4);
+const Color _darkBackground = Color(0xFF020B10);
+const Color _darkSurface = Color(0xFF0B1A22);
+const Color _darkSurfaceHigh = Color(0xFF122832);
+const Color _darkText = Color(0xFFF5FBFF);
+const Color _darkMuted = Color(0xFFA9BCC7);
+
+bool _isDark(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark;
+
+Color _upgradeText(BuildContext context) =>
+    _isDark(context) ? _darkText : const Color(0xFF1F2937);
+
+Color _upgradeMuted(BuildContext context) =>
+    _isDark(context) ? _darkMuted : const Color(0xFF64748B);
 
 class _SubscriptionPlan {
   const _SubscriptionPlan({
@@ -201,12 +215,13 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
   Widget build(BuildContext context) {
     final MediaQueryData media = MediaQuery.of(context);
     final double bottomInset = media.padding.bottom;
+    final bool isDark = _isDark(context);
 
     return Scaffold(
-      backgroundColor: _gradientStart,
+      backgroundColor: isDark ? _darkBackground : _gradientStart,
       body: Stack(
         children: <Widget>[
-          const Positioned.fill(child: _UpgradeBackground()),
+          Positioned.fill(child: _UpgradeBackground(isDark: isDark)),
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: <Widget>[
@@ -268,14 +283,14 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
                         offset: const Offset(-0.08, 0),
                         child: Text(
                           context.l10n.ui('Select your plan:'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF374151),
+                            color: _upgradeText(context),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
                       ...List<Widget>.generate(_plans.length, (int index) {
                         final _SubscriptionPlan plan = _plans[index];
                         return _Entrance(
@@ -284,7 +299,7 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
                           end: 0.72 + (index * 0.07),
                           offset: const Offset(-0.08, 0),
                           child: Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.only(bottom: 10),
                             child: _PlanCard(
                               plan: plan,
                               isSelected: plan.id == _selectedPlanId,
@@ -332,40 +347,67 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
 }
 
 class _UpgradeBackground extends StatelessWidget {
-  const _UpgradeBackground();
+  const _UpgradeBackground({required this.isDark});
+
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: <Color>[_gradientStart, _gradientMiddle, _gradientEnd],
+          colors: isDark
+              ? const <Color>[
+                  _darkBackground,
+                  Color(0xFF03131A),
+                  _darkBackground,
+                ]
+              : const <Color>[_gradientStart, _gradientMiddle, _gradientEnd],
         ),
       ),
       child: Stack(
-        children: const <Widget>[
-          Positioned(
-            top: 80,
-            right: 40,
-            child: _BlurCircle(size: 112, color: Color(0x4D67E8F9)),
-          ),
-          Positioned(
-            bottom: 160,
-            left: 40,
-            child: _BlurCircle(size: 160, color: Color(0x4D93C5FD)),
-          ),
-          Positioned(
-            top: 360,
-            right: 80,
-            child: _BlurCircle(size: 96, color: Color(0x4D5EEAD4)),
-          ),
-          Positioned(
-            top: 260,
-            left: 92,
-            child: _BlurCircle(size: 128, color: Color(0x33DDD6FE)),
-          ),
+        children: <Widget>[
+          if (!isDark) ...const <Widget>[
+            Positioned(
+              top: 80,
+              right: 40,
+              child: _BlurCircle(size: 112, color: Color(0x4D67E8F9)),
+            ),
+            Positioned(
+              bottom: 160,
+              left: 40,
+              child: _BlurCircle(size: 160, color: Color(0x4D93C5FD)),
+            ),
+            Positioned(
+              top: 360,
+              right: 80,
+              child: _BlurCircle(size: 96, color: Color(0x4D5EEAD4)),
+            ),
+            Positioned(
+              top: 260,
+              left: 92,
+              child: _BlurCircle(size: 128, color: Color(0x33DDD6FE)),
+            ),
+          ] else ...<Widget>[
+            Positioned(
+              top: 90,
+              right: 24,
+              child: _BlurCircle(
+                size: 150,
+                color: _primaryCyan.withValues(alpha: 0.08),
+              ),
+            ),
+            Positioned(
+              bottom: 180,
+              left: 20,
+              child: _BlurCircle(
+                size: 190,
+                color: const Color(0xFF60A5FA).withValues(alpha: 0.07),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -404,6 +446,8 @@ class _GlassHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _isDark(context);
+
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -411,15 +455,22 @@ class _GlassHeader extends StatelessWidget {
           padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 14),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: <Color>[
-                _gradientStart.withValues(alpha: 0.95),
-                _gradientMiddle.withValues(alpha: 0.95),
-                _gradientEnd.withValues(alpha: 0.95),
-              ],
+              colors: isDark
+                  ? <Color>[
+                      _darkBackground.withValues(alpha: 0.88),
+                      _darkSurface.withValues(alpha: 0.78),
+                    ]
+                  : <Color>[
+                      _gradientStart.withValues(alpha: 0.95),
+                      _gradientMiddle.withValues(alpha: 0.95),
+                      _gradientEnd.withValues(alpha: 0.95),
+                    ],
             ),
             border: Border(
               bottom: BorderSide(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.white.withValues(alpha: 0.5),
                 width: 1,
               ),
             ),
@@ -435,11 +486,11 @@ class _GlassHeader extends StatelessWidget {
                 child: Text(
                   context.l10n.ui('Upgrade Account'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     height: 1,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF1F2937),
+                    color: _upgradeText(context),
                   ),
                 ),
               ),
@@ -469,20 +520,24 @@ class _CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _isDark(context);
+
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.white.withValues(alpha: 0.8),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.white.withValues(alpha: 0.8),
         shape: const CircleBorder(),
         elevation: 8,
-        shadowColor: Colors.black.withValues(alpha: 0.14),
+        shadowColor: Colors.black.withValues(alpha: isDark ? 0.28 : 0.14),
         child: InkWell(
           onTap: onTap,
           customBorder: const CircleBorder(),
           child: SizedBox(
             width: 40,
             height: 40,
-            child: Icon(icon, size: 24, color: const Color(0xFF374151)),
+            child: Icon(icon, size: 24, color: _upgradeText(context)),
           ),
         ),
       ),
@@ -624,10 +679,10 @@ class _CurrentPlanStatus extends StatelessWidget {
                         context.l10n.currentPlan(planLabel),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF374151),
+                          color: _upgradeText(context),
                         ),
                       ),
                     ),
@@ -731,19 +786,19 @@ class _SubscriptionDetailsCard extends StatelessWidget {
                           isPremium
                               ? context.l10n.ui('Premium active')
                               : context.l10n.ui('Free account'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFF1F2937),
+                            color: _upgradeText(context),
                           ),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           _remainingLabel(context, subscription?.endDate),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF64748B),
+                            color: _upgradeMuted(context),
                           ),
                         ),
                       ],
@@ -772,18 +827,18 @@ class _SubscriptionDetailsCard extends StatelessWidget {
               const SizedBox(height: 18),
               Row(
                 children: <Widget>[
-                  const Icon(
+                  Icon(
                     Icons.receipt_long_rounded,
-                    color: Color(0xFF334155),
+                    color: _upgradeText(context),
                     size: 20,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     context.l10n.ui('Payment history'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFF334155),
+                      color: _upgradeText(context),
                     ),
                   ),
                 ],
@@ -792,8 +847,8 @@ class _SubscriptionDetailsCard extends StatelessWidget {
               if (payments.isEmpty)
                 Text(
                   context.l10n.ui('No payment history yet.'),
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
+                  style: TextStyle(
+                    color: _upgradeMuted(context),
                     fontWeight: FontWeight.w600,
                   ),
                 )
@@ -820,12 +875,20 @@ class _SubscriptionMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _isDark(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.66),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.white.withValues(alpha: 0.66),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.8),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -834,10 +897,10 @@ class _SubscriptionMetric extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF64748B),
+              color: _upgradeMuted(context),
             ),
           ),
           const SizedBox(height: 4),
@@ -845,10 +908,10 @@ class _SubscriptionMetric extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF1F2937),
+              color: _upgradeText(context),
             ),
           ),
         ],
@@ -866,13 +929,21 @@ class _PaymentHistoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool confirmed = item.status.toLowerCase() == 'confirmed';
+    final bool isDark = _isDark(context);
+
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.58),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.white.withValues(alpha: 0.58),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.75)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.75),
+        ),
       ),
       child: Row(
         children: <Widget>[
@@ -904,10 +975,10 @@ class _PaymentHistoryRow extends StatelessWidget {
                   item.planName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF334155),
+                    color: _upgradeText(context),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -915,10 +986,10 @@ class _PaymentHistoryRow extends StatelessWidget {
                   '${dateLabel(item.confirmedAt ?? item.createdAt)} · ${item.provider.toUpperCase()} ${item.method}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF64748B),
+                    color: _upgradeMuted(context),
                   ),
                 ),
               ],
@@ -927,10 +998,10 @@ class _PaymentHistoryRow extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             item.amountLabel,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF0F172A),
+              color: _upgradeText(context),
             ),
           ),
         ],
@@ -952,6 +1023,21 @@ class _PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _isDark(context);
+    final Color surface = isDark
+        ? _darkSurface.withValues(alpha: 0.92)
+        : Colors.white.withValues(alpha: 0.62);
+    final Color border = isSelected
+        ? _primaryCyan
+        : (isDark
+              ? Colors.white.withValues(alpha: 0.10)
+              : Colors.white.withValues(alpha: 0.90));
+    final Color checkFill = isSelected
+        ? _primaryCyan
+        : (isDark
+              ? Colors.white.withValues(alpha: 0.07)
+              : const Color(0xFFE5E7EB));
+
     return Semantics(
       button: true,
       selected: isSelected,
@@ -965,30 +1051,32 @@ class _PlanCard extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 260),
             curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               gradient: isSelected
-                  ? const LinearGradient(
-                      colors: <Color>[
-                        Color(0xFFCFFAFE),
-                        Color(0xFFDDEAFB),
-                        Color(0xFFCFFAFE),
-                      ],
+                  ? LinearGradient(
+                      colors: isDark
+                          ? <Color>[
+                              _darkSurfaceHigh.withValues(alpha: 0.95),
+                              _darkSurface.withValues(alpha: 0.95),
+                            ]
+                          : const <Color>[
+                              Color(0xFFCFFAFE),
+                              Color(0xFFDDEAFB),
+                              Color(0xFFCFFAFE),
+                            ],
                     )
                   : null,
-              color: isSelected ? null : Colors.white.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected ? const Color(0xFF06B6D4) : Colors.white,
-                width: isSelected ? 2 : 1,
-              ),
+              color: isSelected ? null : surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: border, width: isSelected ? 1.6 : 1),
               boxShadow: <BoxShadow>[
                 BoxShadow(
                   color: Colors.black.withValues(
-                    alpha: isSelected ? 0.12 : 0.08,
+                    alpha: isDark ? 0.28 : (isSelected ? 0.12 : 0.08),
                   ),
-                  blurRadius: isSelected ? 24 : 14,
-                  offset: Offset(0, isSelected ? 12 : 8),
+                  blurRadius: isSelected ? 18 : 12,
+                  offset: Offset(0, isSelected ? 9 : 6),
                 ),
               ],
             ),
@@ -1001,7 +1089,7 @@ class _PlanCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 20,
+                          vertical: 14,
                         ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -1019,7 +1107,7 @@ class _PlanCard extends StatelessWidget {
                                     _unselectedCardEnd,
                                   ],
                           ),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1027,16 +1115,16 @@ class _PlanCard extends StatelessWidget {
                             Text(
                               context.l10n.ui(plan.duration),
                               style: const TextStyle(
-                                fontSize: 18,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w900,
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 8),
                             Text(
                               context.l10n.justPrice(plan.price),
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white.withValues(alpha: 0.9),
                               ),
@@ -1045,28 +1133,28 @@ class _PlanCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 24),
+                    const SizedBox(width: 12),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 220),
-                      width: 48,
-                      height: 48,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF06C8DF)
-                            : const Color(0xFFE5E7EB),
-                        borderRadius: BorderRadius.circular(12),
+                        color: checkFill,
+                        borderRadius: BorderRadius.circular(11),
                         border: isSelected
                             ? null
                             : Border.all(
-                                color: const Color(0xFF9CA3AF),
-                                width: 2,
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.22)
+                                    : const Color(0xFF9CA3AF),
+                                width: 1.5,
                               ),
                       ),
                       child: isSelected
                           ? const Icon(
                               Icons.check_rounded,
                               color: Colors.white,
-                              size: 32,
+                              size: 24,
                             )
                           : null,
                     ),
@@ -1074,8 +1162,8 @@ class _PlanCard extends StatelessWidget {
                 ),
                 if (plan.isPopular)
                   Positioned(
-                    top: -24,
-                    right: -24,
+                    top: -10,
+                    right: -8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -1133,10 +1221,10 @@ class _BenefitsPreviewCard extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 context.l10n.ui("What you'll get:"),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF374151),
+                  color: _upgradeText(context),
                 ),
               ),
             ],
@@ -1197,10 +1285,10 @@ class _CompactPrivilegeRow extends StatelessWidget {
             context.l10n.ui(item.title),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF4B5563),
+              color: _upgradeMuted(context),
             ),
           ),
         ),
@@ -1220,6 +1308,8 @@ class _BottomContinueBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _isDark(context);
+
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
@@ -1232,13 +1322,22 @@ class _BottomContinueBar extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: <Color>[
-                _gradientMiddle.withValues(alpha: 0.72),
-                _gradientEnd.withValues(alpha: 0.82),
-              ],
+              colors: isDark
+                  ? <Color>[
+                      _darkBackground.withValues(alpha: 0.74),
+                      _darkSurface.withValues(alpha: 0.86),
+                    ]
+                  : <Color>[
+                      _gradientMiddle.withValues(alpha: 0.72),
+                      _gradientEnd.withValues(alpha: 0.82),
+                    ],
             ),
             border: Border(
-              top: BorderSide(color: Colors.white.withValues(alpha: 0.55)),
+              top: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.white.withValues(alpha: 0.55),
+              ),
             ),
           ),
           child: FutureBuilder<CurrentSubscriptionInfo?>(
@@ -1533,6 +1632,8 @@ class _GlassPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _isDark(context);
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: BackdropFilter(
@@ -1541,12 +1642,18 @@ class _GlassPanel extends StatelessWidget {
           width: double.infinity,
           padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.7),
+            color: isDark
+                ? _darkSurface.withValues(alpha: 0.74)
+                : Colors.white.withValues(alpha: 0.7),
             borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : Colors.white.withValues(alpha: 0.6),
+            ),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
+                color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.08),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               ),

@@ -74,50 +74,45 @@ class _HomePageState extends State<HomePage> {
     final statusBarHeight = mediaQuery.padding.top;
     final bottomContentPadding = mediaQuery.padding.bottom + 96;
     final size = mediaQuery.size;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           Positioned.fill(
             child: DecoratedBox(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: <Color>[
-                    Color(0xFFF1F6FE),
-                    Color(0xFFDFF5FF),
-                    Color(0xFFCCF6F1),
-                  ],
-                ),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF020B10) : Colors.white,
               ),
             ),
           ),
-          Positioned(
-            top: -90,
-            right: -70,
-            child: _HomeDecorativeOrb(
-              size: 230,
-              color: const Color(0x662BC3FF),
+          if (isDark) ...<Widget>[
+            Positioned(
+              top: -90,
+              right: -70,
+              child: _HomeDecorativeOrb(
+                size: 230,
+                color: const Color(0x5532C7FF),
+              ),
             ),
-          ),
-          Positioned(
-            top: size.height * 0.3,
-            left: -80,
-            child: _HomeDecorativeOrb(
-              size: 210,
-              color: const Color(0x5532D2FF),
+            Positioned(
+              top: size.height * 0.3,
+              left: -80,
+              child: _HomeDecorativeOrb(
+                size: 210,
+                color: const Color(0x334DB8E8),
+              ),
             ),
-          ),
-          Positioned(
-            bottom: 120,
-            right: -55,
-            child: _HomeDecorativeOrb(
-              size: 180,
-              color: const Color(0x5556E2D5),
+            Positioned(
+              bottom: 120,
+              right: -55,
+              child: _HomeDecorativeOrb(
+                size: 180,
+                color: const Color(0x3347E0D0),
+              ),
             ),
-          ),
+          ],
           SingleChildScrollView(
             padding: EdgeInsets.only(bottom: bottomContentPadding),
             physics: const BouncingScrollPhysics(
@@ -128,10 +123,38 @@ class _HomePageState extends State<HomePage> {
               children: [
                 // ── Blue header section ────────────────────
                 Container(
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark
+                          ? const <Color>[
+                              Color(0xFF0B2632),
+                              Color(0xFF123A47),
+                              Color(0xFF0D2F35),
+                            ]
+                          : const <Color>[
+                              Color(0xFF69C9F1),
+                              AppColors.primary,
+                              Color(0xFF36D5C7),
+                            ],
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(28),
+                    ),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: AppColors.primaryDark.withValues(alpha: 0.22),
+                        blurRadius: 32,
+                        offset: const Offset(0, 16),
+                      ),
+                    ],
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.white.withValues(
+                          alpha: isDark ? 0.10 : 0.42,
+                        ),
+                      ),
                     ),
                   ),
                   padding: EdgeInsets.fromLTRB(
@@ -142,18 +165,32 @@ class _HomePageState extends State<HomePage> {
                   ),
                   child: Column(
                     children: [
-                      // App bar row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Hello Vietnam',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.accentGold,
+                          Flexible(
+                            child: Text(
+                              'Hello Vietnam',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 27,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.accentGold,
+                                letterSpacing: 0,
+                                shadows: <Shadow>[
+                                  Shadow(
+                                    color: AppColors.primaryDark.withValues(
+                                      alpha: 0.22,
+                                    ),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 12),
                           ListenableBuilder(
                             listenable: MockNotificationRepository.instance,
                             builder: (BuildContext context, Widget? child) {
@@ -164,75 +201,49 @@ class _HomePageState extends State<HomePage> {
                               return Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: <Widget>[
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        Icons.place_outlined,
-                                        size: 22,
-                                      ),
-                                      color: Colors.white,
-                                      onPressed: () =>
-                                          _quickLocationFlow.start(context),
-                                    ),
+                                  _HomeHeaderIconButton(
+                                    icon: Icons.place_outlined,
+                                    semanticLabel: 'Set location',
+                                    onPressed: () =>
+                                        _quickLocationFlow.start(context),
                                   ),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: 8),
                                   Stack(
                                     clipBehavior: Clip.none,
                                     children: <Widget>[
-                                      Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.2,
-                                          ),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: IconButton(
-                                          icon: const Icon(
-                                            Icons.notifications_outlined,
-                                            size: 22,
-                                          ),
-                                          color: Colors.white,
-                                          onPressed: () => context.push(
-                                            AppRoutes.notification,
-                                          ),
+                                      _HomeHeaderIconButton(
+                                        icon: Icons.notifications_outlined,
+                                        semanticLabel: 'Notifications',
+                                        onPressed: () => context.push(
+                                          AppRoutes.notification,
                                         ),
                                       ),
                                       if (unreadCount > 0)
                                         Positioned(
-                                          top: -4,
-                                          right: -4,
+                                          top: -3,
+                                          right: -3,
                                           child: Container(
                                             constraints: const BoxConstraints(
                                               minWidth: 18,
                                               minHeight: 18,
                                             ),
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 4,
-                                              vertical: 1,
+                                              horizontal: 5,
+                                              vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFEF4444),
+                                              color: const Color(0xFFFF3B30),
                                               borderRadius:
                                                   BorderRadius.circular(999),
                                               border: Border.all(
                                                 color: Colors.white,
-                                                width: 1.2,
+                                                width: 1.5,
                                               ),
                                               boxShadow: const <BoxShadow>[
                                                 BoxShadow(
-                                                  color: Color(0x22000000),
-                                                  blurRadius: 8,
-                                                  offset: Offset(0, 3),
+                                                  color: Color(0x26000000),
+                                                  blurRadius: 10,
+                                                  offset: Offset(0, 4),
                                                 ),
                                               ],
                                             ),
@@ -245,6 +256,8 @@ class _HomePageState extends State<HomePage> {
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.w800,
                                                 color: Colors.white,
+                                                height: 1,
+                                                letterSpacing: 0,
                                               ),
                                             ),
                                           ),
@@ -492,6 +505,41 @@ class _HomeDecorativeOrb extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeHeaderIconButton extends StatelessWidget {
+  const _HomeHeaderIconButton({
+    required this.icon,
+    required this.semanticLabel,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String semanticLabel;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon, color: Colors.white, size: 25),
+        tooltip: semanticLabel,
+        style: IconButton.styleFrom(
+          minimumSize: const Size(44, 44),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          padding: EdgeInsets.zero,
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
+          hoverColor: Colors.white.withValues(alpha: 0.10),
+          highlightColor: Colors.white.withValues(alpha: 0.12),
+          shape: const CircleBorder(),
         ),
       ),
     );
