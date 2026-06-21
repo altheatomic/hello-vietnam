@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/auth/auth_repository.dart';
@@ -629,7 +631,10 @@ GoRouter buildRouter() {
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return _ScaffoldWithBottomNav(navigationShell: navigationShell);
+          return _ScaffoldWithBottomNav(
+            navigationShell: navigationShell,
+            currentPath: state.uri.path,
+          );
         },
         branches: [
           StatefulShellBranch(
@@ -736,9 +741,13 @@ GoRouter buildRouter() {
 }
 
 class _ScaffoldWithBottomNav extends StatelessWidget {
-  const _ScaffoldWithBottomNav({required this.navigationShell});
+  const _ScaffoldWithBottomNav({
+    required this.navigationShell,
+    required this.currentPath,
+  });
 
   final StatefulNavigationShell navigationShell;
+  final String currentPath;
 
   void _onTap(BuildContext context, int index) {
     // Profile tab (index 3): redirect to login if not authenticated
@@ -760,6 +769,7 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
       extendBody: true,
       bottomNavigationBar: _CustomBottomNav(
         currentIndex: navigationShell.currentIndex,
+        currentPath: currentPath,
         onTap: (index) => _onTap(context, index),
       ),
     );
@@ -769,9 +779,14 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
 /// Custom bottom navigation bar with rounded top corners and a center
 /// saved-trips shortcut inline with other items.
 class _CustomBottomNav extends StatelessWidget {
-  const _CustomBottomNav({required this.currentIndex, required this.onTap});
+  const _CustomBottomNav({
+    required this.currentIndex,
+    required this.currentPath,
+    required this.onTap,
+  });
 
   final int currentIndex;
+  final String currentPath;
   final ValueChanged<int> onTap;
 
   static const _items = <_NavItem>[
@@ -783,12 +798,12 @@ class _CustomBottomNav extends StatelessWidget {
     _NavItem(
       icon: Icons.calendar_month_outlined,
       selectedIcon: Icons.calendar_month_rounded,
-      label: 'Trip Planner',
+      label: 'Planner',
     ),
     _NavItem(
       icon: Icons.bookmark_outline_rounded,
-      selectedIcon: Icons.bookmark_rounded,
-      label: '',
+      selectedIcon: Icons.bookmark_added_rounded,
+      label: 'Saved',
     ), // center
     _NavItem(
       icon: Icons.forum_outlined,
@@ -805,40 +820,113 @@ class _CustomBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color background = isDark ? const Color(0xFF102A36) : Colors.white;
+    final BorderRadius radius = BorderRadius.circular(30);
     final Color shadowColor = isDark
-        ? Colors.black.withValues(alpha: 0.28)
-        : Colors.black.withValues(alpha: 0.08);
+        ? Colors.black.withValues(alpha: 0.36)
+        : Colors.black.withValues(alpha: 0.10);
+    final int selectedVisualIndex = _selectedVisualIndex;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor,
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 68,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(_items.length, (i) {
-              if (i == 2) return _buildCenterButton(context);
-              final branchIndex = i < 2 ? i : i - 1;
-              final isSelected = branchIndex == currentIndex;
-              return _buildNavItem(
-                context,
-                _items[i],
-                isSelected,
-                () => onTap(branchIndex),
-              );
-            }),
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 28,
+              spreadRadius: -6,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+            child: Container(
+              height: 68,
+              decoration: BoxDecoration(
+                borderRadius: radius,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? <Color>[
+                          const Color(0xE6102530),
+                          const Color(0xB80A1A22),
+                        ]
+                      : <Color>[
+                          Colors.white.withValues(alpha: 0.76),
+                          const Color(0xDDEFF9FF),
+                        ],
+                ),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.11)
+                      : Colors.white.withValues(alpha: 0.72),
+                  width: 1,
+                ),
+              ),
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final double slotWidth = constraints.maxWidth / _items.length;
+                  final double indicatorWidth = (slotWidth - 8)
+                      .clamp(54.0, 70.0)
+                      .toDouble();
+
+                  return Stack(
+                    alignment: Alignment.centerLeft,
+                    children: <Widget>[
+                      TweenAnimationBuilder<double>(
+                        tween: Tween<double>(
+                          begin: selectedVisualIndex.toDouble(),
+                          end: selectedVisualIndex.toDouble(),
+                        ),
+                        duration: const Duration(milliseconds: 360),
+                        curve: Curves.easeOutCubic,
+                        builder:
+                            (
+                              BuildContext context,
+                              double value,
+                              Widget? child,
+                            ) {
+                              return Transform.translate(
+                                offset: Offset(
+                                  (value * slotWidth) +
+                                      ((slotWidth - indicatorWidth) / 2),
+                                  0,
+                                ),
+                                child: child,
+                              );
+                            },
+                        child: _NavSelectionIndicator(
+                          width: indicatorWidth,
+                          isDark: isDark,
+                        ),
+                      ),
+                      Row(
+                        children: List.generate(_items.length, (i) {
+                          final int? branchIndex = _branchIndexForVisual(i);
+                          final bool isSelected = i == selectedVisualIndex;
+                          return Expanded(
+                            child: _buildNavItem(
+                              context,
+                              _items[i],
+                              isSelected,
+                              branchIndex == null
+                                  ? () => context.go(AppRoutes.tripPlannerSaved)
+                                  : () => onTap(branchIndex),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ),
@@ -861,18 +949,31 @@ class _CustomBottomNav extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 64,
+        height: 52,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isSelected ? item.selectedIcon : item.icon,
-              size: 24,
-              color: color,
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return ScaleTransition(scale: animation, child: child);
+              },
+              child: Icon(
+                isSelected ? item.selectedIcon : item.icon,
+                key: ValueKey<IconData>(
+                  isSelected ? item.selectedIcon : item.icon,
+                ),
+                size: 23,
+                color: color,
+              ),
             ),
             const SizedBox(height: 3),
             Text(
               item.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
@@ -885,30 +986,62 @@ class _CustomBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildCenterButton(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        context.push(AppRoutes.tripPlannerSaved);
-      },
-      child: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          color: AppColors.primaryLight,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+  int get _selectedVisualIndex {
+    if (currentPath == AppRoutes.tripPlannerSaved) {
+      return 2;
+    }
+
+    return currentIndex < 2 ? currentIndex : currentIndex + 1;
+  }
+
+  int? _branchIndexForVisual(int visualIndex) {
+    if (visualIndex == 2) {
+      return null;
+    }
+
+    return visualIndex < 2 ? visualIndex : visualIndex - 1;
+  }
+}
+
+class _NavSelectionIndicator extends StatelessWidget {
+  const _NavSelectionIndicator({required this.width, required this.isDark});
+
+  final double width;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: 52,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? <Color>[
+                  AppColors.primaryLight.withValues(alpha: 0.18),
+                  Colors.white.withValues(alpha: 0.06),
+                ]
+              : <Color>[
+                  AppColors.primary.withValues(alpha: 0.12),
+                  Colors.white.withValues(alpha: 0.70),
+                ],
         ),
-        child: const Icon(
-          Icons.bookmark_added_rounded,
-          size: 26,
-          color: Colors.white,
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : AppColors.primary.withValues(alpha: 0.10),
         ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: isDark ? 0.14 : 0.10),
+            blurRadius: 16,
+            spreadRadius: -6,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
     );
   }

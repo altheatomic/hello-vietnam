@@ -375,6 +375,11 @@ class _QuickInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
+    final TextStyle descriptionStyle = TextStyle(
+      fontSize: 14,
+      height: 1.6,
+      color: theme.colorScheme.onSurface,
+    );
 
     return Container(
       width: double.infinity,
@@ -401,33 +406,44 @@ class _QuickInfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  description,
-                  maxLines: isExpanded ? null : 3,
-                  overflow: isExpanded ? null : TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.6,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                GestureDetector(
-                  onTap: onToggleExpanded,
-                  child: Text(
-                    isExpanded ? 'Less' : 'More',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: theme.colorScheme.onSurface,
-                      decoration: TextDecoration.underline,
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final TextPainter textPainter = TextPainter(
+                  text: TextSpan(text: description, style: descriptionStyle),
+                  maxLines: 3,
+                  textDirection: Directionality.of(context),
+                )..layout(maxWidth: constraints.maxWidth);
+                final bool canExpand = textPainter.didExceedMaxLines;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      description,
+                      maxLines: isExpanded ? null : 3,
+                      overflow: isExpanded ? null : TextOverflow.ellipsis,
+                      style: descriptionStyle,
                     ),
-                  ),
-                ),
-              ],
+                    if (canExpand) ...<Widget>[
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: onToggleExpanded,
+                        child: Text(
+                          isExpanded ? 'Less' : 'More',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? AppColors.primaryLight
+                                : AppColors.primary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(width: 12),
@@ -435,16 +451,20 @@ class _QuickInfoCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.82),
+              color: isDark
+                  ? const Color(0xFF102832).withValues(alpha: 0.92)
+                  : Colors.white.withValues(alpha: 0.82),
               border: isDark
-                  ? Border.all(color: Colors.white.withValues(alpha: 0.08))
+                  ? Border.all(
+                      color: AppColors.primaryLight.withValues(alpha: 0.14),
+                    )
                   : null,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.thumb_up_alt_outlined,
               size: 20,
-              color: AppColors.primary,
+              color: isDark ? AppColors.primaryLight : AppColors.primary,
             ),
           ),
         ],
@@ -1269,29 +1289,60 @@ class _ReportAssetIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color iconColor = isDark
+        ? const Color(0xFF87CEEB)
+        : const Color(0xFF2C2C2C);
+
     return Tooltip(
       message: context.l10n.ui('Report an Issue'),
-      child: GestureDetector(
-        onTap: onTap,
-        child: SizedBox(
-          width: 40,
-          height: 40,
-          child: Center(
-            child: Image.asset(
-              'assets/images/Auth_Image/problem.png',
-              width: 28,
-              height: 28,
-              fit: BoxFit.contain,
-              errorBuilder:
-                  (
-                    BuildContext context,
-                    Object error,
-                    StackTrace? stackTrace,
-                  ) => const Icon(
-                    Icons.bug_report_outlined,
-                    size: 28,
-                    color: Color(0xFF2C2C2C),
-                  ),
+      child: Material(
+        color: isDark
+            ? const Color(0xFF0B1A22).withValues(alpha: 0.88)
+            : Colors.white.withValues(alpha: 0.88),
+        shape: const CircleBorder(),
+        elevation: 0,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF87CEEB).withValues(alpha: 0.18)
+                    : Colors.black.withValues(alpha: 0.06),
+              ),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.26 : 0.10),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Center(
+              child: ColorFiltered(
+                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                child: Image.asset(
+                  'assets/images/Auth_Image/problem.png',
+                  width: 25,
+                  height: 25,
+                  fit: BoxFit.contain,
+                  errorBuilder:
+                      (
+                        BuildContext context,
+                        Object error,
+                        StackTrace? stackTrace,
+                      ) => Icon(
+                        Icons.bug_report_outlined,
+                        size: 25,
+                        color: iconColor,
+                      ),
+                ),
+              ),
             ),
           ),
         ),

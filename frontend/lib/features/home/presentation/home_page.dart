@@ -176,7 +176,9 @@ class _HomePageState extends State<HomePage> {
                               style: TextStyle(
                                 fontSize: 27,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.accentGold,
+                                color: isDark
+                                    ? const Color(0xFFFFD66B)
+                                    : AppColors.accentGold,
                                 letterSpacing: 0,
                                 shadows: <Shadow>[
                                   Shadow(
@@ -320,7 +322,7 @@ class _HomePageState extends State<HomePage> {
                   child: HomeBanner(),
                 ),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 16),
 
                 // ── Feature grid (8 buttons) ─────────────────
                 Padding(
@@ -330,7 +332,7 @@ class _HomePageState extends State<HomePage> {
                   child: FeatureGrid(items: homeFeatures),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
                 ListenableBuilder(
                   listenable: TravelPreferencesRepository.instance,

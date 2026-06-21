@@ -214,174 +214,221 @@ class _FeedbackPageState extends State<FeedbackPage> {
   @override
   Widget build(BuildContext context) {
     final MediaQueryData mq = MediaQuery.of(context);
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final Color pageBackground = isDark
+        ? const Color(0xFF020B10)
+        : theme.scaffoldBackgroundColor;
+    final Color primaryText = isDark
+        ? const Color(0xFFF5FBFF)
+        : const Color(0xFF1D293D);
+    final Color secondaryText = isDark
+        ? const Color(0xFFA9BCC7)
+        : const Color(0xFF90A1B9);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              child: Row(
-                children: <Widget>[
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                    color: const Color(0xFF1D293D),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          context.l10n.ui('Report an Issue'),
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF1D293D),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          context.l10n.ui('Help us improve the app'),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF90A1B9),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 44),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                  20,
-                  10,
-                  20,
-                  24 + mq.padding.bottom,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: pageBackground,
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          color: pageBackground,
+          gradient: isDark
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: <Color>[
+                    Color(0xFF020B10),
+                    Color(0xFF03131A),
+                    Color(0xFF020B10),
+                  ],
+                )
+              : null,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Row(
                   children: <Widget>[
-                    _RequiredLabel(
-                      title: context.l10n.ui('Feature with issue'),
-                      showError: _showIssueValidationError,
+                    IconButton(
+                      onPressed: () => context.pop(),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                      color: primaryText,
                     ),
-                    const SizedBox(height: 12),
-                    LayoutBuilder(
-                      builder: (BuildContext context, BoxConstraints c) {
-                        final double chipWidth = (c.maxWidth - 12) / 2;
-                        return Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: <Widget>[
-                            for (final _IssueType issue in _issueTypes)
-                              SizedBox(
-                                width: issue.label == 'Other'
-                                    ? chipWidth
-                                    : chipWidth,
-                                child: _IssueChip(
-                                  issue: issue,
-                                  selected: _selectedIssue == issue,
-                                  showError:
-                                      _showIssueValidationError &&
-                                      _selectedIssue == null,
-                                  onTap: () => setState(() {
-                                    _selectedIssue = issue;
-                                    _showIssueValidationError = false;
-                                  }),
-                                ),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 26),
-                    _SectionLabel(context.l10n.ui('Description')),
-                    const SizedBox(height: 10),
-                    _DescriptionBox(controller: _descriptionController),
-                    const SizedBox(height: 18),
-                    _SectionLabel(context.l10n.ui('Image or video')),
-                    const SizedBox(height: 10),
-                    _UploadBox(
-                      images: _images,
-                      onPick: _pickImages,
-                      onRemove: (int index) => setState(() {
-                        _images.removeAt(index);
-                      }),
-                    ),
-                    const SizedBox(height: 28),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _isSubmitting
-                                ? null
-                                : () => context.pop(),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(50),
-                              side: const BorderSide(color: Color(0xFFE2E8F0)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            child: Text(
-                              context.l10n.ui('Cancel'),
-                              style: const TextStyle(
-                                color: Color(0xFF45556C),
-                                fontWeight: FontWeight.w600,
-                              ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            context.l10n.ui('Report an Issue'),
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: primaryText,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              gradient: const LinearGradient(
-                                colors: <Color>[
-                                  Color(0xFFEF4444),
-                                  Color(0xFFDC2626),
-                                ],
-                              ),
+                          const SizedBox(height: 2),
+                          Text(
+                            context.l10n.ui('Help us improve the app'),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: secondaryText,
                             ),
-                            child: ElevatedButton(
-                              onPressed: _isSubmitting ? null : _submitReport,
-                              style: ElevatedButton.styleFrom(
-                                elevation: 0,
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                disabledBackgroundColor: Colors.transparent,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 44),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    10,
+                    20,
+                    24 + mq.padding.bottom,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      _RequiredLabel(
+                        title: context.l10n.ui('Feature with issue'),
+                        showError: _showIssueValidationError,
+                      ),
+                      const SizedBox(height: 12),
+                      LayoutBuilder(
+                        builder: (BuildContext context, BoxConstraints c) {
+                          final double chipWidth = (c.maxWidth - 12) / 2;
+                          return Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: <Widget>[
+                              for (final _IssueType issue in _issueTypes)
+                                SizedBox(
+                                  width: issue.label == 'Other'
+                                      ? chipWidth
+                                      : chipWidth,
+                                  child: _IssueChip(
+                                    issue: issue,
+                                    selected: _selectedIssue == issue,
+                                    showError:
+                                        _showIssueValidationError &&
+                                        _selectedIssue == null,
+                                    onTap: () => setState(() {
+                                      _selectedIssue = issue;
+                                      _showIssueValidationError = false;
+                                    }),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 26),
+                      _SectionLabel(context.l10n.ui('Description')),
+                      const SizedBox(height: 10),
+                      _DescriptionBox(controller: _descriptionController),
+                      const SizedBox(height: 18),
+                      _SectionLabel(context.l10n.ui('Image or video')),
+                      const SizedBox(height: 10),
+                      _UploadBox(
+                        images: _images,
+                        onPick: _pickImages,
+                        onRemove: (int index) => setState(() {
+                          _images.removeAt(index);
+                        }),
+                      ),
+                      const SizedBox(height: 28),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: _isSubmitting
+                                  ? null
+                                  : () => context.pop(),
+                              style: OutlinedButton.styleFrom(
                                 minimumSize: const Size.fromHeight(50),
+                                side: BorderSide(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.12)
+                                      : const Color(0xFFE2E8F0),
+                                ),
+                                backgroundColor: isDark
+                                    ? Colors.white.withValues(alpha: 0.05)
+                                    : Colors.transparent,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
                               child: Text(
-                                _isSubmitting
-                                    ? context.l10n.ui('Submitting...')
-                                    : context.l10n.ui('Submit Report'),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
+                                context.l10n.ui('Cancel'),
+                                style: TextStyle(
+                                  color: isDark
+                                      ? const Color(0xFFD7E6EE)
+                                      : const Color(0xFF45556C),
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                gradient: const LinearGradient(
+                                  colors: <Color>[
+                                    Color(0xFFEF4444),
+                                    Color(0xFFDC2626),
+                                  ],
+                                ),
+                                boxShadow: isDark
+                                    ? <BoxShadow>[
+                                        BoxShadow(
+                                          color: const Color(
+                                            0xFFEF4444,
+                                          ).withValues(alpha: 0.20),
+                                          blurRadius: 18,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: ElevatedButton(
+                                onPressed: _isSubmitting ? null : _submitReport,
+                                style: ElevatedButton.styleFrom(
+                                  elevation: 0,
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  disabledBackgroundColor: Colors.transparent,
+                                  minimumSize: const Size.fromHeight(50),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: Text(
+                                  _isSubmitting
+                                      ? context.l10n.ui('Submitting...')
+                                      : context.l10n.ui('Submit Report'),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -396,15 +443,17 @@ class _RequiredLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Row(
       children: <Widget>[
         RichText(
           text: TextSpan(
             text: title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF314158),
+              color: isDark ? const Color(0xFFF5FBFF) : const Color(0xFF314158),
             ),
             children: const <TextSpan>[
               TextSpan(
@@ -436,12 +485,14 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: Color(0xFF314158),
+        color: isDark ? const Color(0xFFF5FBFF) : const Color(0xFF314158),
       ),
     );
   }
@@ -462,6 +513,20 @@ class _IssueChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color surfaceColor = isDark
+        ? const Color(0xFF0B1A22).withValues(alpha: 0.92)
+        : const Color(0xFFF8FAFC);
+    final Color selectedFill = isDark
+        ? issue.color.withValues(alpha: 0.14)
+        : issue.color.withValues(alpha: 0.05);
+    final Color borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : const Color(0xFFE2E8F0);
+    final Color bodyTextColor = isDark
+        ? const Color(0xFFD7E6EE)
+        : const Color(0xFF45556C);
+
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
@@ -469,17 +534,24 @@ class _IssueChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: selected
-              ? issue.color.withValues(alpha: 0.05)
-              : const Color(0xFFF8FAFC),
+          color: selected ? selectedFill : surfaceColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: showError
                 ? const Color(0xFFEF4444)
                 : selected
                 ? issue.color
-                : const Color(0xFFE2E8F0),
+                : borderColor,
           ),
+          boxShadow: isDark
+              ? <BoxShadow>[
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           children: <Widget>[
@@ -492,7 +564,7 @@ class _IssueChip extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: selected ? issue.color : const Color(0xFF45556C),
+                  color: selected ? issue.color : bodyTextColor,
                 ),
               ),
             ),
@@ -515,11 +587,34 @@ class _DescriptionBox extends StatefulWidget {
 class _DescriptionBoxState extends State<_DescriptionBox> {
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color surfaceColor = isDark
+        ? const Color(0xFF0B1A22).withValues(alpha: 0.94)
+        : const Color(0xFFF8FAFC);
+    final Color borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : const Color(0xFFE2E8F0);
+    final Color textColor = isDark
+        ? const Color(0xFFF5FBFF)
+        : const Color(0xFF1D293D);
+    final Color hintColor = isDark
+        ? const Color(0xFF8FA8B4)
+        : const Color(0xFF90A1B9);
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: surfaceColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: borderColor),
+        boxShadow: isDark
+            ? <BoxShadow>[
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.20),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : null,
       ),
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       child: Column(
@@ -529,15 +624,13 @@ class _DescriptionBoxState extends State<_DescriptionBox> {
             maxLength: 500,
             maxLines: 7,
             onChanged: (_) => setState(() {}),
+            cursorColor: const Color(0xFF2EA7F8),
+            style: TextStyle(color: textColor, fontSize: 16, height: 1.5),
             decoration: InputDecoration(
               hintText: context.l10n.ui(
                 'Please describe the issue you encountered so we can fix it as quickly as possible...',
               ),
-              hintStyle: const TextStyle(
-                color: Color(0xFF90A1B9),
-                fontSize: 16,
-                height: 1.5,
-              ),
+              hintStyle: TextStyle(color: hintColor, fontSize: 16, height: 1.5),
               border: InputBorder.none,
               counterText: '',
             ),
@@ -546,7 +639,7 @@ class _DescriptionBoxState extends State<_DescriptionBox> {
             alignment: Alignment.centerRight,
             child: Text(
               '${widget.controller.text.length}/500',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF90A1B9)),
+              style: TextStyle(fontSize: 12, color: hintColor),
             ),
           ),
         ],
@@ -568,6 +661,20 @@ class _UploadBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color surfaceColor = isDark
+        ? const Color(0xFF0B1A22).withValues(alpha: 0.94)
+        : const Color(0xFFF8FAFC);
+    final Color borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : const Color(0xFFE2E8F0);
+    final Color secondaryText = isDark
+        ? const Color(0xFF8FA8B4)
+        : const Color(0xFF90A1B9);
+    final Color accentColor = isDark
+        ? const Color(0xFF87CEEB)
+        : const Color(0xFF3B82F6);
+
     if (images.isEmpty) {
       return InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -576,21 +683,18 @@ class _UploadBox extends StatelessWidget {
           height: 118,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
+            color: surfaceColor,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: borderColor),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              const Icon(
-                Icons.add_photo_alternate_outlined,
-                color: Color(0xFF3B82F6),
-              ),
+              Icon(Icons.add_photo_alternate_outlined, color: accentColor),
               const SizedBox(height: 8),
               Text(
                 context.l10n.ui('Upload image or video'),
-                style: const TextStyle(color: Color(0xFF90A1B9)),
+                style: TextStyle(color: secondaryText),
               ),
             ],
           ),
@@ -612,11 +716,11 @@ class _UploadBox extends StatelessWidget {
               child: Container(
                 width: 96,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: surfaceColor,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: borderColor),
                 ),
-                child: const Icon(Icons.add, color: Color(0xFF3B82F6)),
+                child: Icon(Icons.add, color: accentColor),
               ),
             );
           }
@@ -686,12 +790,35 @@ class _SuccessDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color surfaceColor = isDark ? const Color(0xFF07161D) : Colors.white;
+    final Color primaryText = isDark
+        ? const Color(0xFFF5FBFF)
+        : const Color(0xFF1D293D);
+    final Color secondaryText = isDark
+        ? const Color(0xFFA9BCC7)
+        : const Color(0xFF62748E);
+
     return AlertDialog(
-      title: Text(context.l10n.ui('Report Submitted!')),
+      backgroundColor: surfaceColor,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.10)
+              : Colors.transparent,
+        ),
+      ),
+      title: Text(
+        context.l10n.ui('Report Submitted!'),
+        style: TextStyle(color: primaryText, fontWeight: FontWeight.w800),
+      ),
       content: Text(
         context.l10n.ui(
           'Thank you for your report. Our team will review it as soon as possible.',
         ),
+        style: TextStyle(color: secondaryText, height: 1.45),
       ),
       actions: <Widget>[
         FilledButton(

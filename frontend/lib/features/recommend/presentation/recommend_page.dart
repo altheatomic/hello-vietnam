@@ -97,12 +97,12 @@ class RecommendPage extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(top: 10),
+                padding: EdgeInsets.only(top: isDark ? 0 : 10),
                 child: Container(
                   width: double.infinity,
                   padding: EdgeInsets.fromLTRB(
                     AppConstants.pagePadding,
-                    62,
+                    isDark ? 44 : 62,
                     AppConstants.pagePadding,
                     bottomInset + 32,
                   ),
@@ -123,13 +123,15 @@ class RecommendPage extends StatelessWidget {
                             ],
                     ),
                     border: isDark
-                        ? Border.all(
-                            color: Colors.white.withValues(alpha: 0.08),
+                        ? Border(
+                            top: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.08),
+                            ),
                           )
                         : null,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(108),
-                    ),
+                    borderRadius: isDark
+                        ? BorderRadius.zero
+                        : const BorderRadius.vertical(top: Radius.circular(72)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
