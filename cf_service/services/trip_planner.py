@@ -47,8 +47,8 @@ from services.module1_repository import (
     fetch_user_travel_profile,
 )
 from services.module2_algorithm import build_module2_result
-from services.module2_clustering import _assign_slots
 from services.module3_optimizer import estimate_travel_minutes, optimize_day_route
+from services.schedule_builder import build_day_schedule
 
 
 def _compute_alpha(cf_scores: dict, total_places: int) -> float:
@@ -71,16 +71,30 @@ def _derive_start_point(places: list) -> dict:
 
 def _format_place(place: dict, order: int) -> dict:
     return {
-        "order":                    order,
-        "id_place":                 str(place["id_place"]),
-        "name":                     place.get("name"),
-        "slot":                     place.get("slot"),
-        "latitude":                 place.get("latitude"),
-        "longitude":                place.get("longitude"),
-        "estimated_travel_minutes": place.get("estimated_travel_minutes"),
-        "tag_match":                place.get("tag_match"),
-        "cf_score":                 place.get("cf_score"),
-        "final_score":              place.get("final_score"),
+        "type":                       "place",
+        "order":                      order,
+        "id_place":                   str(place["id_place"]),
+        "name":                       place.get("name"),
+        "slot":                       place.get("slot"),
+        "start_time":                 place.get("start_time"),
+        "end_time":                   place.get("end_time"),
+        "warning":                    place.get("warning"),
+        "latitude":                   place.get("latitude"),
+        "longitude":                  place.get("longitude"),
+        "estimated_travel_minutes":   place.get("estimated_travel_minutes"),
+        "estimated_duration_minutes": place.get("estimated_duration_minutes"),
+        "tag_match":                  place.get("tag_match"),
+        "cf_score":                   place.get("cf_score"),
+        "final_score":                place.get("final_score"),
+    }
+
+
+def _format_lunch_break(entry: dict) -> dict:
+    return {
+        "type":       "lunch_break",
+        "start_time": entry.get("start_time"),
+        "end_time":   entry.get("end_time"),
+        "slot":       entry.get("slot"),
     }
 
 
@@ -221,12 +235,21 @@ class TripPlannerService:
             day_places = day_cluster["places"]
             optimized = optimize_day_route(start_point, day_places, sa_runs=sa_runs)
             optimized = estimate_travel_minutes(optimized, start_point)
-            _assign_slots(optimized)
+            scheduled = build_day_schedule(optimized)
+
+            formatted = []
+            place_order = 1
+            for entry in scheduled:
+                if entry.get("type") == "lunch_break":
+                    formatted.append(_format_lunch_break(entry))
+                else:
+                    formatted.append(_format_place(entry, order=place_order))
+                    place_order += 1
 
             days.append({
                 "day":    day_cluster["day"],
                 "date":   day_cluster["date"],
-                "places": [_format_place(p, order=i + 1) for i, p in enumerate(optimized)],
+                "places": formatted,
             })
 
             if optimized:

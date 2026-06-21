@@ -221,9 +221,21 @@ List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
     final TripPlanDay day = entry.value;
 
     final activities = day.places.map((TripPlanPlace p) {
+      if (p.isLunchBreak) {
+        return TripPlannerActivityData(
+          title: 'Lunch Break',
+          time: p.startTime ?? '12:00',
+          slot: 'Afternoon',
+          tag: 'lunch_break',
+          description: 'Time to rest and eat.',
+          distanceLabel: p.endTime != null ? 'Until ${p.endTime}' : '',
+          tips: const <String>[],
+          nearbyPlaces: const <TripPlannerNearbyPlace>[],
+        );
+      }
       return TripPlannerActivityData(
         title: p.name.isEmpty ? 'Place ${p.order}' : p.name,
-        time: _slotToTime(p.slot),
+        time: p.startTime ?? _slotToTime(p.slot),
         slot: _capitalizeSlot(p.slot),
         tag: 'culture',
         description: '',
@@ -554,7 +566,9 @@ class _DayCard extends StatelessWidget {
           ...data.activities.take(3).map(
             (TripPlannerActivityData activity) => Padding(
               padding: const EdgeInsets.only(bottom: 14),
-              child: _TripActivityTile(activity: activity),
+              child: activity.tag == 'lunch_break'
+                  ? _LunchBreakTile(activity: activity)
+                  : _TripActivityTile(activity: activity),
             ),
           ),
           Row(
@@ -596,6 +610,65 @@ class _DayCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LunchBreakTile extends StatelessWidget {
+  const _LunchBreakTile({required this.activity});
+
+  final TripPlannerActivityData activity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8EE),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFFD9A0), width: 2),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x1A0F2C4F),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF9F43),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.restaurant_rounded, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Text(
+                  'Lunch Break',
+                  style: TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF7A4A00),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${activity.time}${activity.distanceLabel.isNotEmpty ? " • ${activity.distanceLabel}" : ""}',
+                  style: const TextStyle(fontSize: 14, color: Color(0xFFAA7030)),
+                ),
+              ],
+            ),
           ),
         ],
       ),

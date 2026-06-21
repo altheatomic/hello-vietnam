@@ -68,41 +68,59 @@ class TripPlanDay {
 
 class TripPlanPlace {
   const TripPlanPlace({
-    required this.order,
-    required this.idPlace,
-    required this.name,
+    this.type = 'place',
+    this.order = 0,
+    this.idPlace = '',
+    this.name = '',
     this.slot,
+    this.startTime,
+    this.endTime,
+    this.warning,
     this.latitude,
     this.longitude,
     this.estimatedTravelMinutes,
+    this.estimatedDurationMinutes,
     this.tagMatch,
     this.cfScore,
     this.finalScore,
   });
 
+  /// 'place' or 'lunch_break'
+  final String type;
   final int order;
   final String idPlace;
   final String name;
   final String? slot;
+  final String? startTime;
+  final String? endTime;
+  final String? warning;
   final double? latitude;
   final double? longitude;
   final int? estimatedTravelMinutes;
+  final int? estimatedDurationMinutes;
   final double? tagMatch;
   final double? cfScore;
   final double? finalScore;
 
+  bool get isLunchBreak => type == 'lunch_break';
+
   factory TripPlanPlace.fromJson(Map<String, dynamic> json) {
     return TripPlanPlace(
-      order:                    (json['order'] as num).toInt(),
-      idPlace:                  json['id_place'] as String? ?? '',
-      name:                     json['name'] as String? ?? '',
-      slot:                     json['slot'] as String?,
-      latitude:                 (json['latitude'] as num?)?.toDouble(),
-      longitude:                (json['longitude'] as num?)?.toDouble(),
-      estimatedTravelMinutes:   (json['estimated_travel_minutes'] as num?)?.toInt(),
-      tagMatch:                 (json['tag_match'] as num?)?.toDouble(),
-      cfScore:                  (json['cf_score'] as num?)?.toDouble(),
-      finalScore:               (json['final_score'] as num?)?.toDouble(),
+      type:                       json['type'] as String? ?? 'place',
+      order:                      (json['order'] as num?)?.toInt() ?? 0,
+      idPlace:                    json['id_place'] as String? ?? '',
+      name:                       json['name'] as String? ?? '',
+      slot:                       json['slot'] as String?,
+      startTime:                  json['start_time'] as String?,
+      endTime:                    json['end_time'] as String?,
+      warning:                    json['warning'] as String?,
+      latitude:                   (json['latitude'] as num?)?.toDouble(),
+      longitude:                  (json['longitude'] as num?)?.toDouble(),
+      estimatedTravelMinutes:     (json['estimated_travel_minutes'] as num?)?.toInt(),
+      estimatedDurationMinutes:   (json['estimated_duration_minutes'] as num?)?.toInt(),
+      tagMatch:                   (json['tag_match'] as num?)?.toDouble(),
+      cfScore:                    (json['cf_score'] as num?)?.toDouble(),
+      finalScore:                 (json['final_score'] as num?)?.toDouble(),
     );
   }
 }

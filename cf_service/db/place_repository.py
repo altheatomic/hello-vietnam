@@ -71,7 +71,8 @@ def fetch_places_required_filter(
         "id_place,id_place_subcategory,name,short_description,"
         "detailed_description,status,cover_image,address,latitude,longitude,"
         "average_rating,review_count,minimum_price,maximum_price,"
-        "estimated_duration_minutes,id_province,id_region,id_zone,"
+        "estimated_duration_minutes,timespan,timeclose,"
+        "id_province,id_region,id_zone,"
         "place_subcategory!inner(name,place_category,is_itinerary_eligible)"
     )
 
