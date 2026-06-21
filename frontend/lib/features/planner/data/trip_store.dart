@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +12,7 @@ const String _kTitle = 'trip_store.title';
 const String _kActivatedAt = 'trip_store.activated_at';
 const String _kTripStartDate = 'trip_store.trip_start_date';
 const String _kIdPlan = 'trip_store.id_plan';
+const String _kDays = 'trip_store.days';
 
 // ── Public types ──────────────────────────────────────────────────────────────
 
@@ -210,12 +212,20 @@ class TripStore extends ChangeNotifier {
       final tripStartDate = DateTime.tryParse(tripStartDateStr);
       if (activatedAt == null || tripStartDate == null) return;
 
+      final daysJson = prefs.getString(_kDays);
+      List<TripPlannerDayData> days;
+      if (daysJson != null) {
+        final decoded = jsonDecode(daysJson) as List;
+        days = decoded
+            .map((j) => TripPlannerDayData.fromJson(j as Map<String, dynamic>))
+            .toList();
+      } else {
+        days = TripPlannerMockData.tripDays;
+      }
+
       _activeTrip = ActiveTrip(
         title: title,
-        // TODO(backend): replace with persisted real itinerary data when
-        // trips are stored server-side. For now, mock data is always the
-        // same so reconstructing from it is safe.
-        days: TripPlannerMockData.tripDays,
+        days: days,
         activatedAt: activatedAt,
         tripStartDate: tripStartDate,
         idPlan: prefs.getString(_kIdPlan),
@@ -292,21 +302,18 @@ class TripStore extends ChangeNotifier {
 
   // ── Persistence ─────────────────────────────────────────────────────────────
 
-  /// Persists the minimum fields needed to reconstruct [ActiveTrip].
-  ///
-  /// Only [title], [activatedAt], and [tripStartDate] are stored.
-  /// The [days] list is reconstructed from [TripPlannerMockData] on restore.
-  ///
-  /// When real trip data is stored server-side, replace this with a Supabase
-  /// upsert keyed on the user's trip ID.
   Future<void> _persist() async {
     if (_activeTrip == null) return;
     try {
       final prefs = await SharedPreferences.getInstance();
+      final daysEncoded = jsonEncode(
+        _activeTrip!.days.map((d) => d.toJson()).toList(),
+      );
       final futures = <Future<bool>>[
         prefs.setString(_kTitle, _activeTrip!.title),
         prefs.setString(_kActivatedAt, _activeTrip!.activatedAt.toIso8601String()),
         prefs.setString(_kTripStartDate, _activeTrip!.tripStartDate.toIso8601String()),
+        prefs.setString(_kDays, daysEncoded),
       ];
       if (_activeTrip!.idPlan != null) {
         futures.add(prefs.setString(_kIdPlan, _activeTrip!.idPlan!));
@@ -325,6 +332,7 @@ class TripStore extends ChangeNotifier {
         prefs.remove(_kActivatedAt),
         prefs.remove(_kTripStartDate),
         prefs.remove(_kIdPlan),
+        prefs.remove(_kDays),
       ]);
     } catch (e) {
       debugPrint('TripStore._clearPersistence: failed — $e');
