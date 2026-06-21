@@ -8,14 +8,15 @@ import 'package:hellovietnam/core/utils/maps_launcher.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 
 void _openDayRoute(List<TripPlannerActivityData> activities) {
-  if (activities.isEmpty) return;
-  if (activities.length == 1) {
-    openGoogleMapsPin(lat: activities.first.lat, lng: activities.first.lng);
+  final realPlaces = activities.where((a) => a.tag != 'lunch_break').toList();
+  if (realPlaces.isEmpty) return;
+  if (realPlaces.length == 1) {
+    openGoogleMapsPin(lat: realPlaces.first.lat, lng: realPlaces.first.lng);
     return;
   }
-  final first = activities.first;
-  final last = activities.last;
-  final middle = activities.sublist(1, activities.length - 1);
+  final first = realPlaces.first;
+  final last = realPlaces.last;
+  final middle = realPlaces.sublist(1, realPlaces.length - 1);
   openGoogleMapsDirections(
     originLat: first.lat,
     originLng: first.lng,
