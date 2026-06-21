@@ -708,8 +708,14 @@ class _ReviewCard extends StatelessWidget {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: <Color>[
-                        Colors.white.withValues(alpha: 0.4 + (emphasis * 0.18)),
-                        Colors.white.withValues(alpha: 0.02),
+                        isDark
+                            ? AppColors.primaryLight.withValues(
+                                alpha: 0.08 + (emphasis * 0.04),
+                              )
+                            : Colors.white.withValues(
+                                alpha: 0.4 + (emphasis * 0.18),
+                              ),
+                        Colors.white.withValues(alpha: isDark ? 0.0 : 0.02),
                       ],
                     ),
                   ),
@@ -839,6 +845,9 @@ class _UserRatingBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor = Theme.of(context).colorScheme.onSurface;
+    final Color labelColor = isDark
+        ? AppColors.primaryLight
+        : AppColors.primary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -846,11 +855,11 @@ class _UserRatingBadge extends StatelessWidget {
         gradient: LinearGradient(
           colors: <Color>[
             isDark
-                ? Colors.white.withValues(alpha: 0.08)
+                ? const Color(0xFF0B1A22).withValues(alpha: 0.72)
                 : Colors.white.withValues(alpha: 0.75),
             AppColors.primaryLight.withValues(
               alpha: isDark
-                  ? 0.08 + (emphasis * 0.08)
+                  ? 0.05 + (emphasis * 0.04)
                   : 0.16 + (emphasis * 0.12),
             ),
           ],
@@ -858,7 +867,7 @@ class _UserRatingBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: AppColors.primaryLight.withValues(
-            alpha: 0.24 + (emphasis * 0.4),
+            alpha: isDark ? 0.16 + (emphasis * 0.10) : 0.24 + (emphasis * 0.4),
           ),
         ),
       ),
@@ -867,10 +876,10 @@ class _UserRatingBadge extends StatelessWidget {
         children: <Widget>[
           Text(
             review.ratingLabel,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: AppColors.primary,
+              color: labelColor,
             ),
           ),
           const SizedBox(height: 2),
