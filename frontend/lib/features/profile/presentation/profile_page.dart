@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
@@ -300,6 +302,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 title: context.l10n.ui('Dark theme'),
                                 value: ThemeController.instance.isDarkMode,
                                 onChanged: ThemeController.instance.setDarkMode,
+                                useDayNightSwitch: true,
                               );
                             },
                           ),
@@ -479,6 +482,7 @@ class _SettingSwitchRow extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.onTap,
+    this.useDayNightSwitch = false,
   });
 
   final IconData icon;
@@ -486,6 +490,7 @@ class _SettingSwitchRow extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
   final VoidCallback? onTap;
+  final bool useDayNightSwitch;
 
   @override
   Widget build(BuildContext context) {
@@ -522,21 +527,518 @@ class _SettingSwitchRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Transform.scale(
-            scale: 0.86,
-            child: Switch(
-              value: value,
-              onChanged: onChanged,
-              activeThumbColor: const Color(0xFF58B7E8),
-              activeTrackColor: const Color(0xFFBEE7FA),
-              inactiveThumbColor: const Color(0xFFFFFFFF),
-              inactiveTrackColor: colors.inactiveSwitchTrack,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
+          useDayNightSwitch
+              ? _DayNightThemeSwitch(value: value, onChanged: onChanged)
+              : _LiquidGlassSwitch(value: value, onChanged: onChanged),
         ],
       ),
     );
+  }
+}
+
+class _LiquidGlassSwitch extends StatelessWidget {
+  const _LiquidGlassSwitch({required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  static const double _tapWidth = 72;
+  static const double _tapHeight = 44;
+  static const double _trackWidth = 72;
+  static const double _trackHeight = 34;
+  static const double _thumbSize = 28;
+  static const double _thumbInset = 3;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return Semantics(
+      button: true,
+      toggled: value,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onChanged(!value),
+        child: SizedBox(
+          width: _tapWidth,
+          height: _tapHeight,
+          child: Center(
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: value ? 1 : 0),
+              duration: const Duration(milliseconds: 320),
+              curve: Curves.easeOutCubic,
+              builder: (BuildContext context, double progress, Widget? child) {
+                final double left =
+                    _thumbInset +
+                    (_trackWidth - _thumbSize - (_thumbInset * 2)) * progress;
+                return Container(
+                  width: _trackWidth,
+                  height: _trackHeight,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: isDark ? 0.28 : 0.12,
+                        ),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                      child: Stack(
+                        children: <Widget>[
+                          Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(999),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: <Color>[
+                                    Color.lerp(
+                                      isDark
+                                          ? Colors.white.withValues(alpha: 0.08)
+                                          : Colors.white.withValues(
+                                              alpha: 0.72,
+                                            ),
+                                      const Color(0xFF64D7FF),
+                                      progress,
+                                    )!,
+                                    Color.lerp(
+                                      isDark
+                                          ? const Color(
+                                              0xFF17303A,
+                                            ).withValues(alpha: 0.72)
+                                          : const Color(
+                                              0xFFEAF8FF,
+                                            ).withValues(alpha: 0.84),
+                                      const Color(0xFF37D9CB),
+                                      progress,
+                                    )!,
+                                  ],
+                                ),
+                                border: Border.all(
+                                  color: Color.lerp(
+                                    isDark
+                                        ? Colors.white.withValues(alpha: 0.20)
+                                        : const Color(
+                                            0xFFB7DCEB,
+                                          ).withValues(alpha: 0.78),
+                                    Colors.white.withValues(alpha: 0.44),
+                                    progress,
+                                  )!,
+                                  width: 1.6,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 3,
+                            left: left,
+                            child: Container(
+                              width: _thumbSize,
+                              height: _thumbSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  center: const Alignment(-0.38, -0.48),
+                                  colors: <Color>[
+                                    Color.lerp(
+                                      Colors.white,
+                                      const Color(0xFFEFFFFF),
+                                      progress,
+                                    )!,
+                                    Color.lerp(
+                                      const Color(0xFFF2F7FA),
+                                      const Color(0xFFB9F4FF),
+                                      progress,
+                                    )!,
+                                  ],
+                                ),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.52),
+                                  width: 1,
+                                ),
+                                boxShadow: <BoxShadow>[
+                                  BoxShadow(
+                                    color: Color.lerp(
+                                      Colors.black.withValues(alpha: 0.22),
+                                      const Color(
+                                        0xFF4DDFFF,
+                                      ).withValues(alpha: 0.42),
+                                      progress,
+                                    )!,
+                                    blurRadius: value ? 14 : 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 2,
+                            left: 8 + (progress * 18),
+                            child: Container(
+                              width: 32,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(999),
+                                gradient: LinearGradient(
+                                  colors: <Color>[
+                                    Colors.white.withValues(alpha: 0.34),
+                                    Colors.white.withValues(alpha: 0.02),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DayNightThemeSwitch extends StatefulWidget {
+  const _DayNightThemeSwitch({required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  State<_DayNightThemeSwitch> createState() => _DayNightThemeSwitchState();
+}
+
+class _DayNightThemeSwitchState extends State<_DayNightThemeSwitch>
+    with SingleTickerProviderStateMixin {
+  static const double _tapWidth = 72;
+  static const double _tapHeight = 44;
+  static const double _trackWidth = 72;
+  static const double _trackHeight = 34;
+  static const double _thumbSize = 30;
+  static const double _thumbInset = 3;
+
+  late final AnimationController _controller;
+  late final CurvedAnimation _curve;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 620),
+      value: widget.value ? 1 : 0,
+    );
+    _curve = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutBack,
+      reverseCurve: Curves.easeInOutCubic,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _DayNightThemeSwitch oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value == oldWidget.value) return;
+    if (widget.value) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _curve.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      toggled: widget.value,
+      label: 'Dark theme',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => widget.onChanged(!widget.value),
+        child: SizedBox(
+          width: _tapWidth,
+          height: _tapHeight,
+          child: AnimatedBuilder(
+            animation: _curve,
+            builder: (BuildContext context, Widget? child) {
+              final double value = _curve.value.clamp(0.0, 1.0);
+              final double left =
+                  _thumbInset +
+                  (_trackWidth - _thumbSize - (_thumbInset * 2)) * value;
+              return Center(
+                child: Container(
+                  width: _trackWidth,
+                  height: _trackHeight,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.18),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                      BoxShadow(
+                        color: Colors.white.withValues(alpha: 0.28),
+                        blurRadius: 2,
+                        offset: const Offset(0, -1),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: Stack(
+                      children: <Widget>[
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: _DayNightTrackPainter(progress: value),
+                          ),
+                        ),
+                        Positioned(
+                          left: left,
+                          top: (_trackHeight - _thumbSize) / 2,
+                          child: Transform.rotate(
+                            angle: value * 0.22,
+                            child: CustomPaint(
+                              painter: _DayNightThumbPainter(progress: value),
+                              child: const SizedBox(
+                                width: _thumbSize,
+                                height: _thumbSize,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DayNightTrackPainter extends CustomPainter {
+  const _DayNightTrackPainter({required this.progress});
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Rect rect = Offset.zero & size;
+    final Paint skyPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: <Color>[
+          Color.lerp(
+            const Color(0xFF74C7F5),
+            const Color(0xFF161827),
+            progress,
+          )!,
+          Color.lerp(
+            const Color(0xFF3F91CB),
+            const Color(0xFF3C3F4A),
+            progress,
+          )!,
+        ],
+      ).createShader(rect);
+    canvas.drawRect(rect, skyPaint);
+
+    _drawDaySky(canvas, size, 1 - progress);
+    _drawNightSky(canvas, size, progress);
+
+    final Paint innerBorder = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = Colors.white.withValues(alpha: 0.24);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect.deflate(0.6), Radius.circular(size.height)),
+      innerBorder,
+    );
+  }
+
+  void _drawDaySky(Canvas canvas, Size size, double opacity) {
+    if (opacity <= 0.01) return;
+    final double slide = progress * size.width * 0.18;
+    canvas.save();
+    canvas.translate(slide, 0);
+
+    final Paint arcPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 25
+      ..color = Colors.white.withValues(alpha: 0.14 * opacity);
+    for (int i = 0; i < 3; i += 1) {
+      canvas.drawCircle(
+        Offset(size.width * 0.28, size.height * 0.50),
+        34 + i * 18,
+        arcPaint,
+      );
+    }
+
+    final Paint cloudPaint = Paint()
+      ..color = const Color(0xFFF2FCFF).withValues(alpha: 0.92 * opacity);
+    final Paint cloudShadePaint = Paint()
+      ..color = const Color(0xFFD7F0FA).withValues(alpha: 0.72 * opacity);
+    final Path cloud = Path()
+      ..moveTo(size.width * 0.48, size.height * 0.84)
+      ..quadraticBezierTo(
+        size.width * 0.56,
+        size.height * 0.50,
+        size.width * 0.65,
+        size.height * 0.72,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.70,
+        size.height * 0.36,
+        size.width * 0.82,
+        size.height * 0.58,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.86,
+        size.height * 0.12,
+        size.width * 1.06,
+        size.height * 0.28,
+      )
+      ..lineTo(size.width * 1.08, size.height)
+      ..lineTo(size.width * 0.48, size.height)
+      ..close();
+    canvas.drawPath(cloud, cloudShadePaint);
+    canvas.drawPath(cloud.shift(const Offset(0, 4)), cloudPaint);
+    canvas.restore();
+  }
+
+  void _drawNightSky(Canvas canvas, Size size, double opacity) {
+    if (opacity <= 0.01) return;
+    final double slide = (1 - progress) * size.width * 0.16;
+    canvas.save();
+    canvas.translate(-slide, 0);
+
+    final Paint arcPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 25
+      ..color = Colors.white.withValues(alpha: 0.08 * opacity);
+    for (int i = 0; i < 3; i += 1) {
+      canvas.drawCircle(
+        Offset(size.width * 1.02, size.height * 0.58),
+        42 + i * 20,
+        arcPaint,
+      );
+    }
+
+    final Paint starPaint = Paint()
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 1.4
+      ..color = Colors.white.withValues(alpha: 0.86 * opacity);
+    final List<Offset> stars = <Offset>[
+      Offset(size.width * 0.20, size.height * 0.31),
+      Offset(size.width * 0.31, size.height * 0.60),
+      Offset(size.width * 0.46, size.height * 0.42),
+      Offset(size.width * 0.58, size.height * 0.70),
+    ];
+    for (final Offset star in stars) {
+      canvas.drawLine(
+        star.translate(-2.4, 0),
+        star.translate(2.4, 0),
+        starPaint,
+      );
+      canvas.drawLine(
+        star.translate(0, -2.4),
+        star.translate(0, 2.4),
+        starPaint,
+      );
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _DayNightTrackPainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
+}
+
+class _DayNightThumbPainter extends CustomPainter {
+  const _DayNightThumbPainter({required this.progress});
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Offset center = size.center(Offset.zero);
+    final double radius = size.width / 2;
+    final Paint shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.22)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawCircle(center.translate(1.6, 2.2), radius - 1, shadowPaint);
+
+    final Paint bodyPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.35, -0.45),
+        colors: <Color>[
+          Color.lerp(
+            const Color(0xFFFFE875),
+            const Color(0xFFE8EDF8),
+            progress,
+          )!,
+          Color.lerp(
+            const Color(0xFFFFD622),
+            const Color(0xFFB8C0D0),
+            progress,
+          )!,
+        ],
+      ).createShader(Offset.zero & size);
+    canvas.drawCircle(center, radius - 1.2, bodyPaint);
+
+    final Paint borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = Colors.white.withValues(alpha: 0.38);
+    canvas.drawCircle(center, radius - 1.4, borderPaint);
+
+    if (progress <= 0.04) return;
+    final Paint craterPaint = Paint()
+      ..color = const Color(0xFF8993A8).withValues(alpha: 0.58 * progress);
+    canvas.drawCircle(
+      Offset(size.width * 0.34, size.height * 0.62),
+      size.width * 0.13 * progress,
+      craterPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.66, size.height * 0.55),
+      size.width * 0.08 * progress,
+      craterPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.55, size.height * 0.28),
+      size.width * 0.06 * progress,
+      craterPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _DayNightThumbPainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }
 

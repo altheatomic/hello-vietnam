@@ -142,10 +142,10 @@ class _HomePageState extends State<HomePage>
                       end: Alignment.bottomRight,
                       colors: isDark
                           ? const <Color>[
-                              Color(0xFF070D1F),
-                              Color(0xFF17123D),
-                              Color(0xFF0C2A3A),
-                              Color(0xFF07383D),
+                              Color(0xFF020713),
+                              Color(0xFF05152C),
+                              Color(0xFF082A43),
+                              Color(0xFF03171D),
                             ]
                           : const <Color>[
                               Color(0xFF69C9F1),
@@ -584,96 +584,92 @@ class _GalaxyHeaderPainter extends CustomPainter {
   final Animation<double> _twinkle;
 
   static const List<_HeaderStar> _stars = <_HeaderStar>[
-    _HeaderStar(0.11, 0.20, 0.7, 0.35, false),
-    _HeaderStar(0.17, 0.32, 1.2, 0.58, true),
-    _HeaderStar(0.23, 0.16, 0.8, 0.46, false),
-    _HeaderStar(0.32, 0.25, 0.9, 0.52, false),
-    _HeaderStar(0.39, 0.19, 1.5, 0.74, true),
-    _HeaderStar(0.50, 0.34, 0.8, 0.38, false),
-    _HeaderStar(0.57, 0.16, 0.7, 0.42, false),
-    _HeaderStar(0.68, 0.29, 1.1, 0.62, true),
-    _HeaderStar(0.78, 0.20, 0.7, 0.42, false),
-    _HeaderStar(0.88, 0.38, 1.0, 0.50, false),
-    _HeaderStar(0.25, 0.56, 0.8, 0.42, false),
-    _HeaderStar(0.57, 0.58, 1.3, 0.68, true),
-    _HeaderStar(0.72, 0.50, 0.8, 0.44, false),
-    _HeaderStar(0.85, 0.62, 0.7, 0.38, false),
+    _HeaderStar(0.12, 0.18, 0.9, 0.45, false),
+    _HeaderStar(0.18, 0.34, 1.3, 0.68, true),
+    _HeaderStar(0.27, 0.14, 0.8, 0.46, false),
+    _HeaderStar(0.38, 0.26, 1.6, 0.82, true),
+    _HeaderStar(0.49, 0.17, 0.9, 0.48, false),
+    _HeaderStar(0.58, 0.36, 1.2, 0.64, true),
+    _HeaderStar(0.67, 0.20, 0.7, 0.46, false),
+    _HeaderStar(0.78, 0.48, 1.5, 0.78, true),
+    _HeaderStar(0.87, 0.30, 0.9, 0.52, false),
+    _HeaderStar(0.22, 0.62, 0.8, 0.44, false),
+    _HeaderStar(0.45, 0.58, 1.1, 0.58, false),
+    _HeaderStar(0.61, 0.66, 1.4, 0.72, true),
+    _HeaderStar(0.76, 0.68, 0.8, 0.48, false),
+    _HeaderStar(0.90, 0.62, 0.7, 0.42, false),
+  ];
+
+  static const List<_NebulaGlow> _nebula = <_NebulaGlow>[
+    _NebulaGlow(0.46, -0.08, 0.26, 0x6644D7FF),
+    _NebulaGlow(0.42, 0.18, 0.30, 0x5A177CFF),
+    _NebulaGlow(0.51, 0.40, 0.34, 0x6B0C8DFF),
+    _NebulaGlow(0.48, 0.66, 0.28, 0x5A21A7FF),
+    _NebulaGlow(0.58, 0.86, 0.24, 0x4D49EED0),
   ];
 
   @override
   void paint(Canvas canvas, Size size) {
     final double phase = _twinkle.value * math.pi * 2;
-    final Offset moonCenter = Offset(size.width * 0.64, size.height * 0.20);
-    final double moonRadius = size.shortestSide * 0.30;
-    final Rect moonRect = Rect.fromCircle(
-      center: moonCenter,
-      radius: moonRadius,
-    );
-    final Paint moonAuraPaint = Paint()
+    final Rect rect = Offset.zero & size;
+
+    final Paint depthPaint = Paint()
       ..shader = const RadialGradient(
-        colors: <Color>[
-          Color(0x55FFF4D7),
-          Color(0x328E72FF),
-          Color(0x00101935),
-        ],
-        stops: <double>[0.0, 0.46, 1.0],
-      ).createShader(moonRect.inflate(moonRadius * 1.9))
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24);
-    canvas.drawCircle(moonCenter, moonRadius * 2.15, moonAuraPaint);
+        center: Alignment(0.12, -0.22),
+        radius: 1.1,
+        colors: <Color>[Color(0x2200E5FF), Color(0x00000713)],
+      ).createShader(rect);
+    canvas.drawRect(rect, depthPaint);
 
-    final Paint moonPaint = Paint()
-      ..shader = const RadialGradient(
-        center: Alignment(-0.35, -0.35),
-        radius: 0.98,
-        colors: <Color>[
-          Color(0xEEFFF8DF),
-          Color(0xC8D8E9FF),
-          Color(0x3F7D73B8),
-          Color(0x00101935),
-        ],
-        stops: <double>[0.0, 0.42, 0.78, 1.0],
-      ).createShader(moonRect)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.6);
-    canvas.drawCircle(moonCenter, moonRadius, moonPaint);
+    canvas.save();
+    canvas.translate(-size.width * 0.05, -size.height * 0.18);
+    canvas.rotate(-0.12);
+    for (final _NebulaGlow glow in _nebula) {
+      final Offset center = Offset(glow.x * size.width, glow.y * size.height);
+      final double radius = glow.radius * size.width;
+      final Rect glowRect = Rect.fromCircle(center: center, radius: radius);
+      final Paint glowPaint = Paint()
+        ..shader = RadialGradient(
+          colors: <Color>[
+            Color(glow.color),
+            Color(glow.color).withValues(alpha: 0.22),
+            Colors.transparent,
+          ],
+          stops: const <double>[0.0, 0.42, 1.0],
+        ).createShader(glowRect)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16);
+      canvas.drawCircle(center, radius, glowPaint);
+    }
+    canvas.restore();
 
-    final Paint crescentShadePaint = Paint()
-      ..shader =
-          RadialGradient(
-            center: const Alignment(0.10, -0.10),
-            radius: 0.92,
-            colors: <Color>[
-              const Color(0xFF17123D).withValues(alpha: 0.42),
-              const Color(0xFF0C2A3A).withValues(alpha: 0.22),
-              Colors.transparent,
-            ],
-            stops: const <double>[0.0, 0.58, 1.0],
-          ).createShader(
-            Rect.fromCircle(
-              center: moonCenter.translate(moonRadius * 0.30, 0),
-              radius: moonRadius,
-            ),
-          )
-      ..blendMode = BlendMode.srcOver
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-    canvas.drawCircle(
-      moonCenter.translate(moonRadius * 0.30, 0),
-      moonRadius * 0.88,
-      crescentShadePaint,
-    );
+    final Paint dustPaint = Paint();
+    for (int i = 0; i < 118; i += 1) {
+      final double x = _unitNoise(i, 11) * size.width;
+      final double y = _unitNoise(i, 29) * size.height;
+      final double inNebula = (1 - ((x / size.width) - 0.48).abs() * 2.2).clamp(
+        0.0,
+        1.0,
+      );
+      final double radius = 0.35 + _unitNoise(i, 47) * (0.75 + inNebula * 0.35);
+      final double alpha = 0.22 + _unitNoise(i, 71) * (0.42 + inNebula * 0.22);
+      dustPaint.color = Colors.white.withValues(alpha: alpha);
+      canvas.drawCircle(Offset(x, y), radius, dustPaint);
+    }
 
-    final Paint moonTexturePaint = Paint()
-      ..color = const Color(0xFFBBCDFF).withValues(alpha: 0.12)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-    canvas.drawCircle(
-      moonCenter.translate(-moonRadius * 0.24, -moonRadius * 0.14),
-      moonRadius * 0.11,
-      moonTexturePaint,
-    );
-    canvas.drawCircle(
-      moonCenter.translate(moonRadius * 0.10, moonRadius * 0.20),
-      moonRadius * 0.08,
-      moonTexturePaint,
-    );
+    final Paint blueDustPaint = Paint();
+    for (int i = 0; i < 36; i += 1) {
+      final double x = (0.33 + _unitNoise(i, 83) * 0.34) * size.width;
+      final double y = _unitNoise(i, 101) * size.height;
+      final double radius = 0.6 + _unitNoise(i, 127) * 1.5;
+      blueDustPaint
+        ..color = const Color(
+          0xFF4E9CFF,
+        ).withValues(alpha: 0.16 + _unitNoise(i, 151) * 0.30)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.2);
+      canvas.drawCircle(Offset(x, y), radius * 2.0, blueDustPaint);
+      blueDustPaint.maskFilter = null;
+      canvas.drawCircle(Offset(x, y), radius * 0.5, blueDustPaint);
+    }
 
     for (int i = 0; i < _stars.length; i += 1) {
       final _HeaderStar star = _stars[i];
@@ -718,6 +714,15 @@ class _GalaxyHeaderPainter extends CustomPainter {
   bool shouldRepaint(covariant _GalaxyHeaderPainter oldDelegate) => false;
 }
 
+class _NebulaGlow {
+  const _NebulaGlow(this.x, this.y, this.radius, this.color);
+
+  final double x;
+  final double y;
+  final double radius;
+  final int color;
+}
+
 class _HeaderStar {
   const _HeaderStar(this.x, this.y, this.radius, this.alpha, this.twinkles);
 
@@ -726,6 +731,12 @@ class _HeaderStar {
   final double radius;
   final double alpha;
   final bool twinkles;
+}
+
+double _unitNoise(int seed, int salt) {
+  final double value =
+      math.sin((seed + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+  return value - value.floorToDouble();
 }
 
 class _HomeHeaderIconButton extends StatelessWidget {
