@@ -15,4 +15,8 @@ class Env {
     'SUBSCRIPTION_PAYMENT_FUNCTION',
     defaultValue: 'subscription-payment',
   );
+  static const exploreFunction = String.fromEnvironment(
+    'EXPLORE_FUNCTION',
+    defaultValue: 'explore',
+  );
 }

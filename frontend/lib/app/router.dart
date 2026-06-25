@@ -32,6 +32,7 @@ import '../features/forum/presentation/forum_page.dart';
 import '../features/forum/presentation/forum_profile_page.dart';
 import '../features/forum/presentation/forum_notifications_page.dart';
 import '../features/forum/presentation/create_post_page.dart';
+import '../features/forum/domain/create_forum_post_request.dart';
 import '../features/forum/presentation/forum_saved_posts_page.dart';
 import '../features/forum/presentation/forum_report_post_page.dart';
 import '../features/forum/presentation/thread_page.dart';
@@ -48,6 +49,7 @@ import '../features/explore/presentation/explore_page.dart';
 import '../features/explore/presentation/explore_search_page.dart';
 import '../features/explore/presentation/explore_search_result_page.dart';
 import '../features/explore/presentation/explore_category_page.dart';
+import '../features/explore/domain/explore_province.dart';
 import '../features/ai_search/presentation/ai_search_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
@@ -285,7 +287,13 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.forumCreate,
-        builder: (c, s) => const CreatePostPage(),
+        builder: (c, s) {
+          final CreateForumPostRequest request =
+              s.extra is CreateForumPostRequest
+              ? s.extra as CreateForumPostRequest
+              : const CreateForumPostRequest();
+          return CreatePostPage(request: request);
+        },
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
@@ -331,8 +339,13 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.exploreSearchResult,
-        builder: (c, s) =>
-            ExploreSearchResultPage(destination: s.extra as String? ?? ''),
+        builder: (c, s) {
+          final Object? extra = s.extra;
+          final ExploreProvince province = extra is ExploreProvince
+              ? extra
+              : ExploreProvince.unresolved((extra as String? ?? '').trim());
+          return ExploreSearchResultPage(selectedProvince: province);
+        },
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,

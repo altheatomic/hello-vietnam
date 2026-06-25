@@ -5,12 +5,33 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
+import 'package:hellovietnam/features/explore/data/explore_tracking_service.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
+import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
+import 'package:hellovietnam/features/forum/domain/forum_models.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
 import 'package:image_picker/image_picker.dart';
 
+typedef CreatePostCallback =
+    Future<String> Function({
+      required String content,
+      List<String> imageUrls,
+      List<XFile> imageFiles,
+    });
+
 class CreatePostPage extends StatefulWidget {
-  const CreatePostPage({super.key});
+  const CreatePostPage({
+    super.key,
+    this.request = const CreateForumPostRequest(),
+    this.currentUserAuthor,
+    this.createPost,
+    this.exploreTrackingService,
+  });
+
+  final CreateForumPostRequest request;
+  final ForumAuthor? currentUserAuthor;
+  final CreatePostCallback? createPost;
+  final ExploreTrackingService? exploreTrackingService;
 
   @override
   State<CreatePostPage> createState() => _CreatePostPageState();
@@ -22,6 +43,20 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final ImagePicker _imagePicker = ImagePicker();
   final List<XFile> _selectedImages = <XFile>[];
   bool _isSubmitting = false;
+
+  ForumAuthor get _currentUserAuthor =>
+      widget.currentUserAuthor ?? _store.currentUserAuthor;
+
+  Future<String> _createPost({
+    required String content,
+    required List<XFile> imageFiles,
+  }) {
+    final CreatePostCallback? createPost = widget.createPost;
+    if (createPost != null) {
+      return createPost(content: content, imageFiles: imageFiles);
+    }
+    return _store.createPost(content: content, imageFiles: imageFiles);
+  }
 
   @override
   void initState() {
@@ -63,10 +98,19 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     setState(() => _isSubmitting = true);
     try {
-      final String postId = await _store.createPost(
+      final String postId = await _createPost(
         content: content,
         imageFiles: _selectedImages,
       );
+      final SharedExploreItem? sharedItem = widget.request.sharedExploreItem;
+      if (sharedItem != null) {
+        await (widget.exploreTrackingService ?? ExploreTrackingService.instance)
+            .trackShare(
+              contentType: sharedItem.contentType,
+              contentId: sharedItem.contentId,
+              provinceId: sharedItem.provinceId,
+            );
+      }
       if (mounted) {
         context.pop(postId);
       }
@@ -100,7 +144,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 onBookmark: _openImagePicker,
                 onNotification: () {},
                 onAvatarTap: () {},
-                avatarUrl: _store.currentUserAuthor.avatarUrl,
+                avatarUrl: _currentUserAuthor.avatarUrl,
                 showAvatar: false,
               ),
               Expanded(
@@ -121,7 +165,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                           Row(
                             children: <Widget>[
                               ForumAvatar(
-                                imageUrl: _store.currentUserAuthor.avatarUrl,
+                                imageUrl: _currentUserAuthor.avatarUrl,
                                 size: 48,
                                 borderColor: Colors.white.withValues(
                                   alpha: 0.76,
@@ -130,7 +174,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  _store.currentUserAuthor.name,
+                                  _currentUserAuthor.name,
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
@@ -141,6 +185,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               _PostButton(enabled: canSubmit, onTap: _submit),
                             ],
                           ),
+                          if (widget.request.sharedExploreItem != null) ...<Widget>[
+                            const SizedBox(height: 18),
+                            _SharedExplorePreview(
+                              item: widget.request.sharedExploreItem!,
+                            ),
+                          ],
                           const SizedBox(height: 18),
                           TextField(
                             controller: _controller,
@@ -241,6 +291,66 @@ class _CreatePostPageState extends State<CreatePostPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SharedExplorePreview extends StatelessWidget {
+  const _SharedExplorePreview({required this.item});
+
+  final SharedExploreItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.52),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+      ),
+      child: Row(
+        children: <Widget>[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              width: 64,
+              height: 64,
+              child: item.imagePath.isEmpty
+                  ? Container(
+                      key: const ValueKey<String>('shared-explore-placeholder'),
+                      color: const Color(0xFFEAF4F8),
+                    )
+                  : Image.network(item.imagePath, fit: BoxFit.cover),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  item.category.label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: ForumColors.bluePrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: ForumColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

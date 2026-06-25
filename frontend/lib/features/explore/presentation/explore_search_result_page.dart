@@ -1,19 +1,25 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:ui';
+
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/features/explore/data/explore_repository.dart';
+import 'package:hellovietnam/features/explore/data/explore_tracking_service.dart';
+import 'package:hellovietnam/features/explore/domain/explore_item.dart';
+import 'package:hellovietnam/features/explore/domain/explore_province.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
-import '../data/explore_search_results_data.dart';
+
 import 'widgets/explore_floating_back_button.dart';
 import 'widgets/explore_preview_widgets.dart';
 
-const List<String> _filterLabels = [
+const List<String> _filterLabels = <String>[
   'ACTIVITIES',
   'CULTURE',
   'FOOD',
@@ -21,9 +27,9 @@ const List<String> _filterLabels = [
 ];
 
 class ExploreSearchResultPage extends StatefulWidget {
-  final String destination;
+  const ExploreSearchResultPage({super.key, required this.selectedProvince});
 
-  const ExploreSearchResultPage({super.key, required this.destination});
+  final ExploreProvince selectedProvince;
 
   @override
   State<ExploreSearchResultPage> createState() =>
@@ -33,17 +39,21 @@ class ExploreSearchResultPage extends StatefulWidget {
 class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
   static const int _pageSize = 2;
 
+  final ExploreRepository _repository = ExploreRepository.instance;
+
   int _selectedFilter = 0;
-  late final DestinationResults _results;
   late final ScrollController _scrollController;
   int _visibleItemCount = _pageSize;
+
+  bool _isLoading = true;
+  String? _errorMessage;
+  _LoadedExploreResults? _loadedResults;
 
   @override
   void initState() {
     super.initState();
-    _results = getResultsForDestination(widget.destination);
     _scrollController = ScrollController()..addListener(_handleScroll);
-    _resetPagination();
+    _load();
   }
 
   @override
@@ -54,135 +64,94 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final statusBarH = MediaQuery.of(context).padding.top;
-    final List<SearchResultItem> items = _results.byCategory(_selectedFilter);
-    final int visibleCount = items.length < _visibleItemCount
-        ? items.length
-        : _visibleItemCount;
-    final bool hasMore = visibleCount < items.length;
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    60,
-                    statusBarH + 8,
-                    AppConstants.pagePadding,
-                    4,
-                  ),
-                  child: Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(45),
-                      border: Border.all(
-                        color: AppColors.primaryLight.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 12),
-                        Icon(
-                          Icons.search_rounded,
-                          color: AppColors.primary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _results.destination,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // ── Title: "Discover [City]!" ──────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppConstants.pagePadding,
-                    10,
-                    AppConstants.pagePadding,
-                    8,
-                  ),
-                  child: RichText(
-                    text: TextSpan(
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
-                      children: [
-                        TextSpan(text: '${context.l10n.ui('Discover')} '),
-                        TextSpan(
-                          text: '${_results.destination}!',
-                          style: const TextStyle(color: AppColors.primary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // ── Sticky filter chips ────────────────────────
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _StickyFilterDelegate(
-                  selectedIndex: _selectedFilter,
-                  onTap: (i) => setState(() {
-                    _selectedFilter = i;
-                    _resetPagination();
-                  }),
-                ),
-              ),
-
-              // ── Result cards ───────────────────────────────
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppConstants.pagePadding,
-                  10,
-                  AppConstants.pagePadding,
-                  24,
-                ),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => _ResultCard(
-                      item: items[index],
-                      category: _categoryForIndex(_selectedFilter),
-                    ),
-                    childCount: visibleCount,
-                  ),
-                ),
-              ),
-              if (hasMore)
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.only(bottom: 24),
-                    child: Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                ),
-            ],
+    try {
+      final ExploreProvince province = await _resolveProvince(
+        widget.selectedProvince,
+      );
+      final List<List<ExploreItem>> results = await Future.wait(
+        <Future<List<ExploreItem>>>[
+          _repository.loadCategoryItems(
+            DetailCategory.activities,
+            province: province,
           ),
-          ExploreFloatingBackButton(onTap: () => context.pop()),
+          _repository.loadCategoryItems(
+            DetailCategory.culture,
+            province: province,
+          ),
+          _repository.loadCategoryItems(DetailCategory.food, province: province),
+          _repository.loadCategoryItems(
+            DetailCategory.localProducts,
+            province: province,
+          ),
         ],
-      ),
-    );
+      );
+
+      if (!mounted) return;
+
+      final _LoadedExploreResults loaded = _LoadedExploreResults(
+        province: province,
+        categories: <_CategoryResults>[
+          _CategoryResults(
+            category: DetailCategory.activities,
+            items: results[0],
+            emptyMessage: _repository.descriptionForCategory(
+              DetailCategory.activities,
+              province: province,
+            ),
+          ),
+          _CategoryResults(
+            category: DetailCategory.culture,
+            items: results[1],
+            emptyMessage: _repository.descriptionForCategory(
+              DetailCategory.culture,
+              province: province,
+            ),
+          ),
+          _CategoryResults(
+            category: DetailCategory.food,
+            items: results[2],
+            emptyMessage: _repository.descriptionForCategory(
+              DetailCategory.food,
+              province: province,
+            ),
+          ),
+          _CategoryResults(
+            category: DetailCategory.localProducts,
+            items: results[3],
+            emptyMessage: _repository.descriptionForCategory(
+              DetailCategory.localProducts,
+              province: province,
+            ),
+          ),
+        ],
+      );
+
+      setState(() {
+        _loadedResults = loaded;
+        _isLoading = false;
+        _resetPagination();
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadedResults = null;
+        _isLoading = false;
+        _errorMessage = error.toString();
+      });
+    }
+  }
+
+  Future<ExploreProvince> _resolveProvince(ExploreProvince province) async {
+    if (province.isResolved || province.name.trim().isEmpty) {
+      return province;
+    }
+    return await _repository.resolveProvinceByName(province.name) ?? province;
   }
 
   void _handleScroll() {
@@ -192,44 +161,229 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
   }
 
   void _loadMore() {
-    final int total = _results.byCategory(_selectedFilter).length;
+    final _LoadedExploreResults? loadedResults = _loadedResults;
+    if (loadedResults == null) return;
+
+    final int total = loadedResults.byCategory(_selectedFilter).items.length;
     if (_visibleItemCount >= total) return;
 
     setState(() {
-      _visibleItemCount = (_visibleItemCount + _pageSize).clamp(0, total);
+      final int nextCount = _visibleItemCount + _pageSize;
+      _visibleItemCount = nextCount > total ? total : nextCount;
     });
   }
 
   void _resetPagination() {
-    final int total = _results.byCategory(_selectedFilter).length;
+    final _LoadedExploreResults? loadedResults = _loadedResults;
+    if (loadedResults == null) {
+      _visibleItemCount = _pageSize;
+      return;
+    }
+
+    final int total = loadedResults.byCategory(_selectedFilter).items.length;
     _visibleItemCount = total < _pageSize ? total : _pageSize;
   }
-}
 
-DetailCategory _categoryForIndex(int index) {
-  switch (index) {
-    case 1:
-      return DetailCategory.culture;
-    case 2:
-      return DetailCategory.food;
-    case 3:
-      return DetailCategory.localProducts;
-    case 0:
-    default:
-      return DetailCategory.activities;
+  @override
+  Widget build(BuildContext context) {
+    final double statusBarH = MediaQuery.of(context).padding.top;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: <Widget>[
+          if (_isLoading)
+            const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          else if (_loadedResults == null)
+            _PageStateMessage(
+              title: 'Unable to load this destination right now.',
+              subtitle: _errorMessage,
+              actionLabel: 'Retry',
+              onTap: _load,
+            )
+          else
+            _buildLoadedState(context, statusBarH, _loadedResults!),
+          ExploreFloatingBackButton(onTap: () => context.pop()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadedState(
+    BuildContext context,
+    double statusBarH,
+    _LoadedExploreResults loadedResults,
+  ) {
+    final _CategoryResults currentCategory = loadedResults.byCategory(
+      _selectedFilter,
+    );
+    final List<ExploreItem> items = currentCategory.items;
+    final int visibleCount = items.length < _visibleItemCount
+        ? items.length
+        : _visibleItemCount;
+    final bool hasMore = visibleCount < items.length;
+
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: <Widget>[
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              60,
+              statusBarH + 8,
+              AppConstants.pagePadding,
+              4,
+            ),
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(45),
+                border: Border.all(
+                  color: AppColors.primaryLight.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Row(
+                children: <Widget>[
+                  const SizedBox(width: 12),
+                  Icon(
+                    Icons.search_rounded,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      loadedResults.province.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppConstants.pagePadding,
+              10,
+              AppConstants.pagePadding,
+              8,
+            ),
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+                children: <InlineSpan>[
+                  TextSpan(text: '${context.l10n.ui('Discover')} '),
+                  TextSpan(
+                    text: '${loadedResults.province.name}!',
+                    style: const TextStyle(color: AppColors.primary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _StickyFilterDelegate(
+            selectedIndex: _selectedFilter,
+            onTap: (int index) {
+              setState(() {
+                _selectedFilter = index;
+                _resetPagination();
+              });
+            },
+          ),
+        ),
+        if (items.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: _PageStateMessage(
+              title: 'No ${_filterLabels[_selectedFilter].toLowerCase()} found.',
+              subtitle: currentCategory.emptyMessage,
+            ),
+          )
+        else ...<Widget>[
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              AppConstants.pagePadding,
+              10,
+              AppConstants.pagePadding,
+              24,
+            ),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (BuildContext context, int index) => _ResultCard(
+                  item: items[index],
+                  category: currentCategory.category,
+                ),
+                childCount: visibleCount,
+              ),
+            ),
+          ),
+          if (hasMore)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: 24),
+                child: Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+        ],
+      ],
+    );
   }
 }
 
-// ─── Sticky filter delegate ──────────────────────────────────────────
+class _LoadedExploreResults {
+  const _LoadedExploreResults({
+    required this.province,
+    required this.categories,
+  });
+
+  final ExploreProvince province;
+  final List<_CategoryResults> categories;
+
+  _CategoryResults byCategory(int index) => categories[index];
+}
+
+class _CategoryResults {
+  const _CategoryResults({
+    required this.category,
+    required this.items,
+    this.emptyMessage,
+  });
+
+  final DetailCategory category;
+  final List<ExploreItem> items;
+  final String? emptyMessage;
+}
 
 class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
+  _StickyFilterDelegate({required this.selectedIndex, required this.onTap});
+
   final int selectedIndex;
   final ValueChanged<int> onTap;
 
-  _StickyFilterDelegate({required this.selectedIndex, required this.onTap});
-
   @override
   double get minExtent => 90;
+
   @override
   double get maxExtent => 90;
 
@@ -239,14 +393,12 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final statusBarH = MediaQuery.of(context).padding.top;
+    final double statusBarH = MediaQuery.of(context).padding.top;
     return Container(
       color: Colors.white,
       padding: EdgeInsets.only(
         top: statusBarH > 0 ? statusBarH : 0,
         bottom: 6,
-        left: 0,
-        right: 0,
       ),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
@@ -254,9 +406,10 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
           horizontal: AppConstants.pagePadding,
         ),
         itemCount: _filterLabels.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 6),
-        itemBuilder: (context, index) {
-          final isSelected = index == selectedIndex;
+        separatorBuilder: (BuildContext context, int index) =>
+            const SizedBox(width: 6),
+        itemBuilder: (BuildContext context, int index) {
+          final bool isSelected = index == selectedIndex;
           return ClipRRect(
             borderRadius: BorderRadius.circular(15),
             child: BackdropFilter(
@@ -279,14 +432,19 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                           ? const LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [Color(0xFF7FD3F9), Color(0xFF52B8F4)],
+                              colors: <Color>[
+                                Color(0xFF7FD3F9),
+                                Color(0xFF52B8F4),
+                              ],
                             )
                           : LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [
+                              colors: <Color>[
                                 Colors.white.withValues(alpha: 0.78),
-                                const Color(0xFFEAF7FD).withValues(alpha: 0.9),
+                                const Color(
+                                  0xFFEAF7FD,
+                                ).withValues(alpha: 0.9),
                               ],
                             ),
                       borderRadius: BorderRadius.circular(15),
@@ -295,7 +453,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                             ? Colors.white.withValues(alpha: 0.35)
                             : const Color(0xFFD9EDF8),
                       ),
-                      boxShadow: [
+                      boxShadow: <BoxShadow>[
                         BoxShadow(
                           color: isSelected
                               ? const Color(0xFF52B8F4).withValues(alpha: 0.22)
@@ -328,16 +486,15 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(covariant _StickyFilterDelegate oldDelegate) =>
-      selectedIndex != oldDelegate.selectedIndex;
+  bool shouldRebuild(covariant _StickyFilterDelegate oldDelegate) {
+    return selectedIndex != oldDelegate.selectedIndex;
+  }
 }
-
-// ─── Result card with carousel ───────────────────────────────────────
 
 class _ResultCard extends StatefulWidget {
   const _ResultCard({required this.item, required this.category});
 
-  final SearchResultItem item;
+  final ExploreItem item;
   final DetailCategory category;
 
   @override
@@ -347,6 +504,8 @@ class _ResultCard extends StatefulWidget {
 class _ResultCardState extends State<_ResultCard> {
   late final PageController _imageController;
   final WishlistController _wishlistController = WishlistController.instance;
+  final ExploreTrackingService _trackingService =
+      ExploreTrackingService.instance;
 
   @override
   void initState() {
@@ -362,15 +521,26 @@ class _ResultCardState extends State<_ResultCard> {
         rawItemId: widget.item.id,
         fallbackName: widget.item.name,
       );
-      if (!mounted || result != null) return;
+      if (!mounted) return;
+      if (result != null) {
+        unawaited(
+          _trackingService.trackFavoriteChanged(
+            category: widget.category,
+            contentId: widget.item.id,
+            provinceId: widget.item.provinceId,
+            isFavorite: result,
+          ),
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please sign in to update wishlist.')),
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Update wishlist failed: $error')),
+      );
     }
   }
 
@@ -395,7 +565,11 @@ class _ResultCardState extends State<_ResultCard> {
 
   @override
   Widget build(BuildContext context) {
-    final imageCount = widget.item.images.length;
+    const List<String> images = <String>[];
+    final List<String> itemImages = widget.item.imagePath.trim().isEmpty
+        ? images
+        : <String>[widget.item.imagePath];
+    final int imageCount = itemImages.length;
 
     return GestureDetector(
       onTap: () {
@@ -405,66 +579,74 @@ class _ResultCardState extends State<_ResultCard> {
             id: widget.item.id,
             name: widget.item.name,
             category: widget.category,
-            fallbackImages: widget.item.images,
-            fallbackImagePath: widget.item.images.isEmpty
-                ? null
-                : widget.item.images.first,
+            fallbackImages: itemImages,
+            fallbackImagePath: imageCount == 0 ? null : itemImages.first,
+            trackExploreBehavior: true,
+            exploreProvinceId: widget.item.provinceId,
           ),
         );
       },
       child: Padding(
         padding: const EdgeInsets.only(bottom: 20),
         child: Column(
-          children: [
+          children: <Widget>[
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: AspectRatio(
                 aspectRatio: 16 / 10,
                 child: Stack(
                   fit: StackFit.expand,
-                  children: [
-                    PageView.builder(
-                      controller: _imageController,
-                      physics: const BouncingScrollPhysics(
-                        parent: PageScrollPhysics(),
-                      ),
-                      itemCount: imageCount,
-                      itemBuilder: (context, i) {
-                        return AnimatedBuilder(
-                          animation: _imageController,
-                          builder: (context, child) {
-                            final page = _imageController.hasClients
-                                ? (_imageController.page ??
-                                      _imageController.initialPage.toDouble())
-                                : _imageController.initialPage.toDouble();
-                            final distance = (page - i).abs().clamp(0.0, 1.0);
-                            final emphasis = (1 - distance).clamp(0.0, 1.0);
+                  children: <Widget>[
+                    if (imageCount == 0)
+                      Container(color: const Color(0xFFEAF7FD))
+                    else
+                      PageView.builder(
+                        controller: _imageController,
+                        physics: const BouncingScrollPhysics(
+                          parent: PageScrollPhysics(),
+                        ),
+                        itemCount: imageCount,
+                        itemBuilder: (BuildContext context, int index) {
+                          return AnimatedBuilder(
+                            animation: _imageController,
+                            builder: (BuildContext context, Widget? child) {
+                              final double page = _imageController.hasClients
+                                  ? (_imageController.page ??
+                                        _imageController.initialPage.toDouble())
+                                  : _imageController.initialPage.toDouble();
+                              final double distance = (page - index)
+                                  .abs()
+                                  .clamp(0.0, 1.0);
+                              final double emphasis = (1 - distance).clamp(
+                                0.0,
+                                1.0,
+                              );
 
-                            return Transform.scale(
-                              scale: 0.94 + (emphasis * 0.06),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.06 + (emphasis * 0.16),
+                              return Transform.scale(
+                                scale: 0.94 + (emphasis * 0.06),
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    boxShadow: <BoxShadow>[
+                                      BoxShadow(
+                                        color: AppColors.primary.withValues(
+                                          alpha: 0.06 + (emphasis * 0.16),
+                                        ),
+                                        blurRadius: 18,
+                                        offset: const Offset(0, 8),
                                       ),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
+                                  child: child,
                                 ),
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: ExplorePreviewImage(
-                            imagePath: widget.item.images[i],
-                            borderRadius: 16,
-                          ),
-                        );
-                      },
-                    ),
+                              );
+                            },
+                            child: ExplorePreviewImage(
+                              imagePath: itemImages[index],
+                              borderRadius: 16,
+                            ),
+                          );
+                        },
+                      ),
                     Positioned(
                       top: 10,
                       right: 10,
@@ -514,16 +696,12 @@ class _ResultCardState extends State<_ResultCard> {
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              color: Colors.amber,
-                              size: 14,
-                            ),
-                            const SizedBox(width: 3),
+                          children: const <Widget>[
+                            Icon(Icons.star, color: Colors.amber, size: 14),
+                            SizedBox(width: 3),
                             Text(
-                              widget.item.rating.toStringAsFixed(1),
-                              style: const TextStyle(
+                              '4.7',
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -547,6 +725,58 @@ class _ResultCardState extends State<_ResultCard> {
               ),
               textAlign: TextAlign.center,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PageStateMessage extends StatelessWidget {
+  const _PageStateMessage({
+    required this.title,
+    this.subtitle,
+    this.actionLabel,
+    this.onTap,
+  });
+
+  final String title;
+  final String? subtitle;
+  final String? actionLabel;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              context.l10n.ui(title),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+            if ((subtitle ?? '').trim().isNotEmpty) ...<Widget>[
+              const SizedBox(height: 8),
+              Text(
+                subtitle!,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+            ],
+            if (actionLabel != null && onTap != null) ...<Widget>[
+              const SizedBox(height: 14),
+              TextButton(
+                onPressed: onTap,
+                child: Text(context.l10n.ui(actionLabel!)),
+              ),
+            ],
           ],
         ),
       ),

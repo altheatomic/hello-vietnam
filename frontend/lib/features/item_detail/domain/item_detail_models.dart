@@ -8,6 +8,8 @@ class ItemDetailRequest {
   final List<String> fallbackImages;
   final String? fallbackImagePath;
   final FavoriteType? favoriteType;
+  final bool trackExploreBehavior;
+  final String? exploreProvinceId;
 
   const ItemDetailRequest({
     required this.id,
@@ -16,6 +18,8 @@ class ItemDetailRequest {
     this.fallbackImages = const <String>[],
     this.fallbackImagePath,
     this.favoriteType,
+    this.trackExploreBehavior = false,
+    this.exploreProvinceId,
   });
 
   ItemDetailRequest copyWith({
@@ -25,6 +29,8 @@ class ItemDetailRequest {
     List<String>? fallbackImages,
     String? fallbackImagePath,
     FavoriteType? favoriteType,
+    bool? trackExploreBehavior,
+    String? exploreProvinceId,
   }) {
     return ItemDetailRequest(
       id: id ?? this.id,
@@ -33,6 +39,8 @@ class ItemDetailRequest {
       fallbackImages: fallbackImages ?? this.fallbackImages,
       fallbackImagePath: fallbackImagePath ?? this.fallbackImagePath,
       favoriteType: favoriteType ?? this.favoriteType,
+      trackExploreBehavior: trackExploreBehavior ?? this.trackExploreBehavior,
+      exploreProvinceId: exploreProvinceId ?? this.exploreProvinceId,
     );
   }
 }

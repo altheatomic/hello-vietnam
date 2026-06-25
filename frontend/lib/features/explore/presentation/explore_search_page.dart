@@ -5,25 +5,8 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
-
-/// Mock list of searchable destinations — swap with API later.
-const List<String> _allDestinations = [
-  'Ha Noi',
-  'Ho Chi Minh City',
-  'Hue',
-  'Hoi An',
-  'Da Nang',
-  'Da Lat',
-  'Nha Trang',
-  'Phu Quoc',
-  'Sapa',
-  'Ha Long Bay',
-  'Can Tho',
-  'Ninh Binh',
-  'Quy Nhon',
-  'Vung Tau',
-  'Mui Ne',
-];
+import 'package:hellovietnam/features/explore/data/explore_repository.dart';
+import 'package:hellovietnam/features/explore/domain/explore_province.dart';
 
 class ExploreSearchPage extends StatefulWidget {
   const ExploreSearchPage({super.key});
@@ -35,12 +18,14 @@ class ExploreSearchPage extends StatefulWidget {
 class _ExploreSearchPageState extends State<ExploreSearchPage> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  List<String> _suggestions = [];
+
+  List<ExploreProvince> _suggestions = <ExploreProvince>[];
+  bool _isSearching = false;
+  int _searchVersion = 0;
 
   @override
   void initState() {
     super.initState();
-    // Auto-focus the search field so keyboard opens immediately.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -53,37 +38,84 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
     super.dispose();
   }
 
-  void _onChanged(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _suggestions = [];
-      } else {
-        _suggestions = _allDestinations
-            .where((d) => d.toLowerCase().contains(query.toLowerCase()))
-            .toList();
+  Future<void> _onChanged(String query) async {
+    final int version = ++_searchVersion;
+    final String trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      setState(() {
+        _isSearching = false;
+        _suggestions = <ExploreProvince>[];
+      });
+      return;
+    }
+
+    setState(() => _isSearching = true);
+
+    try {
+      final List<ExploreProvince> results = await ExploreRepository.instance
+          .searchProvinces(trimmed);
+      if (!mounted || version != _searchVersion) return;
+      setState(() {
+        _suggestions = results;
+        _isSearching = false;
+      });
+    } catch (_) {
+      if (!mounted || version != _searchVersion) return;
+      setState(() {
+        _suggestions = <ExploreProvince>[];
+        _isSearching = false;
+      });
+    }
+  }
+
+  Future<void> _onSubmit(String query) async {
+    final String trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+
+    ExploreProvince? selected = _findExactSuggestion(trimmed);
+    selected ??= await ExploreRepository.instance.resolveProvinceByName(trimmed);
+    if (!mounted) return;
+
+    if (selected == null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Please choose a valid province or city suggestion.'),
+          ),
+        );
+      return;
+    }
+
+    context.push(AppRoutes.exploreSearchResult, extra: selected);
+  }
+
+  ExploreProvince? _findExactSuggestion(String query) {
+    final String normalized = _normalizeText(query);
+    for (final ExploreProvince suggestion in _suggestions) {
+      if (_normalizeText(suggestion.name) == normalized) {
+        return suggestion;
       }
-    });
+    }
+    if (_suggestions.length == 1) {
+      return _suggestions.first;
+    }
+    return null;
   }
 
-  void _onSubmit(String query) {
-    if (query.trim().isEmpty) return;
-    context.push(AppRoutes.exploreSearchResult, extra: query.trim());
-  }
-
-  void _onSuggestionTap(String destination) {
-    _controller.text = destination;
+  void _onSuggestionTap(ExploreProvince destination) {
+    _controller.text = destination.name;
     context.push(AppRoutes.exploreSearchResult, extra: destination);
   }
 
   @override
   Widget build(BuildContext context) {
-    final statusBarH = MediaQuery.of(context).padding.top;
+    final double statusBarH = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
-        children: [
-          // ── Top bar: back + search ─────────────────────
+        children: <Widget>[
           Padding(
             padding: EdgeInsets.fromLTRB(
               12,
@@ -92,8 +124,7 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
               12,
             ),
             child: Row(
-              children: [
-                // Back button
+              children: <Widget>[
                 GestureDetector(
                   onTap: () => context.pop(),
                   child: const Padding(
@@ -106,7 +137,6 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
                   ),
                 ),
                 const SizedBox(width: 4),
-
                 Expanded(
                   child: SearchBarWidget(
                     controller: _controller,
@@ -114,15 +144,22 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
                     autofocus: true,
                     showFilterButton: false,
                     hintText: context.l10n.ui('Search for destinations'),
-                    onChanged: _onChanged,
-                    onSearch: _onSubmit,
+                    onChanged: (String value) {
+                      _onChanged(value);
+                    },
+                    onSearch: (String value) {
+                      _onSubmit(value);
+                    },
                   ),
                 ),
               ],
             ),
           ),
-
-          // ── Suggestions list ───────────────────────────
+          if (_isSearching)
+            const LinearProgressIndicator(
+              minHeight: 2,
+              color: AppColors.primary,
+            ),
           Expanded(
             child: ListView.separated(
               padding: EdgeInsets.zero,
@@ -134,7 +171,8 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
                 endIndent: AppConstants.pagePadding,
               ),
               itemBuilder: (context, index) {
-                final suggestion = _suggestions[index];
+                final ExploreProvince suggestion = _suggestions[index];
+
                 return InkWell(
                   onTap: () => _onSuggestionTap(suggestion),
                   child: Padding(
@@ -143,10 +181,11 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
                       vertical: 14,
                     ),
                     child: Text(
-                      suggestion,
+                      suggestion.name,
                       style: const TextStyle(
                         fontSize: 15,
                         color: Colors.black87,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -157,5 +196,22 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
         ],
       ),
     );
+  }
+
+  String _normalizeText(String value) {
+    return value
+        .toLowerCase()
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll('Ä‘', 'd')
+        .replaceAllMapped(
+          RegExp(r'[Ã Ã¡áº¡áº£Ã£Ã¢áº§áº¥áº­áº©áº«Äƒáº±áº¯áº·áº³áºµ]'),
+          (_) => 'a',
+        )
+        .replaceAllMapped(RegExp(r'[Ã¨Ã©áº¹áº»áº½Ãªá»áº¿á»‡á»ƒá»…]'), (_) => 'e')
+        .replaceAllMapped(RegExp(r'[Ã¬Ã­á»‹á»‰Ä©]'), (_) => 'i')
+        .replaceAllMapped(RegExp(r'[Ã²Ã³á»á»ÃµÃ´á»“á»‘á»™á»•á»—Æ¡á»á»›á»£á»Ÿá»¡]'), (_) => 'o')
+        .replaceAllMapped(RegExp(r'[Ã¹Ãºá»¥á»§Å©Æ°á»«á»©á»±á»­á»¯]'), (_) => 'u')
+        .replaceAllMapped(RegExp(r'[á»³Ã½á»µá»·á»¹]'), (_) => 'y');
   }
 }

@@ -6,6 +6,8 @@ class ExploreItem {
   final String name;
   final String imagePath; // asset or network URL
   final String? subtitle;
+  final String? provinceId;
+  final String? provinceName;
   final DetailCategory category;
 
   const ExploreItem({
@@ -14,6 +16,8 @@ class ExploreItem {
     required this.imagePath,
     required this.category,
     this.subtitle,
+    this.provinceId,
+    this.provinceName,
   });
 
   factory ExploreItem.fromJson(Map<String, dynamic> json) {
@@ -25,7 +29,21 @@ class ExploreItem {
         json['category'] as String? ?? 'activities',
       ),
       subtitle: json['subtitle'] as String?,
+      provinceId: json['provinceId'] as String?,
+      provinceName: json['provinceName'] as String?,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'name': name,
+      'imagePath': imagePath,
+      'category': category.storageKey,
+      'subtitle': subtitle,
+      'provinceId': provinceId,
+      'provinceName': provinceName,
+    };
   }
 }
 
@@ -52,11 +70,47 @@ class ExploreCategory {
   final String title; // tab label: "Activities", "Culture", etc.
   final String description; // subtitle shown under the tab content
   final List<ExploreItem> items;
+  final String? emptyMessage;
 
   const ExploreCategory({
     required this.id,
     required this.title,
     required this.description,
     required this.items,
+    this.emptyMessage,
   });
+
+  factory ExploreCategory.fromJson(Map<String, dynamic> json) {
+    final List<Object?> rawItems = json['items'] is List
+        ? (json['items'] as List<Object?>)
+        : const <Object?>[];
+
+    return ExploreCategory(
+      id: (json['id'] as String? ?? '').trim(),
+      title: (json['title'] as String? ?? '').trim(),
+      description: (json['description'] as String? ?? '').trim(),
+      items: rawItems
+          .whereType<Map>()
+          .map(
+            (Map<dynamic, dynamic> item) => ExploreItem.fromJson(
+              item.map(
+                (dynamic key, dynamic value) =>
+                    MapEntry(key.toString(), value),
+              ),
+            ),
+          )
+          .toList(growable: false),
+      emptyMessage: (json['emptyMessage'] as String?)?.trim(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'title': title,
+      'description': description,
+      'items': items.map((ExploreItem item) => item.toJson()).toList(),
+      'emptyMessage': emptyMessage,
+    };
+  }
 }
