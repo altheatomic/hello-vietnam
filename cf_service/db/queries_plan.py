@@ -78,7 +78,7 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
         .table("plan_component")
         .select(
             "day,slot,visit_order,estimated_travel_minutes,cb_score,"
-            "cf_score,final_score,place(id_place,name,latitude,longitude)"
+            "cf_score,final_score,id_place"
         )
         .eq("id_plan", id_plan)
         .order("day")
@@ -86,6 +86,21 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
         .execute()
     )
     component_rows = components_resp.data or []
+
+    # Fetch localized place names/coords via the VIEW (PostgREST has no FK
+    # metadata on VIEWs, so embedded syntax won't work — query separately).
+    place_ids = list({str(r["id_place"]) for r in component_rows if r.get("id_place")})
+    place_map: dict[str, dict] = {}
+    if place_ids:
+        places_resp = (
+            supabase
+            .table("place_localized_en")
+            .select("id_place,name,latitude,longitude")
+            .in_("id_place", place_ids)
+            .execute()
+        )
+        for p in (places_resp.data or []):
+            place_map[str(p["id_place"])] = p
 
     start_date = plan_row["start_at"]
     if isinstance(start_date, datetime.date) and not isinstance(start_date, datetime.datetime):
@@ -96,7 +111,7 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
     days_map: dict[int, list] = {}
     for r in component_rows:
         d = int(r["day"])
-        place_data = r.get("place") or {}
+        place_data = place_map.get(str(r.get("id_place") or ""), {})
         days_map.setdefault(d, []).append({
             "day": d,
             "order": r.get("visit_order"),

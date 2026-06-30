@@ -15,6 +15,18 @@ from typing import Any
 
 from services.module3_optimizer import haversine_km
 
+# Display names for subcategories shown to English-language users.
+_SUBCATEGORY_EN: dict[str, str] = {
+    "Y tế / Bệnh viện":          "Hospital / Clinic",
+    "Nhà thuốc":                  "Pharmacy",
+    "Ngân hàng / ATM":            "Bank / ATM",
+    "Trạm xăng":                  "Gas Station",
+    "Cơ quan hành chính":         "Government Office",
+    "Công an / Cảnh sát":         "Police Station",
+    "Trường học / Đại học":       "School / University",
+    "Bến xe / Sân bay / Ga tàu": "Transport Hub",
+}
+
 
 def fetch_nearby_amenities(
     supabase: Any,
@@ -22,10 +34,11 @@ def fetch_nearby_amenities(
     lng: float,
     subcategory_names: list[str],
     limit_per_category: int = 3,
+    radius_km: float = 15.0,
 ) -> list[dict]:
     response = (
         supabase
-        .table("place")
+        .table("place_localized_en")
         .select(
             "id_place,name,latitude,longitude,"
             "place_subcategory!inner(name)"
@@ -39,21 +52,25 @@ def fetch_nearby_amenities(
     )
     rows = response.data or []
 
-    # Compute distance and group by subcategory
+    # Compute distance, filter by radius, then group by subcategory.
+    # limit_per_category is applied AFTER the radius filter.
     by_cat: dict[str, list] = {}
     for r in rows:
-        sub = (r.get("place_subcategory") or {}).get("name", "")
-        dist = haversine_km(lat, lng, r["latitude"], r["longitude"])
+        dist = haversine_km(lat, lng, float(r["latitude"]), float(r["longitude"]))
+        if dist > radius_km:
+            continue
+        sub_vi = (r.get("place_subcategory") or {}).get("name", "")
+        sub_en = _SUBCATEGORY_EN.get(sub_vi, sub_vi)
         entry = {
             "id_place": str(r["id_place"]),
             "name": r["name"],
-            "subcategory_name": sub,
+            "subcategory_name": sub_en,
             "latitude": r["latitude"],
             "longitude": r["longitude"],
             "distance_km": round(dist, 3),
             "estimated_minutes": round(dist / 30.0 * 60),
         }
-        by_cat.setdefault(sub, []).append(entry)
+        by_cat.setdefault(sub_vi, []).append(entry)
 
     result = []
     for sub in subcategory_names:
@@ -69,16 +86,15 @@ def fetch_places_required_filter(
 ) -> list[dict]:
     select_fields = (
         "id_place,id_place_subcategory,name,short_description,"
-        "detailed_description,status,cover_image,address,latitude,longitude,"
+        "status,cover_image,address,latitude,longitude,"
         "average_rating,review_count,minimum_price,maximum_price,"
         "estimated_duration_minutes,timespan,timeclose,"
-        "id_province,id_region,id_zone,"
         "place_subcategory!inner(name,place_category,is_itinerary_eligible)"
     )
 
     response = (
         supabase
-        .table("place")
+        .table("place_localized_en")
         .select(select_fields)
         .eq("old_province", province_id)
         .eq("status", "active")
