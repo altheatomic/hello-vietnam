@@ -60,23 +60,23 @@ async def _load_events_from_db(conn) -> dict:
     ]
 
     event_rows = await conn.fetch("""
-        SELECT id_user, id_place AS place_id, event_type
+        SELECT id_user, id_place AS place_id, event_type, event_count
         FROM user_event_log
     """)
     view_thumbnails = [
-        {'user_id': str(r['id_user']), 'place_id': str(r['place_id'])}
+        {'user_id': str(r['id_user']), 'place_id': str(r['place_id']), 'count': r['event_count']}
         for r in event_rows if r['event_type'] == 'view_thumbnail'
     ]
     view_details = [
-        {'user_id': str(r['id_user']), 'place_id': str(r['place_id'])}
+        {'user_id': str(r['id_user']), 'place_id': str(r['place_id']), 'count': r['event_count']}
         for r in event_rows if r['event_type'] == 'view_detail'
     ]
     view_all_photos = [
-        {'user_id': str(r['id_user']), 'place_id': str(r['place_id'])}
+        {'user_id': str(r['id_user']), 'place_id': str(r['place_id']), 'count': r['event_count']}
         for r in event_rows if r['event_type'] == 'view_all_photos'
     ]
     shares = [
-        {'user_id': str(r['id_user']), 'place_id': str(r['place_id'])}
+        {'user_id': str(r['id_user']), 'place_id': str(r['place_id']), 'count': r['event_count']}
         for r in event_rows if r['event_type'] == 'share'
     ]
 

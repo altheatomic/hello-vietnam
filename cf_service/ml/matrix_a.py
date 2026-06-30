@@ -6,8 +6,8 @@ Formula:
   Implicit only  : A[u][p] = implicit_score
   Has explicit   : A[u][p] = 0.60 * explicit_score + 0.40 * implicit_score
 
-Diminishing returns for implicit accumulation:
-  score = score_prev + w * (1 - score_prev)
+Both explicit_score and implicit_score are weighted averages:
+  score = Σ(score_i × weight_i) / Σ(weight_i)
 """
 
 import numpy as np
@@ -27,13 +27,12 @@ EXPLICIT_ACTIONS = {'rating_1_5', 'review'}
 IMPLICIT_ACTIONS = {k for k in ACTION_WEIGHTS if k not in EXPLICIT_ACTIONS}
 
 
-def _compute_implicit_score(actions: list) -> float:
-    score = 0.0
-    implicit_only = [a for a in actions if a in IMPLICIT_ACTIONS]
-    for action in sorted(implicit_only, key=lambda x: ACTION_WEIGHTS[x], reverse=True):
-        w = ACTION_WEIGHTS[action]
-        score = score + w * (1 - score)
-    return score
+def _compute_implicit_score(action_counts: dict) -> float:
+    if not action_counts:
+        return 0.0
+    total_weighted = sum(ACTION_WEIGHTS[a] * c for a, c in action_counts.items())
+    total_count = sum(action_counts.values())
+    return total_weighted / total_count
 
 
 def _index_events(event_list, u_idx, p_idx, action_type, target):
@@ -41,7 +40,9 @@ def _index_events(event_list, u_idx, p_idx, action_type, target):
         uid, pid = r.get('user_id'), r.get('place_id')
         if uid in u_idx and pid in p_idx:
             key = (u_idx[uid], p_idx[pid])
-            target.setdefault(key, []).append(action_type)
+            count = r.get('count', 1)
+            counts = target.setdefault(key, {})
+            counts[action_type] = counts.get(action_type, 0) + count
 
 
 def build_matrix_A(events: dict):
@@ -64,20 +65,26 @@ def build_matrix_A(events: dict):
     explicit_score = np.zeros((n_u, n_p), dtype=np.float32)
     has_explicit   = np.zeros((n_u, n_p), dtype=bool)
 
+    explicit_parts: dict = {}   # (ui, pi) -> list of (score_i, weight_i)
+
     for r in ratings:
         uid, pid = r.get('user_id'), r.get('place_id')
         if uid in u_idx and pid in p_idx:
-            ui, pi = u_idx[uid], p_idx[pid]
-            explicit_score[ui, pi] = (float(r['rating']) - 1) / 4.0
-            has_explicit[ui, pi]   = True
+            key = (u_idx[uid], p_idx[pid])
+            score = (float(r['rating']) - 1) / 4.0
+            explicit_parts.setdefault(key, []).append((score, ACTION_WEIGHTS['rating_1_5']))
 
     for r in reviews:
         uid, pid = r.get('user_id'), r.get('place_id')
         if uid in u_idx and pid in p_idx:
-            ui, pi = u_idx[uid], p_idx[pid]
-            w = ACTION_WEIGHTS['review']
-            explicit_score[ui, pi] = explicit_score[ui, pi] + w * (1 - explicit_score[ui, pi])
-            has_explicit[ui, pi]   = True
+            key = (u_idx[uid], p_idx[pid])
+            explicit_parts.setdefault(key, []).append((1.0, ACTION_WEIGHTS['review']))
+
+    for (ui, pi), parts in explicit_parts.items():
+        total_weighted = sum(score * weight for score, weight in parts)
+        total_weight    = sum(weight for _, weight in parts)
+        explicit_score[ui, pi] = total_weighted / total_weight
+        has_explicit[ui, pi]   = True
 
     action_map: dict = {}
     _index_events(view_thumbnails, u_idx, p_idx, 'view_thumbnail',  action_map)
@@ -88,8 +95,8 @@ def build_matrix_A(events: dict):
     _index_events(shares,          u_idx, p_idx, 'share',           action_map)
 
     implicit_mat = np.zeros((n_u, n_p), dtype=np.float32)
-    for (ui, pi), actions in action_map.items():
-        implicit_mat[ui, pi] = _compute_implicit_score(actions)
+    for (ui, pi), action_counts in action_map.items():
+        implicit_mat[ui, pi] = _compute_implicit_score(action_counts)
 
     A = np.where(
         has_explicit,
