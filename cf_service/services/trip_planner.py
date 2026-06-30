@@ -241,6 +241,8 @@ class TripPlannerService:
             formatted   = []
             place_order = 1
             for entry in schedule_result["schedule"]:
+                if entry.get("dropped"):
+                    continue          # silently excluded — didn't fit the day
                 if entry.get("type") == "lunch_break":
                     formatted.append(_format_lunch_break(entry))
                 else:
