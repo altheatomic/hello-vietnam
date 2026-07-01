@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hellovietnam/features/recommend/data/recommend_repository.dart';
 
 class TripLocationPage extends StatefulWidget {
   const TripLocationPage({super.key});
@@ -47,24 +47,24 @@ class _TripLocationPageState extends State<TripLocationPage> {
 
   Future<void> _loadProvinces() async {
     try {
-      final rows = await Supabase.instance.client
-          .from('old_province')
-          .select('id_province, name')
-          .order('name');
+      final destinations = await RecommendRepository()
+          .getPersonalizedProvinces(limit: 100);
       if (!mounted) return;
+      final sorted = List.of(destinations)
+        ..sort((a, b) => a.name.compareTo(b.name));
       setState(() {
-        _provinces = (rows as List<dynamic>)
-            .map((r) => _ProvinceItem(
-                  id: r['id_province'] as String,
-                  name: r['name'] as String? ?? '',
+        _provinces = sorted
+            .map((d) => _ProvinceItem(
+                  id: d.id,
+                  name: d.name,
                   area: '',
+                  coverImage: d.imagePath.isNotEmpty ? d.imagePath : null,
                 ))
             .toList();
         _isLoading = false;
       });
     } catch (_) {
       if (!mounted) return;
-      // Table missing (migration not yet applied) or network error — use fallback.
       setState(() {
         _provinces = _kFallbackProvinces.toList();
         _isLoading = false;
@@ -154,11 +154,17 @@ class _TripLocationPageState extends State<TripLocationPage> {
 // ── Data model ────────────────────────────────────────────────────────────────
 
 class _ProvinceItem {
-  const _ProvinceItem({required this.id, required this.name, required this.area});
+  const _ProvinceItem({
+    required this.id,
+    required this.name,
+    required this.area,
+    this.coverImage,
+  });
 
   final String id;
   final String name;
   final String area;
+  final String? coverImage;
 }
 
 // ── Widgets ───────────────────────────────────────────────────────────────────
@@ -249,26 +255,14 @@ class _DestinationCard extends StatelessWidget {
             child: Stack(
               children: <Widget>[
                 Positioned.fill(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: <Color>[
-                          Color(0xFFE4F4FB),
-                          Color(0xFFD0EEF8),
-                          Color(0xFFB8E5F4),
-                        ],
-                      ),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.landscape_outlined,
-                        size: 46,
-                        color: Color(0xFF6BBFDC),
-                      ),
-                    ),
-                  ),
+                  child: item.coverImage != null
+                      ? Image.network(
+                          item.coverImage!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stack) =>
+                              const _PlaceholderBackground(),
+                        )
+                      : const _PlaceholderBackground(),
                 ),
                 Positioned.fill(
                   child: DecoratedBox(
@@ -331,6 +325,34 @@ class _DestinationCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlaceholderBackground extends StatelessWidget {
+  const _PlaceholderBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            Color(0xFFE4F4FB),
+            Color(0xFFD0EEF8),
+            Color(0xFFB8E5F4),
+          ],
+        ),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.landscape_outlined,
+          size: 46,
+          color: Color(0xFF6BBFDC),
         ),
       ),
     );
