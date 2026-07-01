@@ -45,7 +45,7 @@ class ForumRepository {
 
     final List<Map<String, dynamic>> postRows = await _client
         .from('forum_post')
-        .select('id_post, id_author_user, title, content, created_at, status')
+        .select('id_post, id_author_user, title, content, created_at, status, shared_item')
         .or('status.is.null,status.eq.active')
         .order('created_at', ascending: false)
         .limit(80);
@@ -234,6 +234,7 @@ class ForumRepository {
           final ForumAuthor author =
               profilesById[authorId]?.author ??
               _fallbackProfile(authorId, currentUserId: currentUserId).author;
+          final rawShared = row['shared_item'];
           return ForumPost(
             id: postId,
             author: author,
@@ -245,6 +246,7 @@ class ForumRepository {
             isLiked: likedPostIds.contains(postId),
             isBookmarked: bookmarkedPostIds.contains(postId),
             showFollowButton: authorId != currentUserId && !author.isFollowing,
+            sharedItem: rawShared is Map<String, dynamic> ? rawShared : null,
           );
         })
         .toList(growable: false);

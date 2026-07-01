@@ -64,6 +64,13 @@ class TripRepository {
     return raw.whereType<Map<String, dynamic>>().map(NearbyPlace.fromJson).toList();
   }
 
+  Future<String> clonePlan(String idPlan) async {
+    final data = await _post('/api/trips/$idPlan/clone', <String, dynamic>{
+      'id_user': _userId,
+    });
+    return data['id_plan'] as String;
+  }
+
   Future<void> savePlan(String idPlan, {String? customTitle}) async {
     await _post('/api/trips/$idPlan/save', <String, dynamic>{
       'id_user': _userId,

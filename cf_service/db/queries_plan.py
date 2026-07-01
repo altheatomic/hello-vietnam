@@ -221,6 +221,67 @@ def fetch_saved_plans(supabase: Any, id_user: str) -> list:
     return result
 
 
+def clone_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
+    """Copy a shared plan into a new independent plan owned by id_user."""
+    plan_resp = (
+        supabase
+        .table("plan")
+        .select("id_plan,id_user,duration,start_at,end_at,city_province")
+        .eq("id_plan", id_plan)
+        .limit(1)
+        .execute()
+    )
+    plan_rows = plan_resp.data or []
+    if not plan_rows:
+        return {}
+    src = plan_rows[0]
+
+    comp_resp = (
+        supabase
+        .table("plan_component")
+        .select(
+            "day,time_part,id_place,visit_order,slot,"
+            "estimated_travel_minutes,cb_score,cf_score,final_score"
+        )
+        .eq("id_plan", id_plan)
+        .execute()
+    )
+    src_components = comp_resp.data or []
+
+    new_plan_id = str(uuid.uuid4())
+    supabase.table("plan").insert({
+        "id_plan":       new_plan_id,
+        "id_user":       id_user,
+        "duration":      src["duration"],
+        "start_at":      str(src["start_at"]),
+        "end_at":        str(src["end_at"]),
+        "city_province": src.get("city_province"),
+        "status":        "saved",
+        "created_at":    datetime.datetime.utcnow().isoformat(),
+    }).execute()
+
+    if src_components:
+        new_rows = [
+            {
+                "id_component":             str(uuid.uuid4()),
+                "id_plan":                  new_plan_id,
+                "day":                      r["day"],
+                "time_part":                r.get("time_part"),
+                "id_place":                 r["id_place"],
+                "visit_order":              r.get("visit_order"),
+                "slot":                     r.get("slot"),
+                "estimated_travel_minutes": r.get("estimated_travel_minutes"),
+                "cb_score":                 r.get("cb_score"),
+                "cf_score":                 r.get("cf_score"),
+                "final_score":              r.get("final_score"),
+            }
+            for r in src_components
+        ]
+        supabase.table("plan_component").insert(new_rows).execute()
+
+    return {"id_plan": new_plan_id, "status": "saved"}
+
+
 def _slot_to_time(slot: str) -> str:
     return {
         "morning": "08:00",

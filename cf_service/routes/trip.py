@@ -115,6 +115,16 @@ async def list_plans(id_user: str, supabase=Depends(get_supabase)):
     return {"plans": _list_plans(supabase, id_user)}
 
 
+@router.post("/api/trips/{id_plan}/clone")
+async def clone_trip(id_plan: str, req: SavePlanRequest, supabase=Depends(get_supabase)):
+    from db.queries_plan import clone_plan
+
+    result = clone_plan(supabase, id_plan, req.id_user)
+    if not result:
+        raise HTTPException(status_code=404, detail="Plan not found.")
+    return result
+
+
 @router.post("/api/trips/{id_plan}/save")
 async def save_trip(id_plan: str, req: SavePlanRequest, supabase=Depends(get_supabase)):
     from db.queries_plan import mark_plan_saved

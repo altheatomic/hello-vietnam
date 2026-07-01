@@ -7,12 +7,15 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
+import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TripResultPage extends StatefulWidget {
-  const TripResultPage({super.key, this.plan});
+  const TripResultPage({super.key, this.plan, this.wizard});
 
   final TripPlanResponse? plan;
+  final TripWizardData? wizard;
 
   @override
   State<TripResultPage> createState() => _TripResultPageState();
@@ -20,6 +23,7 @@ class TripResultPage extends StatefulWidget {
 
 class _TripResultPageState extends State<TripResultPage> {
   bool _isSaving = false;
+  bool _isSharing = false;
 
   Future<void> _handleSave() async {
     final idPlan = widget.plan?.idPlan;
@@ -39,6 +43,89 @@ class _TripResultPageState extends State<TripResultPage> {
       _showSnackBar('Could not save trip. Please try again.');
     } finally {
       if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _handleShare() {
+    final plan = widget.plan;
+    if (plan == null || plan.idPlan == null) {
+      _showSnackBar('Save the trip first before sharing.');
+      return;
+    }
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        title: const Text('Share to Forum'),
+        content: const Text(
+          'Share this trip plan as a forum post? '
+          'Other users can save it to their own trips.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _shareToForum();
+            },
+            child: const Text('Share'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _shareToForum() async {
+    final plan = widget.plan;
+    if (plan == null || plan.idPlan == null) return;
+
+    setState(() => _isSharing = true);
+    try {
+      final sharedItem = <String, dynamic>{
+        'type': 'trip_plan',
+        'plan_id': plan.idPlan,
+        'n_days': plan.days.length,
+        'province_name': widget.wizard?.provinceName ?? 'Vietnam',
+        'place_count': plan.days.fold<int>(
+          0,
+          (sum, d) =>
+              sum + d.places.where((p) => p.type != 'lunch_break').length,
+        ),
+        'days': plan.days
+            .map((d) => <String, dynamic>{
+                  'day': d.day,
+                  'places': d.places
+                      .where((p) => p.type != 'lunch_break')
+                      .map((p) => p.name)
+                      .toList(),
+                })
+            .toList(),
+      };
+
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) {
+        _showSnackBar('Please sign in to share.');
+        return;
+      }
+
+      await Supabase.instance.client.from('forum_post').insert(<String, dynamic>{
+        'id_author_user': userId,
+        'content':
+            'I created a ${plan.days.length}-day trip plan! '
+            'Check it out and save it to your trips.',
+        'status': 'active',
+        'shared_item': sharedItem,
+      });
+
+      if (!mounted) return;
+      _showSnackBar('Shared to Forum!');
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Could not share. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
     }
   }
 
@@ -122,8 +209,10 @@ class _TripResultPageState extends State<TripResultPage> {
                         ),
                         const SizedBox(width: 12),
                         _IconActionButton(
-                          icon: Icons.share_outlined,
-                          onTap: () => _showSnackBar('Share options'),
+                          icon: _isSharing
+                              ? Icons.hourglass_top_rounded
+                              : Icons.share_outlined,
+                          onTap: _isSharing ? () {} : _handleShare,
                         ),
                       ],
                     ),

@@ -5,6 +5,7 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 
 class ForumColors {
   ForumColors._();
@@ -497,6 +498,10 @@ class ForumPostCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   ForumPostGallery(imageUrls: post.imageUrls),
                 ],
+                if (post.hasTripPlan) ...<Widget>[
+                  const SizedBox(height: 10),
+                  _TripPlanPreviewCard(post: post),
+                ],
               ],
             ),
           ),
@@ -544,6 +549,140 @@ class ForumPostCard extends StatelessWidget {
               _ActionIcon(icon: Icons.share_outlined, onTap: onShare),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TripPlanPreviewCard extends StatefulWidget {
+  const _TripPlanPreviewCard({required this.post});
+
+  final ForumPost post;
+
+  @override
+  State<_TripPlanPreviewCard> createState() => _TripPlanPreviewCardState();
+}
+
+class _TripPlanPreviewCardState extends State<_TripPlanPreviewCard> {
+  bool _isSaving = false;
+
+  Future<void> _savePlan(String planId) async {
+    setState(() => _isSaving = true);
+    try {
+      await TripRepository().clonePlan(planId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(
+          content: Text('Plan saved! View in Saved Trips.'),
+          behavior: SnackBarBehavior.floating,
+        ));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(
+          content: Text('Could not save plan. Please try again.'),
+          behavior: SnackBarBehavior.floating,
+        ));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.post.sharedItem!;
+    final nDays = item['n_days'] ?? 0;
+    final provinceName = item['province_name'] ?? 'Vietnam';
+    final planId = widget.post.sharedPlanId;
+    final hasDays = item.containsKey('days');
+
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(Icons.map_outlined, size: 15, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Trip Plan · $nDays ${nDays == 1 ? 'day' : 'days'} · $provinceName',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (hasDays)
+            ...(item['days'] as List).map((dynamic dayRaw) {
+              final day = dayRaw as Map<String, dynamic>;
+              final places = (day['places'] as List?)
+                      ?.map((e) => e.toString())
+                      .toList() ??
+                  const <String>[];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Day ${day['day']}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      places.join(' → '),
+                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              );
+            })
+          else
+            Text(
+              ((item['cover_places'] as List?) ?? <dynamic>[])
+                  .map((e) => e.toString())
+                  .join(' → '),
+              style: Theme.of(context).textTheme.bodySmall,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          if (planId != null) ...<Widget>[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _isSaving ? null : () => _savePlan(planId),
+                icon: _isSaving
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.bookmark_add_outlined, size: 16),
+                label: Text(_isSaving ? 'Saving…' : 'Save This Plan'),
+              ),
+            ),
+          ],
         ],
       ),
     );

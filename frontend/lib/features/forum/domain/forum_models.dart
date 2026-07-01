@@ -74,6 +74,7 @@ class ForumPost {
     this.isLiked = false,
     this.isBookmarked = false,
     this.showFollowButton = false,
+    this.sharedItem,
   });
 
   final String id;
@@ -86,6 +87,12 @@ class ForumPost {
   final bool isLiked;
   final bool isBookmarked;
   final bool showFollowButton;
+  final Map<String, dynamic>? sharedItem;
+
+  bool get hasTripPlan =>
+      sharedItem != null && sharedItem!['type'] == 'trip_plan';
+
+  String? get sharedPlanId => sharedItem?['plan_id'] as String?;
 
   ForumPost copyWith({
     String? id,
@@ -98,6 +105,7 @@ class ForumPost {
     bool? isLiked,
     bool? isBookmarked,
     bool? showFollowButton,
+    Map<String, dynamic>? sharedItem,
   }) {
     return ForumPost(
       id: id ?? this.id,
@@ -110,6 +118,7 @@ class ForumPost {
       isLiked: isLiked ?? this.isLiked,
       isBookmarked: isBookmarked ?? this.isBookmarked,
       showFollowButton: showFollowButton ?? this.showFollowButton,
+      sharedItem: sharedItem ?? this.sharedItem,
     );
   }
 }
