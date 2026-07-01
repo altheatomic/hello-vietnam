@@ -58,12 +58,25 @@ class _TripInterestPageState extends State<TripInterestPage> {
 
   Future<void> _generate() async {
     final wizard = widget.wizard;
-    final idProvince = wizard?.idProvince;
     final nDays = wizard?.nDays;
+    final tripType = wizard?.tripType;
+    final isBusinessTrip = tripType == 'business';
 
-    if (idProvince == null || nDays == null) {
+    // Validate: business trip needs lat/lng; leisure trip needs idProvince.
+    if (nDays == null) {
       _showError('Missing trip details. Please start from the beginning.');
       return;
+    }
+    if (isBusinessTrip) {
+      if (wizard?.targetLat == null || wizard?.targetLng == null) {
+        _showError('Missing business location. Please go back and enter an address.');
+        return;
+      }
+    } else {
+      if (wizard?.idProvince == null) {
+        _showError('Missing destination. Please start from the beginning.');
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
@@ -71,11 +84,13 @@ class _TripInterestPageState extends State<TripInterestPage> {
     try {
       final response = await TripRepository().planTrip(
         TripPlanRequest(
-          idProvince: idProvince,
+          idProvince: isBusinessTrip ? null : wizard?.idProvince,
           nDays: nDays,
           startDate: wizard?.startDate,
           savePlan: true,
           interestOptionIds: _selectedIds.toList(),
+          targetLat: isBusinessTrip ? wizard?.targetLat : null,
+          targetLng: isBusinessTrip ? wizard?.targetLng : null,
         ),
       );
       if (!mounted) return;

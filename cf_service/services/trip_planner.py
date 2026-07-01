@@ -22,7 +22,7 @@ Trip-level interest (optional):
 
 import datetime
 
-from db.place_repository import fetch_places_required_filter
+from db.place_repository import fetch_places_near_point, fetch_places_required_filter
 from db.queries_plan import save_plan
 from services.filters import filter_places_with_fallback
 from services.module1_algorithm import (
@@ -109,18 +109,25 @@ class TripPlannerService:
     async def plan(
         self,
         id_user:             str,
-        id_province:         str,
+        id_province:         str | None,
         n_days:              int,
         start_at:            datetime.date,
         sa_runs:             int        = 5,
         save:                bool       = True,
         interest_option_ids: list[str] | None = None,
+        target_lat:          float | None     = None,
+        target_lng:          float | None     = None,
     ) -> dict:
         supabase = self.supabase
         end_date = start_at + datetime.timedelta(days=n_days - 1)
 
         # ── [Filtering] ───────────────────────────────────────────────────────
-        required_places = fetch_places_required_filter(supabase, id_province)
+        if target_lat is not None and target_lng is not None:
+            required_places = fetch_places_near_point(supabase, target_lat, target_lng)
+            print(f"[DEBUG] business trip: target=({target_lat},{target_lng}) "
+                  f"candidates={len(required_places)}")
+        else:
+            required_places = fetch_places_required_filter(supabase, id_province)
         user_profile = fetch_user_travel_profile(supabase, id_user)
         filtered_places, filter_report = filter_places_with_fallback(
             required_places, user_profile or {}, n_days

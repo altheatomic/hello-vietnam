@@ -79,6 +79,67 @@ def fetch_nearby_amenities(
     return sorted(result, key=lambda x: x["distance_km"])
 
 
+def fetch_places_near_point(
+    supabase: Any,
+    target_lat: float,
+    target_lng: float,
+    radius_km: float = 5.0,
+    limit: int = 500,
+) -> list[dict]:
+    """Fetch itinerary-eligible places within radius_km of a lat/lng point.
+
+    Uses a bounding-box pre-filter at DB level, then Haversine for exact distance.
+    Auto-expands radius (5→10→15 km) if fewer than 24 candidates are found.
+    """
+    from math import cos, radians
+
+    lat_delta = radius_km / 111.0
+    lng_delta = radius_km / (111.0 * cos(radians(target_lat)))
+
+    select_fields = (
+        "id_place,id_place_subcategory,name,short_description,"
+        "status,cover_image,gallery,address,latitude,longitude,"
+        "average_rating,review_count,minimum_price,maximum_price,"
+        "estimated_duration_minutes,timespan,timeclose,"
+        "place_subcategory!inner(name,place_category,is_itinerary_eligible)"
+    )
+
+    resp = (
+        supabase
+        .table("place_localized_en")
+        .select(select_fields)
+        .gte("latitude",  target_lat - lat_delta)
+        .lte("latitude",  target_lat + lat_delta)
+        .gte("longitude", target_lng - lng_delta)
+        .lte("longitude", target_lng + lng_delta)
+        .eq("status", "active")
+        .eq("place_subcategory.is_itinerary_eligible", True)
+        .filter("latitude",  "not.is", "null")
+        .filter("longitude", "not.is", "null")
+        .limit(limit)
+        .execute()
+    )
+    candidates = resp.data or []
+
+    within = [
+        p for p in candidates
+        if haversine_km(
+            target_lat, target_lng,
+            float(p["latitude"]), float(p["longitude"]),
+        ) <= radius_km
+    ]
+
+    # Auto-expand if not enough candidates and radius is still small.
+    if len(within) < 24 and radius_km < 15.0:
+        return fetch_places_near_point(
+            supabase, target_lat, target_lng,
+            radius_km=min(radius_km * 2, 15.0),
+            limit=limit,
+        )
+
+    return within[:limit]
+
+
 def fetch_places_required_filter(
     supabase: Any,
     province_id: str,

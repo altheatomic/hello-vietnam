@@ -22,12 +22,14 @@ router = APIRouter()
 
 class TripPlanRequest(BaseModel):
     id_user:             str
-    id_province:         str
+    id_province:         Optional[str]       = None
     n_days:              int
     start_date:          Optional[str]       = None   # 'YYYY-MM-DD'; defaults to today
     sa_runs:             int                 = 5
     save_plan:           bool                = False
     interest_option_ids: Optional[List[str]] = None   # trip-level interest (UUIDs)
+    target_lat:          Optional[float]     = None   # business-trip geocoord
+    target_lng:          Optional[float]     = None
 
 
 class SavePlanRequest(BaseModel):
@@ -41,6 +43,14 @@ class SavePlanRequest(BaseModel):
 async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
     print(f"[DEBUG] plan request: {req.dict()}")
     from services.trip_planner import TripPlannerService
+
+    has_province = bool(req.id_province)
+    has_coords   = req.target_lat is not None and req.target_lng is not None
+    if not has_province and not has_coords:
+        raise HTTPException(
+            status_code=422,
+            detail="Provide either id_province (leisure) or target_lat+target_lng (business).",
+        )
 
     start_at = (
         datetime.date.fromisoformat(req.start_date)
@@ -57,6 +67,8 @@ async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
         sa_runs=req.sa_runs,
         save=req.save_plan,
         interest_option_ids=req.interest_option_ids,
+        target_lat=req.target_lat,
+        target_lng=req.target_lng,
     )
     # print(f"[DEBUG] response days count: {len(result.get('days', []))}")
     # print(f"[DEBUG] response: {result}")
