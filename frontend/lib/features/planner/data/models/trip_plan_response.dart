@@ -80,6 +80,8 @@ class TripPlanPlace {
     this.longitude,
     this.estimatedTravelMinutes,
     this.estimatedDurationMinutes,
+    this.coverImage,
+    this.gallery = const <Map<String, dynamic>>[],
     this.tagMatch,
     this.cfScore,
     this.finalScore,
@@ -98,13 +100,33 @@ class TripPlanPlace {
   final double? longitude;
   final int? estimatedTravelMinutes;
   final int? estimatedDurationMinutes;
+  final String? coverImage;
+  /// List of {url, type, source} objects from the DB gallery jsonb column.
+  final List<Map<String, dynamic>> gallery;
   final double? tagMatch;
   final double? cfScore;
   final double? finalScore;
 
   bool get isLunchBreak => type == 'lunch_break';
 
+  /// Returns the best representative image URL for this place:
+  /// gallery item with type='cover' → first gallery item → coverImage → null.
+  String? get representativeImageUrl {
+    for (final item in gallery) {
+      if (item['type'] == 'cover') return item['url'] as String?;
+    }
+    if (gallery.isNotEmpty) return gallery.first['url'] as String?;
+    return coverImage;
+  }
+
   factory TripPlanPlace.fromJson(Map<String, dynamic> json) {
+    final rawGallery = json['gallery'];
+    final gallery = rawGallery is List
+        ? rawGallery
+            .whereType<Map<String, dynamic>>()
+            .toList()
+        : <Map<String, dynamic>>[];
+
     return TripPlanPlace(
       type:                       json['type'] as String? ?? 'place',
       order:                      (json['order'] as num?)?.toInt() ?? 0,
@@ -118,6 +140,8 @@ class TripPlanPlace {
       longitude:                  (json['longitude'] as num?)?.toDouble(),
       estimatedTravelMinutes:     (json['estimated_travel_minutes'] as num?)?.toInt(),
       estimatedDurationMinutes:   (json['estimated_duration_minutes'] as num?)?.toInt(),
+      coverImage:                 json['cover_image'] as String?,
+      gallery:                    gallery,
       tagMatch:                   (json['tag_match'] as num?)?.toDouble(),
       cfScore:                    (json['cf_score'] as num?)?.toDouble(),
       finalScore:                 (json['final_score'] as num?)?.toDouble(),

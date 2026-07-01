@@ -121,14 +121,6 @@ class _TripResultPageState extends State<TripResultPage> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Expanded(
-                          child: _ActionButton(
-                            label: 'Download',
-                            onTap: () =>
-                                _showSnackBar('Download started'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
                         _IconActionButton(
                           icon: Icons.share_outlined,
                           onTap: () => _showSnackBar('Share options'),
@@ -246,6 +238,7 @@ List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
         nearbyPlaces: const <TripPlannerNearbyPlace>[],
         lat: p.latitude ?? 0.0,
         lng: p.longitude ?? 0.0,
+        imageUrl: p.representativeImageUrl,
       );
     }).toList();
 
@@ -563,14 +556,15 @@ class _DayCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          ...data.activities.take(3).map(
-            (TripPlannerActivityData activity) => Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: activity.tag == 'lunch_break'
-                  ? _LunchBreakTile(activity: activity)
-                  : _TripActivityTile(activity: activity),
-            ),
-          ),
+          ...data.activities
+              .where((a) => a.tag != 'lunch_break')
+              .take(3)
+              .map(
+                (TripPlannerActivityData activity) => Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: _TripActivityTile(activity: activity),
+                ),
+              ),
           Row(
             children: <Widget>[
               Expanded(
@@ -617,65 +611,6 @@ class _DayCard extends StatelessWidget {
   }
 }
 
-class _LunchBreakTile extends StatelessWidget {
-  const _LunchBreakTile({required this.activity});
-
-  final TripPlannerActivityData activity;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8EE),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFFFD9A0), width: 2),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x1A0F2C4F),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF9F43),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.restaurant_rounded, color: Colors.white, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const Text(
-                  'Lunch Break',
-                  style: TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF7A4A00),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${activity.time}${activity.distanceLabel.isNotEmpty ? " • ${activity.distanceLabel}" : ""}',
-                  style: const TextStyle(fontSize: 14, color: Color(0xFFAA7030)),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _TripActivityTile extends StatelessWidget {
   const _TripActivityTile({required this.activity});
 
@@ -699,17 +634,18 @@ class _TripActivityTile extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFF22B7F1),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.location_on_outlined,
-              color: Colors.white,
-              size: 22,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox(
+              width: 42,
+              height: 42,
+              child: activity.imageUrl != null
+                  ? Image.network(
+                      activity.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stack) => _ActivityPlaceholderIcon(),
+                    )
+                  : _ActivityPlaceholderIcon(),
             ),
           ),
           const SizedBox(width: 12),
@@ -737,6 +673,18 @@ class _TripActivityTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActivityPlaceholderIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: const Color(0xFF22B7F1),
+      child: const Center(
+        child: Icon(Icons.location_on_outlined, color: Colors.white, size: 22),
       ),
     );
   }

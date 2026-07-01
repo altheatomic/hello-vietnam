@@ -86,7 +86,7 @@ def fetch_places_required_filter(
 ) -> list[dict]:
     select_fields = (
         "id_place,id_place_subcategory,name,short_description,"
-        "status,cover_image,address,latitude,longitude,"
+        "status,cover_image,gallery,address,latitude,longitude,"
         "average_rating,review_count,minimum_price,maximum_price,"
         "estimated_duration_minutes,timespan,timeclose,"
         "place_subcategory!inner(name,place_category,is_itinerary_eligible)"

@@ -428,6 +428,7 @@ class TripPlannerActivityData {
     required this.nearbyPlaces,
     this.lat = 0.0,
     this.lng = 0.0,
+    this.imageUrl,
   });
 
   final String title;
@@ -440,6 +441,7 @@ class TripPlannerActivityData {
   final List<TripPlannerNearbyPlace> nearbyPlaces;
   final double lat;
   final double lng;
+  final String? imageUrl;
 
   Map<String, dynamic> toJson() => {
         'title': title,
@@ -452,6 +454,7 @@ class TripPlannerActivityData {
         'nearbyPlaces': nearbyPlaces.map((p) => p.toJson()).toList(),
         'lat': lat,
         'lng': lng,
+        'imageUrl': imageUrl,
       };
 
   factory TripPlannerActivityData.fromJson(Map<String, dynamic> json) =>
@@ -468,6 +471,7 @@ class TripPlannerActivityData {
             .toList(),
         lat: (json['lat'] as num).toDouble(),
         lng: (json['lng'] as num).toDouble(),
+        imageUrl: json['imageUrl'] as String?,
       );
 }
 

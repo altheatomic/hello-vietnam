@@ -84,6 +84,8 @@ def _format_place(place: dict, order: int) -> dict:
         "longitude":                  place.get("longitude"),
         "estimated_travel_minutes":   place.get("estimated_travel_minutes"),
         "estimated_duration_minutes": place.get("estimated_duration_minutes"),
+        "cover_image":                place.get("cover_image"),
+        "gallery":                    place.get("gallery"),
         "tag_match":                  place.get("tag_match"),
         "cf_score":                   place.get("cf_score"),
         "final_score":                place.get("final_score"),

@@ -95,18 +95,25 @@ class TripDayDetailPage extends StatelessWidget {
                       onTap: () => _openDayRoute(day.activities),
                     ),
                     const SizedBox(height: 22),
-                    ...day.activities.asMap().entries.map(
-                      (MapEntry<int, TripPlannerActivityData> entry) => Padding(
-                        padding: const EdgeInsets.only(bottom: 18),
-                        child: _ActivityDetailCard(
-                          activity: entry.value,
-                          onDirections: () => context.push(
-                            AppRoutes.tripPlannerMapPath(dayIndex, entry.key),
-                            extra: entry.value,
+                    ...day.activities
+                        .where((a) => a.tag != 'lunch_break')
+                        .toList()
+                        .asMap()
+                        .entries
+                        .map(
+                          (MapEntry<int, TripPlannerActivityData> entry) =>
+                              Padding(
+                            padding: const EdgeInsets.only(bottom: 18),
+                            child: _ActivityDetailCard(
+                              activity: entry.value,
+                              onDirections: () => context.push(
+                                AppRoutes.tripPlannerMapPath(
+                                    dayIndex, entry.key),
+                                extra: entry.value,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -148,22 +155,19 @@ class _ActivityDetailCard extends StatelessWidget {
         children: <Widget>[
           _TimePill(time: activity.time),
           const SizedBox(height: 18),
-          Container(
-            height: 112,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: <Color>[Color(0xFFF2F4F8), Color(0xFFE6EAF0)],
-              ),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.image_outlined,
-                size: 42,
-                color: Color(0xFFAEB7C4),
-              ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              height: 112,
+              width: double.infinity,
+              child: activity.imageUrl != null
+                  ? Image.network(
+                      activity.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stack) =>
+                          _ImagePlaceholder(),
+                    )
+                  : _ImagePlaceholder(),
             ),
           ),
           const SizedBox(height: 16),
@@ -244,6 +248,18 @@ class _ActivityDetailCard extends StatelessWidget {
           const SizedBox(height: 18),
           _GradientActionButton(label: 'Get Directions', onTap: onDirections),
         ],
+      ),
+    );
+  }
+}
+
+class _ImagePlaceholder extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFEEF1F5),
+      child: const Center(
+        child: Icon(Icons.image_outlined, size: 42, color: Color(0xFFAEB7C4)),
       ),
     );
   }
