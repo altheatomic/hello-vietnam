@@ -1,10 +1,15 @@
-import 'dart:math' as math;
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/translate/data/openai_translation_service.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
+import 'package:hellovietnam/features/translate/data/offline_translation_service.dart';
+import 'package:hellovietnam/features/translate/data/tts_service.dart';
+
+enum TranslateMode { basic, premium }
 
 class TranslatePage extends StatefulWidget {
   const TranslatePage({super.key});
@@ -90,16 +95,53 @@ class _TranslatePageState extends State<TranslatePage>
   final TextEditingController _inputController = TextEditingController();
   final OpenAITranslationService _translationService =
       OpenAITranslationService();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   _LanguageOption _source = _allLanguages[2];
   _LanguageOption _target = _allLanguages[1];
-  bool _isListening = false;
   bool _isTranslating = false;
   String _translatedText = '';
   String? _translationError;
   Timer? _translateDebounce;
   int _translationRequestId = 0;
+  TranslateMode _mode = TranslateMode.basic;
+  bool _isCheckingPremium = false;
+  bool _isDownloadingModel = false;
   late final AnimationController _swapButtonController;
   late final Animation<double> _swapIconTurn;
+
+  Future<void> _handleModeChange(TranslateMode mode) async {
+    if (mode == TranslateMode.premium) {
+      setState(() => _isCheckingPremium = true);
+      try {
+        final SubscriptionRepository repo = SubscriptionRepository();
+        final CurrentSubscriptionInfo? sub = await repo
+            .loadCurrentSubscription();
+        if (sub != null &&
+            sub.endDate != null &&
+            sub.endDate!.isAfter(DateTime.now().toUtc())) {
+          setState(() => _mode = TranslateMode.premium);
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Cần tài khoản Premium để sử dụng tính năng này.',
+                ),
+              ),
+            );
+            context.push('/profile/upgrade');
+          }
+          setState(() => _mode = TranslateMode.basic);
+        }
+      } catch (e) {
+        setState(() => _mode = TranslateMode.basic);
+      } finally {
+        if (mounted) setState(() => _isCheckingPremium = false);
+      }
+    } else {
+      setState(() => _mode = TranslateMode.basic);
+    }
+  }
 
   @override
   void initState() {
@@ -116,6 +158,8 @@ class _TranslatePageState extends State<TranslatePage>
   @override
   void dispose() {
     _translateDebounce?.cancel();
+    unawaited(_audioPlayer.dispose());
+    unawaited(TtsService.instance.stop());
     _swapButtonController.dispose();
     _inputController.dispose();
     super.dispose();
@@ -162,22 +206,58 @@ class _TranslatePageState extends State<TranslatePage>
     final int requestId = ++_translationRequestId;
 
     try {
-      final TranslationResult result = await _translationService.translate(
-        text: text,
-        sourceLanguageCode: _source.code,
-        targetLanguageCode: _target.code,
-        targetLanguageName: _target.name,
-      );
+      if (_mode == TranslateMode.basic) {
+        if (_source.code == 'auto') {
+          throw TranslationException(
+            'Tính năng tự động nhận diện ngôn ngữ chỉ có ở bản Premium.',
+          );
+        }
 
-      if (!mounted || requestId != _translationRequestId) {
-        return;
+        bool sourceReady = await OfflineTranslationService.instance
+            .isModelDownloaded(_source.code);
+        bool targetReady = await OfflineTranslationService.instance
+            .isModelDownloaded(_target.code);
+
+        if (!sourceReady || !targetReady) {
+          if (!mounted || requestId != _translationRequestId) return;
+          setState(() {
+            _isDownloadingModel = true;
+            _isTranslating = false;
+          });
+          await OfflineTranslationService.instance.downloadModel(_source.code);
+          await OfflineTranslationService.instance.downloadModel(_target.code);
+          if (!mounted || requestId != _translationRequestId) return;
+          setState(() {
+            _isDownloadingModel = false;
+            _isTranslating = true;
+          });
+        }
+
+        final String result = await OfflineTranslationService.instance
+            .translate(text, _source.code, _target.code);
+
+        if (!mounted || requestId != _translationRequestId) return;
+        setState(() {
+          _translatedText = result;
+          _translationError = null;
+          _isTranslating = false;
+        });
+      } else {
+        final TranslationResult result = await _translationService.translate(
+          text: text,
+          sourceLanguageCode: _source.code,
+          targetLanguageCode: _target.code,
+          targetLanguageName: _target.name,
+        );
+
+        if (!mounted || requestId != _translationRequestId) return;
+
+        setState(() {
+          _translatedText = result.translatedText;
+          _translationError = null;
+          _isTranslating = false;
+        });
       }
-
-      setState(() {
-        _translatedText = result.translatedText;
-        _translationError = null;
-        _isTranslating = false;
-      });
     } on TranslationException catch (error) {
       if (!mounted || requestId != _translationRequestId) {
         return;
@@ -186,6 +266,7 @@ class _TranslatePageState extends State<TranslatePage>
       setState(() {
         _translationError = error.message;
         _isTranslating = false;
+        _isDownloadingModel = false;
       });
     } catch (_) {
       if (!mounted || requestId != _translationRequestId) {
@@ -195,6 +276,7 @@ class _TranslatePageState extends State<TranslatePage>
       setState(() {
         _translationError = 'Khong the dich luc nay. Vui long thu lai.';
         _isTranslating = false;
+        _isDownloadingModel = false;
       });
     }
   }
@@ -246,18 +328,27 @@ class _TranslatePageState extends State<TranslatePage>
     _scheduleTranslate(immediate: true);
   }
 
-  void _toggleListening() {
-    setState(() {
-      _isListening = !_isListening;
-    });
-  }
-
   void _handleQuickExample(String value) {
     _inputController.text = value;
-    setState(() {
-      _isListening = false;
-    });
+    setState(() {});
     _scheduleTranslate(text: value, immediate: true);
+  }
+
+  Future<bool> _speakTranslatedText(String text, _LanguageOption target) async {
+    if (_mode != TranslateMode.premium) {
+      return TtsService.instance.speak(text, languageCode: target.code);
+    }
+
+    final OnlineSpeechResult speech = await _translationService
+        .synthesizeSpeech(
+          text: text,
+          languageCode: target.code,
+          languageName: target.name,
+        );
+    await TtsService.instance.stop();
+    await _audioPlayer.stop();
+    await _audioPlayer.play(UrlSource(speech.audioUrl));
+    return true;
   }
 
   @override
@@ -288,13 +379,28 @@ class _TranslatePageState extends State<TranslatePage>
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        context.l10n.ui('Translate'),
-                        style: const TextStyle(
-                          fontSize: 33,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1F2735),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              context.l10n.ui('Translate'),
+                              maxLines: 1,
+                              style: const TextStyle(
+                                fontSize: 33,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1F2735),
+                              ),
+                            ),
+                          ),
                         ),
+                      ),
+                      const SizedBox(width: 10),
+                      _TranslateModeMenu(
+                        mode: _mode,
+                        isBusy: _isCheckingPremium,
+                        onChanged: _handleModeChange,
                       ),
                     ],
                   ),
@@ -371,8 +477,6 @@ class _TranslatePageState extends State<TranslatePage>
                     _InputCard(
                       source: _source,
                       controller: _inputController,
-                      isListening: _isListening,
-                      onToggleListening: _toggleListening,
                       onChanged: (String value) {
                         _scheduleTranslate(text: value);
                       },
@@ -380,8 +484,8 @@ class _TranslatePageState extends State<TranslatePage>
                         _inputController.clear();
                         setState(() {
                           _translatedText = '';
-                          _isListening = false;
                           _isTranslating = false;
+                          _isDownloadingModel = false;
                           _translationError = null;
                         });
                       },
@@ -390,8 +494,9 @@ class _TranslatePageState extends State<TranslatePage>
                     _OutputCard(
                       target: _target,
                       translatedText: _translatedText,
-                      isLoading: _isTranslating,
+                      isLoading: _isTranslating || _isDownloadingModel,
                       errorText: _translationError,
+                      onSpeak: _speakTranslatedText,
                     ),
                     const SizedBox(height: 12),
                     Align(
@@ -430,6 +535,111 @@ class _TranslatePageState extends State<TranslatePage>
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TranslateModeMenu extends StatelessWidget {
+  const _TranslateModeMenu({
+    required this.mode,
+    required this.isBusy,
+    required this.onChanged,
+  });
+
+  final TranslateMode mode;
+  final bool isBusy;
+  final ValueChanged<TranslateMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isBusy) {
+      return const SizedBox(
+        width: 40,
+        height: 40,
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    final bool isOffline = mode == TranslateMode.basic;
+    final Color color = isOffline
+        ? const Color(0xFF52606D)
+        : const Color(0xFF2F8EE8);
+
+    return PopupMenuButton<TranslateMode>(
+      tooltip: 'Translation mode',
+      initialValue: mode,
+      onSelected: onChanged,
+      position: PopupMenuPosition.under,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<TranslateMode>>[
+        const PopupMenuItem<TranslateMode>(
+          value: TranslateMode.basic,
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.offline_bolt_outlined, size: 18),
+              SizedBox(width: 10),
+              Text('Offline'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<TranslateMode>(
+          value: TranslateMode.premium,
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.auto_awesome_rounded, size: 18),
+              SizedBox(width: 10),
+              Text('AI Premium'),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        height: 40,
+        constraints: const BoxConstraints(maxWidth: 122),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: isOffline ? const Color(0xFFEAF5FF) : const Color(0xFFEFF6FF),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isOffline
+                ? const Color(0xFFAEDBFB)
+                : const Color(0xFF8CC7FA),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              isOffline
+                  ? Icons.offline_bolt_outlined
+                  : Icons.auto_awesome_rounded,
+              size: 18,
+              color: color,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                isOffline ? 'Offline' : 'AI',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            const SizedBox(width: 2),
+            Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: color),
           ],
         ),
       ),
@@ -494,16 +704,12 @@ class _InputCard extends StatelessWidget {
   const _InputCard({
     required this.source,
     required this.controller,
-    required this.isListening,
-    required this.onToggleListening,
     required this.onChanged,
     required this.onClear,
   });
 
   final _LanguageOption source;
   final TextEditingController controller;
-  final bool isListening;
-  final VoidCallback onToggleListening;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
 
@@ -532,29 +738,7 @@ class _InputCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              InkWell(
-                onTap: onToggleListening,
-                borderRadius: BorderRadius.circular(999),
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isListening
-                        ? const Color(0xFFFFEBED)
-                        : const Color(0xFFF2F4F7),
-                  ),
-                  child: Icon(
-                    Icons.mic_none_rounded,
-                    size: 16,
-                    color: isListening
-                        ? const Color(0xFFFF6363)
-                        : const Color(0xFF9AA5B5),
-                  ),
-                ),
-              ),
               if (controller.text.isNotEmpty) ...<Widget>[
-                const SizedBox(width: 8),
                 InkWell(
                   onTap: onClear,
                   borderRadius: BorderRadius.circular(999),
@@ -589,24 +773,6 @@ class _InputCard extends StatelessWidget {
             ),
             style: const TextStyle(fontSize: 17, color: Color(0xFF1D2A3B)),
           ),
-          if (isListening)
-            Padding(
-              padding: const EdgeInsets.only(top: 4, bottom: 6),
-              child: Row(
-                children: <Widget>[
-                  const _ListeningWaveIndicator(),
-                  const SizedBox(width: 8),
-                  Text(
-                    context.l10n.ui('Listening...'),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFFFF7B7B),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           Align(
             alignment: Alignment.centerRight,
             child: Text(
@@ -620,75 +786,19 @@ class _InputCard extends StatelessWidget {
   }
 }
 
-class _ListeningWaveIndicator extends StatefulWidget {
-  const _ListeningWaveIndicator();
-
-  @override
-  State<_ListeningWaveIndicator> createState() =>
-      _ListeningWaveIndicatorState();
-}
-
-class _ListeningWaveIndicatorState extends State<_ListeningWaveIndicator>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 14,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (BuildContext context, Widget? child) {
-          return Row(
-            children: List<Widget>.generate(5, (int index) {
-              final double phase =
-                  (_controller.value + index * 0.14) * math.pi * 2;
-              final double barHeight = 4 + (math.sin(phase).abs() * 8);
-              return Padding(
-                padding: const EdgeInsets.only(right: 2),
-                child: Container(
-                  width: 3,
-                  height: barHeight,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF7B7B),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              );
-            }),
-          );
-        },
-      ),
-    );
-  }
-}
-
 class _OutputCard extends StatelessWidget {
   const _OutputCard({
     required this.target,
     required this.translatedText,
     required this.isLoading,
+    required this.onSpeak,
     this.errorText,
   });
 
   final _LanguageOption target;
   final String translatedText;
   final bool isLoading;
+  final Future<bool> Function(String text, _LanguageOption target) onSpeak;
   final String? errorText;
 
   @override
@@ -759,10 +869,34 @@ class _OutputCard extends StatelessWidget {
               ],
               const Spacer(),
               if (hasTranslation) ...<Widget>[
-                const Icon(
-                  Icons.volume_up_outlined,
-                  size: 16,
-                  color: Colors.white,
+                InkWell(
+                  onTap: () async {
+                    bool spoken = false;
+                    String? errorMessage;
+                    try {
+                      spoken = await onSpeak(translatedText, target);
+                    } on TranslationException catch (error) {
+                      errorMessage = error.message;
+                    } catch (_) {
+                      errorMessage =
+                          'Khong the phat giong doc luc nay. Vui long thu lai.';
+                    }
+
+                    if (!context.mounted || spoken) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          errorMessage ??
+                              'Text-to-speech voice for ${target.name} is not available on this device.',
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Icon(
+                    Icons.volume_up_outlined,
+                    size: 16,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 const Icon(Icons.copy_rounded, size: 16, color: Colors.white),
