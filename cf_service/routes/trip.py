@@ -9,7 +9,7 @@ Dependency injection:
 
 import datetime
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import List, Optional
 
 from db.connection import get_db
@@ -31,6 +31,22 @@ class TripPlanRequest(BaseModel):
     target_lat:          Optional[float]     = None   # business-trip geocoord
     target_lng:          Optional[float]     = None
 
+    @model_validator(mode='after')
+    def check_location(self):
+        has_province = self.id_province is not None
+        has_coords   = self.target_lat is not None and self.target_lng is not None
+        if not has_province and not has_coords:
+            raise ValueError(
+                'Phải cung cấp id_province (leisure) hoặc '
+                'target_lat + target_lng (business)'
+            )
+        if has_province and has_coords:
+            raise ValueError(
+                'Chỉ được cung cấp một trong hai: '
+                'id_province hoặc target_lat+target_lng'
+            )
+        return self
+
 
 class SavePlanRequest(BaseModel):
     id_user:      str
@@ -43,14 +59,6 @@ class SavePlanRequest(BaseModel):
 async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
     print(f"[DEBUG] plan request: {req.dict()}")
     from services.trip_planner import TripPlannerService
-
-    has_province = bool(req.id_province)
-    has_coords   = req.target_lat is not None and req.target_lng is not None
-    if not has_province and not has_coords:
-        raise HTTPException(
-            status_code=422,
-            detail="Provide either id_province (leisure) or target_lat+target_lng (business).",
-        )
 
     start_at = (
         datetime.date.fromisoformat(req.start_date)

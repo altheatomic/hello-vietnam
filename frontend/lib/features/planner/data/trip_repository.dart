@@ -24,16 +24,18 @@ class TripRepository {
 
   Future<TripPlanResponse> planTrip(TripPlanRequest request) async {
     final body = <String, dynamic>{
-      'id_user':     _userId,
-      'id_province': request.idProvince,
-      'n_days':      request.nDays,
-      if (request.startDate != null) 'start_date': request.startDate,
-      'sa_runs':     request.saRuns,
-      'save_plan':   request.savePlan,
-      if (request.interestOptionIds != null &&
-          request.interestOptionIds!.isNotEmpty)
-        'interest_option_ids': request.interestOptionIds,
+      'id_user':   _userId,
+      'n_days':    request.nDays,
+      'sa_runs':   request.saRuns,
+      'save_plan': request.savePlan,
     };
+    if (request.idProvince != null)   body['id_province'] = request.idProvince;
+    if (request.targetLat  != null)   body['target_lat']  = request.targetLat;
+    if (request.targetLng  != null)   body['target_lng']  = request.targetLng;
+    if (request.startDate  != null)   body['start_date']  = request.startDate;
+    if (request.interestOptionIds != null && request.interestOptionIds!.isNotEmpty) {
+      body['interest_option_ids'] = request.interestOptionIds;
+    }
     final data = await _post('/api/trips/plan', body);
     return TripPlanResponse.fromJson(data);
   }
