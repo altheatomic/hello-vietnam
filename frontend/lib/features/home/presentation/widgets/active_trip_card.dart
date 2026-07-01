@@ -291,8 +291,8 @@ class _InProgressBody extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: SizedBox(
-            width: 110,
-            height: 90,
+            width: 115,
+            height: 105,
             child: activity.imageUrl != null
                 ? Image.network(
                     activity.imageUrl!,
@@ -307,6 +307,7 @@ class _InProgressBody extends StatelessWidget {
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text(
                 trip.title,

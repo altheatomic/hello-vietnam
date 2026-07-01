@@ -3,16 +3,49 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
 import '../../data/recommend_mock_data.dart';
+import '../../data/recommend_repository.dart';
 import '../../domain/recommend_destination.dart';
 
-class RecommendWhenResultsPage extends StatelessWidget {
+class RecommendWhenResultsPage extends StatefulWidget {
   const RecommendWhenResultsPage({super.key, required this.dateRange});
 
   final DateTimeRange dateRange;
 
+  @override
+  State<RecommendWhenResultsPage> createState() =>
+      _RecommendWhenResultsPageState();
+}
+
+class _RecommendWhenResultsPageState extends State<RecommendWhenResultsPage> {
+  List<RecommendDestination> _allDestinations = <RecommendDestination>[];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDestinations();
+  }
+
+  Future<void> _loadDestinations() async {
+    try {
+      final data = await RecommendRepository().getPersonalizedProvinces();
+      if (!mounted) return;
+      setState(() {
+        _allDestinations = data;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _allDestinations = mockRecommendDestinations;
+        _isLoading = false;
+      });
+    }
+  }
+
   List<RecommendDestination> get _filtered {
-    final int month = dateRange.start.month;
-    return mockRecommendDestinations.where((RecommendDestination d) {
+    final int month = widget.dateRange.start.month;
+    return _allDestinations.where((RecommendDestination d) {
       return d.bestMonths.isEmpty || d.bestMonths.contains(month);
     }).toList();
   }
@@ -36,11 +69,12 @@ class RecommendWhenResultsPage extends StatelessWidget {
   }
 
   String get _rangeLabel {
-    return '${_monthShort(dateRange.start.month)} ${dateRange.start.day} - ${_monthShort(dateRange.end.month)} ${dateRange.end.day}';
+    final d = widget.dateRange;
+    return '${_monthShort(d.start.month)} ${d.start.day} - ${_monthShort(d.end.month)} ${d.end.day}';
   }
 
   String get _durationLabel {
-    final int days = dateRange.duration.inDays + 1;
+    final int days = widget.dateRange.duration.inDays + 1;
     return '$days ${days == 1 ? 'day' : 'days'} trip';
   }
 
@@ -63,7 +97,9 @@ class RecommendWhenResultsPage extends StatelessWidget {
             ],
           ),
         ),
-        child: results.isEmpty
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : results.isEmpty
             ? SafeArea(
                 child: const EmptyState(
                   icon: Icons.calendar_today_rounded,
