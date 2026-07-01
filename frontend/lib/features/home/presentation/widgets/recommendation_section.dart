@@ -27,6 +27,7 @@ class RecommendationSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       height: height,
@@ -36,7 +37,22 @@ class RecommendationSection extends StatelessWidget {
         child: Stack(
           children: [
             // ── Background image with gradient opacity ────────
-            Positioned.fill(child: _buildBackground()),
+            Positioned.fill(child: _buildBackground(isDark: isDark)),
+            if (isDark)
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: <Color>[
+                        const Color(0xFF020B10).withValues(alpha: 0.34),
+                        const Color(0xFF020B10).withValues(alpha: 0.58),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
 
             // ── Content ──────────────────────────────────────
             Padding(
@@ -51,10 +67,12 @@ class RecommendationSection extends StatelessWidget {
                     ),
                     child: Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
+                        color: isDark
+                            ? AppColors.primaryLight
+                            : AppColors.primary,
                       ),
                     ),
                   ),
@@ -83,51 +101,62 @@ class RecommendationSection extends StatelessWidget {
 
   /// Builds the background image with a linear gradient mask:
   /// 100 % opaque at the top → 50 % opaque at the bottom.
-  Widget _buildBackground() {
-    return ShaderMask(
-      shaderCallback: (bounds) {
-        return LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.white, // 100 %
-            Colors.white.withValues(alpha: 0.5), // 50 %
-          ],
-        ).createShader(bounds);
-      },
-      blendMode: BlendMode.dstIn,
-      child: _isNetworkImage
-          ? Image.network(
-              backgroundImage,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return _fallbackGradient();
-              },
-              errorBuilder: (_, _, _) => _fallbackGradient(),
-            )
-          : Image.asset(
-              backgroundImage,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (_, _, _) => _fallbackGradient(),
-            ),
+  Widget _buildBackground({required bool isDark}) {
+    final double topOpacity = isDark ? 0.34 : 1.0;
+    final double bottomOpacity = isDark ? 0.18 : 0.5;
+
+    return Opacity(
+      opacity: isDark ? 0.72 : 1,
+      child: ShaderMask(
+        shaderCallback: (bounds) {
+          return LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white.withValues(alpha: topOpacity),
+              Colors.white.withValues(alpha: bottomOpacity),
+            ],
+          ).createShader(bounds);
+        },
+        blendMode: BlendMode.dstIn,
+        child: _isNetworkImage
+            ? Image.network(
+                backgroundImage,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return _fallbackGradient(isDark: isDark);
+                },
+                errorBuilder: (_, _, _) => _fallbackGradient(isDark: isDark),
+              )
+            : Image.asset(
+                backgroundImage,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                errorBuilder: (_, _, _) => _fallbackGradient(isDark: isDark),
+              ),
+      ),
     );
   }
 
-  Widget _fallbackGradient() {
+  Widget _fallbackGradient({required bool isDark}) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            AppColors.primaryDark.withValues(alpha: 0.25),
-            AppColors.primaryLight.withValues(alpha: 0.08),
-          ],
+          colors: isDark
+              ? <Color>[
+                  AppColors.primaryDark.withValues(alpha: 0.16),
+                  const Color(0xFF020B10).withValues(alpha: 0.42),
+                ]
+              : <Color>[
+                  AppColors.primaryDark.withValues(alpha: 0.25),
+                  AppColors.primaryLight.withValues(alpha: 0.08),
+                ],
         ),
       ),
     );

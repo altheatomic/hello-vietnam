@@ -279,6 +279,7 @@ class UserTravelPreferences {
 
   List<String> get summaryLabels => <String>[
     ...travelStyles.take(2).map((style) => style.label),
+    ...topics.take(3).map((topic) => topic.label),
     budgetLevel.label,
     pace.label,
   ];

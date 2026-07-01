@@ -15,6 +15,8 @@ class TravelPreferencesRepository extends ChangeNotifier {
       TravelPreferencesRepository._();
 
   static const String _storageKeyPrefix = 'travel_preferences_v1_';
+  static const String _deferredStorageKeyPrefix =
+      'travel_preferences_deferred_v1_';
   static const String _functionName = 'travel-preferences';
 
   final SupabaseClient _client = Supabase.instance.client;
@@ -35,6 +37,17 @@ class TravelPreferencesRepository extends ChangeNotifier {
   }
 
   bool get hasCompletedCurrentUser => currentPreferences != null;
+
+  bool get hasDeferredCurrentUserOnboarding {
+    final String? userId = _currentUserId;
+    if (!_isReady || userId == null || hasCompletedCurrentUser) {
+      return false;
+    }
+    return app_storage.LocalStorage.instance.getString(
+          _deferredStorageKeyFor(userId),
+        ) ==
+        'true';
+  }
 
   Future<void> initialize() async {
     if (_isReady) {
@@ -89,6 +102,21 @@ class TravelPreferencesRepository extends ChangeNotifier {
       savedPreferences,
       notify: notify,
     );
+    await app_storage.LocalStorage.instance.remove(
+      _deferredStorageKeyFor(userId),
+    );
+  }
+
+  Future<void> deferCurrentUserOnboarding() async {
+    final String? userId = _currentUserId;
+    if (userId == null || hasCompletedCurrentUser) {
+      return;
+    }
+    await app_storage.LocalStorage.instance.setString(
+      _deferredStorageKeyFor(userId),
+      'true',
+    );
+    notifyListeners();
   }
 
   Future<void> clearCurrentUserPreferences() async {
@@ -116,6 +144,9 @@ class TravelPreferencesRepository extends ChangeNotifier {
   }
 
   String _storageKeyFor(String userId) => '$_storageKeyPrefix$userId';
+
+  String _deferredStorageKeyFor(String userId) =>
+      '$_deferredStorageKeyPrefix$userId';
 
   void refresh() {
     if (_isReady) {
@@ -180,6 +211,12 @@ class TravelPreferencesRepository extends ChangeNotifier {
       final UserTravelPreferences? remotePreferences = _parsePreferences(
         data?['preferences'],
       );
+      if (remotePreferences == null && _currentPreferences != null) {
+        if (notify) {
+          notifyListeners();
+        }
+        return;
+      }
       await _setCachedCurrentUserPreferences(
         userId,
         remotePreferences,

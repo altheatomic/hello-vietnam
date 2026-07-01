@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class CurrencyPage extends StatefulWidget {
@@ -10,26 +10,126 @@ class CurrencyPage extends StatefulWidget {
 
 class _CurrencyPageState extends State<CurrencyPage> {
   static const List<_CurrencyOption> _currencies = <_CurrencyOption>[
-    _CurrencyOption(code: 'USD', title: 'USD - \$', subtitle: 'US Dollar', flagCode: 'gb'),
-    _CurrencyOption(code: 'VND', title: 'VND - ₫', subtitle: 'Vietnamese Dong', flagCode: 'vn'),
-    _CurrencyOption(code: 'EUR', title: 'EUR - €', subtitle: 'Euro', flagCode: 'eu'),
-    _CurrencyOption(code: 'GBP', title: 'GBP - £', subtitle: 'British Pound', flagCode: 'gb'),
-    _CurrencyOption(code: 'JPY', title: 'JPY - ¥', subtitle: 'Japanese Yen', flagCode: 'jp'),
-    _CurrencyOption(code: 'CNY', title: 'CNY - ¥', subtitle: 'Chinese Yuan', flagCode: 'cn'),
-    _CurrencyOption(code: 'KRW', title: 'KRW - ₩', subtitle: 'South Korean Won', flagCode: 'kr'),
-    _CurrencyOption(code: 'AUD', title: 'AUD - A\$', subtitle: 'Australian Dollar', flagCode: 'au'),
-    _CurrencyOption(code: 'CAD', title: 'CAD - C\$', subtitle: 'Canadian Dollar', flagCode: 'ca'),
-    _CurrencyOption(code: 'CHF', title: 'CHF - Fr', subtitle: 'Swiss Franc', flagCode: 'ch'),
-    _CurrencyOption(code: 'SGD', title: 'SGD - S\$', subtitle: 'Singapore Dollar', flagCode: 'sg'),
-    _CurrencyOption(code: 'HKD', title: 'HKD - HK\$', subtitle: 'Hong Kong Dollar', flagCode: 'hk'),
-    _CurrencyOption(code: 'INR', title: 'INR - ₹', subtitle: 'Indian Rupee', flagCode: 'in'),
-    _CurrencyOption(code: 'THB', title: 'THB - ฿', subtitle: 'Thai Baht', flagCode: 'th'),
-    _CurrencyOption(code: 'MYR', title: 'MYR - RM', subtitle: 'Malaysian Ringgit', flagCode: 'my'),
-    _CurrencyOption(code: 'IDR', title: 'IDR - Rp', subtitle: 'Indonesian Rupiah', flagCode: 'id'),
-    _CurrencyOption(code: 'PHP', title: 'PHP - ₱', subtitle: 'Philippine Peso', flagCode: 'ph'),
-    _CurrencyOption(code: 'RUB', title: 'RUB - ₽', subtitle: 'Russian Ruble', flagCode: 'ru'),
-    _CurrencyOption(code: 'BRL', title: 'BRL - R\$', subtitle: 'Brazilian Real', flagCode: 'br'),
-    _CurrencyOption(code: 'MXN', title: 'MXN - Mex\$', subtitle: 'Mexican Peso', flagCode: 'mx'),
+    _CurrencyOption(
+      code: 'USD',
+      title: 'USD - \$',
+      subtitle: 'US Dollar',
+      flagCode: 'gb',
+    ),
+    _CurrencyOption(
+      code: 'VND',
+      title: 'VND - ₫',
+      subtitle: 'Vietnamese Dong',
+      flagCode: 'vn',
+    ),
+    _CurrencyOption(
+      code: 'EUR',
+      title: 'EUR - €',
+      subtitle: 'Euro',
+      flagCode: 'eu',
+    ),
+    _CurrencyOption(
+      code: 'GBP',
+      title: 'GBP - £',
+      subtitle: 'British Pound',
+      flagCode: 'gb',
+    ),
+    _CurrencyOption(
+      code: 'JPY',
+      title: 'JPY - ¥',
+      subtitle: 'Japanese Yen',
+      flagCode: 'jp',
+    ),
+    _CurrencyOption(
+      code: 'CNY',
+      title: 'CNY - ¥',
+      subtitle: 'Chinese Yuan',
+      flagCode: 'cn',
+    ),
+    _CurrencyOption(
+      code: 'KRW',
+      title: 'KRW - ₩',
+      subtitle: 'South Korean Won',
+      flagCode: 'kr',
+    ),
+    _CurrencyOption(
+      code: 'AUD',
+      title: 'AUD - A\$',
+      subtitle: 'Australian Dollar',
+      flagCode: 'au',
+    ),
+    _CurrencyOption(
+      code: 'CAD',
+      title: 'CAD - C\$',
+      subtitle: 'Canadian Dollar',
+      flagCode: 'ca',
+    ),
+    _CurrencyOption(
+      code: 'CHF',
+      title: 'CHF - Fr',
+      subtitle: 'Swiss Franc',
+      flagCode: 'ch',
+    ),
+    _CurrencyOption(
+      code: 'SGD',
+      title: 'SGD - S\$',
+      subtitle: 'Singapore Dollar',
+      flagCode: 'sg',
+    ),
+    _CurrencyOption(
+      code: 'HKD',
+      title: 'HKD - HK\$',
+      subtitle: 'Hong Kong Dollar',
+      flagCode: 'hk',
+    ),
+    _CurrencyOption(
+      code: 'INR',
+      title: 'INR - ₹',
+      subtitle: 'Indian Rupee',
+      flagCode: 'in',
+    ),
+    _CurrencyOption(
+      code: 'THB',
+      title: 'THB - ฿',
+      subtitle: 'Thai Baht',
+      flagCode: 'th',
+    ),
+    _CurrencyOption(
+      code: 'MYR',
+      title: 'MYR - RM',
+      subtitle: 'Malaysian Ringgit',
+      flagCode: 'my',
+    ),
+    _CurrencyOption(
+      code: 'IDR',
+      title: 'IDR - Rp',
+      subtitle: 'Indonesian Rupiah',
+      flagCode: 'id',
+    ),
+    _CurrencyOption(
+      code: 'PHP',
+      title: 'PHP - ₱',
+      subtitle: 'Philippine Peso',
+      flagCode: 'ph',
+    ),
+    _CurrencyOption(
+      code: 'RUB',
+      title: 'RUB - ₽',
+      subtitle: 'Russian Ruble',
+      flagCode: 'ru',
+    ),
+    _CurrencyOption(
+      code: 'BRL',
+      title: 'BRL - R\$',
+      subtitle: 'Brazilian Real',
+      flagCode: 'br',
+    ),
+    _CurrencyOption(
+      code: 'MXN',
+      title: 'MXN - Mex\$',
+      subtitle: 'Mexican Peso',
+      flagCode: 'mx',
+    ),
   ];
 
   String _selectedCode = 'USD';
@@ -43,7 +143,7 @@ class _CurrencyPageState extends State<CurrencyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -153,7 +253,9 @@ class _CurrencyTile extends StatelessWidget {
             color: selected ? const Color(0xFFE1F5FE) : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected ? const Color(0xFF81D4FA) : const Color(0xFFE5E7EB),
+              color: selected
+                  ? const Color(0xFF81D4FA)
+                  : const Color(0xFFE5E7EB),
               width: 1.1,
             ),
           ),
@@ -271,26 +373,25 @@ class _RoundFlag extends StatelessWidget {
                 width: radius * 2 - 2,
                 height: radius * 2 - 2,
                 fit: BoxFit.cover,
-                errorBuilder: (
-                  BuildContext context,
-                  Object error,
-                  StackTrace? stackTrace,
-                ) => Container(
-                  color: const Color(0xFFEAF0F8),
-                  alignment: Alignment.center,
-                  child: Text(
-                    flagCode!.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF6F7D90),
+                errorBuilder:
+                    (
+                      BuildContext context,
+                      Object error,
+                      StackTrace? stackTrace,
+                    ) => Container(
+                      color: const Color(0xFFEAF0F8),
+                      alignment: Alignment.center,
+                      child: Text(
+                        flagCode!.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF6F7D90),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
               ),
             ),
     );
   }
 }
-
-

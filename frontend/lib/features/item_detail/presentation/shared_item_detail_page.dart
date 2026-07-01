@@ -144,9 +144,10 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
     final insertedSections =
         widget.insertedSectionsBuilder?.call(context, _detail) ??
         const <Widget>[];
+    final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: <Widget>[
           SafeArea(
@@ -204,10 +205,10 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                   const SizedBox(height: 10),
                   Text(
                     _detail.whatToExpect,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       height: 1.7,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                     textAlign: TextAlign.justify,
                   ),
@@ -247,16 +248,18 @@ class _DetailHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.only(left: 48),
       child: RichText(
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         text: TextSpan(
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
           children: <TextSpan>[
             const TextSpan(text: 'Discover, '),
@@ -370,15 +373,30 @@ class _QuickInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final TextStyle descriptionStyle = TextStyle(
+      fontSize: 14,
+      height: 1.6,
+      color: theme.colorScheme.onSurface,
+    );
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primaryLight.withValues(alpha: 0.18),
+        color: isDark
+            ? theme.colorScheme.surface.withValues(alpha: 0.88)
+            : AppColors.primaryLight.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.transparent,
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.08),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
@@ -388,33 +406,44 @@ class _QuickInfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  description,
-                  maxLines: isExpanded ? null : 3,
-                  overflow: isExpanded ? null : TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.6,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                GestureDetector(
-                  onTap: onToggleExpanded,
-                  child: Text(
-                    isExpanded ? 'Less' : 'More',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      decoration: TextDecoration.underline,
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final TextPainter textPainter = TextPainter(
+                  text: TextSpan(text: description, style: descriptionStyle),
+                  maxLines: 3,
+                  textDirection: Directionality.of(context),
+                )..layout(maxWidth: constraints.maxWidth);
+                final bool canExpand = textPainter.didExceedMaxLines;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      description,
+                      maxLines: isExpanded ? null : 3,
+                      overflow: isExpanded ? null : TextOverflow.ellipsis,
+                      style: descriptionStyle,
                     ),
-                  ),
-                ),
-              ],
+                    if (canExpand) ...<Widget>[
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: onToggleExpanded,
+                        child: Text(
+                          isExpanded ? 'Less' : 'More',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? AppColors.primaryLight
+                                : AppColors.primary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(width: 12),
@@ -422,13 +451,20 @@ class _QuickInfoCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.82),
+              color: isDark
+                  ? const Color(0xFF102832).withValues(alpha: 0.92)
+                  : Colors.white.withValues(alpha: 0.82),
+              border: isDark
+                  ? Border.all(
+                      color: AppColors.primaryLight.withValues(alpha: 0.14),
+                    )
+                  : null,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.thumb_up_alt_outlined,
               size: 20,
-              color: AppColors.primary,
+              color: isDark ? AppColors.primaryLight : AppColors.primary,
             ),
           ),
         ],
@@ -444,6 +480,8 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color textColor = Theme.of(context).colorScheme.onSurface;
+
     return Row(
       children: <Widget>[
         Container(
@@ -457,10 +495,10 @@ class _SectionTitle extends StatelessWidget {
         const SizedBox(width: 10),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: textColor,
           ),
         ),
       ],
@@ -481,6 +519,11 @@ class _ReviewSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color secondaryText = isDark
+        ? const Color(0xFFA9BCC7)
+        : AppColors.textSecondary;
+
     return Wrap(
       spacing: 14,
       runSpacing: 10,
@@ -502,7 +545,7 @@ class _ReviewSummary extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade500,
+                  color: secondaryText,
                 ),
               ),
             ],
@@ -515,7 +558,7 @@ class _ReviewSummary extends StatelessWidget {
             children: <Widget>[
               Text(
                 ratingLabel,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary,
@@ -523,10 +566,7 @@ class _ReviewSummary extends StatelessWidget {
               ),
               Text(
                 '$reviewCount reviews',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 13, color: secondaryText),
               ),
             ],
           ),
@@ -616,24 +656,37 @@ class _ReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color primaryText = Theme.of(context).colorScheme.onSurface;
+    final Color secondaryText = isDark
+        ? const Color(0xFFA9BCC7)
+        : AppColors.textSecondary;
     final shadowColor = Color.lerp(
-      Colors.black.withValues(alpha: 0.04),
-      AppColors.primary.withValues(alpha: 0.22),
+      Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+      AppColors.primary.withValues(alpha: isDark ? 0.14 : 0.22),
       emphasis,
     )!;
     final borderColor = Color.lerp(
-      Colors.white.withValues(alpha: 0.55),
-      AppColors.primaryLight.withValues(alpha: 0.95),
+      Colors.white.withValues(alpha: isDark ? 0.08 : 0.55),
+      AppColors.primaryLight.withValues(alpha: isDark ? 0.22 : 0.95),
       emphasis,
     )!;
     final surfaceTop = Color.lerp(
-      Colors.white.withValues(alpha: 0.76),
-      Colors.white.withValues(alpha: 0.92),
+      isDark
+          ? const Color(0xFF0B1A22).withValues(alpha: 0.82)
+          : Colors.white.withValues(alpha: 0.76),
+      isDark
+          ? const Color(0xFF122832).withValues(alpha: 0.90)
+          : Colors.white.withValues(alpha: 0.92),
       emphasis,
     )!;
     final surfaceBottom = Color.lerp(
-      AppColors.primaryLight.withValues(alpha: 0.14),
-      AppColors.primaryLight.withValues(alpha: 0.28),
+      isDark
+          ? const Color(0xFF07161D).withValues(alpha: 0.86)
+          : AppColors.primaryLight.withValues(alpha: 0.14),
+      isDark
+          ? const Color(0xFF0B1A22).withValues(alpha: 0.94)
+          : AppColors.primaryLight.withValues(alpha: 0.28),
       emphasis,
     )!;
 
@@ -675,8 +728,14 @@ class _ReviewCard extends StatelessWidget {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: <Color>[
-                        Colors.white.withValues(alpha: 0.4 + (emphasis * 0.18)),
-                        Colors.white.withValues(alpha: 0.02),
+                        isDark
+                            ? AppColors.primaryLight.withValues(
+                                alpha: 0.08 + (emphasis * 0.04),
+                              )
+                            : Colors.white.withValues(
+                                alpha: 0.4 + (emphasis * 0.18),
+                              ),
+                        Colors.white.withValues(alpha: isDark ? 0.0 : 0.02),
                       ],
                     ),
                   ),
@@ -740,18 +799,18 @@ class _ReviewCard extends StatelessWidget {
                           children: <Widget>[
                             Text(
                               review.userName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
+                                color: primaryText,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               review.date,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.textSecondary,
+                                color: secondaryText,
                               ),
                             ),
                           ],
@@ -763,10 +822,10 @@ class _ReviewCard extends StatelessWidget {
                   const SizedBox(height: 14),
                   Text(
                     review.comment,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       height: 1.55,
-                      color: AppColors.textPrimary,
+                      color: primaryText,
                     ),
                   ),
                   if (review.thumbnails.isNotEmpty) ...<Widget>[
@@ -804,19 +863,31 @@ class _UserRatingBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = Theme.of(context).colorScheme.onSurface;
+    final Color labelColor = isDark
+        ? AppColors.primaryLight
+        : AppColors.primary;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: <Color>[
-            Colors.white.withValues(alpha: 0.75),
-            AppColors.primaryLight.withValues(alpha: 0.16 + (emphasis * 0.12)),
+            isDark
+                ? const Color(0xFF0B1A22).withValues(alpha: 0.72)
+                : Colors.white.withValues(alpha: 0.75),
+            AppColors.primaryLight.withValues(
+              alpha: isDark
+                  ? 0.05 + (emphasis * 0.04)
+                  : 0.16 + (emphasis * 0.12),
+            ),
           ],
         ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: AppColors.primaryLight.withValues(
-            alpha: 0.24 + (emphasis * 0.4),
+            alpha: isDark ? 0.16 + (emphasis * 0.10) : 0.24 + (emphasis * 0.4),
           ),
         ),
       ),
@@ -825,10 +896,10 @@ class _UserRatingBadge extends StatelessWidget {
         children: <Widget>[
           Text(
             review.ratingLabel,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: AppColors.primary,
+              color: labelColor,
             ),
           ),
           const SizedBox(height: 2),
@@ -843,10 +914,10 @@ class _UserRatingBadge extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 review.rating.toStringAsFixed(1),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: textColor,
                 ),
               ),
             ],
@@ -1184,8 +1255,12 @@ class _CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Material(
-      color: backgroundColor,
+      color: isDark && backgroundColor == Colors.white
+          ? Colors.white.withValues(alpha: 0.08)
+          : backgroundColor,
       shape: const CircleBorder(),
       elevation: 0,
       child: InkWell(
@@ -1194,7 +1269,13 @@ class _CircleIconButton extends StatelessWidget {
         child: SizedBox(
           width: 40,
           height: 40,
-          child: Icon(icon, color: iconColor, size: 24),
+          child: Icon(
+            icon,
+            color: isDark && iconColor == AppColors.primary
+                ? AppColors.primaryLight
+                : iconColor,
+            size: 24,
+          ),
         ),
       ),
     );
@@ -1208,29 +1289,60 @@ class _ReportAssetIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color iconColor = isDark
+        ? const Color(0xFF87CEEB)
+        : const Color(0xFF2C2C2C);
+
     return Tooltip(
       message: context.l10n.ui('Report an Issue'),
-      child: GestureDetector(
-        onTap: onTap,
-        child: SizedBox(
-          width: 40,
-          height: 40,
-          child: Center(
-            child: Image.asset(
-              'assets/images/Auth_Image/problem.png',
-              width: 28,
-              height: 28,
-              fit: BoxFit.contain,
-              errorBuilder:
-                  (
-                    BuildContext context,
-                    Object error,
-                    StackTrace? stackTrace,
-                  ) => const Icon(
-                    Icons.bug_report_outlined,
-                    size: 28,
-                    color: Color(0xFF2C2C2C),
-                  ),
+      child: Material(
+        color: isDark
+            ? const Color(0xFF0B1A22).withValues(alpha: 0.88)
+            : Colors.white.withValues(alpha: 0.88),
+        shape: const CircleBorder(),
+        elevation: 0,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF87CEEB).withValues(alpha: 0.18)
+                    : Colors.black.withValues(alpha: 0.06),
+              ),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.26 : 0.10),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Center(
+              child: ColorFiltered(
+                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                child: Image.asset(
+                  'assets/images/Auth_Image/problem.png',
+                  width: 25,
+                  height: 25,
+                  fit: BoxFit.contain,
+                  errorBuilder:
+                      (
+                        BuildContext context,
+                        Object error,
+                        StackTrace? stackTrace,
+                      ) => Icon(
+                        Icons.bug_report_outlined,
+                        size: 25,
+                        color: iconColor,
+                      ),
+                ),
+              ),
             ),
           ),
         ),

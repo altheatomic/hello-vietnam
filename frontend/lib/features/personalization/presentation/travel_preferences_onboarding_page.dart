@@ -183,6 +183,11 @@ class _TravelPreferencesOnboardingPageState
     if (_currentStep == 0) {
       if (_isEditing) {
         context.go(widget.returnRoute);
+        return;
+      }
+      await TravelPreferencesRepository.instance.deferCurrentUserOnboarding();
+      if (mounted) {
+        context.go(AppRoutes.home);
       }
       return;
     }
@@ -210,7 +215,7 @@ class _TravelPreferencesOnboardingPageState
     );
 
     try {
-      await repository.saveCurrentUserPreferences(preferences, notify: false);
+      await repository.saveCurrentUserPreferences(preferences);
 
       if (!mounted) {
         return;
@@ -218,9 +223,7 @@ class _TravelPreferencesOnboardingPageState
 
       setState(() => _isSaving = false);
       context.go(widget.returnRoute);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        repository.refresh();
-      });
+      repository.refresh();
     } catch (error) {
       if (!mounted) {
         return;
@@ -245,7 +248,7 @@ class _TravelPreferencesOnboardingPageState
     return PopScope(
       canPop: _isEditing,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF2FAFF),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Stack(
           children: <Widget>[
             const Positioned.fill(child: _LiquidBackground()),
@@ -349,7 +352,7 @@ class _TravelPreferencesOnboardingPageState
                         Expanded(
                           child: _GlassActionButton(
                             label: safeStepIndex == 0
-                                ? (_isEditing ? 'Cancel' : 'Back later')
+                                ? (_isEditing ? 'Cancel' : 'Back for now')
                                 : 'Back',
                             onTap: _goBack,
                             isPrimary: false,
@@ -410,28 +413,31 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
-        GestureDetector(
-          onTap: onBack,
-          child: Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.86),
-              shape: BoxShape.circle,
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  color: Color(0x1E183B60),
-                  blurRadius: 18,
-                  offset: Offset(0, 10),
-                ),
-              ],
+        if (isEditing || step > 1)
+          GestureDetector(
+            onTap: onBack,
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.86),
+                shape: BoxShape.circle,
+                boxShadow: const <BoxShadow>[
+                  BoxShadow(
+                    color: Color(0x1E183B60),
+                    blurRadius: 18,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.arrow_back_rounded,
+                color: Color(0xFF60748A),
+              ),
             ),
-            child: Icon(
-              isEditing || step > 1 ? Icons.arrow_back_rounded : Icons.close,
-              color: const Color(0xFF60748A),
-            ),
-          ),
-        ),
+          )
+        else
+          const SizedBox(width: 42, height: 42),
         const Spacer(),
         Text(
           'Your Travel Taste',

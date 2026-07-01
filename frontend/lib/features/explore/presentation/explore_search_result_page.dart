@@ -57,6 +57,8 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
   @override
   Widget build(BuildContext context) {
     final statusBarH = MediaQuery.of(context).padding.top;
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     final List<SearchResultItem> items = _results.byCategory(_selectedFilter);
     final int visibleCount = items.length < _visibleItemCount
         ? items.length
@@ -64,7 +66,7 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
     final bool hasMore = visibleCount < items.length;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           CustomScrollView(
@@ -81,10 +83,14 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
                   child: Container(
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark
+                          ? theme.colorScheme.surface.withValues(alpha: 0.92)
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(45),
                       border: Border.all(
-                        color: AppColors.primaryLight.withValues(alpha: 0.5),
+                        color: AppColors.primaryLight.withValues(
+                          alpha: isDark ? 0.18 : 0.5,
+                        ),
                       ),
                     ),
                     child: Row(
@@ -92,7 +98,9 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
                         const SizedBox(width: 12),
                         Icon(
                           Icons.search_rounded,
-                          color: AppColors.primary,
+                          color: isDark
+                              ? AppColors.primaryLight
+                              : AppColors.primary,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
@@ -100,7 +108,9 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
                           _results.destination,
                           style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.primary,
+                            color: isDark
+                                ? AppColors.primaryLight
+                                : AppColors.primary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -121,10 +131,10 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
                   ),
                   child: RichText(
                     text: TextSpan(
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        color: Colors.black87,
+                        color: theme.colorScheme.onSurface,
                       ),
                       children: [
                         TextSpan(text: '${context.l10n.ui('Discover')} '),
@@ -229,9 +239,9 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
   _StickyFilterDelegate({required this.selectedIndex, required this.onTap});
 
   @override
-  double get minExtent => 90;
+  double get minExtent => 82;
   @override
-  double get maxExtent => 90;
+  double get maxExtent => 82;
 
   @override
   Widget build(
@@ -240,89 +250,39 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     final statusBarH = MediaQuery.of(context).padding.top;
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.only(
-        top: statusBarH > 0 ? statusBarH : 0,
-        bottom: 6,
-        left: 0,
-        right: 0,
-      ),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppConstants.pagePadding,
-        ),
-        itemCount: _filterLabels.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 6),
-        itemBuilder: (context, index) {
-          final isSelected = index == selectedIndex;
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => onTap(index),
-                  borderRadius: BorderRadius.circular(15),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
-                    constraints: const BoxConstraints(minHeight: 20),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: isSelected
-                          ? const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [Color(0xFF7FD3F9), Color(0xFF52B8F4)],
-                            )
-                          : LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Colors.white.withValues(alpha: 0.78),
-                                const Color(0xFFEAF7FD).withValues(alpha: 0.9),
-                              ],
-                            ),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: isSelected
-                            ? Colors.white.withValues(alpha: 0.35)
-                            : const Color(0xFFD9EDF8),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isSelected
-                              ? const Color(0xFF52B8F4).withValues(alpha: 0.22)
-                              : Colors.black.withValues(alpha: 0.04),
-                          blurRadius: isSelected ? 14 : 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      context.l10n.ui(_filterLabels[index]),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
-                        color: isSelected
-                            ? Colors.white
-                            : const Color(0xFF6B7280),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          color: (isDark ? const Color(0xFF020B10) : Colors.white).withValues(
+            alpha: isDark ? 0.78 : 0.86,
+          ),
+          padding: EdgeInsets.only(
+            top: statusBarH > 0 ? statusBarH : 0,
+            bottom: 8,
+            left: 0,
+            right: 0,
+          ),
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppConstants.pagePadding,
             ),
-          );
-        },
+            itemCount: _filterLabels.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final isSelected = index == selectedIndex;
+              return Center(
+                child: _AppleFilterChip(
+                  label: context.l10n.ui(_filterLabels[index]),
+                  isSelected: isSelected,
+                  onTap: () => onTap(index),
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -330,6 +290,107 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant _StickyFilterDelegate oldDelegate) =>
       selectedIndex != oldDelegate.selectedIndex;
+}
+
+class _AppleFilterChip extends StatelessWidget {
+  const _AppleFilterChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return AnimatedScale(
+      scale: isSelected ? 1 : 0.98,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
+            height: 46,
+            constraints: const BoxConstraints(minWidth: 96),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              gradient: isSelected
+                  ? const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: <Color>[
+                        Color(0xFF7FD8FF),
+                        AppColors.primary,
+                        Color(0xFF2FB7E7),
+                      ],
+                    )
+                  : LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: <Color>[
+                        (isDark ? const Color(0xFF102A36) : Colors.white)
+                            .withValues(alpha: isDark ? 0.86 : 0.96),
+                        (isDark
+                                ? const Color(0xFF173746)
+                                : const Color(0xFFF3FBFF))
+                            .withValues(alpha: isDark ? 0.80 : 0.92),
+                      ],
+                    ),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.48)
+                    : AppColors.primaryLight.withValues(
+                        alpha: isDark ? 0.16 : 0.36,
+                      ),
+                width: 1.2,
+              ),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: isSelected
+                      ? AppColors.primaryDark.withValues(alpha: 0.22)
+                      : (isDark ? Colors.black : AppColors.primary).withValues(
+                          alpha: isDark ? 0.22 : 0.07,
+                        ),
+                  blurRadius: isSelected ? 18 : 14,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: isDark ? 0.04 : 0.7),
+                  blurRadius: 1,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isSelected
+                    ? Colors.white
+                    : (isDark
+                          ? const Color(0xFFC6D7DF)
+                          : const Color(0xFF667085)),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ─── Result card with carousel ───────────────────────────────────────
@@ -396,6 +457,7 @@ class _ResultCardState extends State<_ResultCard> {
   @override
   Widget build(BuildContext context) {
     final imageCount = widget.item.images.length;
+    final Color titleColor = Theme.of(context).colorScheme.onSurface;
 
     return GestureDetector(
       onTap: () {
@@ -540,10 +602,10 @@ class _ResultCardState extends State<_ResultCard> {
             const SizedBox(height: 6),
             Text(
               context.l10n.ui(widget.item.name),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: titleColor,
               ),
               textAlign: TextAlign.center,
             ),

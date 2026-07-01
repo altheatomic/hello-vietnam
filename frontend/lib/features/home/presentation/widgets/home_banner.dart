@@ -8,19 +8,32 @@ class HomeBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       height: 160,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),
         gradient: LinearGradient(
-          colors: [
-            AppColors.primaryLight.withValues(alpha: 0.6),
-            AppColors.accent.withValues(alpha: 0.35),
-          ],
+          colors: isDark
+              ? <Color>[
+                  const Color(0xFF102A36),
+                  AppColors.primary.withValues(alpha: 0.20),
+                ]
+              : <Color>[
+                  AppColors.primaryLight.withValues(alpha: 0.6),
+                  AppColors.accent.withValues(alpha: 0.35),
+                ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),

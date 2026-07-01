@@ -9,6 +9,30 @@ import 'package:hellovietnam/features/loyalty/data/loyalty_award_service.dart';
 import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+const Color _paymentDarkBackground = Color(0xFF020B10);
+const Color _paymentDarkSurface = Color(0xFF0B1A22);
+const Color _paymentDarkSurfaceHigh = Color(0xFF122832);
+const Color _paymentDarkText = Color(0xFFF5FBFF);
+const Color _paymentDarkMuted = Color(0xFFA9BCC7);
+
+bool _paymentIsDark(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark;
+
+Color _paymentText(BuildContext context) =>
+    _paymentIsDark(context) ? _paymentDarkText : const Color(0xFF1F2937);
+
+Color _paymentMuted(BuildContext context) =>
+    _paymentIsDark(context) ? _paymentDarkMuted : const Color(0xFF667085);
+
+Color _paymentSurface(BuildContext context, {double darkAlpha = 0.92}) =>
+    _paymentIsDark(context)
+    ? _paymentDarkSurface.withValues(alpha: darkAlpha)
+    : Colors.white.withValues(alpha: 0.88);
+
+Color _paymentBorder(BuildContext context) => _paymentIsDark(context)
+    ? Colors.white.withValues(alpha: 0.10)
+    : const Color(0xFFE5E7EB);
+
 class _PaymentMethod {
   const _PaymentMethod({
     required this.id,
@@ -286,17 +310,22 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
   @override
   Widget build(BuildContext context) {
     final double topInset = MediaQuery.of(context).padding.top;
+    final bool isDark = _paymentIsDark(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEFFBFC),
+      backgroundColor: isDark
+          ? _paymentDarkBackground
+          : const Color(0xFFEFFBFC),
       body: Column(
         children: <Widget>[
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: <Color>[Color(0xFFF3FBFF), Color(0xFFE6FCF8)],
+                colors: isDark
+                    ? <Color>[_paymentDarkBackground, _paymentDarkSurface]
+                    : const <Color>[Color(0xFFF3FBFF), Color(0xFFE6FCF8)],
               ),
             ),
             padding: EdgeInsets.fromLTRB(18, topInset + 14, 18, 14),
@@ -312,10 +341,10 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                     child: Text(
                       context.l10n.ui('Upgrade account'),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1F2937),
+                        color: _paymentText(context),
                       ),
                     ),
                   ),
@@ -352,10 +381,10 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                             children: <Widget>[
                               Text(
                                 context.l10n.ui('Select your payment method:'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF334155),
+                                  color: _paymentText(context),
                                 ),
                               ),
                               const SizedBox(height: 12),
@@ -402,7 +431,9 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                       : () => _continueToConfirmation(_plan!),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF11BED4),
-                    disabledBackgroundColor: const Color(0xFFD9E6EA),
+                    disabledBackgroundColor: isDark
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : const Color(0xFFD9E6EA),
                     elevation: 8,
                     shadowColor: const Color(0x6611BED4),
                     shape: RoundedRectangleBorder(
@@ -435,18 +466,22 @@ class _HeaderCircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Material(
-      color: Colors.white,
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : Colors.white.withValues(alpha: 0.88),
       shape: const CircleBorder(),
       elevation: 14,
-      shadowColor: const Color(0x2F64748B),
+      shadowColor: Colors.black.withValues(alpha: isDark ? 0.28 : 0.12),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onPressed,
         child: SizedBox(
           width: 46,
           height: 46,
-          child: Icon(icon, size: 27, color: const Color(0xFF334155)),
+          child: Icon(icon, size: 27, color: _paymentText(context)),
         ),
       ),
     );
@@ -468,14 +503,17 @@ class _OrderSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
+        color: _paymentSurface(context),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _paymentBorder(context)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: const Color(0xFF64748B).withValues(alpha: 0.12),
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.10),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -519,19 +557,19 @@ class _OrderSummaryCard extends StatelessWidget {
                       plan.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1F2937),
+                        color: _paymentText(context),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       context.l10n.ui('Premium subscription'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF667085),
+                        color: _paymentMuted(context),
                       ),
                     ),
                   ],
@@ -540,15 +578,15 @@ class _OrderSummaryCard extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 formatMoney(plan.priceMinor),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1F2937),
+                  color: _paymentText(context),
                 ),
               ),
             ],
           ),
-          const Divider(height: 22, thickness: 1.1, color: Color(0xFFE5E7EB)),
+          Divider(height: 22, thickness: 1.1, color: _paymentBorder(context)),
           if (discountMinor > 0)
             _AmountRow(
               label: context.l10n.ui('Voucher'),
@@ -581,14 +619,17 @@ class _VoucherApplyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool hasVoucher = preview != null;
+    final bool isDark = _paymentIsDark(context);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
+        color: _paymentSurface(context),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _paymentBorder(context)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: const Color(0xFF64748B).withValues(alpha: 0.11),
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.10),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -607,10 +648,10 @@ class _VoucherApplyCard extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 context.l10n.ui('Voucher'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF334155),
+                  color: _paymentText(context),
                 ),
               ),
             ],
@@ -682,7 +723,9 @@ class _VoucherApplyCard extends StatelessWidget {
             )
           else
             Material(
-              color: Colors.white,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(18),
               child: InkWell(
                 borderRadius: BorderRadius.circular(18),
@@ -693,7 +736,7 @@ class _VoucherApplyCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: const Color(0xFFE5E7EB),
+                      color: _paymentBorder(context),
                       width: 1.5,
                     ),
                   ),
@@ -703,16 +746,16 @@ class _VoucherApplyCard extends StatelessWidget {
                         child: Text(
                           context.l10n.ui('Select or enter voucher code'),
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF667085),
+                          style: TextStyle(
+                            color: _paymentMuted(context),
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right_rounded,
-                        color: Color(0xFF667085),
+                        color: _paymentMuted(context),
                         size: 24,
                       ),
                     ],
@@ -739,6 +782,8 @@ class _PaymentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -748,16 +793,20 @@ class _PaymentCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFFD9F2FF).withValues(alpha: 0.82)
-              : Colors.white.withValues(alpha: 0.88),
+              ? (isDark
+                    ? const Color(0xFF12384A).withValues(alpha: 0.86)
+                    : const Color(0xFFD9F2FF).withValues(alpha: 0.82))
+              : _paymentSurface(context),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? const Color(0xFF10C4DA) : Colors.transparent,
-            width: isSelected ? 3.0 : 0,
+            color: isSelected
+                ? const Color(0xFF10C4DA)
+                : _paymentBorder(context),
+            width: isSelected ? 2.0 : 1,
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: const Color(0xFF64748B).withValues(alpha: 0.13),
+              color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.10),
               blurRadius: 14,
               offset: const Offset(0, 7),
             ),
@@ -769,7 +818,11 @@ class _PaymentCard extends StatelessWidget {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: method.id == 'gpay' ? const Color(0xFFF3F4F6) : null,
+                color: method.id == 'gpay'
+                    ? (isDark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : const Color(0xFFF3F4F6))
+                    : null,
                 gradient: method.id == 'visa'
                     ? const LinearGradient(
                         begin: Alignment.topLeft,
@@ -779,15 +832,21 @@ class _PaymentCard extends StatelessWidget {
                     : null,
                 borderRadius: BorderRadius.circular(15),
               ),
-              child: Icon(method.icon, size: 27, color: method.iconColor),
+              child: Icon(
+                method.icon,
+                size: 27,
+                color: isDark && method.id == 'gpay'
+                    ? _paymentText(context)
+                    : method.iconColor,
+              ),
             ),
             const SizedBox(width: 16),
             Text(
               method.label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF334155),
+                color: _paymentText(context),
               ),
             ),
             const Spacer(),
@@ -806,6 +865,8 @@ class _PaymentSelectionIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     if (isSelected) {
       return Container(
         width: 36,
@@ -823,8 +884,15 @@ class _PaymentSelectionIndicator extends StatelessWidget {
       height: 30,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFA8B0BE), width: 3),
-        color: const Color(0xFFE5E7EB),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.28)
+              : const Color(0xFFA8B0BE),
+          width: 2,
+        ),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : const Color(0xFFE5E7EB),
       ),
     );
   }
@@ -835,14 +903,17 @@ class _AddPaymentMethodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Container(
       height: 46,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
+        color: _paymentSurface(context),
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _paymentBorder(context)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: const Color(0xFF64748B).withValues(alpha: 0.13),
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.10),
             blurRadius: 14,
             offset: const Offset(0, 7),
           ),
@@ -856,18 +927,18 @@ class _AddPaymentMethodCard extends StatelessWidget {
               context.l10n.ui('Add another payment method'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF334155),
+                color: _paymentText(context),
               ),
             ),
           ),
           const SizedBox(width: 10),
-          const Icon(
+          Icon(
             Icons.chevron_right_rounded,
             size: 22,
-            color: Color(0xFF334155),
+            color: _paymentMuted(context),
           ),
         ],
       ),
@@ -889,6 +960,8 @@ class _AmountRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final FontWeight weight = isStrong ? FontWeight.w800 : FontWeight.w500;
+    final Color text = _paymentText(context);
+    final Color muted = _paymentMuted(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1),
       child: Row(
@@ -896,9 +969,7 @@ class _AmountRow extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: isStrong
-                  ? const Color(0xFF1F2937)
-                  : const Color(0xFF667085),
+              color: isStrong ? text : muted,
               fontWeight: weight,
               fontSize: isStrong ? 18 : 13,
             ),
@@ -907,9 +978,7 @@ class _AmountRow extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              color: isStrong
-                  ? const Color(0xFF35B7F0)
-                  : const Color(0xFF1F2937),
+              color: isStrong ? const Color(0xFF35B7F0) : text,
               fontWeight: weight,
               fontSize: isStrong ? 22 : 14,
             ),
@@ -1021,6 +1090,8 @@ class _VoucherSelectionSheetState extends State<_VoucherSelectionSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return DraggableScrollableSheet(
       initialChildSize: 0.82,
       minChildSize: 0.55,
@@ -1028,11 +1099,14 @@ class _VoucherSelectionSheetState extends State<_VoucherSelectionSheet> {
       builder: (BuildContext context, ScrollController scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.96),
+            color: isDark
+                ? _paymentDarkSurface.withValues(alpha: 0.98)
+                : Colors.white.withValues(alpha: 0.96),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(top: BorderSide(color: _paymentBorder(context))),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
+                color: Colors.black.withValues(alpha: isDark ? 0.44 : 0.18),
                 blurRadius: 28,
                 offset: const Offset(0, -10),
               ),
@@ -1047,8 +1121,8 @@ class _VoucherSelectionSheetState extends State<_VoucherSelectionSheet> {
                     Expanded(
                       child: Text(
                         context.l10n.ui('Select Voucher'),
-                        style: const TextStyle(
-                          color: Color(0xFF1F2937),
+                        style: TextStyle(
+                          color: _paymentText(context),
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
                         ),
@@ -1056,16 +1130,16 @@ class _VoucherSelectionSheetState extends State<_VoucherSelectionSheet> {
                     ),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close_rounded,
-                        color: Color(0xFF667085),
+                        color: _paymentMuted(context),
                         size: 30,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              Divider(height: 1, color: _paymentBorder(context)),
               Expanded(
                 child: ListView(
                   controller: scrollController,
@@ -1073,10 +1147,10 @@ class _VoucherSelectionSheetState extends State<_VoucherSelectionSheet> {
                   children: <Widget>[
                     Text(
                       context.l10n.ui('Available Vouchers'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF334155),
+                        color: _paymentText(context),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -1097,10 +1171,10 @@ class _VoucherSelectionSheetState extends State<_VoucherSelectionSheet> {
                     const SizedBox(height: 16),
                     Text(
                       context.l10n.ui('Or enter code manually'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF334155),
+                        color: _paymentText(context),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -1117,15 +1191,17 @@ class _VoucherSelectionSheetState extends State<_VoucherSelectionSheet> {
                                 fontWeight: FontWeight.w600,
                               ),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: isDark
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : Colors.white,
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 18,
                                 vertical: 16,
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(18),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFE5E7EB),
+                                borderSide: BorderSide(
+                                  color: _paymentBorder(context),
                                   width: 1.6,
                                 ),
                               ),
@@ -1137,6 +1213,7 @@ class _VoucherSelectionSheetState extends State<_VoucherSelectionSheet> {
                                 ),
                               ),
                             ),
+                            style: TextStyle(color: _paymentText(context)),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1231,6 +1308,8 @@ class _VoucherOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Opacity(
       opacity: isEnabled ? 1 : 0.55,
       child: Material(
@@ -1242,13 +1321,17 @@ class _VoucherOptionCard extends StatelessWidget {
             duration: AppConstants.defaultAnimation,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
+              color: isSelected
+                  ? (isDark
+                        ? const Color(0xFF12384A).withValues(alpha: 0.82)
+                        : const Color(0xFFEFF6FF))
+                  : _paymentSurface(context, darkAlpha: 0.88),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isSelected
                     ? const Color(0xFF22D3EE)
-                    : const Color(0xFFE5E7EB),
-                width: 2,
+                    : _paymentBorder(context),
+                width: isSelected ? 2 : 1,
               ),
               boxShadow: <BoxShadow>[
                 if (isSelected)
@@ -1294,16 +1377,16 @@ class _VoucherOptionCard extends StatelessWidget {
                             children: <Widget>[
                               Text(
                                 context.l10n.ui(voucher.title),
-                                style: const TextStyle(
-                                  color: Color(0xFF1F2937),
+                                style: TextStyle(
+                                  color: _paymentText(context),
                                   fontSize: 17,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
                               Text(
                                 'Code: ${voucher.code}',
-                                style: const TextStyle(
-                                  color: Color(0xFF667085),
+                                style: TextStyle(
+                                  color: _paymentMuted(context),
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -1316,8 +1399,8 @@ class _VoucherOptionCard extends StatelessWidget {
                     const SizedBox(height: 14),
                     Text(
                       context.l10n.ui(voucher.description),
-                      style: const TextStyle(
-                        color: Color(0xFF475569),
+                      style: TextStyle(
+                        color: _paymentMuted(context),
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1336,8 +1419,10 @@ class _VoucherOptionCard extends StatelessWidget {
                         const Spacer(),
                         Text(
                           context.l10n.ui(voucher.expiryLabel),
-                          style: const TextStyle(
-                            color: Color(0xFF98A2B3),
+                          style: TextStyle(
+                            color: _paymentMuted(
+                              context,
+                            ).withValues(alpha: 0.82),
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1518,9 +1603,12 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
   Widget build(BuildContext context) {
     final _PaymentFlowData data = widget.data;
     final int months = (data.plan.durationDays / 30).round();
+    final bool isDark = _paymentIsDark(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEFFBFC),
+      backgroundColor: isDark
+          ? _paymentDarkBackground
+          : const Color(0xFFEFFBFC),
       body: Column(
         children: <Widget>[
           _SimpleGradientHeader(
@@ -1538,11 +1626,14 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: _paymentSurface(context),
                       borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: _paymentBorder(context)),
                       boxShadow: <BoxShadow>[
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.12),
+                          color: Colors.black.withValues(
+                            alpha: isDark ? 0.28 : 0.12,
+                          ),
                           blurRadius: 16,
                           offset: const Offset(0, 8),
                         ),
@@ -1559,8 +1650,8 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
                         const SizedBox(width: 10),
                         Text(
                           context.l10n.ui('Secure Payment'),
-                          style: const TextStyle(
-                            color: Color(0xFF334155),
+                          style: TextStyle(
+                            color: _paymentText(context),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -1571,8 +1662,8 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
                 const SizedBox(height: 28),
                 Text(
                   context.l10n.ui('Review your purchase:'),
-                  style: const TextStyle(
-                    color: Color(0xFF334155),
+                  style: TextStyle(
+                    color: _paymentText(context),
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1611,7 +1702,9 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
                   onPressed: _agreed && !_isProcessing ? _confirm : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF11BED4),
-                    disabledBackgroundColor: const Color(0xFFD1D5DB),
+                    disabledBackgroundColor: isDark
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : const Color(0xFFD1D5DB),
                     elevation: _agreed ? 10 : 0,
                     shadowColor: const Color(0x4411BED4),
                     shape: RoundedRectangleBorder(
@@ -1654,14 +1747,18 @@ class _SimpleGradientHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double topInset = MediaQuery.of(context).padding.top;
+    final bool isDark = _paymentIsDark(context);
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(16, topInset + 18, 16, 18),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: <Color>[Color(0xFFF3FBFF), Color(0xFFE6FCF8)],
+          colors: isDark
+              ? <Color>[_paymentDarkBackground, _paymentDarkSurface]
+              : const <Color>[Color(0xFFF3FBFF), Color(0xFFE6FCF8)],
         ),
       ),
       child: SizedBox(
@@ -1673,8 +1770,8 @@ class _SimpleGradientHeader extends StatelessWidget {
               child: Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF1F2937),
+                style: TextStyle(
+                  color: _paymentText(context),
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1696,10 +1793,14 @@ class _SmallCircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Material(
-      color: Colors.white,
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : Colors.white.withValues(alpha: 0.88),
       elevation: 10,
-      shadowColor: const Color(0x2F64748B),
+      shadowColor: Colors.black.withValues(alpha: isDark ? 0.28 : 0.12),
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -1707,7 +1808,7 @@ class _SmallCircleButton extends StatelessWidget {
         child: SizedBox(
           width: 48,
           height: 48,
-          child: Icon(icon, color: const Color(0xFF334155), size: 26),
+          child: Icon(icon, color: _paymentText(context), size: 26),
         ),
       ),
     );
@@ -1727,6 +1828,9 @@ class _ConfirmationSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color text = _paymentText(context);
+    final Color muted = _paymentMuted(context);
+
     return _GlassPanel(
       child: Column(
         children: <Widget>[
@@ -1743,24 +1847,24 @@ class _ConfirmationSummaryCard extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       data.plan.name,
-                      style: const TextStyle(
-                        color: Color(0xFF1F2937),
+                      style: TextStyle(
+                        color: text,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: <Widget>[
-                        const Icon(
+                        Icon(
                           Icons.calendar_today_outlined,
                           size: 14,
-                          color: Color(0xFF667085),
+                          color: muted,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           '${context.l10n.ui('Valid for')} $months ${context.l10n.ui('months')}',
-                          style: const TextStyle(
-                            color: Color(0xFF667085),
+                          style: TextStyle(
+                            color: muted,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1772,15 +1876,12 @@ class _ConfirmationSummaryCard extends StatelessWidget {
               ),
               Text(
                 formatMoney(data.plan.priceMinor),
-                style: const TextStyle(
-                  color: Color(0xFF1F2937),
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(color: text, fontWeight: FontWeight.w800),
               ),
             ],
           ),
           if (data.discountMinor > 0) ...<Widget>[
-            const Divider(height: 32, color: Color(0xFFE5E7EB)),
+            Divider(height: 32, color: _paymentBorder(context)),
             Row(
               children: <Widget>[
                 const Icon(
@@ -1802,10 +1903,7 @@ class _ConfirmationSummaryCard extends StatelessWidget {
                       ),
                       Text(
                         context.l10n.ui('Discount applied'),
-                        style: const TextStyle(
-                          color: Color(0xFF667085),
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(color: muted, fontSize: 13),
                       ),
                     ],
                   ),
@@ -1820,13 +1918,13 @@ class _ConfirmationSummaryCard extends StatelessWidget {
               ],
             ),
           ],
-          const Divider(height: 38, color: Color(0xFFE5E7EB)),
+          Divider(height: 38, color: _paymentBorder(context)),
           Row(
             children: <Widget>[
               Text(
                 context.l10n.ui('Total Amount'),
-                style: const TextStyle(
-                  color: Color(0xFF1F2937),
+                style: TextStyle(
+                  color: text,
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
                 ),
@@ -1859,6 +1957,9 @@ class _ConfirmPaymentMethodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color text = _paymentText(context);
+    final Color muted = _paymentMuted(context);
+
     return _GlassPanel(
       child: Row(
         children: <Widget>[
@@ -1870,17 +1971,11 @@ class _ConfirmPaymentMethodCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   context.l10n.ui('Payment Method'),
-                  style: const TextStyle(
-                    color: Color(0xFF667085),
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: muted, fontSize: 13),
                 ),
                 Text(
                   method.label,
-                  style: const TextStyle(
-                    color: Color(0xFF1F2937),
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(color: text, fontWeight: FontWeight.w800),
                 ),
               ],
             ),
@@ -1909,11 +2004,17 @@ class _PaymentMethodIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: method.id == 'gpay' ? const Color(0xFFF3F4F6) : null,
+        color: method.id == 'gpay'
+            ? (isDark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : const Color(0xFFF3F4F6))
+            : null,
         gradient: method.id == 'visa'
             ? const LinearGradient(
                 begin: Alignment.topLeft,
@@ -1923,7 +2024,13 @@ class _PaymentMethodIcon extends StatelessWidget {
             : null,
         borderRadius: BorderRadius.circular(size * 0.3),
       ),
-      child: Icon(method.icon, size: size * 0.53, color: method.iconColor),
+      child: Icon(
+        method.icon,
+        size: size * 0.53,
+        color: isDark && method.id == 'gpay'
+            ? _paymentText(context)
+            : method.iconColor,
+      ),
     );
   }
 }
@@ -1933,12 +2040,20 @@ class _ImportantInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB).withValues(alpha: 0.9),
+        color: isDark
+            ? const Color(0xFF2A2111).withValues(alpha: 0.88)
+            : const Color(0xFFFFFBEB).withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFFBD38D)),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFFF59E0B).withValues(alpha: 0.35)
+              : const Color(0xFFFBD38D),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1955,8 +2070,10 @@ class _ImportantInfoCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   context.l10n.ui('Important Information'),
-                  style: const TextStyle(
-                    color: Color(0xFF92400E),
+                  style: TextStyle(
+                    color: isDark
+                        ? const Color(0xFFFCD34D)
+                        : const Color(0xFF92400E),
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -1965,8 +2082,10 @@ class _ImportantInfoCard extends StatelessWidget {
                   context.l10n.ui(
                     'Your subscription will automatically renew. You can cancel anytime from your account settings.',
                   ),
-                  style: const TextStyle(
-                    color: Color(0xFFB45309),
+                  style: TextStyle(
+                    color: isDark
+                        ? const Color(0xFFF6D38A)
+                        : const Color(0xFFB45309),
                     height: 1.45,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1988,6 +2107,8 @@ class _TermsCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return InkWell(
       onTap: onChanged,
       borderRadius: BorderRadius.circular(12),
@@ -1999,7 +2120,11 @@ class _TermsCheckbox extends StatelessWidget {
             width: 26,
             height: 26,
             decoration: BoxDecoration(
-              color: value ? const Color(0xFF22D3EE) : Colors.white,
+              color: value
+                  ? const Color(0xFF22D3EE)
+                  : (isDark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.white),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: value
@@ -2017,8 +2142,8 @@ class _TermsCheckbox extends StatelessWidget {
             child: Text.rich(
               TextSpan(
                 text: context.l10n.ui('I agree to the '),
-                style: const TextStyle(
-                  color: Color(0xFF475569),
+                style: TextStyle(
+                  color: _paymentMuted(context),
                   fontSize: 15,
                   height: 1.45,
                   fontWeight: FontWeight.w600,
@@ -2057,17 +2182,24 @@ class _BenefitsPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: <Color>[Color(0xFFEAFEFF), Color(0xFFEFF6FF)],
+        gradient: LinearGradient(
+          colors: isDark
+              ? <Color>[
+                  _paymentDarkSurfaceHigh.withValues(alpha: 0.94),
+                  _paymentDarkSurface.withValues(alpha: 0.94),
+                ]
+              : const <Color>[Color(0xFFEAFEFF), Color(0xFFEFF6FF)],
         ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
+        border: Border.all(color: _paymentBorder(context)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: const Color(0xFF64748B).withValues(alpha: 0.12),
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.10),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
@@ -2078,8 +2210,8 @@ class _BenefitsPreviewCard extends StatelessWidget {
         children: <Widget>[
           Text(
             context.l10n.ui("✨ You're getting:"),
-            style: const TextStyle(
-              color: Color(0xFF1F2937),
+            style: TextStyle(
+              color: _paymentText(context),
               fontWeight: FontWeight.w900,
               fontSize: 16,
             ),
@@ -2095,8 +2227,8 @@ class _BenefitsPreviewCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       context.l10n.ui(_items[index]),
-                      style: const TextStyle(
-                        color: Color(0xFF475569),
+                      style: TextStyle(
+                        color: _paymentMuted(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -2146,9 +2278,12 @@ class _PaymentSuccessPage extends StatelessWidget {
             .substring(0, 10)
             .toUpperCase() ??
         'TXN${now.millisecondsSinceEpoch.toString().substring(4, 13)}';
+    final bool isDark = _paymentIsDark(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEFFBFC),
+      backgroundColor: isDark
+          ? _paymentDarkBackground
+          : const Color(0xFFEFFBFC),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 34, 24, 28),
@@ -2201,8 +2336,8 @@ class _PaymentSuccessPage extends StatelessWidget {
             Text(
               context.l10n.ui('Payment Successful! 🎉'),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF1F2937),
+              style: TextStyle(
+                color: _paymentText(context),
                 fontSize: 31,
                 fontWeight: FontWeight.w900,
               ),
@@ -2211,8 +2346,8 @@ class _PaymentSuccessPage extends StatelessWidget {
             Text(
               context.l10n.ui('Your premium subscription is now active'),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF667085),
+              style: TextStyle(
+                color: _paymentMuted(context),
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
@@ -2295,24 +2430,27 @@ class _SuccessTransactionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color text = _paymentText(context);
+    final Color muted = _paymentMuted(context);
+
     return _GlassPanel(
       padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
       child: Column(
         children: <Widget>[
           Text(
             context.l10n.ui('Transaction ID'),
-            style: const TextStyle(color: Color(0xFF667085), fontSize: 16),
+            style: TextStyle(color: muted, fontSize: 16),
           ),
           const SizedBox(height: 8),
           Text(
             transactionId,
-            style: const TextStyle(
-              color: Color(0xFF1F2937),
+            style: TextStyle(
+              color: text,
               fontSize: 22,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const Divider(height: 38, color: Color(0xFFE5E7EB)),
+          Divider(height: 38, color: _paymentBorder(context)),
           _SuccessDetailRow(
             icon: Icons.workspace_premium_rounded,
             iconColor: Color(0xFFFFD84D),
@@ -2347,20 +2485,20 @@ class _SuccessTransactionCard extends StatelessWidget {
             label: 'Date',
             value: dateLabel,
           ),
-          const Divider(height: 32, color: Color(0xFFE5E7EB)),
+          Divider(height: 32, color: _paymentBorder(context)),
           Row(
             children: <Widget>[
               Text(
                 context.l10n.ui('Valid Until'),
-                style: const TextStyle(color: Color(0xFF667085), fontSize: 16),
+                style: TextStyle(color: muted, fontSize: 16),
               ),
               const Spacer(),
               Flexible(
                 child: Text(
                   validUntilLabel,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    color: Color(0xFF1F2937),
+                  style: TextStyle(
+                    color: text,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
@@ -2397,6 +2535,8 @@ class _SuccessDetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 22),
       child: Row(
@@ -2405,7 +2545,7 @@ class _SuccessDetailRow extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: bgColor,
+              color: isDark ? iconColor.withValues(alpha: 0.14) : bgColor,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: iconColor, size: 30),
@@ -2417,8 +2557,8 @@ class _SuccessDetailRow extends StatelessWidget {
               children: <Widget>[
                 Text(
                   context.l10n.ui(label),
-                  style: const TextStyle(
-                    color: Color(0xFF667085),
+                  style: TextStyle(
+                    color: _paymentMuted(context),
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -2426,7 +2566,7 @@ class _SuccessDetailRow extends StatelessWidget {
                 Text(
                   value,
                   style: TextStyle(
-                    color: valueColor ?? const Color(0xFF1F2937),
+                    color: valueColor ?? _paymentText(context),
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
@@ -2438,7 +2578,7 @@ class _SuccessDetailRow extends StatelessWidget {
             Text(
               trailing!,
               style: TextStyle(
-                color: trailingColor ?? const Color(0xFF667085),
+                color: trailingColor ?? _paymentMuted(context),
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -2462,15 +2602,23 @@ class _BenefitsActivatedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB).withValues(alpha: 0.92),
+        color: isDark
+            ? const Color(0xFF2A2111).withValues(alpha: 0.88)
+            : const Color(0xFFFFFBEB).withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFFDE68A)),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFFF59E0B).withValues(alpha: 0.34)
+              : const Color(0xFFFDE68A),
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.10),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
@@ -2481,8 +2629,8 @@ class _BenefitsActivatedCard extends StatelessWidget {
         children: <Widget>[
           Text(
             '✨ ${context.l10n.ui('Premium Benefits Activated')}',
-            style: const TextStyle(
-              color: Color(0xFF1F2937),
+            style: TextStyle(
+              color: isDark ? const Color(0xFFFCD34D) : const Color(0xFF1F2937),
               fontSize: 20,
               fontWeight: FontWeight.w900,
             ),
@@ -2510,8 +2658,10 @@ class _BenefitsActivatedCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       '${_icons[index]}  ${context.l10n.ui(_items[index])}',
-                      style: const TextStyle(
-                        color: Color(0xFF475569),
+                      style: TextStyle(
+                        color: isDark
+                            ? const Color(0xFFF6D38A)
+                            : const Color(0xFF475569),
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2539,11 +2689,13 @@ class _SecondaryActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Material(
-      color: Colors.white.withValues(alpha: 0.88),
+      color: _paymentSurface(context),
       borderRadius: BorderRadius.circular(18),
       elevation: 8,
-      shadowColor: const Color(0x2264748B),
+      shadowColor: Colors.black.withValues(alpha: isDark ? 0.24 : 0.10),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
@@ -2552,12 +2704,12 @@ class _SecondaryActionButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(icon, color: const Color(0xFF334155), size: 26),
+              Icon(icon, color: _paymentText(context), size: 26),
               const SizedBox(width: 12),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Color(0xFF334155),
+                style: TextStyle(
+                  color: _paymentText(context),
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                 ),
@@ -2581,15 +2733,18 @@ class _GlassPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Container(
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
+        color: _paymentSurface(context),
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _paymentBorder(context)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: const Color(0xFF64748B).withValues(alpha: 0.13),
+            color: Colors.black.withValues(alpha: isDark ? 0.26 : 0.10),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -2634,14 +2789,21 @@ class _PrivilegesDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _paymentIsDark(context);
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         decoration: BoxDecoration(
-          color: AppColors.primaryLight,
+          color: isDark ? _paymentDarkSurface : AppColors.primaryLight,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.10)
+                : Colors.transparent,
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -2677,16 +2839,18 @@ class _PrivilegesDialog extends StatelessWidget {
                   vertical: 16,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(AppConstants.cardRadius),
                 ),
                 child: Text(
                   privilege,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: isDark ? _paymentDarkText : AppColors.textPrimary,
                   ),
                 ),
               ),

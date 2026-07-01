@@ -18,6 +18,7 @@ class FeatureGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.builder(
       shrinkWrap: true,
+      padding: EdgeInsets.zero,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: items.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -40,6 +41,17 @@ class _FeatureButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color containerColor = isDark
+        ? AppColors.primaryLight.withValues(alpha: 0.11)
+        : AppColors.primaryLight.withValues(alpha: 0.25);
+    final Color borderColor = isDark
+        ? AppColors.primaryLight.withValues(alpha: 0.12)
+        : AppColors.primaryLight.withValues(alpha: 0.15);
+    final Color labelColor = isDark
+        ? AppColors.primaryLight
+        : AppColors.primary;
+
     return Stack(
       fit: StackFit.expand,
       clipBehavior: Clip.none,
@@ -55,12 +67,9 @@ class _FeatureButton extends StatelessWidget {
             },
             child: Container(
               decoration: BoxDecoration(
-                color: AppColors.primaryLight.withValues(alpha: 0.25),
+                color: containerColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.primaryLight.withValues(alpha: 0.15),
-                  width: 1,
-                ),
+                border: Border.all(color: borderColor, width: 1),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -85,7 +94,7 @@ class _FeatureButton extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
+                        color: labelColor,
                         height: 1.2,
                       ),
                     ),
@@ -106,23 +115,26 @@ class _FeatureButton extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF102A36) : Colors.white,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.2),
+                    color: (isDark ? AppColors.primaryLight : AppColors.primary)
+                        .withValues(alpha: 0.2),
                   ),
                   boxShadow: <BoxShadow>[
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.24 : 0.08,
+                      ),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.bookmark_added_rounded,
                   size: 16,
-                  color: AppColors.primary,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
                 ),
               ),
             ),

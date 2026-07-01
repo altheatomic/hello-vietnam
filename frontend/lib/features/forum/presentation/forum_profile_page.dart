@@ -113,12 +113,12 @@ class ForumProfilePage extends StatelessWidget {
                             store.toggleFollowAuthor(profile.author.id),
                       ),
                       const SizedBox(height: 28),
-                      const Text(
+                      Text(
                         'Posts',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
-                          color: ForumColors.textPrimary,
+                          color: ForumColors.foreground(context),
                         ),
                       ),
                       const SizedBox(height: 18),

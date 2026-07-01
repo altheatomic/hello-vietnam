@@ -69,6 +69,8 @@ class _ExplorePageState extends State<ExplorePage> {
   Widget build(BuildContext context) {
     final AppStrings strings = context.l10n;
     final statusBarH = MediaQuery.of(context).padding.top;
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     final UserTravelPreferences? preferences =
         TravelPreferencesRepository.instance.currentPreferences;
     final List<ExploreItem> featuredItems = preferences == null
@@ -81,7 +83,7 @@ class _ExplorePageState extends State<ExplorePage> {
         : TravelRecommendationService.orderedExploreCategories(preferences);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           CustomScrollView(
@@ -99,9 +101,11 @@ class _ExplorePageState extends State<ExplorePage> {
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Container(
-                                color: AppColors.primaryLight.withValues(
-                                  alpha: 0.1,
-                                ),
+                                color:
+                                    (isDark
+                                            ? AppColors.primaryDark
+                                            : AppColors.primaryLight)
+                                        .withValues(alpha: 0.1),
                               ),
                         ),
                       ),
@@ -126,7 +130,9 @@ class _ExplorePageState extends State<ExplorePage> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
+                              color: isDark
+                                  ? AppColors.primaryLight
+                                  : AppColors.primary,
                               height: 1.3,
                             ),
                           ),
@@ -275,8 +281,11 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     final statusBarH = MediaQuery.of(context).padding.top;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      color: Colors.white,
+      color: (isDark ? const Color(0xFF020B10) : Colors.white).withValues(
+        alpha: isDark ? 0.92 : 1,
+      ),
       padding: EdgeInsets.only(top: statusBarH + 34),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -292,6 +301,12 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
               separatorBuilder: (context, index) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final isSelected = index == selectedIndex;
+                final Color activeColor = isDark
+                    ? AppColors.primaryLight
+                    : AppColors.primary;
+                final Color inactiveColor = isDark
+                    ? const Color(0xFFA9BCC7)
+                    : Colors.grey;
                 return GestureDetector(
                   onTap: () => onTap(index),
                   child: Container(
@@ -299,9 +314,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color: isSelected
-                              ? AppColors.primary
-                              : Colors.transparent,
+                          color: isSelected ? activeColor : Colors.transparent,
                           width: 2.5,
                         ),
                       ),
@@ -314,7 +327,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                         fontWeight: isSelected
                             ? FontWeight.w600
                             : FontWeight.w400,
-                        color: isSelected ? AppColors.primary : Colors.grey,
+                        color: isSelected ? activeColor : inactiveColor,
                       ),
                     ),
                   ),
@@ -322,7 +335,12 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
               },
             ),
           ),
-          Container(height: 1, color: Colors.grey.shade200),
+          Container(
+            height: 1,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.grey.shade200,
+          ),
         ],
       ),
     );
@@ -344,13 +362,16 @@ class _FeaturedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final borderColor = Color.lerp(
-      Colors.white.withValues(alpha: 0.55),
+      (isDark ? Colors.white : Colors.white).withValues(
+        alpha: isDark ? 0.14 : 0.55,
+      ),
       AppColors.primaryLight.withValues(alpha: 0.95),
       emphasis,
     )!;
     final shadowColor = Color.lerp(
-      Colors.black.withValues(alpha: 0.05),
+      Colors.black.withValues(alpha: isDark ? 0.28 : 0.05),
       AppColors.primary.withValues(alpha: 0.18),
       emphasis,
     )!;
@@ -436,6 +457,7 @@ class _CategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppConstants.pagePadding,
@@ -456,7 +478,7 @@ class _CategorySection extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: isDark ? const Color(0xFFD6E7EF) : Colors.black87,
                     height: 1.4,
                   ),
                 ),
@@ -471,7 +493,7 @@ class _CategorySection extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
                   ),
                 ),
               ),
@@ -509,6 +531,7 @@ class _ExploreItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
         context.push(
@@ -528,11 +551,11 @@ class _ExploreItemCard extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Container(
-              color: Colors.grey.shade200,
+              color: isDark ? const Color(0xFF102A36) : Colors.grey.shade200,
               child: Icon(
                 Icons.image_outlined,
                 size: 36,
-                color: Colors.grey.shade400,
+                color: isDark ? AppColors.primaryLight : Colors.grey.shade400,
               ),
             ),
             Positioned(

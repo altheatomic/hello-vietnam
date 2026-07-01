@@ -31,16 +31,31 @@ class RecommendationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final Color surfaceColor = isDark
+        ? theme.colorScheme.surface.withValues(alpha: 0.96)
+        : Colors.white;
+    final Color primaryText = theme.colorScheme.onSurface;
+    final Color secondaryText = isDark
+        ? const Color(0xFFA9BCC7)
+        : AppColors.textSecondary.withValues(alpha: 0.8);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 200,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: surfaceColor,
           borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.transparent,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withValues(alpha: isDark ? 0.26 : 0.08),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -83,11 +98,15 @@ class RecommendationCard extends StatelessWidget {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.85),
+                          color: isDark
+                              ? const Color(0xFF102A36).withValues(alpha: 0.86)
+                              : Colors.white.withValues(alpha: 0.85),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
+                              color: Colors.black.withValues(
+                                alpha: isDark ? 0.24 : 0.1,
+                              ),
                               blurRadius: 4,
                             ),
                           ],
@@ -95,9 +114,7 @@ class RecommendationCard extends StatelessWidget {
                         child: Icon(
                           isFavorite ? Icons.favorite : Icons.favorite_border,
                           size: 18,
-                          color: isFavorite
-                              ? Colors.redAccent
-                              : AppColors.textSecondary,
+                          color: isFavorite ? Colors.redAccent : secondaryText,
                         ),
                       ),
                     ),
@@ -120,10 +137,10 @@ class RecommendationCard extends StatelessWidget {
                           name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                            color: primaryText,
                           ),
                         ),
                       ),
@@ -136,10 +153,10 @@ class RecommendationCard extends StatelessWidget {
                       const SizedBox(width: 2),
                       Text(
                         rating.toStringAsFixed(2),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: primaryText,
                         ),
                       ),
                     ],
@@ -149,10 +166,7 @@ class RecommendationCard extends StatelessWidget {
                     category,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary.withValues(alpha: 0.8),
-                    ),
+                    style: TextStyle(fontSize: 11, color: secondaryText),
                   ),
                 ],
               ),
@@ -167,11 +181,7 @@ class RecommendationCard extends StatelessWidget {
     return Container(
       color: AppColors.primaryLight.withValues(alpha: 0.2),
       child: const Center(
-        child: Icon(
-          Icons.image_outlined,
-          size: 40,
-          color: AppColors.primary,
-        ),
+        child: Icon(Icons.image_outlined, size: 40, color: AppColors.primary),
       ),
     );
   }

@@ -97,10 +97,10 @@ class ThreadPage extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      const Icon(
+                      Icon(
                         Icons.forum_outlined,
                         size: 36,
-                        color: ForumColors.textMuted,
+                        color: ForumColors.muted(context),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -108,7 +108,7 @@ class ThreadPage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: ForumColors.textPrimary,
+                          color: ForumColors.foreground(context),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -163,12 +163,12 @@ class ThreadPage extends StatelessWidget {
                           showInlineFollow: false,
                         ),
                         const SizedBox(height: 24),
-                        const Text(
+                        Text(
                           'Popular answers',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: ForumColors.textPrimary,
+                            color: ForumColors.foreground(context),
                           ),
                         ),
                         const SizedBox(height: 16),

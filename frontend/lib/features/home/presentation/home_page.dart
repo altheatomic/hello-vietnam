@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -37,16 +38,28 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   final HomeRepository _homeRepository = HomeRepository();
   final QuickLocationFlow _quickLocationFlow = QuickLocationFlow();
+  late final AnimationController _galaxyTwinkleController;
   List<Destination> _destinations = mockDestinations;
   List<Dish> _dishes = mockDishes;
 
   @override
   void initState() {
     super.initState();
+    _galaxyTwinkleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2800),
+    )..repeat();
     _loadFeaturedContent();
+  }
+
+  @override
+  void dispose() {
+    _galaxyTwinkleController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadFeaturedContent() async {
@@ -74,50 +87,45 @@ class _HomePageState extends State<HomePage> {
     final statusBarHeight = mediaQuery.padding.top;
     final bottomContentPadding = mediaQuery.padding.bottom + 96;
     final size = mediaQuery.size;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           Positioned.fill(
             child: DecoratedBox(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: <Color>[
-                    Color(0xFFF1F6FE),
-                    Color(0xFFDFF5FF),
-                    Color(0xFFCCF6F1),
-                  ],
-                ),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF020B10) : Colors.white,
               ),
             ),
           ),
-          Positioned(
-            top: -90,
-            right: -70,
-            child: _HomeDecorativeOrb(
-              size: 230,
-              color: const Color(0x662BC3FF),
+          if (isDark) ...<Widget>[
+            Positioned(
+              top: -90,
+              right: -70,
+              child: _HomeDecorativeOrb(
+                size: 230,
+                color: const Color(0x5532C7FF),
+              ),
             ),
-          ),
-          Positioned(
-            top: size.height * 0.3,
-            left: -80,
-            child: _HomeDecorativeOrb(
-              size: 210,
-              color: const Color(0x5532D2FF),
+            Positioned(
+              top: size.height * 0.3,
+              left: -80,
+              child: _HomeDecorativeOrb(
+                size: 210,
+                color: const Color(0x334DB8E8),
+              ),
             ),
-          ),
-          Positioned(
-            bottom: 120,
-            right: -55,
-            child: _HomeDecorativeOrb(
-              size: 180,
-              color: const Color(0x5556E2D5),
+            Positioned(
+              bottom: 120,
+              right: -55,
+              child: _HomeDecorativeOrb(
+                size: 180,
+                color: const Color(0x3347E0D0),
+              ),
             ),
-          ),
+          ],
           SingleChildScrollView(
             padding: EdgeInsets.only(bottom: bottomContentPadding),
             physics: const BouncingScrollPhysics(
@@ -128,144 +136,214 @@ class _HomePageState extends State<HomePage> {
               children: [
                 // ── Blue header section ────────────────────
                 Container(
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark
+                          ? const <Color>[
+                              Color(0xFF020713),
+                              Color(0xFF05152C),
+                              Color(0xFF082A43),
+                              Color(0xFF03171D),
+                            ]
+                          : const <Color>[
+                              Color(0xFF69C9F1),
+                              AppColors.primary,
+                              Color(0xFF36D5C7),
+                            ],
+                      stops: isDark
+                          ? const <double>[0.0, 0.38, 0.72, 1.0]
+                          : null,
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(28),
+                    ),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: AppColors.primaryDark.withValues(alpha: 0.22),
+                        blurRadius: 32,
+                        offset: const Offset(0, 16),
+                      ),
+                    ],
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.white.withValues(
+                          alpha: isDark ? 0.10 : 0.42,
+                        ),
+                      ),
                     ),
                   ),
-                  padding: EdgeInsets.fromLTRB(
-                    AppConstants.pagePadding,
-                    statusBarHeight + 12,
-                    AppConstants.pagePadding,
-                    20,
-                  ),
-                  child: Column(
-                    children: [
-                      // App bar row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Hello Vietnam',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.accentGold,
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    children: <Widget>[
+                      if (isDark)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: CustomPaint(
+                              painter: _GalaxyHeaderPainter(
+                                twinkle: _galaxyTwinkleController,
+                              ),
                             ),
                           ),
-                          ListenableBuilder(
-                            listenable: MockNotificationRepository.instance,
-                            builder: (BuildContext context, Widget? child) {
-                              final int unreadCount = MockNotificationRepository
-                                  .instance
-                                  .unreadCount;
-
-                              return Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        Icons.place_outlined,
-                                        size: 22,
-                                      ),
-                                      color: Colors.white,
-                                      onPressed: () =>
-                                          _quickLocationFlow.start(context),
+                        ),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          AppConstants.pagePadding,
+                          statusBarHeight + 12,
+                          AppConstants.pagePadding,
+                          20,
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    'Hello Vietnam',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 27,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDark
+                                          ? const Color(0xFFFFDFA3)
+                                          : AppColors.accentGold,
+                                      letterSpacing: 0,
+                                      shadows: <Shadow>[
+                                        Shadow(
+                                          color:
+                                              (isDark
+                                                      ? const Color(0xFF9B6DFF)
+                                                      : AppColors.primaryDark)
+                                                  .withValues(
+                                                    alpha: isDark ? 0.28 : 0.22,
+                                                  ),
+                                          blurRadius: isDark ? 16 : 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                        if (isDark)
+                                          Shadow(
+                                            color: const Color(
+                                              0xFF4DDFFF,
+                                            ).withValues(alpha: 0.18),
+                                            blurRadius: 22,
+                                            offset: const Offset(0, 6),
+                                          ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Stack(
-                                    clipBehavior: Clip.none,
-                                    children: <Widget>[
-                                      Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.2,
-                                          ),
-                                          shape: BoxShape.circle,
+                                ),
+                                const SizedBox(width: 12),
+                                ListenableBuilder(
+                                  listenable:
+                                      MockNotificationRepository.instance,
+                                  builder: (BuildContext context, Widget? child) {
+                                    final int unreadCount =
+                                        MockNotificationRepository
+                                            .instance
+                                            .unreadCount;
+
+                                    return Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: <Widget>[
+                                        _HomeHeaderIconButton(
+                                          icon: Icons.place_outlined,
+                                          semanticLabel: 'Set location',
+                                          onPressed: () =>
+                                              _quickLocationFlow.start(context),
                                         ),
-                                        child: IconButton(
-                                          icon: const Icon(
-                                            Icons.notifications_outlined,
-                                            size: 22,
-                                          ),
-                                          color: Colors.white,
-                                          onPressed: () => context.push(
-                                            AppRoutes.notification,
-                                          ),
-                                        ),
-                                      ),
-                                      if (unreadCount > 0)
-                                        Positioned(
-                                          top: -4,
-                                          right: -4,
-                                          child: Container(
-                                            constraints: const BoxConstraints(
-                                              minWidth: 18,
-                                              minHeight: 18,
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 4,
-                                              vertical: 1,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFEF4444),
-                                              borderRadius:
-                                                  BorderRadius.circular(999),
-                                              border: Border.all(
-                                                color: Colors.white,
-                                                width: 1.2,
+                                        const SizedBox(width: 8),
+                                        Stack(
+                                          clipBehavior: Clip.none,
+                                          children: <Widget>[
+                                            _HomeHeaderIconButton(
+                                              icon:
+                                                  Icons.notifications_outlined,
+                                              semanticLabel: 'Notifications',
+                                              onPressed: () => context.push(
+                                                AppRoutes.notification,
                                               ),
-                                              boxShadow: const <BoxShadow>[
-                                                BoxShadow(
-                                                  color: Color(0x22000000),
-                                                  blurRadius: 8,
-                                                  offset: Offset(0, 3),
+                                            ),
+                                            if (unreadCount > 0)
+                                              Positioned(
+                                                top: -3,
+                                                right: -3,
+                                                child: Container(
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                        minWidth: 18,
+                                                        minHeight: 18,
+                                                      ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 5,
+                                                        vertical: 2,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                      0xFFFF3B30,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          999,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: Colors.white,
+                                                      width: 1.5,
+                                                    ),
+                                                    boxShadow:
+                                                        const <BoxShadow>[
+                                                          BoxShadow(
+                                                            color: Color(
+                                                              0x26000000,
+                                                            ),
+                                                            blurRadius: 10,
+                                                            offset: Offset(
+                                                              0,
+                                                              4,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                  ),
+                                                  alignment: Alignment.center,
+                                                  child: Text(
+                                                    unreadCount > 99
+                                                        ? '99+'
+                                                        : '$unreadCount',
+                                                    style: const TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                      color: Colors.white,
+                                                      height: 1,
+                                                      letterSpacing: 0,
+                                                    ),
+                                                  ),
                                                 ),
-                                              ],
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Text(
-                                              unreadCount > 99
-                                                  ? '99+'
-                                                  : '$unreadCount',
-                                              style: const TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w800,
-                                                color: Colors.white,
                                               ),
-                                            ),
-                                          ),
+                                          ],
                                         ),
-                                    ],
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
 
-                      const SizedBox(height: 18),
+                            const SizedBox(height: 18),
 
-                      // Search bar
-                      SearchBarWidget(
-                        hintText: strings.searchDestinations,
-                        readOnly: true,
-                        showFilterButton: false,
-                        onTap: () => context.push(AppRoutes.exploreSearch),
+                            // Search bar
+                            SearchBarWidget(
+                              hintText: strings.searchDestinations,
+                              readOnly: true,
+                              showFilterButton: false,
+                              onTap: () =>
+                                  context.push(AppRoutes.exploreSearch),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -307,7 +385,7 @@ class _HomePageState extends State<HomePage> {
                   child: HomeBanner(),
                 ),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 16),
 
                 // ── Feature grid (8 buttons) ─────────────────
                 Padding(
@@ -317,7 +395,7 @@ class _HomePageState extends State<HomePage> {
                   child: FeatureGrid(items: homeFeatures),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
                 ListenableBuilder(
                   listenable: TravelPreferencesRepository.instance,
@@ -388,7 +466,7 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
 
-                const SizedBox(height: 4),
+                const SizedBox(height: 20),
 
                 // ── Best Destination ─────────────────────────
                 Padding(
@@ -492,6 +570,204 @@ class _HomeDecorativeOrb extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GalaxyHeaderPainter extends CustomPainter {
+  const _GalaxyHeaderPainter({required Animation<double> twinkle})
+    : _twinkle = twinkle,
+      super(repaint: twinkle);
+
+  final Animation<double> _twinkle;
+
+  static const List<_HeaderStar> _stars = <_HeaderStar>[
+    _HeaderStar(0.12, 0.18, 0.9, 0.45, false),
+    _HeaderStar(0.18, 0.34, 1.3, 0.68, true),
+    _HeaderStar(0.27, 0.14, 0.8, 0.46, false),
+    _HeaderStar(0.38, 0.26, 1.6, 0.82, true),
+    _HeaderStar(0.49, 0.17, 0.9, 0.48, false),
+    _HeaderStar(0.58, 0.36, 1.2, 0.64, true),
+    _HeaderStar(0.67, 0.20, 0.7, 0.46, false),
+    _HeaderStar(0.78, 0.48, 1.5, 0.78, true),
+    _HeaderStar(0.87, 0.30, 0.9, 0.52, false),
+    _HeaderStar(0.22, 0.62, 0.8, 0.44, false),
+    _HeaderStar(0.45, 0.58, 1.1, 0.58, false),
+    _HeaderStar(0.61, 0.66, 1.4, 0.72, true),
+    _HeaderStar(0.76, 0.68, 0.8, 0.48, false),
+    _HeaderStar(0.90, 0.62, 0.7, 0.42, false),
+  ];
+
+  static const List<_NebulaGlow> _nebula = <_NebulaGlow>[
+    _NebulaGlow(0.46, -0.08, 0.26, 0x6644D7FF),
+    _NebulaGlow(0.42, 0.18, 0.30, 0x5A177CFF),
+    _NebulaGlow(0.51, 0.40, 0.34, 0x6B0C8DFF),
+    _NebulaGlow(0.48, 0.66, 0.28, 0x5A21A7FF),
+    _NebulaGlow(0.58, 0.86, 0.24, 0x4D49EED0),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double phase = _twinkle.value * math.pi * 2;
+    final Rect rect = Offset.zero & size;
+
+    final Paint depthPaint = Paint()
+      ..shader = const RadialGradient(
+        center: Alignment(0.12, -0.22),
+        radius: 1.1,
+        colors: <Color>[Color(0x2200E5FF), Color(0x00000713)],
+      ).createShader(rect);
+    canvas.drawRect(rect, depthPaint);
+
+    canvas.save();
+    canvas.translate(-size.width * 0.05, -size.height * 0.18);
+    canvas.rotate(-0.12);
+    for (final _NebulaGlow glow in _nebula) {
+      final Offset center = Offset(glow.x * size.width, glow.y * size.height);
+      final double radius = glow.radius * size.width;
+      final Rect glowRect = Rect.fromCircle(center: center, radius: radius);
+      final Paint glowPaint = Paint()
+        ..shader = RadialGradient(
+          colors: <Color>[
+            Color(glow.color),
+            Color(glow.color).withValues(alpha: 0.22),
+            Colors.transparent,
+          ],
+          stops: const <double>[0.0, 0.42, 1.0],
+        ).createShader(glowRect)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16);
+      canvas.drawCircle(center, radius, glowPaint);
+    }
+    canvas.restore();
+
+    final Paint dustPaint = Paint();
+    for (int i = 0; i < 118; i += 1) {
+      final double x = _unitNoise(i, 11) * size.width;
+      final double y = _unitNoise(i, 29) * size.height;
+      final double inNebula = (1 - ((x / size.width) - 0.48).abs() * 2.2).clamp(
+        0.0,
+        1.0,
+      );
+      final double radius = 0.35 + _unitNoise(i, 47) * (0.75 + inNebula * 0.35);
+      final double alpha = 0.22 + _unitNoise(i, 71) * (0.42 + inNebula * 0.22);
+      dustPaint.color = Colors.white.withValues(alpha: alpha);
+      canvas.drawCircle(Offset(x, y), radius, dustPaint);
+    }
+
+    final Paint blueDustPaint = Paint();
+    for (int i = 0; i < 36; i += 1) {
+      final double x = (0.33 + _unitNoise(i, 83) * 0.34) * size.width;
+      final double y = _unitNoise(i, 101) * size.height;
+      final double radius = 0.6 + _unitNoise(i, 127) * 1.5;
+      blueDustPaint
+        ..color = const Color(
+          0xFF4E9CFF,
+        ).withValues(alpha: 0.16 + _unitNoise(i, 151) * 0.30)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.2);
+      canvas.drawCircle(Offset(x, y), radius * 2.0, blueDustPaint);
+      blueDustPaint.maskFilter = null;
+      canvas.drawCircle(Offset(x, y), radius * 0.5, blueDustPaint);
+    }
+
+    for (int i = 0; i < _stars.length; i += 1) {
+      final _HeaderStar star = _stars[i];
+      final Offset point = Offset(star.x * size.width, star.y * size.height);
+      final double pulse = star.twinkles
+          ? (0.5 + 0.5 * math.sin(phase + i * 1.7))
+          : 0.0;
+      final double radius =
+          star.radius * (star.twinkles ? 1.0 + pulse * 0.72 : 1);
+      final double alpha = star.alpha + (star.twinkles ? pulse * 0.24 : 0);
+      final Paint glowPaint = Paint()
+        ..color = const Color(0xFFEAFBFF).withValues(alpha: alpha * 0.20)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 + pulse * 3);
+      final Paint starPaint = Paint()
+        ..color = (i.isEven ? Colors.white : const Color(0xFFBEEFFF))
+            .withValues(alpha: alpha.clamp(0.0, 0.90));
+
+      canvas.drawCircle(point, radius * 3.1, glowPaint);
+      canvas.drawCircle(point, radius, starPaint);
+
+      if (star.twinkles) {
+        final Paint rayPaint = Paint()
+          ..color = Colors.white.withValues(alpha: alpha * 0.20)
+          ..strokeWidth = 0.7
+          ..strokeCap = StrokeCap.round;
+        final double ray = radius * (3.2 + pulse);
+        canvas.drawLine(
+          point.translate(-ray, 0),
+          point.translate(ray, 0),
+          rayPaint,
+        );
+        canvas.drawLine(
+          point.translate(0, -ray),
+          point.translate(0, ray),
+          rayPaint,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _GalaxyHeaderPainter oldDelegate) => false;
+}
+
+class _NebulaGlow {
+  const _NebulaGlow(this.x, this.y, this.radius, this.color);
+
+  final double x;
+  final double y;
+  final double radius;
+  final int color;
+}
+
+class _HeaderStar {
+  const _HeaderStar(this.x, this.y, this.radius, this.alpha, this.twinkles);
+
+  final double x;
+  final double y;
+  final double radius;
+  final double alpha;
+  final bool twinkles;
+}
+
+double _unitNoise(int seed, int salt) {
+  final double value =
+      math.sin((seed + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+  return value - value.floorToDouble();
+}
+
+class _HomeHeaderIconButton extends StatelessWidget {
+  const _HomeHeaderIconButton({
+    required this.icon,
+    required this.semanticLabel,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String semanticLabel;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon, color: Colors.white, size: 25),
+        tooltip: semanticLabel,
+        style: IconButton.styleFrom(
+          minimumSize: const Size(44, 44),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          padding: EdgeInsets.zero,
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
+          hoverColor: Colors.white.withValues(alpha: 0.10),
+          highlightColor: Colors.white.withValues(alpha: 0.12),
+          shape: const CircleBorder(),
         ),
       ),
     );

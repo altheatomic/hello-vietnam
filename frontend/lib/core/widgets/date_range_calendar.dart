@@ -105,11 +105,9 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
     );
   }
 
-  bool _isStart(DateTime d) =>
-      _start != null && _isSameDate(d, _start!);
+  bool _isStart(DateTime d) => _start != null && _isSameDate(d, _start!);
 
-  bool _isEnd(DateTime d) =>
-      _end != null && _isSameDate(d, _end!);
+  bool _isEnd(DateTime d) => _end != null && _isSameDate(d, _end!);
 
   bool _isInRange(DateTime d) {
     if (_start == null || _end == null) return false;
@@ -138,6 +136,8 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       children: <Widget>[
         Padding(
@@ -156,8 +156,17 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.96),
+                  color: isDark
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.surface.withValues(alpha: 0.94)
+                      : Colors.white.withValues(alpha: 0.96),
                   borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.transparent,
+                  ),
                   boxShadow: <BoxShadow>[
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.08),
@@ -168,10 +177,10 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
                 ),
                 child: Text(
                   '$_year',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF374151),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -229,18 +238,28 @@ class _NavCircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Material(
-      color: Colors.white.withValues(alpha: 0.96),
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : Colors.white.withValues(alpha: 0.96),
       shape: const CircleBorder(),
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.12),
+      shadowColor: Colors.black.withValues(alpha: isDark ? 0.30 : 0.12),
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
           width: 40,
           height: 40,
-          child: Icon(icon, color: const Color(0xFF6B7280), size: 20),
+          child: Icon(
+            icon,
+            color: isDark
+                ? Theme.of(context).colorScheme.onSurface
+                : const Color(0xFF6B7280),
+            size: 20,
+          ),
         ),
       ),
     );
@@ -260,11 +279,25 @@ class _RangeSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color surface = isDark
+        ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.94)
+        : Colors.white.withValues(alpha: 0.96);
+    final Color primaryText = Theme.of(context).colorScheme.onSurface;
+    final Color mutedText = isDark
+        ? const Color(0xFFA9BCC7)
+        : const Color(0xFF94A3B8);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
+        color: surface,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.transparent,
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -292,10 +325,10 @@ class _RangeSummaryCard extends StatelessWidget {
           Expanded(
             child: Text(
               summary,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF4B5563),
+                color: primaryText,
               ),
             ),
           ),
@@ -312,9 +345,7 @@ class _RangeSummaryCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: isComplete
-                    ? const Color(0xFF2EA7F8)
-                    : const Color(0xFF94A3B8),
+                color: isComplete ? const Color(0xFF2EA7F8) : mutedText,
               ),
             ),
           ),
@@ -352,12 +383,24 @@ class _MonthCard extends StatelessWidget {
     final int firstWeekday = DateTime(year, month, 1).weekday % 7;
     final int daysInMonth = DateTime(year, month + 1, 0).day;
     final DateTime today = DateTime.now();
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color primaryText = Theme.of(context).colorScheme.onSurface;
+    final Color mutedText = isDark
+        ? const Color(0xFFA9BCC7)
+        : const Color(0xFF64748B);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
+        color: isDark
+            ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.94)
+            : Colors.white.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.transparent,
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -371,10 +414,10 @@ class _MonthCard extends StatelessWidget {
         children: <Widget>[
           Text(
             monthName,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF374151),
+              color: primaryText,
             ),
           ),
           const SizedBox(height: 14),
@@ -385,10 +428,10 @@ class _MonthCard extends StatelessWidget {
                     child: Center(
                       child: Text(
                         label,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF9CA3AF),
+                          color: mutedText.withValues(alpha: 0.78),
                         ),
                       ),
                     ),
@@ -414,13 +457,14 @@ class _MonthCard extends StatelessWidget {
               final bool inRange = isInRange(date);
               final bool isRangeDay =
                   hasCompletedRange && (start || end || inRange);
-              final bool isToday = today.year == date.year &&
+              final bool isToday =
+                  today.year == date.year &&
                   today.month == date.month &&
                   today.day == date.day;
               final bool isFirstColumn = index % 7 == 0;
               final bool isLastColumn = index % 7 == 6;
 
-              Color textColor = const Color(0xFF64748B);
+              Color textColor = mutedText;
               Color? bubbleFillColor;
               Border? border;
 

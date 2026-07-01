@@ -22,11 +22,13 @@ class TravelPreferencesSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     final bool isVietnamese =
         AppLanguageScope.languageOf(context) == AppLanguage.vietnamese;
-    final String styleLabel = context.l10n
-        .ui(preferences.travelStyles.first.label)
-        .toLowerCase();
+    final String styleLabel = preferences.travelStyles.isEmpty
+        ? (isVietnamese ? 'du lịch' : 'travel')
+        : context.l10n.ui(preferences.travelStyles.first.label).toLowerCase();
     final String budgetLabel = context.l10n
         .ui(preferences.budgetLevel.label)
         .toLowerCase();
@@ -44,7 +46,7 @@ class TravelPreferencesSummaryCard extends StatelessWidget {
     return GlassCard(
       borderRadius: 28,
       blur: 18,
-      opacity: 0.25,
+      opacity: isDark ? 0.52 : 0.25,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,7 +57,9 @@ class TravelPreferencesSummaryCard extends StatelessWidget {
                 child: Text(
                   context.l10n.ui(title),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: const Color(0xFF1C3550),
+                    color: isDark
+                        ? theme.colorScheme.onSurface
+                        : const Color(0xFF1C3550),
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -68,15 +72,19 @@ class TravelPreferencesSummaryCard extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.66),
+                    color: isDark
+                        ? AppColors.primaryLight.withValues(alpha: 0.14)
+                        : Colors.white.withValues(alpha: 0.66),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     context.l10n.ui(buttonLabel),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+                      color: isDark
+                          ? AppColors.primaryLight
+                          : AppColors.primary,
                     ),
                   ),
                 ),
@@ -86,10 +94,10 @@ class TravelPreferencesSummaryCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             summaryText,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13.5,
               height: 1.42,
-              color: Color(0xFF607287),
+              color: isDark ? const Color(0xFFA9BCC7) : const Color(0xFF607287),
             ),
           ),
           const SizedBox(height: 14),
@@ -104,15 +112,24 @@ class TravelPreferencesSummaryCard extends StatelessWidget {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.66),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.white.withValues(alpha: 0.66),
                       borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.transparent,
+                      ),
                     ),
                     child: Text(
                       context.l10n.ui(label),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF54708E),
+                        color: isDark
+                            ? const Color(0xFFD6F3FF)
+                            : const Color(0xFF54708E),
                       ),
                     ),
                   ),

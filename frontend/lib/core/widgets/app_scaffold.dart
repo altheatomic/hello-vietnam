@@ -32,18 +32,33 @@ class AppScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusBarHeight = MediaQuery.of(context).padding.top;
     final canPop = Navigator.of(context).canPop();
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           // ── Blue header block (mirrors Home) ──────────────
           Container(
             width: double.infinity,
-            decoration: const BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? const <Color>[
+                        Color(0xFF0B2632),
+                        Color(0xFF123A47),
+                        Color(0xFF0D2F35),
+                      ]
+                    : const <Color>[
+                        Color(0xFF69C9F1),
+                        AppColors.primary,
+                        Color(0xFF36D5C7),
+                      ],
+              ),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(24),
               ),
             ),
             padding: EdgeInsets.fromLTRB(
@@ -75,7 +90,9 @@ class AppScaffold extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFFFFF176), // yellow title, same as Home
+                          color: Color(
+                            0xFFFFF176,
+                          ), // yellow title, same as Home
                         ),
                       ),
                     ),
