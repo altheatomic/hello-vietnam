@@ -5,6 +5,7 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
+import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
 
 class ForumColors {
@@ -383,6 +384,7 @@ class ForumPostCard extends StatelessWidget {
     required this.onShare,
     required this.onFollow,
     required this.onMore,
+    this.onSharedItemTap,
     this.showMoreButton = true,
     this.showInlineFollow = true,
   });
@@ -396,6 +398,7 @@ class ForumPostCard extends StatelessWidget {
   final VoidCallback onShare;
   final VoidCallback onFollow;
   final VoidCallback onMore;
+  final VoidCallback? onSharedItemTap;
   final bool showMoreButton;
   final bool showInlineFollow;
 
@@ -494,6 +497,13 @@ class ForumPostCard extends StatelessWidget {
                     color: ForumColors.textPrimary,
                   ),
                 ),
+                if (post.sharedItem != null) ...<Widget>[
+                  const SizedBox(height: 12),
+                  ForumSharedItemCard(
+                    item: post.sharedItem!,
+                    onTap: onSharedItemTap,
+                  ),
+                ],
                 if (post.imageUrls.isNotEmpty) ...<Widget>[
                   const SizedBox(height: 12),
                   ForumPostGallery(imageUrls: post.imageUrls),
@@ -548,6 +558,98 @@ class ForumPostCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class ForumSharedItemCard extends StatelessWidget {
+  const ForumSharedItemCard({super.key, required this.item, this.onTap});
+
+  final SharedExploreItem item;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final String secondaryText = _secondaryText(item);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.56),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+          ),
+          child: Row(
+            children: <Widget>[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: SizedBox(
+                  width: 68,
+                  height: 68,
+                  child: _ForumImage(imageUrl: item.imagePath, fit: BoxFit.cover),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      item.category.label,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: ForumColors.bluePrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: ForumColors.textPrimary,
+                      ),
+                    ),
+                    if (secondaryText.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 4),
+                      Text(
+                        secondaryText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: ForumColors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.open_in_new_rounded,
+                size: 18,
+                color: ForumColors.textMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _secondaryText(SharedExploreItem item) {
+    final String provinceName = (item.provinceName ?? '').trim();
+    if (provinceName.isNotEmpty) {
+      return provinceName;
+    }
+    return (item.subtitle ?? '').trim();
   }
 }
 

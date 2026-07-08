@@ -15,10 +15,10 @@ class ExploreProvince {
 
   factory ExploreProvince.fromJson(Map<String, dynamic> json) {
     return ExploreProvince(
-      id: (json['id'] as String? ?? '').trim(),
-      name: (json['name'] as String? ?? '').trim(),
-      area: (json['area'] as String?)?.trim(),
-      description: (json['description'] as String?)?.trim(),
+      id: _readRequiredString(json['id']),
+      name: _readRequiredString(json['name']),
+      area: _readNullableString(json['area']),
+      description: _readNullableString(json['description']),
     );
   }
 
@@ -34,4 +34,20 @@ class ExploreProvince {
       'description': description,
     };
   }
+}
+
+String _readRequiredString(Object? value) {
+  final String? normalized = _readNullableString(value);
+  return normalized ?? '';
+}
+
+String? _readNullableString(Object? value) {
+  if (value is String) {
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+  if (value is num || value is bool) {
+    return value.toString();
+  }
+  return null;
 }

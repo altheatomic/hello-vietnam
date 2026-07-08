@@ -1,3 +1,5 @@
+import 'create_forum_post_request.dart';
+
 class ForumAuthor {
   const ForumAuthor({
     required this.id,
@@ -71,6 +73,7 @@ class ForumPost {
     required this.timeAgo,
     required this.likes,
     required this.comments,
+    this.sharedItem,
     this.isLiked = false,
     this.isBookmarked = false,
     this.showFollowButton = false,
@@ -83,6 +86,7 @@ class ForumPost {
   final String timeAgo;
   final int likes;
   final int comments;
+  final SharedExploreItem? sharedItem;
   final bool isLiked;
   final bool isBookmarked;
   final bool showFollowButton;
@@ -95,6 +99,7 @@ class ForumPost {
     String? timeAgo,
     int? likes,
     int? comments,
+    SharedExploreItem? sharedItem,
     bool? isLiked,
     bool? isBookmarked,
     bool? showFollowButton,
@@ -107,6 +112,7 @@ class ForumPost {
       timeAgo: timeAgo ?? this.timeAgo,
       likes: likes ?? this.likes,
       comments: comments ?? this.comments,
+      sharedItem: sharedItem ?? this.sharedItem,
       isLiked: isLiked ?? this.isLiked,
       isBookmarked: isBookmarked ?? this.isBookmarked,
       showFollowButton: showFollowButton ?? this.showFollowButton,

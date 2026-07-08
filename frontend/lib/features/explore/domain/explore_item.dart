@@ -22,15 +22,15 @@ class ExploreItem {
 
   factory ExploreItem.fromJson(Map<String, dynamic> json) {
     return ExploreItem(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      imagePath: json['imagePath'] as String,
+      id: _readRequiredString(json['id']),
+      name: _readRequiredString(json['name']),
+      imagePath: _readRequiredString(json['imagePath']),
       category: _parseDetailCategory(
-        json['category'] as String? ?? 'activities',
+        _readNullableString(json['category']) ?? 'activities',
       ),
-      subtitle: json['subtitle'] as String?,
-      provinceId: json['provinceId'] as String?,
-      provinceName: json['provinceName'] as String?,
+      subtitle: _readNullableString(json['subtitle']),
+      provinceId: _readNullableString(json['provinceId']),
+      provinceName: _readNullableString(json['provinceName']),
     );
   }
 
@@ -45,6 +45,22 @@ class ExploreItem {
       'provinceName': provinceName,
     };
   }
+}
+
+String _readRequiredString(Object? value) {
+  final String? normalized = _readNullableString(value);
+  return normalized ?? '';
+}
+
+String? _readNullableString(Object? value) {
+  if (value is String) {
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+  if (value is num || value is bool) {
+    return value.toString();
+  }
+  return null;
 }
 
 DetailCategory _parseDetailCategory(String raw) {

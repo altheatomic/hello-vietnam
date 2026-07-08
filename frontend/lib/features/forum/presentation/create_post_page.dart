@@ -17,6 +17,7 @@ typedef CreatePostCallback =
       required String content,
       List<String> imageUrls,
       List<XFile> imageFiles,
+      SharedExploreItem? sharedExploreItem,
     });
 
 class CreatePostPage extends StatefulWidget {
@@ -53,10 +54,20 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }) {
     final CreatePostCallback? createPost = widget.createPost;
     if (createPost != null) {
-      return createPost(content: content, imageFiles: imageFiles);
+      return createPost(
+        content: content,
+        imageFiles: imageFiles,
+        sharedExploreItem: widget.request.sharedExploreItem,
+      );
     }
-    return _store.createPost(content: content, imageFiles: imageFiles);
+    return _store.createPost(
+      content: content,
+      imageFiles: imageFiles,
+      sharedExploreItem: widget.request.sharedExploreItem,
+    );
   }
+
+  bool get _isShareFromExplore => widget.request.sharedExploreItem != null;
 
   @override
   void initState() {
@@ -92,7 +103,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   Future<void> _submit() async {
     final String content = _controller.text.trim();
-    if (content.isEmpty || _isSubmitting) {
+    if (_isSubmitting) {
+      return;
+    }
+    if (content.isEmpty && !_isShareFromExplore) {
       return;
     }
 
@@ -128,7 +142,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool canSubmit = _controller.text.trim().isNotEmpty && !_isSubmitting;
+    final bool canSubmit =
+        (_controller.text.trim().isNotEmpty || _isShareFromExplore) &&
+        !_isSubmitting;
 
     return ForumBackground(
       child: Scaffold(
@@ -145,6 +161,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 onNotification: () {},
                 onAvatarTap: () {},
                 avatarUrl: _currentUserAuthor.avatarUrl,
+                showBookmark: !_isShareFromExplore,
                 showAvatar: false,
               ),
               Expanded(
@@ -209,7 +226,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               color: ForumColors.textPrimary,
                             ),
                           ),
-                          if (_selectedImages.isNotEmpty) ...<Widget>[
+                          if (_selectedImages.isNotEmpty &&
+                              !_isShareFromExplore) ...<Widget>[
                             const SizedBox(height: 12),
                             SizedBox(
                               height: 100,
@@ -261,27 +279,29 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 18),
-                          OutlinedButton.icon(
-                            onPressed: _openImagePicker,
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.7),
+                          if (!_isShareFromExplore) ...<Widget>[
+                            const SizedBox(height: 18),
+                            OutlinedButton.icon(
+                              onPressed: _openImagePicker,
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                foregroundColor: ForumColors.bluePrimary,
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
+                              icon: const Icon(
+                                Icons.add_photo_alternate_outlined,
                               ),
-                              foregroundColor: ForumColors.bluePrimary,
+                              label: Text(
+                                _selectedImages.isEmpty
+                                    ? 'Add photos'
+                                    : 'Edit photos (${_selectedImages.length})',
+                              ),
                             ),
-                            icon: const Icon(
-                              Icons.add_photo_alternate_outlined,
-                            ),
-                            label: Text(
-                              _selectedImages.isEmpty
-                                  ? 'Add photos'
-                                  : 'Edit photos (${_selectedImages.length})',
-                            ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
@@ -317,12 +337,7 @@ class _SharedExplorePreview extends StatelessWidget {
             child: SizedBox(
               width: 64,
               height: 64,
-              child: item.imagePath.isEmpty
-                  ? Container(
-                      key: const ValueKey<String>('shared-explore-placeholder'),
-                      color: const Color(0xFFEAF4F8),
-                    )
-                  : Image.network(item.imagePath, fit: BoxFit.cover),
+              child: _SharedPreviewImage(imagePath: item.imagePath),
             ),
           ),
           const SizedBox(width: 12),
@@ -347,11 +362,58 @@ class _SharedExplorePreview extends StatelessWidget {
                     color: ForumColors.textPrimary,
                   ),
                 ),
+                if (_secondaryText(item).isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 4),
+                  Text(
+                    _secondaryText(item),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: ForumColors.textMuted,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  String _secondaryText(SharedExploreItem item) {
+    final String provinceName = (item.provinceName ?? '').trim();
+    if (provinceName.isNotEmpty) {
+      return provinceName;
+    }
+    return (item.subtitle ?? '').trim();
+  }
+}
+
+class _SharedPreviewImage extends StatelessWidget {
+  const _SharedPreviewImage({required this.imagePath});
+
+  final String imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    final String normalized = imagePath.trim();
+    if (normalized.isEmpty) {
+      return Container(
+        key: const ValueKey<String>('shared-explore-placeholder'),
+        color: const Color(0xFFEAF4F8),
+      );
+    }
+    if (normalized.startsWith('assets/')) {
+      return Image.asset(
+        normalized,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(color: const Color(0xFFEAF4F8)),
+      );
+    }
+    return Image.network(
+      normalized,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => Container(color: const Color(0xFFEAF4F8)),
     );
   }
 }

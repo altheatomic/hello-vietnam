@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:hellovietnam/core/config/env.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/storage/local_storage.dart' as app_storage;
 import 'package:hellovietnam/features/explore/domain/explore_item.dart';
 import 'package:hellovietnam/features/explore/domain/explore_province.dart';
@@ -11,6 +12,16 @@ typedef ExploreSectionsFetcher =
     Future<Map<String, dynamic>> Function({
       ExploreProvince? province,
       required int limitPerCategory,
+      String? language,
+    });
+
+typedef ExploreCategoryItemsFetcher =
+    Future<List<ExploreItem>> Function({
+      required DetailCategory category,
+      ExploreProvince? province,
+      required int limit,
+      required int offset,
+      String? language,
     });
 
 class ExploreSectionsData {
@@ -58,14 +69,22 @@ class ExploreSectionsData {
 }
 
 class ExploreRepository {
-  ExploreRepository({SupabaseClient? client, ExploreSectionsFetcher? sectionsFetcher})
-    : _client = client,
-      _sectionsFetcher = sectionsFetcher;
+  ExploreRepository({
+    SupabaseClient? client,
+    ExploreSectionsFetcher? sectionsFetcher,
+    ExploreCategoryItemsFetcher? categoryItemsFetcher,
+    String? Function()? languageCodeProvider,
+  }) : _client = client,
+       _sectionsFetcher = sectionsFetcher,
+       _categoryItemsFetcher = categoryItemsFetcher,
+       _languageCodeProvider = languageCodeProvider;
 
   static final ExploreRepository instance = ExploreRepository();
 
   final SupabaseClient? _client;
   final ExploreSectionsFetcher? _sectionsFetcher;
+  final ExploreCategoryItemsFetcher? _categoryItemsFetcher;
+  final String? Function()? _languageCodeProvider;
 
   static const List<String> _categoryOrder = <String>[
     'activities',
@@ -81,15 +100,18 @@ class ExploreRepository {
     ExploreProvince? province,
     int limitPerCategory = 4,
   }) async {
+    final String? language = _currentLanguageCode();
     final Map<String, dynamic> payload = await _fetchSectionsPayload(
       province: province,
       limitPerCategory: limitPerCategory,
+      language: language,
     );
     final ExploreSectionsData sections = _parseSectionsPayload(payload);
     await _cacheSections(
       sections,
       province: province,
       limitPerCategory: limitPerCategory,
+      language: language,
     );
     return sections;
   }
@@ -99,8 +121,9 @@ class ExploreRepository {
     int limitPerCategory = 4,
   }) async {
     await _ensureStorageReady();
+    final String? language = _currentLanguageCode();
     final String? raw = app_storage.LocalStorage.instance.getString(
-      _sectionsCacheKey(province, limitPerCategory),
+      _sectionsCacheKey(province, limitPerCategory, language),
     );
     if (raw == null || raw.isEmpty) {
       return null;
@@ -149,12 +172,14 @@ class ExploreRepository {
   Future<Map<String, dynamic>> _fetchSectionsPayload({
     ExploreProvince? province,
     required int limitPerCategory,
+    required String? language,
   }) async {
     final ExploreSectionsFetcher? sectionsFetcher = _sectionsFetcher;
     if (sectionsFetcher != null) {
       return sectionsFetcher(
         province: province,
         limitPerCategory: limitPerCategory,
+        language: language,
       );
     }
 
@@ -164,6 +189,7 @@ class ExploreRepository {
         'action': 'getExploreSections',
         'provinceId': province?.isResolved == true ? province!.id : null,
         'limitPerCategory': limitPerCategory,
+        'language': language,
       },
     );
     return _asMap(response.data);
@@ -173,10 +199,11 @@ class ExploreRepository {
     ExploreSectionsData sections, {
     required ExploreProvince? province,
     required int limitPerCategory,
+    required String? language,
   }) async {
     await _ensureStorageReady();
     await app_storage.LocalStorage.instance.setString(
-      _sectionsCacheKey(province, limitPerCategory),
+      _sectionsCacheKey(province, limitPerCategory, language),
       jsonEncode(sections.toJson()),
     );
   }
@@ -189,9 +216,14 @@ class ExploreRepository {
     _isStorageReady = true;
   }
 
-  String _sectionsCacheKey(ExploreProvince? province, int limitPerCategory) {
+  String _sectionsCacheKey(
+    ExploreProvince? province,
+    int limitPerCategory,
+    String? language,
+  ) {
     final String provinceKey = province?.isResolved == true ? province!.id : 'all';
-    return '$_storageKeyPrefix${provinceKey}_$limitPerCategory';
+    final String languageKey = _normalizedLanguageCode(language) ?? 'default';
+    return '$_storageKeyPrefix${provinceKey}_${languageKey}_$limitPerCategory';
   }
 
   SupabaseClient get _resolvedClient => _client ?? Supabase.instance.client;
@@ -225,6 +257,19 @@ class ExploreRepository {
     int limit = 40,
     int offset = 0,
   }) async {
+    final String? language = _currentLanguageCode();
+    final ExploreCategoryItemsFetcher? categoryItemsFetcher =
+        _categoryItemsFetcher;
+    if (categoryItemsFetcher != null) {
+      return categoryItemsFetcher(
+        category: category,
+        province: province,
+        limit: limit,
+        offset: offset,
+        language: language,
+      );
+    }
+
     final FunctionResponse response = await _resolvedClient.functions.invoke(
       Env.exploreFunction,
       body: <String, dynamic>{
@@ -233,6 +278,7 @@ class ExploreRepository {
         'provinceId': province?.isResolved == true ? province!.id : null,
         'limit': limit,
         'offset': offset,
+        'language': language,
       },
     );
 
@@ -361,6 +407,17 @@ class ExploreRepository {
   String? _stringValue(Object? value) {
     if (value is! String) return null;
     final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  String? _currentLanguageCode() {
+    final String raw = _languageCodeProvider?.call() ??
+        AppLanguageController.instance.languageCode;
+    return _normalizedLanguageCode(raw);
+  }
+
+  String? _normalizedLanguageCode(String? value) {
+    final String trimmed = value?.trim().toLowerCase() ?? '';
     return trimmed.isEmpty ? null : trimmed;
   }
 

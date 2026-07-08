@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
+import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
 
@@ -64,6 +65,13 @@ class _ForumPageState extends State<ForumPage>
     }
 
     context.push(AppRoutes.forumProfilePath(authorId));
+  }
+
+  void _openSharedItem(SharedExploreItem item) {
+    context.push(
+      AppRoutes.detailPathForCategory(item.category),
+      extra: item.toItemDetailRequest(),
+    );
   }
 
   Future<void> _openPostMenu(ForumPost post) async {
@@ -169,6 +177,7 @@ class _ForumPageState extends State<ForumPage>
                             _showComingSoon('Share action sẽ được nối sau.'),
                         onFollow: _store.toggleFollowAuthor,
                         onMore: _openPostMenu,
+                        onSharedItemTap: _openSharedItem,
                         currentUserId: _store.currentUserId,
                       ),
                       _ForumFeedList(
@@ -186,6 +195,7 @@ class _ForumPageState extends State<ForumPage>
                             _showComingSoon('Share action sẽ được nối sau.'),
                         onFollow: _store.toggleFollowAuthor,
                         onMore: _openPostMenu,
+                        onSharedItemTap: _openSharedItem,
                         currentUserId: _store.currentUserId,
                       ),
                     ],
@@ -213,6 +223,7 @@ class _ForumFeedList extends StatelessWidget {
     required this.onShare,
     required this.onFollow,
     required this.onMore,
+    required this.onSharedItemTap,
     required this.currentUserId,
   });
 
@@ -227,6 +238,7 @@ class _ForumFeedList extends StatelessWidget {
   final ValueChanged<String> onShare;
   final ValueChanged<String> onFollow;
   final ValueChanged<ForumPost> onMore;
+  final ValueChanged<SharedExploreItem> onSharedItemTap;
   final String currentUserId;
 
   @override
@@ -257,6 +269,9 @@ class _ForumFeedList extends StatelessWidget {
           onShare: () => onShare(post.id),
           onFollow: () => onFollow(post.author.id),
           onMore: () => onMore(post),
+          onSharedItemTap: post.sharedItem == null
+              ? null
+              : () => onSharedItemTap(post.sharedItem!),
           showMoreButton: post.author.id != currentUserId,
         );
       },

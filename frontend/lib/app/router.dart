@@ -77,6 +77,26 @@ import '../features/personalization/presentation/travel_preferences_onboarding_p
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
+ExploreProvince parseExploreSearchResultExtra(Object? extra) {
+  if (extra is ExploreProvince) {
+    return extra;
+  }
+  if (extra is Map<String, dynamic>) {
+    return ExploreProvince.fromJson(extra);
+  }
+  if (extra is Map) {
+    return ExploreProvince.fromJson(
+      extra.map(
+        (dynamic key, dynamic value) => MapEntry(key.toString(), value),
+      ),
+    );
+  }
+  if (extra is String) {
+    return ExploreProvince.unresolved(extra);
+  }
+  return ExploreProvince.unresolved('');
+}
+
 class AppRoutes {
   static const getStarted = '/get-started';
   static const home = '/home';
@@ -340,10 +360,9 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.exploreSearchResult,
         builder: (c, s) {
-          final Object? extra = s.extra;
-          final ExploreProvince province = extra is ExploreProvince
-              ? extra
-              : ExploreProvince.unresolved((extra as String? ?? '').trim());
+          final ExploreProvince province = parseExploreSearchResultExtra(
+            s.extra,
+          );
           return ExploreSearchResultPage(selectedProvince: province);
         },
       ),
