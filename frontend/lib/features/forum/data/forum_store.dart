@@ -5,6 +5,7 @@ import 'package:hellovietnam/features/loyalty/data/loyalty_award_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../domain/create_forum_post_request.dart';
 import '../domain/forum_models.dart';
 import 'forum_repository.dart';
 
@@ -321,9 +322,10 @@ class ForumStore extends ChangeNotifier {
     required String content,
     List<String> imageUrls = const <String>[],
     List<XFile> imageFiles = const <XFile>[],
+    SharedExploreItem? sharedExploreItem,
   }) async {
     final String trimmed = content.trim();
-    if (trimmed.isEmpty) {
+    if (trimmed.isEmpty && sharedExploreItem == null) {
       throw ArgumentError('Post content cannot be empty');
     }
 
@@ -331,6 +333,7 @@ class ForumStore extends ChangeNotifier {
       content: trimmed,
       imageUrls: imageUrls,
       imageFiles: imageFiles,
+      sharedExploreItem: sharedExploreItem,
     );
     await refresh(notifyLoading: false);
     unawaited(

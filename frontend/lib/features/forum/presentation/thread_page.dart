@@ -5,6 +5,7 @@ import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
+import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
 
@@ -29,6 +30,13 @@ class ThreadPage extends StatelessWidget {
         return;
       }
       context.push(AppRoutes.forumProfilePath(authorId));
+    }
+
+    void openSharedItem(SharedExploreItem item) {
+      context.push(
+        AppRoutes.detailPathForCategory(item.category),
+        extra: item.toItemDetailRequest(),
+      );
     }
 
     void openReplyModal({
@@ -159,6 +167,9 @@ class ThreadPage extends StatelessWidget {
                           onFollow: () =>
                               store.toggleFollowAuthor(post.author.id),
                           onMore: () => openPostMenu(post),
+                          onSharedItemTap: post.sharedItem == null
+                              ? null
+                              : () => openSharedItem(post.sharedItem!),
                           showMoreButton: !store.isCurrentUser(post.author.id),
                           showInlineFollow: false,
                         ),

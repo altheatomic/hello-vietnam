@@ -15,4 +15,12 @@ class Env {
     'SUBSCRIPTION_PAYMENT_FUNCTION',
     defaultValue: 'subscription-payment',
   );
+  static const exploreFunction = String.fromEnvironment(
+    'EXPLORE_FUNCTION',
+    defaultValue: 'explore',
+  );
+  static const currencyRatesFunction = String.fromEnvironment(
+    'CURRENCY_RATES_FUNCTION',
+    defaultValue: 'currency-rates',
+  );
 }

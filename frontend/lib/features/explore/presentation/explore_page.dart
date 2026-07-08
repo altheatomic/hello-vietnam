@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
@@ -5,18 +7,21 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
+import 'package:hellovietnam/features/explore/data/explore_repository.dart';
+import 'package:hellovietnam/features/explore/domain/explore_item.dart';
+import 'package:hellovietnam/features/explore/domain/explore_province.dart';
+import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/personalization/data/travel_preferences_repository.dart';
-import 'package:hellovietnam/features/personalization/data/travel_recommendation_service.dart';
 import 'package:hellovietnam/features/personalization/domain/travel_preferences.dart';
-import 'package:hellovietnam/features/personalization/presentation/widgets/travel_preferences_summary_card.dart';
-import '../data/explore_mock_data.dart';
-import '../domain/explore_item.dart';
+
 import 'widgets/explore_floating_back_button.dart';
 import 'widgets/explore_preview_widgets.dart';
 
 class ExplorePage extends StatefulWidget {
-  const ExplorePage({super.key});
+  const ExplorePage({super.key, this.repository});
+
+  final ExploreRepository? repository;
 
   @override
   State<ExplorePage> createState() => _ExplorePageState();
@@ -25,10 +30,12 @@ class ExplorePage extends StatefulWidget {
 class _ExplorePageState extends State<ExplorePage> {
   int _selectedFilter = 0;
   late final PageController _featuredController;
+  ExploreSectionsData? _sectionsData;
+  Object? _loadError;
+  bool _isLoading = true;
 
-  /// Keys for each category section so we can scroll to them.
-  final List<GlobalKey> _sectionKeys = List.generate(
-    exploreCategories.length,
+  final List<GlobalKey> _sectionKeys = List<GlobalKey>.generate(
+    4,
     (_) => GlobalKey(),
   );
 
@@ -36,6 +43,7 @@ class _ExplorePageState extends State<ExplorePage> {
   void initState() {
     super.initState();
     _featuredController = PageController(viewportFraction: 0.42);
+    unawaited(_loadInitialSections());
   }
 
   @override
@@ -46,14 +54,14 @@ class _ExplorePageState extends State<ExplorePage> {
 
   void _scrollToSection(int index) {
     setState(() => _selectedFilter = index);
-    final keyContext = _sectionKeys[index].currentContext;
-    if (keyContext != null) {
-      Scrollable.ensureVisible(
-        keyContext,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
-    }
+    final BuildContext? keyContext = _sectionKeys[index].currentContext;
+    if (keyContext == null) return;
+
+    Scrollable.ensureVisible(
+      keyContext,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _handleBack() {
@@ -65,198 +73,363 @@ class _ExplorePageState extends State<ExplorePage> {
     context.go(AppRoutes.home);
   }
 
+  void _retry() {
+    unawaited(_loadFreshSections(showLoading: true));
+  }
+
+  Future<void> _loadInitialSections() async {
+    final ExploreSectionsData? cached = await _repository.loadCachedSections();
+    if (!mounted) return;
+
+    if (cached != null) {
+      setState(() {
+        _sectionsData = cached;
+        _loadError = null;
+        _isLoading = false;
+      });
+      unawaited(_loadFreshSections(showLoading: false));
+      return;
+    }
+
+    await _loadFreshSections(showLoading: true);
+  }
+
+  Future<void> _loadFreshSections({required bool showLoading}) async {
+    if (showLoading && mounted) {
+      setState(() {
+        _isLoading = true;
+        _loadError = null;
+      });
+    }
+
+    try {
+      final ExploreSectionsData fresh = await _repository.loadSections();
+      if (!mounted) return;
+      setState(() {
+        _sectionsData = fresh;
+        _loadError = null;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      if (_sectionsData != null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+      setState(() {
+        _loadError = error;
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppStrings strings = context.l10n;
-    final statusBarH = MediaQuery.of(context).padding.top;
-    final ThemeData theme = Theme.of(context);
-    final bool isDark = theme.brightness == Brightness.dark;
+    final double statusBarH = MediaQuery.of(context).padding.top;
     final UserTravelPreferences? preferences =
         TravelPreferencesRepository.instance.currentPreferences;
-    final List<ExploreItem> featuredItems = preferences == null
-        ? exploreFeatured
-        : TravelRecommendationService.recommendedExploreItems(
-            preferences,
-          ).take(6).toList(growable: false);
-    final List<ExploreCategory> orderedCategories = preferences == null
-        ? exploreCategories
-        : TravelRecommendationService.orderedExploreCategories(preferences);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.white,
       body: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              // ── Header with background image ────────────────
-              SliverToBoxAdapter(
-                child: Stack(
-                  children: [
-                    // Background image (15% opacity)
-                    Positioned.fill(
-                      child: Opacity(
-                        opacity: 0.15,
-                        child: Image.asset(
-                          AppConstants.exploreHeaderBgAsset,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                color:
-                                    (isDark
-                                            ? AppColors.primaryDark
-                                            : AppColors.primaryLight)
-                                        .withValues(alpha: 0.1),
+        children: <Widget>[
+          Builder(
+            builder: (BuildContext context) {
+              final List<ExploreCategory> orderedCategories = _orderedCategories(
+                _sectionsData?.categories ?? const <ExploreCategory>[],
+                preferences,
+              );
+              final List<_FeaturedProvinceSuggestion> featuredProvinces =
+                  _featuredProvincesFromCategories(orderedCategories);
+
+              return CustomScrollView(
+                slivers: <Widget>[
+                  SliverToBoxAdapter(
+                    child: Stack(
+                      children: <Widget>[
+                        Positioned.fill(
+                          child: Opacity(
+                            opacity: 0.15,
+                            child: Image.asset(
+                              AppConstants.exploreHeaderBgAsset,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    color: AppColors.primaryLight.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                  ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            AppConstants.pagePadding,
+                            statusBarH + 56,
+                            AppConstants.pagePadding,
+                            16,
+                          ),
+                          child: Column(
+                            children: <Widget>[
+                              Text(
+                                context.l10n.ui(
+                                  'Discover Vietnamese Culture and\nLocal Specialties',
+                                ),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                  height: 1.3,
+                                ),
                               ),
-                        ),
-                      ),
-                    ),
-
-                    // Header content
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        AppConstants.pagePadding,
-                        statusBarH + 56,
-                        AppConstants.pagePadding,
-                        16,
-                      ),
-                      child: Column(
-                        children: [
-                          // Title (blue)
-                          Text(
-                            context.l10n.ui(
-                              'Discover Vietnamese Culture and\nLocal Specialties',
-                            ),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: isDark
-                                  ? AppColors.primaryLight
-                                  : AppColors.primary,
-                              height: 1.3,
-                            ),
+                              const SizedBox(height: 16),
+                              SearchBarWidget(
+                                hintText: strings.searchDestinations,
+                                readOnly: true,
+                                showFilterButton: false,
+                                onTap: () => context.push(AppRoutes.exploreSearch),
+                              ),
+                            ],
                           ),
-
-                          const SizedBox(height: 16),
-
-                          SearchBarWidget(
-                            hintText: strings.searchDestinations,
-                            readOnly: true,
-                            showFilterButton: false,
-                            onTap: () => context.push(AppRoutes.exploreSearch),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-
-              if (preferences != null)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-                    child: TravelPreferencesSummaryCard(
-                      preferences: preferences,
-                      onRetune: () => context.push(
-                        AppRoutes.travelPreferencesOnboardingPath(
-                          returnTo: AppRoutes.explore,
                         ),
-                      ),
-                      title: strings.exploreTunedTitle,
-                      description: strings.exploreTunedDescription,
-                      buttonLabel: strings.retune,
+                      ],
                     ),
                   ),
-                ),
-
-              // ── Featured suggestions (horizontal scroll) ────
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 164,
-                  child: PageView.builder(
-                    controller: _featuredController,
-                    physics: const BouncingScrollPhysics(
-                      parent: PageScrollPhysics(),
-                    ),
-                    itemCount: featuredItems.length,
-                    itemBuilder: (context, index) {
-                      final item = featuredItems[index];
-                      return AnimatedBuilder(
-                        animation: _featuredController,
-                        builder: (context, child) {
-                          final page = _featuredController.hasClients
-                              ? (_featuredController.page ??
-                                    _featuredController.initialPage.toDouble())
-                              : _featuredController.initialPage.toDouble();
-                          final distance = (page - index).abs().clamp(0.0, 1.0);
-                          final emphasis = (1 - distance).clamp(0.0, 1.0);
-
-                          return Transform.scale(
-                            scale: 0.9 + (emphasis * 0.1),
-                            alignment: Alignment.center,
-                            child: Transform.translate(
-                              offset: Offset(0, 10 - (emphasis * 10)),
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  left: index == 0
-                                      ? AppConstants.pagePadding
-                                      : 6,
-                                  right: index == featuredItems.length - 1
-                                      ? AppConstants.pagePadding
-                                      : 6,
-                                ),
-                                child: _FeaturedCard(
-                                  item: item,
-                                  emphasis: emphasis,
+                  const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                  if (_isLoading && _sectionsData == null)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    )
+                  else if (_loadError != null && _sectionsData == null)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _ExploreStateMessage(
+                        message: 'Unable to load Explore right now.',
+                        actionLabel: 'Retry',
+                        onTap: _retry,
+                      ),
+                    )
+                  else ...<Widget>[
+                    if (featuredProvinces.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                AppConstants.pagePadding,
+                                0,
+                                AppConstants.pagePadding,
+                                10,
+                              ),
+                              child: Text(
+                                context.l10n.ui('Explore by city'),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
                                 ),
                               ),
                             ),
-                          );
-                        },
+                            SizedBox(
+                              height: 164,
+                              child: PageView.builder(
+                                controller: _featuredController,
+                                physics: const BouncingScrollPhysics(
+                                  parent: PageScrollPhysics(),
+                                ),
+                                itemCount: featuredProvinces.length,
+                                itemBuilder: (context, index) {
+                                  final _FeaturedProvinceSuggestion province =
+                                      featuredProvinces[index];
+                                  return AnimatedBuilder(
+                                    animation: _featuredController,
+                                    builder: (context, child) {
+                                      final double page =
+                                          _featuredController.hasClients
+                                          ? (_featuredController.page ??
+                                                _featuredController.initialPage
+                                                    .toDouble())
+                                          : _featuredController.initialPage
+                                                .toDouble();
+                                      final double distance = (page - index)
+                                          .abs()
+                                          .clamp(0.0, 1.0);
+                                      final double emphasis = (1 - distance)
+                                          .clamp(0.0, 1.0);
+
+                                      return Transform.scale(
+                                        scale: 0.9 + (emphasis * 0.1),
+                                        alignment: Alignment.center,
+                                        child: Transform.translate(
+                                          offset: Offset(
+                                            0,
+                                            10 - (emphasis * 10),
+                                          ),
+                                          child: Padding(
+                                            padding: EdgeInsets.only(
+                                              left: index == 0
+                                                  ? AppConstants.pagePadding
+                                                  : 6,
+                                              right:
+                                                  index ==
+                                                      featuredProvinces.length - 1
+                                                  ? AppConstants.pagePadding
+                                                  : 6,
+                                            ),
+                                            child: _FeaturedProvinceCard(
+                                              province: province,
+                                              emphasis: emphasis,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                    if (orderedCategories.isNotEmpty)
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _StickyFilterDelegate(
+                          categories: orderedCategories,
+                          selectedIndex: _selectedFilter.clamp(
+                            0,
+                            orderedCategories.length - 1,
+                          ),
+                          onTap: _scrollToSection,
+                        ),
+                      ),
+                    ...List<Widget>.generate(orderedCategories.length, (int i) {
+                      final ExploreCategory category = orderedCategories[i];
+                      return SliverToBoxAdapter(
+                        child: _CategorySection(
+                          key: _sectionKeys[i],
+                          category: category,
+                          categoryIndex: _tabIndexForCategory(category.id),
+                        ),
                       );
-                    },
-                  ),
-                ),
-              ),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-              // ── Sticky filter chips ─────────────────────────
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _StickyFilterDelegate(
-                  categories: orderedCategories,
-                  selectedIndex: _selectedFilter,
-                  onTap: _scrollToSection,
-                ),
-              ),
-
-              // ── All categories on one page ───────────────────
-              ...List.generate(orderedCategories.length, (i) {
-                final category = orderedCategories[i];
-                return SliverToBoxAdapter(
-                  child: _CategorySection(
-                    key: _sectionKeys[i],
-                    category: category,
-                    categoryIndex: i,
-                  ),
-                );
-              }),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            ],
+                    }),
+                    if (orderedCategories.isEmpty)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _ExploreStateMessage(
+                          message: 'Explore content is being updated.',
+                        ),
+                      ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  ],
+                ],
+              );
+            },
           ),
           ExploreFloatingBackButton(onTap: _handleBack),
         ],
       ),
     );
   }
+
+  List<ExploreCategory> _orderedCategories(
+    List<ExploreCategory> categories,
+    UserTravelPreferences? preferences,
+  ) {
+    final List<ExploreCategory> ordered = List<ExploreCategory>.from(categories);
+    if (preferences == null) return ordered;
+
+    ordered.sort((ExploreCategory left, ExploreCategory right) {
+      final int leftIndex = _preferredIndex(preferences, left.id);
+      final int rightIndex = _preferredIndex(preferences, right.id);
+      return leftIndex.compareTo(rightIndex);
+    });
+    return ordered;
+  }
+
+  int _preferredIndex(UserTravelPreferences preferences, String categoryId) {
+    final DetailCategory category = _detailCategoryForId(categoryId);
+    final int index = preferences.preferredCategories.indexOf(category);
+    return index == -1 ? 999 : index;
+  }
+
+  List<_FeaturedProvinceSuggestion> _featuredProvincesFromCategories(
+    List<ExploreCategory> categories,
+  ) {
+    final Map<String, _FeaturedProvinceSuggestion> deduped =
+        <String, _FeaturedProvinceSuggestion>{};
+    for (final ExploreCategory category in categories) {
+      for (final ExploreItem item in category.items) {
+        final String provinceId = (item.provinceId ?? '').trim();
+        final String provinceName = (item.provinceName ?? item.subtitle ?? '')
+            .trim();
+        if (provinceId.isEmpty || provinceName.isEmpty) {
+          continue;
+        }
+        deduped.putIfAbsent(
+          provinceId,
+          () => _FeaturedProvinceSuggestion(
+            province: ExploreProvince(id: provinceId, name: provinceName),
+            imagePath: item.imagePath,
+          ),
+        );
+      }
+    }
+    return deduped.values.take(6).toList(growable: false);
+  }
+
+  int _tabIndexForCategory(String categoryId) {
+    switch (categoryId) {
+      case 'culture':
+        return 1;
+      case 'food':
+        return 2;
+      case 'local_products':
+        return 3;
+      case 'activities':
+      default:
+        return 0;
+    }
+  }
+
+  DetailCategory _detailCategoryForId(String categoryId) {
+    switch (categoryId) {
+      case 'culture':
+        return DetailCategory.culture;
+      case 'food':
+        return DetailCategory.food;
+      case 'local_products':
+        return DetailCategory.localProducts;
+      case 'activities':
+      default:
+        return DetailCategory.activities;
+    }
+  }
+
+  ExploreRepository get _repository =>
+      widget.repository ?? ExploreRepository.instance;
 }
 
-// ─── Sticky filter delegate ──────────────────────────────────────────
+class _FeaturedProvinceSuggestion {
+  const _FeaturedProvinceSuggestion({
+    required this.province,
+    required this.imagePath,
+  });
+
+  final ExploreProvince province;
+  final String imagePath;
+}
 
 class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
   final List<ExploreCategory> categories;
@@ -280,16 +453,13 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final statusBarH = MediaQuery.of(context).padding.top;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final double statusBarH = MediaQuery.of(context).padding.top;
     return Container(
-      color: (isDark ? const Color(0xFF020B10) : Colors.white).withValues(
-        alpha: isDark ? 0.92 : 1,
-      ),
+      color: Colors.white,
       padding: EdgeInsets.only(top: statusBarH + 34),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
-        children: [
+        children: <Widget>[
           SizedBox(
             height: 36,
             child: ListView.separated(
@@ -300,13 +470,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
               itemCount: categories.length,
               separatorBuilder: (context, index) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
-                final isSelected = index == selectedIndex;
-                final Color activeColor = isDark
-                    ? AppColors.primaryLight
-                    : AppColors.primary;
-                final Color inactiveColor = isDark
-                    ? const Color(0xFFA9BCC7)
-                    : Colors.grey;
+                final bool isSelected = index == selectedIndex;
                 return GestureDetector(
                   onTap: () => onTap(index),
                   child: Container(
@@ -314,7 +478,9 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color: isSelected ? activeColor : Colors.transparent,
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.transparent,
                           width: 2.5,
                         ),
                       ),
@@ -327,7 +493,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                         fontWeight: isSelected
                             ? FontWeight.w600
                             : FontWeight.w400,
-                        color: isSelected ? activeColor : inactiveColor,
+                        color: isSelected ? AppColors.primary : Colors.grey,
                       ),
                     ),
                   ),
@@ -335,12 +501,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
               },
             ),
           ),
-          Container(
-            height: 1,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.grey.shade200,
-          ),
+          Container(height: 1, color: Colors.grey.shade200),
         ],
       ),
     );
@@ -352,48 +513,34 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
       categories != oldDelegate.categories;
 }
 
-// ─── Featured suggestion card ────────────────────────────────────────
+class _FeaturedProvinceCard extends StatelessWidget {
+  const _FeaturedProvinceCard({required this.province, this.emphasis = 1});
 
-class _FeaturedCard extends StatelessWidget {
-  const _FeaturedCard({required this.item, this.emphasis = 1});
-
-  final ExploreItem item;
+  final _FeaturedProvinceSuggestion province;
   final double emphasis;
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = Color.lerp(
-      (isDark ? Colors.white : Colors.white).withValues(
-        alpha: isDark ? 0.14 : 0.55,
-      ),
+    final Color borderColor = Color.lerp(
+      Colors.white.withValues(alpha: 0.55),
       AppColors.primaryLight.withValues(alpha: 0.95),
       emphasis,
     )!;
-    final shadowColor = Color.lerp(
-      Colors.black.withValues(alpha: isDark ? 0.28 : 0.05),
+    final Color shadowColor = Color.lerp(
+      Colors.black.withValues(alpha: 0.05),
       AppColors.primary.withValues(alpha: 0.18),
       emphasis,
     )!;
 
     return GestureDetector(
       onTap: () {
-        context.push(
-          AppRoutes.detailPathForCategory(item.category),
-          extra: ItemDetailRequest(
-            id: item.id,
-            name: item.name,
-            category: item.category,
-            fallbackImages: <String>[item.imagePath],
-            fallbackImagePath: item.imagePath,
-          ),
-        );
+        context.push(AppRoutes.exploreSearchResult, extra: province.province);
       },
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: borderColor, width: 1.2 + emphasis),
-          boxShadow: [
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: shadowColor,
               blurRadius: 16 + (emphasis * 14),
@@ -405,8 +552,11 @@ class _FeaturedCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(22),
           child: Stack(
             fit: StackFit.expand,
-            children: [
-              ExplorePreviewImage(imagePath: item.imagePath, borderRadius: 22),
+            children: <Widget>[
+              ExplorePreviewImage(
+                imagePath: province.imagePath,
+                borderRadius: 22,
+              ),
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -420,14 +570,14 @@ class _FeaturedCard extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
-                      colors: [
+                      colors: <Color>[
                         Colors.black.withValues(alpha: 0.58),
                         Colors.transparent,
                       ],
                     ),
                   ),
                   child: Text(
-                    context.l10n.ui(item.name),
+                    context.l10n.ui(province.province.name),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,
@@ -444,20 +594,18 @@ class _FeaturedCard extends StatelessWidget {
   }
 }
 
-// ─── Category section ────────────────────────────────────────────────
-
 class _CategorySection extends StatelessWidget {
   const _CategorySection({
     super.key,
     required this.category,
     required this.categoryIndex,
   });
+
   final ExploreCategory category;
   final int categoryIndex;
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppConstants.pagePadding,
@@ -467,18 +615,17 @@ class _CategorySection extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Description + Explore button
+        children: <Widget>[
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               Expanded(
                 child: Text(
                   context.l10n.ui(category.description),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? const Color(0xFFD6E7EF) : Colors.black87,
+                    color: Colors.black87,
                     height: 1.4,
                   ),
                 ),
@@ -490,48 +637,57 @@ class _CategorySection extends StatelessWidget {
                 },
                 child: Text(
                   context.l10n.ui('Explore'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                    color: AppColors.primary,
                   ),
                 ),
               ),
             ],
           ),
-
           const SizedBox(height: 10),
-
-          // 2-column grid
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: category.items.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 1.3,
+          if (category.items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                category.emptyMessage ??
+                    context.l10n.ui('Content is being updated.'),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                  height: 1.4,
+                ),
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: category.items.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 1.3,
+              ),
+              itemBuilder: (context, index) {
+                return _ExploreItemCard(item: category.items[index]);
+              },
             ),
-            itemBuilder: (context, index) {
-              return _ExploreItemCard(item: category.items[index]);
-            },
-          ),
         ],
       ),
     );
   }
 }
 
-// ─── Single explore item card ────────────────────────────────────────
-
 class _ExploreItemCard extends StatelessWidget {
   const _ExploreItemCard({required this.item});
+
   final ExploreItem item;
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
         context.push(
@@ -542,6 +698,8 @@ class _ExploreItemCard extends StatelessWidget {
             category: item.category,
             fallbackImages: <String>[item.imagePath],
             fallbackImagePath: item.imagePath,
+            trackExploreBehavior: true,
+            exploreProvinceId: item.provinceId,
           ),
         );
       },
@@ -549,26 +707,22 @@ class _ExploreItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: Stack(
           fit: StackFit.expand,
-          children: [
-            Container(
-              color: isDark ? const Color(0xFF102A36) : Colors.grey.shade200,
-              child: Icon(
-                Icons.image_outlined,
-                size: 36,
-                color: isDark ? AppColors.primaryLight : Colors.grey.shade400,
-              ),
-            ),
+          children: <Widget>[
+            ExplorePreviewImage(imagePath: item.imagePath, borderRadius: 14),
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
-                    colors: [
+                    colors: <Color>[
                       Colors.black.withValues(alpha: 0.55),
                       Colors.transparent,
                     ],
@@ -586,6 +740,46 @@ class _ExploreItemCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ExploreStateMessage extends StatelessWidget {
+  const _ExploreStateMessage({
+    required this.message,
+    this.actionLabel,
+    this.onTap,
+  });
+
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Text(
+            context.l10n.ui(message),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          if (actionLabel != null && onTap != null) ...<Widget>[
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: onTap,
+              child: Text(context.l10n.ui(actionLabel!)),
+            ),
+          ],
+        ],
       ),
     );
   }

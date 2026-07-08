@@ -5,12 +5,34 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
+import 'package:hellovietnam/features/explore/data/explore_tracking_service.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
+import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
+import 'package:hellovietnam/features/forum/domain/forum_models.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
 import 'package:image_picker/image_picker.dart';
 
+typedef CreatePostCallback =
+    Future<String> Function({
+      required String content,
+      List<String> imageUrls,
+      List<XFile> imageFiles,
+      SharedExploreItem? sharedExploreItem,
+    });
+
 class CreatePostPage extends StatefulWidget {
-  const CreatePostPage({super.key});
+  const CreatePostPage({
+    super.key,
+    this.request = const CreateForumPostRequest(),
+    this.currentUserAuthor,
+    this.createPost,
+    this.exploreTrackingService,
+  });
+
+  final CreateForumPostRequest request;
+  final ForumAuthor? currentUserAuthor;
+  final CreatePostCallback? createPost;
+  final ExploreTrackingService? exploreTrackingService;
 
   @override
   State<CreatePostPage> createState() => _CreatePostPageState();
@@ -22,6 +44,30 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final ImagePicker _imagePicker = ImagePicker();
   final List<XFile> _selectedImages = <XFile>[];
   bool _isSubmitting = false;
+
+  ForumAuthor get _currentUserAuthor =>
+      widget.currentUserAuthor ?? _store.currentUserAuthor;
+
+  Future<String> _createPost({
+    required String content,
+    required List<XFile> imageFiles,
+  }) {
+    final CreatePostCallback? createPost = widget.createPost;
+    if (createPost != null) {
+      return createPost(
+        content: content,
+        imageFiles: imageFiles,
+        sharedExploreItem: widget.request.sharedExploreItem,
+      );
+    }
+    return _store.createPost(
+      content: content,
+      imageFiles: imageFiles,
+      sharedExploreItem: widget.request.sharedExploreItem,
+    );
+  }
+
+  bool get _isShareFromExplore => widget.request.sharedExploreItem != null;
 
   @override
   void initState() {
@@ -57,16 +103,28 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   Future<void> _submit() async {
     final String content = _controller.text.trim();
-    if (content.isEmpty || _isSubmitting) {
+    if (_isSubmitting) {
+      return;
+    }
+    if (content.isEmpty && !_isShareFromExplore) {
       return;
     }
 
     setState(() => _isSubmitting = true);
     try {
-      final String postId = await _store.createPost(
+      final String postId = await _createPost(
         content: content,
         imageFiles: _selectedImages,
       );
+      final SharedExploreItem? sharedItem = widget.request.sharedExploreItem;
+      if (sharedItem != null) {
+        await (widget.exploreTrackingService ?? ExploreTrackingService.instance)
+            .trackShare(
+              contentType: sharedItem.contentType,
+              contentId: sharedItem.contentId,
+              provinceId: sharedItem.provinceId,
+            );
+      }
       if (mounted) {
         context.pop(postId);
       }
@@ -84,7 +142,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool canSubmit = _controller.text.trim().isNotEmpty && !_isSubmitting;
+    final bool canSubmit =
+        (_controller.text.trim().isNotEmpty || _isShareFromExplore) &&
+        !_isSubmitting;
 
     return ForumBackground(
       child: Scaffold(
@@ -100,7 +160,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 onBookmark: _openImagePicker,
                 onNotification: () {},
                 onAvatarTap: () {},
-                avatarUrl: _store.currentUserAuthor.avatarUrl,
+                avatarUrl: _currentUserAuthor.avatarUrl,
+                showBookmark: !_isShareFromExplore,
                 showAvatar: false,
               ),
               Expanded(
@@ -121,7 +182,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                           Row(
                             children: <Widget>[
                               ForumAvatar(
-                                imageUrl: _store.currentUserAuthor.avatarUrl,
+                                imageUrl: _currentUserAuthor.avatarUrl,
                                 size: 48,
                                 borderColor: Colors.white.withValues(
                                   alpha: 0.76,
@@ -130,7 +191,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  _store.currentUserAuthor.name,
+                                  _currentUserAuthor.name,
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
@@ -141,6 +202,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               _PostButton(enabled: canSubmit, onTap: _submit),
                             ],
                           ),
+                          if (widget.request.sharedExploreItem != null) ...<Widget>[
+                            const SizedBox(height: 18),
+                            _SharedExplorePreview(
+                              item: widget.request.sharedExploreItem!,
+                            ),
+                          ],
                           const SizedBox(height: 18),
                           TextField(
                             controller: _controller,
@@ -159,7 +226,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               color: ForumColors.textPrimary,
                             ),
                           ),
-                          if (_selectedImages.isNotEmpty) ...<Widget>[
+                          if (_selectedImages.isNotEmpty &&
+                              !_isShareFromExplore) ...<Widget>[
                             const SizedBox(height: 12),
                             SizedBox(
                               height: 100,
@@ -211,27 +279,29 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 18),
-                          OutlinedButton.icon(
-                            onPressed: _openImagePicker,
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.7),
+                          if (!_isShareFromExplore) ...<Widget>[
+                            const SizedBox(height: 18),
+                            OutlinedButton.icon(
+                              onPressed: _openImagePicker,
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                foregroundColor: ForumColors.bluePrimary,
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
+                              icon: const Icon(
+                                Icons.add_photo_alternate_outlined,
                               ),
-                              foregroundColor: ForumColors.bluePrimary,
+                              label: Text(
+                                _selectedImages.isEmpty
+                                    ? 'Add photos'
+                                    : 'Edit photos (${_selectedImages.length})',
+                              ),
                             ),
-                            icon: const Icon(
-                              Icons.add_photo_alternate_outlined,
-                            ),
-                            label: Text(
-                              _selectedImages.isEmpty
-                                  ? 'Add photos'
-                                  : 'Edit photos (${_selectedImages.length})',
-                            ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
@@ -242,6 +312,108 @@ class _CreatePostPageState extends State<CreatePostPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SharedExplorePreview extends StatelessWidget {
+  const _SharedExplorePreview({required this.item});
+
+  final SharedExploreItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.52),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+      ),
+      child: Row(
+        children: <Widget>[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              width: 64,
+              height: 64,
+              child: _SharedPreviewImage(imagePath: item.imagePath),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  item.category.label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: ForumColors.bluePrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: ForumColors.textPrimary,
+                  ),
+                ),
+                if (_secondaryText(item).isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 4),
+                  Text(
+                    _secondaryText(item),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: ForumColors.textMuted,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _secondaryText(SharedExploreItem item) {
+    final String provinceName = (item.provinceName ?? '').trim();
+    if (provinceName.isNotEmpty) {
+      return provinceName;
+    }
+    return (item.subtitle ?? '').trim();
+  }
+}
+
+class _SharedPreviewImage extends StatelessWidget {
+  const _SharedPreviewImage({required this.imagePath});
+
+  final String imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    final String normalized = imagePath.trim();
+    if (normalized.isEmpty) {
+      return Container(
+        key: const ValueKey<String>('shared-explore-placeholder'),
+        color: const Color(0xFFEAF4F8),
+      );
+    }
+    if (normalized.startsWith('assets/')) {
+      return Image.asset(
+        normalized,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(color: const Color(0xFFEAF4F8)),
+      );
+    }
+    return Image.network(
+      normalized,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => Container(color: const Color(0xFFEAF4F8)),
     );
   }
 }

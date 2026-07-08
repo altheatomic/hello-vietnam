@@ -1,12 +1,16 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/features/explore/data/explore_tracking_service.dart';
 import 'package:hellovietnam/features/explore/presentation/widgets/explore_floating_back_button.dart';
+import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
 import 'package:hellovietnam/features/item_detail/data/item_detail_mock_data.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
@@ -42,6 +46,8 @@ class SharedItemDetailPage extends StatefulWidget {
 
 class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
   late final ItemDetail _detail;
+  final ExploreTrackingService _exploreTrackingService =
+      ExploreTrackingService.instance;
   late bool _isFavorite;
   late final PageController _reviewPageController;
   int _currentPage = 0;
@@ -73,6 +79,17 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
       if (!mounted) return;
       _syncFavoriteFromController();
     });
+    if (_shouldTrackExploreBehavior) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(
+          _exploreTrackingService.trackViewDetail(
+            category: _detail.category,
+            contentId: _detail.id,
+            provinceId: _trackingProvinceId,
+          ),
+        );
+      });
+    }
   }
 
   @override
@@ -116,6 +133,16 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
         );
       } else {
         setState(() => _isFavorite = next);
+        if (_shouldTrackExploreBehavior) {
+          unawaited(
+            _exploreTrackingService.trackFavoriteChanged(
+              category: _detail.category,
+              contentId: _detail.id,
+              provinceId: _trackingProvinceId,
+              isFavorite: next,
+            ),
+          );
+        }
       }
     } catch (error) {
       if (!mounted) return;
@@ -124,6 +151,22 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
         context,
       ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
     }
+  }
+
+  void _openShareComposer() {
+    context.push(
+      AppRoutes.forumCreate,
+      extra: CreateForumPostRequest(
+        sharedExploreItem: SharedExploreItem(
+          contentType: _sharedContentTypeForCategory(_detail.category),
+          contentId: _detail.id,
+          provinceId: _trackingProvinceId,
+          title: _detail.name,
+          imagePath: _detail.images.isNotEmpty ? _detail.images.first : '',
+          category: _detail.category,
+        ),
+      ),
+    );
   }
 
   FavoriteType? _favoriteTypeForDetail(ItemDetail detail) {
@@ -136,6 +179,24 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
         return FavoriteType.food;
       case DetailCategory.localProducts:
         return FavoriteType.localProduct;
+    }
+  }
+
+  bool get _shouldTrackExploreBehavior =>
+      widget.request?.trackExploreBehavior == true;
+
+  String? get _trackingProvinceId => widget.request?.exploreProvinceId;
+
+  String _sharedContentTypeForCategory(DetailCategory category) {
+    switch (category) {
+      case DetailCategory.activities:
+        return 'activity';
+      case DetailCategory.culture:
+        return 'culture';
+      case DetailCategory.food:
+        return 'food';
+      case DetailCategory.localProducts:
+        return 'local_product';
     }
   }
 
@@ -168,8 +229,10 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     images: _detail.images,
                     rating: _detail.rating,
                     isFavorite: _isFavorite,
+                    showShareAction: _shouldTrackExploreBehavior,
                     currentPage: _currentPage,
                     onFavoriteTap: _toggleFavorite,
+                    onShareTap: _openShareComposer,
                     onPageChanged: (int index) {
                       setState(() => _currentPage = index);
                     },
@@ -282,17 +345,21 @@ class _HeroImageCarousel extends StatelessWidget {
     required this.images,
     required this.rating,
     required this.isFavorite,
+    required this.showShareAction,
     required this.currentPage,
     required this.onPageChanged,
     required this.onFavoriteTap,
+    required this.onShareTap,
   });
 
   final List<String> images;
   final double rating;
   final bool isFavorite;
+  final bool showShareAction;
   final int currentPage;
   final ValueChanged<int> onPageChanged;
   final VoidCallback onFavoriteTap;
+  final VoidCallback onShareTap;
 
   @override
   Widget build(BuildContext context) {
@@ -330,13 +397,26 @@ class _HeroImageCarousel extends StatelessWidget {
               Positioned(
                 top: 14,
                 right: 14,
-                child: _CircleIconButton(
-                  icon: isFavorite ? Icons.favorite : Icons.favorite_border,
-                  onTap: onFavoriteTap,
-                  iconColor: isFavorite
-                      ? const Color(0xFFFF5E7A)
-                      : Colors.white,
-                  backgroundColor: Colors.black.withValues(alpha: 0.28),
+                child: Column(
+                  children: <Widget>[
+                    _CircleIconButton(
+                      icon: isFavorite ? Icons.favorite : Icons.favorite_border,
+                      onTap: onFavoriteTap,
+                      iconColor: isFavorite
+                          ? const Color(0xFFFF5E7A)
+                          : Colors.white,
+                      backgroundColor: Colors.black.withValues(alpha: 0.28),
+                    ),
+                    if (showShareAction) ...<Widget>[
+                      const SizedBox(height: 10),
+                      _CircleIconButton(
+                        icon: Icons.share_outlined,
+                        onTap: onShareTap,
+                        iconColor: Colors.white,
+                        backgroundColor: Colors.black.withValues(alpha: 0.28),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               Positioned(

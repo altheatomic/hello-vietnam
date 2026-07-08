@@ -6,6 +6,8 @@ class ExploreItem {
   final String name;
   final String imagePath; // asset or network URL
   final String? subtitle;
+  final String? provinceId;
+  final String? provinceName;
   final DetailCategory category;
 
   const ExploreItem({
@@ -14,19 +16,51 @@ class ExploreItem {
     required this.imagePath,
     required this.category,
     this.subtitle,
+    this.provinceId,
+    this.provinceName,
   });
 
   factory ExploreItem.fromJson(Map<String, dynamic> json) {
     return ExploreItem(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      imagePath: json['imagePath'] as String,
+      id: _readRequiredString(json['id']),
+      name: _readRequiredString(json['name']),
+      imagePath: _readRequiredString(json['imagePath']),
       category: _parseDetailCategory(
-        json['category'] as String? ?? 'activities',
+        _readNullableString(json['category']) ?? 'activities',
       ),
-      subtitle: json['subtitle'] as String?,
+      subtitle: _readNullableString(json['subtitle']),
+      provinceId: _readNullableString(json['provinceId']),
+      provinceName: _readNullableString(json['provinceName']),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'name': name,
+      'imagePath': imagePath,
+      'category': category.storageKey,
+      'subtitle': subtitle,
+      'provinceId': provinceId,
+      'provinceName': provinceName,
+    };
+  }
+}
+
+String _readRequiredString(Object? value) {
+  final String? normalized = _readNullableString(value);
+  return normalized ?? '';
+}
+
+String? _readNullableString(Object? value) {
+  if (value is String) {
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+  if (value is num || value is bool) {
+    return value.toString();
+  }
+  return null;
 }
 
 DetailCategory _parseDetailCategory(String raw) {
@@ -52,11 +86,47 @@ class ExploreCategory {
   final String title; // tab label: "Activities", "Culture", etc.
   final String description; // subtitle shown under the tab content
   final List<ExploreItem> items;
+  final String? emptyMessage;
 
   const ExploreCategory({
     required this.id,
     required this.title,
     required this.description,
     required this.items,
+    this.emptyMessage,
   });
+
+  factory ExploreCategory.fromJson(Map<String, dynamic> json) {
+    final List<Object?> rawItems = json['items'] is List
+        ? (json['items'] as List<Object?>)
+        : const <Object?>[];
+
+    return ExploreCategory(
+      id: (json['id'] as String? ?? '').trim(),
+      title: (json['title'] as String? ?? '').trim(),
+      description: (json['description'] as String? ?? '').trim(),
+      items: rawItems
+          .whereType<Map>()
+          .map(
+            (Map<dynamic, dynamic> item) => ExploreItem.fromJson(
+              item.map(
+                (dynamic key, dynamic value) =>
+                    MapEntry(key.toString(), value),
+              ),
+            ),
+          )
+          .toList(growable: false),
+      emptyMessage: (json['emptyMessage'] as String?)?.trim(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'title': title,
+      'description': description,
+      'items': items.map((ExploreItem item) => item.toJson()).toList(),
+      'emptyMessage': emptyMessage,
+    };
+  }
 }

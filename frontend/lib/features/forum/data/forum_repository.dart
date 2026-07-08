@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/media/cloudflare_media_repository.dart';
+import '../domain/create_forum_post_request.dart';
 import '../domain/forum_models.dart';
 
 class ForumRepositorySnapshot {
@@ -47,7 +48,9 @@ class ForumRepository {
 
     final List<Map<String, dynamic>> postRows = await _client
         .from('forum_post')
-        .select('id_post, id_author_user, title, content, created_at, status')
+        .select(
+          'id_post, id_author_user, title, content, shared_item, created_at, status',
+        )
         .or('status.is.null,status.eq.active')
         .order('created_at', ascending: false)
         .limit(80);
@@ -244,6 +247,7 @@ class ForumRepository {
             timeAgo: _timeAgo(row['created_at']),
             likes: likeCountByPostId[postId] ?? 0,
             comments: commentCountByPostId[postId] ?? 0,
+            sharedItem: _sharedItemFrom(row['shared_item']),
             isLiked: likedPostIds.contains(postId),
             isBookmarked: bookmarkedPostIds.contains(postId),
             showFollowButton: authorId != currentUserId && !author.isFollowing,
@@ -282,13 +286,16 @@ class ForumRepository {
     required String content,
     required List<String> imageUrls,
     List<XFile> imageFiles = const <XFile>[],
+    SharedExploreItem? sharedExploreItem,
   }) async {
     final String userId = await _requireForumUser();
     final Map<String, dynamic> row = await _client
         .from('forum_post')
         .insert(<String, dynamic>{
           'id_author_user': userId,
+          if (sharedExploreItem != null) 'title': sharedExploreItem.title,
           'content': content.trim(),
+          'shared_item': sharedExploreItem?.toJson(),
           'status': 'active',
         })
         .select('id_post')
@@ -722,6 +729,21 @@ class ForumRepository {
   }
 
   String _stringValue(Object? value) => value?.toString().trim() ?? '';
+
+  SharedExploreItem? _sharedItemFrom(Object? value) {
+    if (value is Map<String, dynamic>) {
+      return SharedExploreItem.fromJson(value);
+    }
+    if (value is Map) {
+      return SharedExploreItem.fromJson(
+        value.map(
+          (dynamic key, dynamic innerValue) =>
+              MapEntry(key.toString(), innerValue),
+        ),
+      );
+    }
+    return null;
+  }
 
   String _handleFrom(String value) {
     final String normalized = value
