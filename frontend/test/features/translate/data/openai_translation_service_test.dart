@@ -66,4 +66,31 @@ void main() {
     expect(result.audioUrl, 'https://cdn.example.com/speech.mp3');
     expect(result.provider, 'vbee');
   });
+
+  test('translate fails with a friendly timeout error', () async {
+    final service = OpenAITranslationService(
+      accessTokenProvider: () async => 'user-jwt',
+      requestTimeout: const Duration(milliseconds: 10),
+      client: MockClient((http.Request request) async {
+        await Future<void>.delayed(const Duration(seconds: 1));
+        return http.Response('{}', 200);
+      }),
+    );
+
+    expect(
+      () => service.translate(
+        text: 'hello',
+        sourceLanguageCode: 'en',
+        targetLanguageCode: 'vi',
+        targetLanguageName: 'Vietnamese',
+      ),
+      throwsA(
+        isA<TranslationException>().having(
+          (TranslationException error) => error.message,
+          'message',
+          contains('timed out'),
+        ),
+      ),
+    );
+  });
 }

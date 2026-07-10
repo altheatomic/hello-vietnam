@@ -1,3 +1,4 @@
+import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum FavoriteType {
@@ -64,11 +65,15 @@ class WishlistRepositoryItem {
 }
 
 class WishlistRepository {
-  WishlistRepository({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+  WishlistRepository({
+    SupabaseClient? client,
+    SupabaseFunctionClient? functionClient,
+  }) : _functionClient =
+           functionClient ??
+           SupabaseFunctionClient(client: client ?? Supabase.instance.client);
 
   static const String _functionName = 'wishlist';
-  final SupabaseClient _client;
+  final SupabaseFunctionClient _functionClient;
 
   Future<List<WishlistRepositoryItem>> fetchWishlist({
     String language = 'en',
@@ -137,24 +142,9 @@ class WishlistRepository {
     required String action,
     Map<String, dynamic>? payload,
   }) async {
-    final session = _client.auth.currentSession;
-    final headers = <String, String>{};
-    if (session?.accessToken case final String token) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-
-    final response = await _client.functions.invoke(
+    return _functionClient.invokeJson(
       _functionName,
-      headers: headers.isEmpty ? null : headers,
       body: <String, dynamic>{'action': action, ...?payload},
-    );
-
-    final raw = response.data;
-    if (raw is Map<String, dynamic>) return raw;
-    if (raw is Map) return Map<String, dynamic>.from(raw);
-
-    throw StateError(
-      'Unexpected response from function "$_functionName" for action "$action".',
     );
   }
 

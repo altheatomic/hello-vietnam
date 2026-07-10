@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' show max, min;
 
 import 'package:flutter/material.dart';
@@ -9,20 +10,27 @@ import 'package:hellovietnam/features/admin/data/admin_report_repository.dart';
 import '../widgets/admin_section_header.dart';
 
 class AdminReportPage extends StatefulWidget {
-  const AdminReportPage({super.key});
+  const AdminReportPage({super.key, this.repository});
+
+  final AdminReportRepository? repository;
 
   @override
   State<AdminReportPage> createState() => _AdminReportPageState();
 }
 
 class _AdminReportPageState extends State<AdminReportPage> {
-  final AdminReportRepository _repository = AdminReportRepository();
+  late final AdminReportRepository _repository =
+      widget.repository ?? AdminReportRepository();
   final List<_ReportItem> _reports = <_ReportItem>[];
   final TextEditingController _searchController = TextEditingController();
 
   _IssueType? _issueFilter;
   _ReportStatus? _statusFilter;
+  AdminReportStatusCounts _statusCounts = const AdminReportStatusCounts.zero();
   int _currentPage = 1;
+  int _totalReports = 0;
+  int _loadRequestId = 0;
+  Timer? _searchDebounce;
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -36,68 +44,70 @@ class _AdminReportPageState extends State<AdminReportPage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  List<_ReportItem> get _filtered {
-    final q = _searchController.text.trim().toLowerCase();
-    return _reports.where((r) {
-      final matchQuery =
-          q.isEmpty ||
-          r.id.toLowerCase().contains(q) ||
-          r.reporterName.toLowerCase().contains(q) ||
-          r.reporterEmail.toLowerCase().contains(q) ||
-          r.target.toLowerCase().contains(q);
-      final matchIssue = _issueFilter == null || r.issue == _issueFilter;
-      final matchStatus = _statusFilter == null || r.status == _statusFilter;
-      return matchQuery && matchIssue && matchStatus;
-    }).toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-  }
-
-  List<_ReportItem> get _paged {
-    final all = _filtered;
-    final start = (_currentPage - 1) * _pageSize;
-    final end = min(start + _pageSize, all.length);
-    if (start >= all.length) return [];
-    return all.sublist(start, end);
-  }
+  List<_ReportItem> get _visibleReports => _reports;
 
   int get _totalPages =>
-      (_filtered.length / _pageSize).ceil().clamp(1, 9999).toInt();
+      (_totalReports / _pageSize).ceil().clamp(1, 9999).toInt();
 
-  int _count(_ReportStatus status) =>
-      _reports.where((e) => e.status == status).length;
-
-  void _onSearchChanged(String _) => setState(() => _currentPage = 1);
-
-  void _onIssueChanged(_IssueType? value) => setState(() {
-    _issueFilter = value;
-    _currentPage = 1;
-  });
-
-  void _onStatusChanged(_ReportStatus? value) => setState(() {
-    _statusFilter = value;
-    _currentPage = 1;
-  });
-
-  Future<void> _loadReports() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-    try {
-      final List<AdminReportRecord> records = await _repository.fetchReports();
+  void _onSearchChanged(String _) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
       if (!mounted) return;
+      setState(() => _currentPage = 1);
+      _loadReports(showLoader: false);
+    });
+  }
+
+  void _onIssueChanged(_IssueType? value) {
+    setState(() {
+      _issueFilter = value;
+      _currentPage = 1;
+    });
+    _loadReports(showLoader: false);
+  }
+
+  void _onStatusChanged(_ReportStatus? value) {
+    setState(() {
+      _statusFilter = value;
+      _currentPage = 1;
+    });
+    _loadReports(showLoader: false);
+  }
+
+  Future<void> _loadReports({bool showLoader = true}) async {
+    final int requestId = ++_loadRequestId;
+    if (showLoader) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    } else {
+      setState(() => _errorMessage = null);
+    }
+    try {
+      final AdminReportPageResult result = await _repository.fetchReports(
+        page: _currentPage,
+        pageSize: _pageSize,
+        query: _searchController.text,
+        status: _statusFilter?.storageValue,
+        issueType: _issueFilter?.storageValue,
+      );
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _reports
           ..clear()
-          ..addAll(records.map(_reportItemFromRecord));
+          ..addAll(result.records.map(_reportItemFromRecord));
+        _totalReports = result.totalCount;
+        _statusCounts = result.statusCounts;
         _isLoading = false;
-        _currentPage = 1;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _errorMessage = error.toString();
         _isLoading = false;
@@ -141,6 +151,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
       final idx = _reports.indexWhere((e) => e.id == item.id);
       if (idx != -1) _reports[idx] = _reports[idx].copyWith(status: nextStatus);
     });
+    await _loadReports(showLoader: false);
   }
 
   _ReportItem _reportItemFromRecord(AdminReportRecord record) {
@@ -159,6 +170,21 @@ class _AdminReportPageState extends State<AdminReportPage> {
   }
 
   _IssueType _issueTypeFromRecord(AdminReportRecord record) {
+    switch (record.issueType) {
+      case 'incorrect_data':
+        return _IssueType.incorrectData;
+      case 'map_address_issue':
+        return _IssueType.mapAddressIssue;
+      case 'inappropriate_media':
+        return _IssueType.inappropriateMedia;
+      case 'missing_information':
+        return _IssueType.missingInformation;
+      case 'app_function':
+        return _IssueType.appFunction;
+      case 'other':
+        return _IssueType.other;
+    }
+
     final String category = record.reportCategory;
     final String area = record.featureArea?.toLowerCase() ?? '';
     if (area.contains('map')) return _IssueType.mapAddressIssue;
@@ -214,8 +240,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
-    final paged = _paged;
+    final reports = _visibleReports;
 
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
@@ -238,11 +263,11 @@ class _AdminReportPageState extends State<AdminReportPage> {
                 const SizedBox(height: 14),
               ],
               _ReportStats(
-                total: _reports.length,
-                pending: _count(_ReportStatus.pending),
-                inProgress: _count(_ReportStatus.inProgress),
-                resolved: _count(_ReportStatus.resolved),
-                dismissed: _count(_ReportStatus.dismissed),
+                total: _statusCounts.total,
+                pending: _statusCounts.pending,
+                inProgress: _statusCounts.reviewing,
+                resolved: _statusCounts.resolved,
+                dismissed: _statusCounts.rejected,
               ),
               const SizedBox(height: 14),
               _ReportContentCard(
@@ -259,7 +284,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
                         padding: EdgeInsets.symmetric(vertical: 42),
                         child: Center(child: CircularProgressIndicator()),
                       )
-                    : filtered.isEmpty
+                    : reports.isEmpty
                     ? const Padding(
                         padding: EdgeInsets.symmetric(vertical: 36),
                         child: EmptyState(
@@ -269,16 +294,18 @@ class _AdminReportPageState extends State<AdminReportPage> {
                       )
                     : Column(
                         children: [
-                          _ReportTable(reports: paged, onReview: _onReview),
+                          _ReportTable(reports: reports, onReview: _onReview),
                           Padding(
                             padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                             child: _TableFooter(
                               currentPage: _currentPage,
                               totalPages: _totalPages,
-                              totalItems: filtered.length,
+                              totalItems: _totalReports,
                               pageSize: _pageSize,
-                              onPageChanged: (p) =>
-                                  setState(() => _currentPage = p),
+                              onPageChanged: (p) {
+                                setState(() => _currentPage = p);
+                                _loadReports(showLoader: false);
+                              },
                             ),
                           ),
                         ],
@@ -1235,6 +1262,7 @@ class _TableFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final start = (currentPage - 1) * pageSize + 1;
     final end = min(currentPage * pageSize, totalItems);
+    final visiblePages = _visiblePages();
 
     return Row(
       children: [
@@ -1251,17 +1279,50 @@ class _TableFooter extends StatelessWidget {
           onTap: () => onPageChanged(currentPage - 1),
         ),
         const SizedBox(width: 4),
-        ...List.generate(totalPages, (i) {
-          final page = i + 1;
-          return Padding(
+        if (visiblePages.first > 1) ...[
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: _PageBtn(
+              label: '1',
+              isActive: currentPage == 1,
+              onTap: () => onPageChanged(1),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: Text(
+              '...',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+        ...visiblePages.map(
+          (page) => Padding(
             padding: const EdgeInsets.only(right: 4),
             child: _PageBtn(
               label: '$page',
               isActive: page == currentPage,
               onTap: () => onPageChanged(page),
             ),
-          );
-        }),
+          ),
+        ),
+        if (visiblePages.last < totalPages) ...[
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: Text(
+              '...',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: _PageBtn(
+              label: '$totalPages',
+              isActive: currentPage == totalPages,
+              onTap: () => onPageChanged(totalPages),
+            ),
+          ),
+        ],
         _PageBtn(
           icon: Icons.chevron_right_rounded,
           enabled: currentPage < totalPages,
@@ -1269,6 +1330,15 @@ class _TableFooter extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  List<int> _visiblePages() {
+    if (totalPages <= 7) {
+      return List<int>.generate(totalPages, (index) => index + 1);
+    }
+    final start = (currentPage - 2).clamp(1, totalPages - 4).toInt();
+    final end = min(start + 4, totalPages);
+    return List<int>.generate(end - start + 1, (index) => start + index);
   }
 }
 
@@ -2115,6 +2185,19 @@ enum _IssueType {
   final String label;
   final IconData icon;
   final Color color;
+}
+
+extension _IssueTypeStorage on _IssueType {
+  String get storageValue {
+    return switch (this) {
+      _IssueType.incorrectData => 'incorrect_data',
+      _IssueType.mapAddressIssue => 'map_address_issue',
+      _IssueType.inappropriateMedia => 'inappropriate_media',
+      _IssueType.missingInformation => 'missing_information',
+      _IssueType.appFunction => 'app_function',
+      _IssueType.other => 'other',
+    };
+  }
 }
 
 enum _Category {

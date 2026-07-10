@@ -1,6 +1,4 @@
-import 'dart:convert';
-
-import 'package:hellovietnam/core/config/env.dart';
+import 'package:hellovietnam/core/network/edge_function_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -39,11 +37,17 @@ class OpenAITranslationService {
   OpenAITranslationService({
     http.Client? client,
     Future<String?> Function()? accessTokenProvider,
-  }) : _client = client ?? http.Client(),
-       _accessTokenProvider = accessTokenProvider ?? _currentAccessToken;
+    Duration requestTimeout = const Duration(seconds: 20),
+    EdgeFunctionClient? edgeFunctionClient,
+  }) : _edgeFunctionClient =
+           edgeFunctionClient ??
+           EdgeFunctionClient(
+             client: client,
+             accessTokenProvider: accessTokenProvider ?? _currentAccessToken,
+             requestTimeout: requestTimeout,
+           );
 
-  final http.Client _client;
-  final Future<String?> Function() _accessTokenProvider;
+  final EdgeFunctionClient _edgeFunctionClient;
 
   Future<TranslationResult> translate({
     required String text,
@@ -57,31 +61,17 @@ class OpenAITranslationService {
     }
 
     try {
-      final Uri uri = Uri.parse('${Env.supabaseUrl}/functions/v1/translate');
-      final http.Response response = await _client.post(
-        uri,
-        headers: await _authorizedHeaders(),
-        body: jsonEncode(<String, String>{
+      final Map<String, dynamic> data = await _edgeFunctionClient.postJson(
+        'translate',
+        requireAuth: true,
+        body: <String, String>{
           'action': 'translate',
           'text': trimmedText,
           'sourceLanguageCode': sourceLanguageCode,
           'targetLanguageCode': targetLanguageCode,
           'targetLanguageName': targetLanguageName,
-        }),
+        },
       );
-
-      final Map<String, dynamic> data =
-          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-
-      if (response.statusCode >= 400) {
-        throw TranslationException(
-          _mapServerError(
-            (data['error'] as String?) ??
-                'Translate function failed (${response.statusCode}).',
-          ),
-        );
-      }
-
       if (data.isEmpty) {
         throw TranslationException(
           'Translate function returned an invalid response.',
@@ -93,6 +83,8 @@ class OpenAITranslationService {
         detectedSourceLanguageCode:
             (data['detected_source_language_code'] as String?)?.trim(),
       );
+    } on EdgeFunctionException catch (error) {
+      throw TranslationException(_mapServerError(error.message));
     } on TranslationException {
       rethrow;
     } catch (error) {
@@ -111,30 +103,16 @@ class OpenAITranslationService {
     }
 
     try {
-      final Uri uri = Uri.parse('${Env.supabaseUrl}/functions/v1/translate');
-      final http.Response response = await _client.post(
-        uri,
-        headers: await _authorizedHeaders(),
-        body: jsonEncode(<String, String>{
+      final Map<String, dynamic> data = await _edgeFunctionClient.postJson(
+        'translate',
+        requireAuth: true,
+        body: <String, String>{
           'action': 'tts',
           'text': trimmedText,
           'languageCode': languageCode,
           'languageName': languageName,
-        }),
+        },
       );
-
-      final Map<String, dynamic> data =
-          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-
-      if (response.statusCode >= 400) {
-        throw TranslationException(
-          _mapServerError(
-            (data['error'] as String?) ??
-                'Text-to-speech failed (${response.statusCode}).',
-          ),
-        );
-      }
-
       final String audioUrl = (data['audio_url'] as String? ?? '').trim();
       if (audioUrl.isEmpty) {
         throw TranslationException(
@@ -147,26 +125,13 @@ class OpenAITranslationService {
         provider: (data['provider'] as String?)?.trim(),
         requestId: (data['request_id'] as String?)?.trim(),
       );
+    } on EdgeFunctionException catch (error) {
+      throw TranslationException(_mapServerError(error.message));
     } on TranslationException {
       rethrow;
     } catch (error) {
       throw TranslationException(_mapServerError(error.toString()));
     }
-  }
-
-  Future<Map<String, String>> _authorizedHeaders() async {
-    final String? accessToken = await _accessTokenProvider();
-    if (accessToken == null || accessToken.trim().isEmpty) {
-      throw TranslationException(
-        'Please sign in before using online translation.',
-      );
-    }
-
-    return <String, String>{
-      'apikey': Env.supabaseAnonKey,
-      'Authorization': 'Bearer ${accessToken.trim()}',
-      'Content-Type': 'application/json',
-    };
   }
 
   static Future<String?> _currentAccessToken() async {
@@ -179,6 +144,10 @@ class OpenAITranslationService {
     if (lowerMessage.contains('missing authorization header') ||
         lowerMessage.contains('invalid jwt')) {
       return 'Supabase auth config dang sai. Hay kiem tra lai supabaseUrl va anon key.';
+    }
+
+    if (lowerMessage.contains('please sign in')) {
+      return 'Please sign in before using online translation.';
     }
 
     if (lowerMessage.contains('server is missing deepseek_api_key')) {
@@ -201,6 +170,11 @@ class OpenAITranslationService {
         lowerMessage.contains('rate limit') ||
         lowerMessage.contains('resource has been exhausted')) {
       return 'Dich vu AI/TTS dang vuot quota. Hay doi mot luc hoac nang cap quota.';
+    }
+
+    if (lowerMessage.contains('timeoutexception') ||
+        lowerMessage.contains('timed out')) {
+      return 'Translate service timed out. Please try again.';
     }
 
     if (lowerMessage.contains('permission') ||

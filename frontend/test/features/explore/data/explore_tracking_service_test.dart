@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/features/explore/data/explore_tracking_service.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 
@@ -12,13 +13,14 @@ void main() {
         functionName: 'explore',
         accessTokenProvider: () => 'token-123',
         requestIdGenerator: () => 'request-1',
-        sender: ({
-          Map<String, String>? headers,
-          required Map<String, dynamic> body,
-        }) async {
-          capturedHeaders = headers;
-          capturedBody = body;
-        },
+        sender:
+            ({
+              Map<String, String>? headers,
+              required Map<String, dynamic> body,
+            }) async {
+              capturedHeaders = headers;
+              capturedBody = body;
+            },
       );
 
       await service.trackViewDetail(
@@ -27,10 +29,9 @@ void main() {
         provinceId: 'province-9',
       );
 
-      expect(
-        capturedHeaders,
-        <String, String>{'Authorization': 'Bearer token-123'},
-      );
+      expect(capturedHeaders, <String, String>{
+        'Authorization': 'Bearer token-123',
+      });
       expect(capturedBody, <String, dynamic>{
         'action': 'recordExploreEvent',
         'contentType': 'culture',
@@ -42,18 +43,20 @@ void main() {
     });
 
     test('sends favorite and unfavorite events from favorite state', () async {
-      final List<Map<String, dynamic>> capturedBodies = <Map<String, dynamic>>[];
+      final List<Map<String, dynamic>> capturedBodies =
+          <Map<String, dynamic>>[];
 
       final ExploreTrackingService service = ExploreTrackingService(
         functionName: 'explore',
         accessTokenProvider: () => 'token-123',
         requestIdGenerator: () => 'request-seq',
-        sender: ({
-          Map<String, String>? headers,
-          required Map<String, dynamic> body,
-        }) async {
-          capturedBodies.add(body);
-        },
+        sender:
+            ({
+              Map<String, String>? headers,
+              required Map<String, dynamic> body,
+            }) async {
+              capturedBodies.add(body);
+            },
       );
 
       await service.trackFavoriteChanged(
@@ -89,36 +92,40 @@ void main() {
       ]);
     });
 
-    test('sends share payload while preserving provided content type', () async {
-      Map<String, dynamic>? capturedBody;
+    test(
+      'sends share payload while preserving provided content type',
+      () async {
+        Map<String, dynamic>? capturedBody;
 
-      final ExploreTrackingService service = ExploreTrackingService(
-        functionName: 'explore',
-        accessTokenProvider: () => 'token-789',
-        requestIdGenerator: () => 'request-share',
-        sender: ({
-          Map<String, String>? headers,
-          required Map<String, dynamic> body,
-        }) async {
-          capturedBody = body;
-        },
-      );
+        final ExploreTrackingService service = ExploreTrackingService(
+          functionName: 'explore',
+          accessTokenProvider: () => 'token-789',
+          requestIdGenerator: () => 'request-share',
+          sender:
+              ({
+                Map<String, String>? headers,
+                required Map<String, dynamic> body,
+              }) async {
+                capturedBody = body;
+              },
+        );
 
-      await service.trackShare(
-        contentType: 'poi_share',
-        contentId: 'activity-7',
-        provinceId: 'province-10',
-      );
+        await service.trackShare(
+          contentType: 'poi_share',
+          contentId: 'activity-7',
+          provinceId: 'province-10',
+        );
 
-      expect(capturedBody, <String, dynamic>{
-        'action': 'recordExploreEvent',
-        'contentType': 'poi_share',
-        'contentId': 'activity-7',
-        'provinceId': 'province-10',
-        'eventType': 'share',
-        'requestId': 'request-share',
-      });
-    });
+        expect(capturedBody, <String, dynamic>{
+          'action': 'recordExploreEvent',
+          'contentType': 'poi_share',
+          'contentId': 'activity-7',
+          'provinceId': 'province-10',
+          'eventType': 'share',
+          'requestId': 'request-share',
+        });
+      },
+    );
 
     test('skips sending when there is no signed-in session token', () async {
       bool wasCalled = false;
@@ -127,12 +134,13 @@ void main() {
         functionName: 'explore',
         accessTokenProvider: () => null,
         requestIdGenerator: () => 'request-2',
-        sender: ({
-          Map<String, String>? headers,
-          required Map<String, dynamic> body,
-        }) async {
-          wasCalled = true;
-        },
+        sender:
+            ({
+              Map<String, String>? headers,
+              required Map<String, dynamic> body,
+            }) async {
+              wasCalled = true;
+            },
       );
 
       await service.trackViewDetail(
@@ -148,12 +156,13 @@ void main() {
         functionName: 'explore',
         accessTokenProvider: () => 'token-456',
         requestIdGenerator: () => 'request-3',
-        sender: ({
-          Map<String, String>? headers,
-          required Map<String, dynamic> body,
-        }) async {
-          throw StateError('network failed');
-        },
+        sender:
+            ({
+              Map<String, String>? headers,
+              required Map<String, dynamic> body,
+            }) async {
+              throw StateError('network failed');
+            },
       );
 
       await expectLater(
@@ -164,5 +173,50 @@ void main() {
         completes,
       );
     });
+
+    test(
+      'uses shared function client when no custom sender is supplied',
+      () async {
+        Object? capturedBody;
+        Map<String, String>? capturedHeaders;
+
+        final ExploreTrackingService service = ExploreTrackingService(
+          functionName: 'explore',
+          accessTokenProvider: () => 'token-123',
+          requestIdGenerator: () => 'request-wrapper',
+          functionClient: SupabaseFunctionClient(
+            accessTokenProvider: () => null,
+            invoker:
+                (
+                  String functionName, {
+                  Map<String, String>? headers,
+                  Object? body,
+                }) async {
+                  expect(functionName, 'explore');
+                  capturedHeaders = headers;
+                  capturedBody = body;
+                  return <String, dynamic>{};
+                },
+          ),
+        );
+
+        await service.trackViewDetail(
+          category: DetailCategory.activities,
+          contentId: 'activity-1',
+        );
+
+        expect(capturedHeaders, <String, String>{
+          'Authorization': 'Bearer token-123',
+        });
+        expect(capturedBody, <String, dynamic>{
+          'action': 'recordExploreEvent',
+          'contentType': 'activity',
+          'contentId': 'activity-1',
+          'provinceId': null,
+          'eventType': 'view_detail',
+          'requestId': 'request-wrapper',
+        });
+      },
+    );
   });
 }

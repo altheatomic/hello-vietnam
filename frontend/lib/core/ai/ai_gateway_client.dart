@@ -1,3 +1,4 @@
+import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AiGatewayException implements Exception {
@@ -46,10 +47,14 @@ class AiGatewayResponse {
 }
 
 class AiGatewayClient {
-  AiGatewayClient({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+  AiGatewayClient({
+    SupabaseClient? client,
+    SupabaseFunctionClient? functionClient,
+  }) : _functionClient =
+           functionClient ??
+           SupabaseFunctionClient(client: client ?? Supabase.instance.client);
 
-  final SupabaseClient _client;
+  final SupabaseFunctionClient _functionClient;
 
   Future<AiGatewayResponse> invoke({
     required String feature,
@@ -58,36 +63,21 @@ class AiGatewayClient {
     String? modelMode,
     bool useCache = true,
   }) async {
-    final Session? session = _client.auth.currentSession;
-    final Map<String, String> headers = <String, String>{};
-    if (session?.accessToken case final String token) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-
-    final FunctionResponse response = await _client.functions.invoke(
-      'ai-gateway',
-      headers: headers.isEmpty ? null : headers,
-      body: <String, dynamic>{
-        'feature': feature,
-        'language': language,
-        'input': input,
-        'useCache': useCache,
-        if (modelMode case final String value) 'modelMode': value,
-      },
-    );
-
-    final dynamic data = response.data;
-    if (data is Map && data['error'] != null) {
-      throw AiGatewayException(data['error'].toString());
-    }
-    if (data is Map<String, dynamic>) {
+    try {
+      final Map<String, dynamic> data = await _functionClient.invokeJson(
+        'ai-gateway',
+        body: <String, dynamic>{
+          'feature': feature,
+          'language': language,
+          'input': input,
+          'useCache': useCache,
+          if (modelMode case final String value) 'modelMode': value,
+        },
+      );
       return AiGatewayResponse.fromJson(data);
+    } on SupabaseFunctionException catch (error) {
+      throw AiGatewayException(error.message);
     }
-    if (data is Map) {
-      return AiGatewayResponse.fromJson(Map<String, dynamic>.from(data));
-    }
-
-    throw const AiGatewayException('Unexpected response from AI gateway.');
   }
 
   Future<String> translate({

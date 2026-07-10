@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/env.dart';
+import '../network/supabase_function_client.dart';
 
 class CloudflareMediaUpload {
   const CloudflareMediaUpload({required this.key, required this.url});
@@ -13,10 +14,14 @@ class CloudflareMediaUpload {
 }
 
 class CloudflareMediaRepository {
-  CloudflareMediaRepository({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+  CloudflareMediaRepository({
+    SupabaseClient? client,
+    SupabaseFunctionClient? functionClient,
+  }) : _functionClient =
+           functionClient ??
+           SupabaseFunctionClient(client: client ?? Supabase.instance.client);
 
-  final SupabaseClient _client;
+  final SupabaseFunctionClient _functionClient;
 
   Future<CloudflareMediaUpload> uploadBytes({
     required Uint8List bytes,
@@ -24,7 +29,7 @@ class CloudflareMediaRepository {
     required String fileName,
     required String contentType,
   }) async {
-    final FunctionResponse response = await _client.functions.invoke(
+    final Map<String, dynamic> data = await _functionClient.invokeJson(
       Env.cloudflareMediaUploadFunction,
       body: <String, dynamic>{
         'action': 'upload',
@@ -35,7 +40,6 @@ class CloudflareMediaRepository {
       },
     );
 
-    final Map<String, dynamic> data = _asMap(response.data);
     final String? key = data['key'] as String?;
     final String? url = data['url'] as String?;
     if (key == null || key.isEmpty || url == null || url.isEmpty) {
@@ -53,7 +57,7 @@ class CloudflareMediaRepository {
     if (uniqueKeys.isEmpty) return;
 
     try {
-      await _client.functions.invoke(
+      await _functionClient.invokeVoid(
         Env.cloudflareMediaUploadFunction,
         body: <String, dynamic>{'action': 'delete', 'keys': uniqueKeys},
       );
@@ -95,16 +99,6 @@ class CloudflareMediaRepository {
     }
 
     return null;
-  }
-
-  Map<String, dynamic> _asMap(Object? data) {
-    if (data is Map<String, dynamic>) return data;
-    if (data is Map) {
-      return data.map(
-        (Object? key, Object? value) => MapEntry(key.toString(), value),
-      );
-    }
-    throw Exception('MEDIA_UPLOAD_FAILED: Invalid function response.');
   }
 
   String _normalizeKey(String key) {

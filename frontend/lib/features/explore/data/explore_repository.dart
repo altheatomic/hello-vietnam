@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:hellovietnam/core/config/env.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/core/storage/local_storage.dart' as app_storage;
 import 'package:hellovietnam/features/explore/domain/explore_item.dart';
 import 'package:hellovietnam/features/explore/domain/explore_province.dart';
@@ -39,8 +40,7 @@ class ExploreSectionsData {
       province: json['province'] is Map
           ? ExploreProvince.fromJson(
               (json['province'] as Map).map(
-                (dynamic key, dynamic value) =>
-                    MapEntry(key.toString(), value),
+                (dynamic key, dynamic value) => MapEntry(key.toString(), value),
               ),
             )
           : null,
@@ -49,8 +49,7 @@ class ExploreSectionsData {
           .map(
             (Map<dynamic, dynamic> category) => ExploreCategory.fromJson(
               category.map(
-                (dynamic key, dynamic value) =>
-                    MapEntry(key.toString(), value),
+                (dynamic key, dynamic value) => MapEntry(key.toString(), value),
               ),
             ),
           )
@@ -71,10 +70,12 @@ class ExploreSectionsData {
 class ExploreRepository {
   ExploreRepository({
     SupabaseClient? client,
+    SupabaseFunctionClient? functionClient,
     ExploreSectionsFetcher? sectionsFetcher,
     ExploreCategoryItemsFetcher? categoryItemsFetcher,
     String? Function()? languageCodeProvider,
   }) : _client = client,
+       _functionClient = functionClient,
        _sectionsFetcher = sectionsFetcher,
        _categoryItemsFetcher = categoryItemsFetcher,
        _languageCodeProvider = languageCodeProvider;
@@ -82,6 +83,7 @@ class ExploreRepository {
   static final ExploreRepository instance = ExploreRepository();
 
   final SupabaseClient? _client;
+  final SupabaseFunctionClient? _functionClient;
   final ExploreSectionsFetcher? _sectionsFetcher;
   final ExploreCategoryItemsFetcher? _categoryItemsFetcher;
   final String? Function()? _languageCodeProvider;
@@ -145,27 +147,38 @@ class ExploreRepository {
   }
 
   ExploreSectionsData _parseSectionsPayload(Map<String, dynamic> payload) {
-    final ExploreProvince? resolvedProvince = _parseProvince(payload['province']);
-    final Map<String, dynamic> sections =
-        _asMap(payload['sections'], allowEmpty: true);
+    final ExploreProvince? resolvedProvince = _parseProvince(
+      payload['province'],
+    );
+    final Map<String, dynamic> sections = _asMap(
+      payload['sections'],
+      allowEmpty: true,
+    );
 
     return ExploreSectionsData(
       province: resolvedProvince,
-      categories: _categoryOrder.map((String categoryId) {
-        final Map<String, dynamic> section =
-            _asMap(sections[categoryId], allowEmpty: true);
-        final List<ExploreItem> items = _asList(section['items'])
-            .map((Object? row) => ExploreItem.fromJson(_asMap(row)))
-            .toList(growable: false);
+      categories: _categoryOrder
+          .map((String categoryId) {
+            final Map<String, dynamic> section = _asMap(
+              sections[categoryId],
+              allowEmpty: true,
+            );
+            final List<ExploreItem> items = _asList(section['items'])
+                .map((Object? row) => ExploreItem.fromJson(_asMap(row)))
+                .toList(growable: false);
 
-        return ExploreCategory(
-          id: categoryId,
-          title: _titleForCategory(categoryId, resolvedProvince),
-          description: _descriptionForCategory(categoryId, resolvedProvince),
-          items: items,
-          emptyMessage: _stringValue(section['emptyMessage']),
-        );
-      }).toList(growable: false),
+            return ExploreCategory(
+              id: categoryId,
+              title: _titleForCategory(categoryId, resolvedProvince),
+              description: _descriptionForCategory(
+                categoryId,
+                resolvedProvince,
+              ),
+              items: items,
+              emptyMessage: _stringValue(section['emptyMessage']),
+            );
+          })
+          .toList(growable: false),
     );
   }
 
@@ -183,7 +196,7 @@ class ExploreRepository {
       );
     }
 
-    final FunctionResponse response = await _resolvedClient.functions.invoke(
+    return _resolvedFunctionClient.invokeJson(
       Env.exploreFunction,
       body: <String, dynamic>{
         'action': 'getExploreSections',
@@ -192,7 +205,6 @@ class ExploreRepository {
         'language': language,
       },
     );
-    return _asMap(response.data);
   }
 
   Future<void> _cacheSections(
@@ -221,12 +233,17 @@ class ExploreRepository {
     int limitPerCategory,
     String? language,
   ) {
-    final String provinceKey = province?.isResolved == true ? province!.id : 'all';
+    final String provinceKey = province?.isResolved == true
+        ? province!.id
+        : 'all';
     final String languageKey = _normalizedLanguageCode(language) ?? 'default';
     return '$_storageKeyPrefix${provinceKey}_${languageKey}_$limitPerCategory';
   }
 
   SupabaseClient get _resolvedClient => _client ?? Supabase.instance.client;
+
+  SupabaseFunctionClient get _resolvedFunctionClient =>
+      _functionClient ?? SupabaseFunctionClient(client: _resolvedClient);
 
   Future<List<ExploreProvince>> searchProvinces(
     String query, {
@@ -235,16 +252,16 @@ class ExploreRepository {
     final String normalized = query.trim();
     if (normalized.isEmpty) return const <ExploreProvince>[];
 
-    final FunctionResponse response = await _resolvedClient.functions.invoke(
-      Env.exploreFunction,
-      body: <String, dynamic>{
-        'action': 'searchExploreProvinces',
-        'query': normalized,
-        'limit': limit,
-      },
-    );
+    final Map<String, dynamic> payload = await _resolvedFunctionClient
+        .invokeJson(
+          Env.exploreFunction,
+          body: <String, dynamic>{
+            'action': 'searchExploreProvinces',
+            'query': normalized,
+            'limit': limit,
+          },
+        );
 
-    final Map<String, dynamic> payload = _asMap(response.data);
     return _asList(payload['items'])
         .map((Object? row) => ExploreProvince.fromJson(_asMap(row)))
         .where((ExploreProvince province) => province.name.isNotEmpty)
@@ -270,19 +287,19 @@ class ExploreRepository {
       );
     }
 
-    final FunctionResponse response = await _resolvedClient.functions.invoke(
-      Env.exploreFunction,
-      body: <String, dynamic>{
-        'action': 'getExploreCategoryItems',
-        'category': category.storageKey,
-        'provinceId': province?.isResolved == true ? province!.id : null,
-        'limit': limit,
-        'offset': offset,
-        'language': language,
-      },
-    );
+    final Map<String, dynamic> payload = await _resolvedFunctionClient
+        .invokeJson(
+          Env.exploreFunction,
+          body: <String, dynamic>{
+            'action': 'getExploreCategoryItems',
+            'category': category.storageKey,
+            'provinceId': province?.isResolved == true ? province!.id : null,
+            'limit': limit,
+            'offset': offset,
+            'language': language,
+          },
+        );
 
-    final Map<String, dynamic> payload = _asMap(response.data);
     return _asList(payload['items'])
         .map((Object? row) => ExploreItem.fromJson(_asMap(row)))
         .toList(growable: false);
@@ -411,7 +428,8 @@ class ExploreRepository {
   }
 
   String? _currentLanguageCode() {
-    final String raw = _languageCodeProvider?.call() ??
+    final String raw =
+        _languageCodeProvider?.call() ??
         AppLanguageController.instance.languageCode;
     return _normalizedLanguageCode(raw);
   }
@@ -427,10 +445,7 @@ class ExploreRepository {
         .trim()
         .replaceAll(RegExp(r'\s+'), ' ')
         .replaceAll('đ', 'd')
-        .replaceAllMapped(
-          RegExp(r'[àáạảãâầấậẩẫăằắặẳẵ]'),
-          (_) => 'a',
-        )
+        .replaceAllMapped(RegExp(r'[àáạảãâầấậẩẫăằắặẳẵ]'), (_) => 'a')
         .replaceAllMapped(RegExp(r'[èéẹẻẽêềếệểễ]'), (_) => 'e')
         .replaceAllMapped(RegExp(r'[ìíịỉĩ]'), (_) => 'i')
         .replaceAllMapped(RegExp(r'[òóọỏõôồốộổỗơờớợởỡ]'), (_) => 'o')

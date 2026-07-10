@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' show min;
 
 import 'package:flutter/material.dart';
@@ -35,6 +36,9 @@ class _AdminUserPageState extends State<AdminUserPage> {
   _UserSortField? _activeSortField;
   SortDirection? _activeSortDirection;
   int _currentPage = 1;
+  int _totalUsers = 0;
+  int _loadRequestId = 0;
+  Timer? _searchDebounce;
   bool _isLoading = true;
   bool _isMutating = false;
   String? _loadError;
@@ -49,48 +53,76 @@ class _AdminUserPageState extends State<AdminUserPage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _onSearchChanged(String _) => setState(() => _currentPage = 1);
-
-  void _onFilterStatusChanged(AdminUserStatus? status) => setState(() {
-    _filterStatus = status;
-    _currentPage = 1;
-  });
-
-  void _onSortSelected(_UserSortField field, SortMenuAction action) =>
-      setState(() {
-        if (action == SortMenuAction.defaultOrder) {
-          _activeSortField = null;
-          _activeSortDirection = null;
-        } else {
-          _activeSortField = field;
-          _activeSortDirection = action == SortMenuAction.ascending
-              ? SortDirection.ascending
-              : SortDirection.descending;
-        }
-        _currentPage = 1;
-      });
-
-  Future<void> _loadUsers() async {
-    setState(() {
-      _isLoading = true;
-      _loadError = null;
+  void _onSearchChanged(String _) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      setState(() => _currentPage = 1);
+      _loadUsers(showLoader: false);
     });
+  }
+
+  void _onFilterStatusChanged(AdminUserStatus? status) {
+    setState(() {
+      _filterStatus = status;
+      _currentPage = 1;
+    });
+    _loadUsers(showLoader: false);
+  }
+
+  void _onSortSelected(_UserSortField field, SortMenuAction action) {
+    setState(() {
+      if (action == SortMenuAction.defaultOrder) {
+        _activeSortField = null;
+        _activeSortDirection = null;
+      } else {
+        _activeSortField = field;
+        _activeSortDirection = action == SortMenuAction.ascending
+            ? SortDirection.ascending
+            : SortDirection.descending;
+      }
+      _currentPage = 1;
+    });
+    _loadUsers(showLoader: false);
+  }
+
+  Future<void> _loadUsers({bool showLoader = true}) async {
+    final int requestId = ++_loadRequestId;
+    if (showLoader) {
+      setState(() {
+        _isLoading = true;
+        _loadError = null;
+      });
+    } else {
+      setState(() => _loadError = null);
+    }
 
     try {
-      final List<AdminUser> users = await _repository.fetchUsers();
-      if (!mounted) return;
+      final AdminUserPageResult result = await _repository.fetchUsers(
+        page: _currentPage,
+        pageSize: _pageSize,
+        query: _searchController.text,
+        status: _filterStatus,
+        sortField: _activeSortField == _UserSortField.fullName
+            ? 'fullName'
+            : null,
+        sortDirection: _activeSortDirection?.name,
+      );
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _users
           ..clear()
-          ..addAll(users);
+          ..addAll(result.users);
+        _totalUsers = result.totalCount;
         _isLoading = false;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _isLoading = false;
         _loadError = 'Khong the tai danh sach user. $error';
@@ -98,47 +130,8 @@ class _AdminUserPageState extends State<AdminUserPage> {
     }
   }
 
-  List<AdminUser> get _filteredUsers {
-    final String query = _searchController.text.toLowerCase().trim();
-    final List<AdminUser> result = _users.where((AdminUser user) {
-      final bool matchesSearch =
-          query.isEmpty ||
-          (user.fullName ?? user.username).toLowerCase().contains(query) ||
-          user.email.toLowerCase().contains(query) ||
-          user.id.contains(query);
-      final bool matchesStatus =
-          _filterStatus == null || user.status == _filterStatus;
-      return matchesSearch && matchesStatus;
-    }).toList()..sort((AdminUser a, AdminUser b) => a.id.compareTo(b.id));
-
-    if (_activeSortField == null || _activeSortDirection == null) {
-      return result;
-    }
-
-    result.sort((AdminUser a, AdminUser b) {
-      final String va = (a.fullName ?? a.username).toLowerCase();
-      final String vb = (b.fullName ?? b.username).toLowerCase();
-      final int cmp = va.compareTo(vb);
-      if (cmp != 0) {
-        return _activeSortDirection == SortDirection.ascending ? cmp : -cmp;
-      }
-      return a.id.compareTo(b.id);
-    });
-    return result;
-  }
-
-  List<AdminUser> get _pagedUsers {
-    final List<AdminUser> all = _filteredUsers;
-    final int start = (_currentPage - 1) * _pageSize;
-    final int end = min(start + _pageSize, all.length);
-    if (start >= all.length) return <AdminUser>[];
-    return all.sublist(start, end);
-  }
-
-  int get _totalPages => (_filteredUsers.length / _pageSize)
-      .ceil()
-      .clamp(1, double.maxFinite)
-      .toInt();
+  int get _totalPages =>
+      (_totalUsers / _pageSize).ceil().clamp(1, 9999).toInt();
 
   Future<void> _exportUsers() async {
     final List<String> rows = <String>['id_user,Full name,Phone,Email'];
@@ -187,9 +180,10 @@ class _AdminUserPageState extends State<AdminUserPage> {
       );
       if (!mounted) return;
       setState(() {
-        _users.insert(0, createdUser);
         _currentPage = 1;
       });
+      await _loadUsers(showLoader: false);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${createdUser.username} has been added.'),
@@ -252,9 +246,6 @@ class _AdminUserPageState extends State<AdminUserPage> {
 
   @override
   Widget build(BuildContext context) {
-    final List<AdminUser> filtered = _filteredUsers;
-    final List<AdminUser> paged = _pagedUsers;
-
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
       child: Column(
@@ -282,14 +273,14 @@ class _AdminUserPageState extends State<AdminUserPage> {
             )
           else if (_loadError != null)
             EmptyState(icon: Icons.cloud_off_rounded, message: _loadError!)
-          else if (filtered.isEmpty)
+          else if (_users.isEmpty)
             const EmptyState(
               icon: Icons.people_outline_rounded,
               message: 'No users match your search.',
             )
           else ...<Widget>[
             _UserTable(
-              users: paged,
+              users: _users,
               onToggleBan: _isMutating ? null : _toggleBan,
               activeSortField: _activeSortField,
               activeSortDirection: _activeSortDirection,
@@ -299,9 +290,12 @@ class _AdminUserPageState extends State<AdminUserPage> {
             _TableFooter(
               currentPage: _currentPage,
               totalPages: _totalPages,
-              totalUsers: filtered.length,
+              totalUsers: _totalUsers,
               pageSize: _pageSize,
-              onPageChanged: (int page) => setState(() => _currentPage = page),
+              onPageChanged: (int page) {
+                setState(() => _currentPage = page);
+                _loadUsers(showLoader: false);
+              },
             ),
           ],
         ],
@@ -766,6 +760,7 @@ class _TableFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final int start = (currentPage - 1) * pageSize + 1;
     final int end = min(currentPage * pageSize, totalUsers);
+    final List<int> visiblePages = _visiblePages();
 
     return Row(
       children: <Widget>[
@@ -780,17 +775,38 @@ class _TableFooter extends StatelessWidget {
           onTap: () => onPageChanged(currentPage - 1),
         ),
         const SizedBox(width: 4),
-        ...List<Widget>.generate(totalPages, (int index) {
-          final int page = index + 1;
-          return Padding(
+        if (visiblePages.first > 1) ...<Widget>[
+          _PageNumberButton(
+            page: 1,
+            isActive: currentPage == 1,
+            onTap: () => onPageChanged(1),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: Text('...', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+        ],
+        ...visiblePages.map(
+          (int page) => Padding(
             padding: const EdgeInsets.only(right: 4),
             child: _PageNumberButton(
               page: page,
               isActive: page == currentPage,
               onTap: () => onPageChanged(page),
             ),
-          );
-        }),
+          ),
+        ),
+        if (visiblePages.last < totalPages) ...<Widget>[
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: Text('...', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          _PageNumberButton(
+            page: totalPages,
+            isActive: currentPage == totalPages,
+            onTap: () => onPageChanged(totalPages),
+          ),
+        ],
         _PageNavButton(
           icon: Icons.chevron_right_rounded,
           enabled: currentPage < totalPages,
@@ -798,6 +814,15 @@ class _TableFooter extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  List<int> _visiblePages() {
+    if (totalPages <= 7) {
+      return List<int>.generate(totalPages, (int index) => index + 1);
+    }
+    final int start = (currentPage - 2).clamp(1, totalPages - 4).toInt();
+    final int end = min(start + 4, totalPages);
+    return List<int>.generate(end - start + 1, (int index) => start + index);
   }
 }
 

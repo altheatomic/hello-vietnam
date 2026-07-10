@@ -13,6 +13,10 @@ class ForumStore extends ChangeNotifier {
   ForumStore._({ForumRepository? repository})
     : _repository = repository ?? ForumRepository();
 
+  @visibleForTesting
+  ForumStore.test({required ForumRepository repository})
+    : _repository = repository;
+
   static final ForumStore instance = ForumStore._();
 
   final ForumRepository _repository;
@@ -32,7 +36,10 @@ class ForumStore extends ChangeNotifier {
   String _currentUserId = '';
   ForumUserProfile? _currentUserProfile;
   bool _isLoading = false;
+  bool _isInitialized = false;
+  bool _hasLoadedSnapshot = false;
   String? _errorMessage;
+  Future<void>? _loadFuture;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -79,18 +86,37 @@ class ForumStore extends ChangeNotifier {
   List<ForumNotificationItem> get notifications =>
       List<ForumNotificationItem>.unmodifiable(_notifications);
 
-  Future<void> init() async {
-    _authSubscription ??= _repository.authStateChanges.listen((AuthState data) {
-      if (data.session?.user == null) {
-        _clear();
-        notifyListeners();
-        return;
-      }
+  Future<void> init({bool preload = true}) async {
+    if (!_isInitialized) {
+      _authSubscription ??= _repository.authStateChanges.listen((
+        AuthState data,
+      ) {
+        if (data.session?.user == null) {
+          _clear();
+          notifyListeners();
+          return;
+        }
 
-      unawaited(refresh());
-    });
+        unawaited(refresh());
+      });
+      _isInitialized = true;
+    }
 
-    await refresh();
+    if (preload) {
+      await ensureLoaded();
+    }
+  }
+
+  Future<void> ensureLoaded({bool forceRefresh = false}) async {
+    await init(preload: false);
+    if (!forceRefresh && _hasLoadedSnapshot) {
+      return;
+    }
+
+    final Future<void> load = _loadFuture ??= refresh().whenComplete(
+      () => _loadFuture = null,
+    );
+    await load;
   }
 
   Future<void> refresh({bool notifyLoading = true}) async {
@@ -103,6 +129,7 @@ class ForumStore extends ChangeNotifier {
     try {
       final ForumRepositorySnapshot snapshot = await _repository.loadSnapshot();
       _applySnapshot(snapshot);
+      _hasLoadedSnapshot = true;
       _errorMessage = null;
     } catch (error) {
       _errorMessage = error.toString();
@@ -405,6 +432,7 @@ class ForumStore extends ChangeNotifier {
     _blockedAuthorIds.clear();
     _reportedPostIds.clear();
     _notifications = <ForumNotificationItem>[];
+    _hasLoadedSnapshot = false;
     _errorMessage = null;
     _isLoading = false;
   }

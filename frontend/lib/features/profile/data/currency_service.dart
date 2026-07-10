@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
 import 'package:hellovietnam/core/config/env.dart';
+import 'package:hellovietnam/core/network/edge_function_client.dart';
+import 'package:hellovietnam/core/network/supabase_table_client.dart';
 import 'package:hellovietnam/core/storage/local_storage.dart' as app_storage;
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -105,19 +107,31 @@ abstract class CurrencyAccountStore {
 }
 
 class SupabaseCurrencyAccountStore implements CurrencyAccountStore {
-  SupabaseCurrencyAccountStore({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+  SupabaseCurrencyAccountStore({
+    SupabaseClient? client,
+    SupabaseTableClient? tableClient,
+  }) : _clientOverride = client,
+       _tableClient = tableClient;
 
-  final SupabaseClient _client;
+  final SupabaseClient? _clientOverride;
+  final SupabaseTableClient? _tableClient;
+
+  SupabaseClient get _client => _clientOverride ?? Supabase.instance.client;
+
+  SupabaseTableClient get _resolvedTableClient =>
+      _tableClient ?? const SupabaseTableClient();
 
   @override
   Future<String?> loadSelectedCurrency(String userId) async {
     try {
-      final Map<String, dynamic>? accountRow = await _client
-          .from('user_account')
-          .select('currency')
-          .eq('id_user', userId)
-          .maybeSingle();
+      final Map<String, dynamic>? accountRow = await _resolvedTableClient
+          .maybeSingle('user account currency', () async {
+            return _client
+                .from('user_account')
+                .select('currency')
+                .eq('id_user', userId)
+                .maybeSingle();
+          });
       final String? accountCurrency = _normalizeCurrencyCode(
         accountRow?['currency']?.toString(),
       );
@@ -129,11 +143,14 @@ class SupabaseCurrencyAccountStore implements CurrencyAccountStore {
     }
 
     try {
-      final Map<String, dynamic>? settingRow = await _client
-          .from('user_setting')
-          .select('currency')
-          .eq('id_user', userId)
-          .maybeSingle();
+      final Map<String, dynamic>? settingRow = await _resolvedTableClient
+          .maybeSingle('user setting currency', () async {
+            return _client
+                .from('user_setting')
+                .select('currency')
+                .eq('id_user', userId)
+                .maybeSingle();
+          });
       return _normalizeCurrencyCode(settingRow?['currency']?.toString());
     } catch (_) {
       return null;
@@ -153,51 +170,40 @@ class CurrencyRatesGateway {
   CurrencyRatesGateway({
     http.Client? client,
     Future<String?> Function()? accessTokenProvider,
-  }) : _client = client ?? http.Client(),
-       _accessTokenProvider =
-           accessTokenProvider ?? _defaultAccessTokenProvider;
+    Duration requestTimeout = const Duration(seconds: 20),
+    EdgeFunctionClient? edgeFunctionClient,
+  }) : _edgeFunctionClient =
+           edgeFunctionClient ??
+           EdgeFunctionClient(
+             client: client,
+             accessTokenProvider:
+                 accessTokenProvider ?? _defaultAccessTokenProvider,
+             requestTimeout: requestTimeout,
+           );
 
-  final http.Client _client;
-  final Future<String?> Function() _accessTokenProvider;
+  final EdgeFunctionClient _edgeFunctionClient;
 
   Future<CurrencyRatesSnapshot> fetchRates({
     String baseCode = 'USD',
     List<String> symbols = const <String>[],
   }) async {
-    final Uri uri = Uri.parse(
-      '${Env.supabaseUrl}/functions/v1/${Env.currencyRatesFunction}',
-    );
-    final String? accessToken = await _accessTokenProvider();
-    final Map<String, String> headers = <String, String>{
-      'accept': 'application/json',
-      'content-type': 'application/json; charset=utf-8',
-      'apikey': Env.supabaseAnonKey,
-    };
-    if (accessToken != null && accessToken.trim().isNotEmpty) {
-      headers['authorization'] = 'Bearer ${accessToken.trim()}';
-    }
-
-    final http.Response response = await _client.post(
-      uri,
-      headers: headers,
-      body: jsonEncode(<String, dynamic>{'base': baseCode, 'symbols': symbols}),
-    );
-
-    final Map<String, dynamic> json = _decodeResponse(response.body);
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw CurrencyRatesException(
-        _readErrorMessage(json) ??
-            'Failed to load currency rates (${response.statusCode}).',
+    try {
+      final Map<String, dynamic> json = await _edgeFunctionClient.postJson(
+        Env.currencyRatesFunction,
+        body: <String, Object?>{'base': baseCode, 'symbols': symbols},
       );
+      return CurrencyRatesSnapshot.fromJson(json);
+    } on EdgeFunctionException catch (error) {
+      throw CurrencyRatesException(error.message);
     }
-    if (json['error'] != null) {
-      throw CurrencyRatesException(json['error'].toString());
-    }
-    return CurrencyRatesSnapshot.fromJson(json);
   }
 
   static Future<String?> _defaultAccessTokenProvider() async {
-    return Supabase.instance.client.auth.currentSession?.accessToken;
+    try {
+      return Supabase.instance.client.auth.currentSession?.accessToken;
+    } catch (_) {
+      return null;
+    }
   }
 }
 
@@ -589,18 +595,4 @@ Map<String, dynamic> _asJsonMap(dynamic value) {
     );
   }
   return <String, dynamic>{};
-}
-
-Map<String, dynamic> _decodeResponse(String body) {
-  final dynamic decoded = jsonDecode(body);
-  if (decoded is Map<String, dynamic>) return decoded;
-  if (decoded is Map) {
-    return Map<String, dynamic>.from(decoded.cast<String, dynamic>());
-  }
-  throw const CurrencyRatesException('Invalid currency rates response.');
-}
-
-String? _readErrorMessage(Map<String, dynamic> json) {
-  final Object? error = json['error'];
-  return error?.toString();
 }

@@ -1,11 +1,54 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hellovietnam/core/network/supabase_table_client.dart';
 import 'package:hellovietnam/features/profile/data/currency_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  test(
+    'SupabaseCurrencyAccountStore reads account currency via table client',
+    () async {
+      final _FakeTableClient tableClient = _FakeTableClient(
+        maybeSingleRows: <Map<String, dynamic>?>[
+          <String, dynamic>{'currency': 'eur'},
+        ],
+      );
+      final SupabaseCurrencyAccountStore store = SupabaseCurrencyAccountStore(
+        tableClient: tableClient,
+      );
+
+      final String? currency = await store.loadSelectedCurrency('user-1');
+
+      expect(currency, 'EUR');
+      expect(tableClient.maybeSingleLabels, <String>['user account currency']);
+    },
+  );
+
+  test(
+    'SupabaseCurrencyAccountStore falls back to user_setting currency',
+    () async {
+      final _FakeTableClient tableClient = _FakeTableClient(
+        maybeSingleRows: <Map<String, dynamic>?>[
+          null,
+          <String, dynamic>{'currency': 'vnd'},
+        ],
+      );
+      final SupabaseCurrencyAccountStore store = SupabaseCurrencyAccountStore(
+        tableClient: tableClient,
+      );
+
+      final String? currency = await store.loadSelectedCurrency('user-1');
+
+      expect(currency, 'VND');
+      expect(tableClient.maybeSingleLabels, <String>[
+        'user account currency',
+        'user setting currency',
+      ]);
+    },
+  );
+
   test('CurrencyRatesGateway parses the edge function response', () async {
     http.Request? capturedRequest;
     final CurrencyRatesGateway gateway = CurrencyRatesGateway(
@@ -63,4 +106,23 @@ void main() {
     expect(parsed.snapshot.baseCode, 'USD');
     expect(parsed.snapshot.rateFor('VND'), 26255.877531);
   });
+}
+
+class _FakeTableClient extends SupabaseTableClient {
+  _FakeTableClient({required List<Map<String, dynamic>?> maybeSingleRows})
+    : _maybeSingleRows = List<Map<String, dynamic>?>.of(maybeSingleRows);
+
+  final List<Map<String, dynamic>?> _maybeSingleRows;
+  final List<String> maybeSingleLabels = <String>[];
+
+  @override
+  Future<Map<String, dynamic>?> maybeSingle(
+    String label,
+    SupabaseTableRequest request, {
+    Duration? timeout,
+  }) async {
+    maybeSingleLabels.add(label);
+    if (_maybeSingleRows.isEmpty) return null;
+    return _maybeSingleRows.removeAt(0);
+  }
 }

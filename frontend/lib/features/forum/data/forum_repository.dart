@@ -33,15 +33,19 @@ class ForumRepositorySnapshot {
 }
 
 class ForumRepository {
-  ForumRepository({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+  ForumRepository({
+    SupabaseClient? client,
+    CloudflareMediaRepository? mediaRepository,
+  }) : _client = client ?? Supabase.instance.client,
+       _mediaRepository = mediaRepository;
 
   final SupabaseClient _client;
-  final CloudflareMediaRepository _mediaRepository =
-      CloudflareMediaRepository();
+  CloudflareMediaRepository? _mediaRepository;
 
   User? get _authUser => _client.auth.currentUser;
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
+  CloudflareMediaRepository get _mediaUploader =>
+      _mediaRepository ??= CloudflareMediaRepository();
 
   Future<ForumRepositorySnapshot> loadSnapshot() async {
     final String currentUserId = await _requireForumUser();
@@ -352,7 +356,7 @@ class ForumRepository {
       final String extension = _extensionFrom(
         file.name.isNotEmpty ? file.name : file.path,
       );
-      final CloudflareMediaUpload uploaded = await _mediaRepository.uploadBytes(
+      final CloudflareMediaUpload uploaded = await _mediaUploader.uploadBytes(
         bytes: bytes,
         folder: 'forum/$userId/$postId',
         fileName: '${DateTime.now().microsecondsSinceEpoch}_$i$extension',

@@ -2,24 +2,54 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/core/storage/local_storage.dart' as app_storage;
 import 'package:hellovietnam/features/personalization/domain/travel_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TravelPreferencesRepository extends ChangeNotifier {
-  TravelPreferencesRepository._() {
-    AuthRepository.instance.addListener(_handleAuthChanged);
+  TravelPreferencesRepository._({
+    SupabaseClient? client,
+    SupabaseFunctionClient? functionClient,
+    FutureOr<String?> Function()? accessTokenProvider,
+    String? Function()? currentUserIdProvider,
+    bool listenToAuth = true,
+  }) : _clientOverride = client,
+       _functionClient = functionClient,
+       _accessTokenProvider = accessTokenProvider,
+       _currentUserIdProvider = currentUserIdProvider,
+       _listensToAuth = listenToAuth {
+    if (listenToAuth) {
+      AuthRepository.instance.addListener(_handleAuthChanged);
+    }
   }
 
   static final TravelPreferencesRepository instance =
       TravelPreferencesRepository._();
+
+  TravelPreferencesRepository.test({
+    SupabaseClient? client,
+    SupabaseFunctionClient? functionClient,
+    FutureOr<String?> Function()? accessTokenProvider,
+    String? Function()? currentUserIdProvider,
+  }) : this._(
+         client: client,
+         functionClient: functionClient,
+         accessTokenProvider: accessTokenProvider,
+         currentUserIdProvider: currentUserIdProvider,
+         listenToAuth: false,
+       );
 
   static const String _storageKeyPrefix = 'travel_preferences_v1_';
   static const String _deferredStorageKeyPrefix =
       'travel_preferences_deferred_v1_';
   static const String _functionName = 'travel-preferences';
 
-  final SupabaseClient _client = Supabase.instance.client;
+  final SupabaseClient? _clientOverride;
+  final SupabaseFunctionClient? _functionClient;
+  final FutureOr<String?> Function()? _accessTokenProvider;
+  final String? Function()? _currentUserIdProvider;
+  final bool _listensToAuth;
 
   bool _isReady = false;
   bool _isHydratingCurrentUser = false;
@@ -27,7 +57,42 @@ class TravelPreferencesRepository extends ChangeNotifier {
 
   bool get isReady => _isReady && !_isHydratingCurrentUser;
 
-  String? get _currentUserId => AuthRepository.instance.user?.id;
+  SupabaseClient get _client => _clientOverride ?? Supabase.instance.client;
+
+  SupabaseFunctionClient get _resolvedFunctionClient =>
+      _functionClient ??
+      SupabaseFunctionClient(
+        client: _client,
+        accessTokenProvider: _accessTokenProvider,
+      );
+
+  String? get _currentUserId =>
+      _currentUserIdProvider?.call() ?? AuthRepository.instance.user?.id;
+
+  Future<String?> _currentAccessToken() async {
+    final FutureOr<String?> Function()? accessTokenProvider =
+        _accessTokenProvider;
+    String? token;
+    if (accessTokenProvider != null) {
+      token = (await accessTokenProvider())?.trim();
+    } else {
+      token = _client.auth.currentSession?.accessToken.trim();
+    }
+    return token == null || token.isEmpty ? null : token;
+  }
+
+  Future<Map<String, dynamic>> _invokeTravelPreferences(
+    Map<String, Object?> body,
+  ) async {
+    try {
+      return await _resolvedFunctionClient.invokeJson(
+        _functionName,
+        body: body,
+      );
+    } on SupabaseFunctionException catch (error) {
+      throw StateError(error.message);
+    }
+  }
 
   UserTravelPreferences? get currentPreferences {
     if (!_isReady || _currentUserId == null) {
@@ -73,30 +138,19 @@ class TravelPreferencesRepository extends ChangeNotifier {
       return;
     }
 
-    final Session? session = _client.auth.currentSession;
-    if (session == null) {
+    if ((await _currentAccessToken()) == null) {
       throw StateError('Please sign in to save travel preferences.');
     }
 
-    final FunctionResponse response = await _client.functions.invoke(
-      _functionName,
-      headers: <String, String>{
-        'Authorization': 'Bearer ${session.accessToken}',
-      },
-      body: <String, dynamic>{
+    final Map<String, dynamic> data = await _invokeTravelPreferences(
+      <String, dynamic>{
         'action': 'saveTravelPreferences',
         'preferences': preferences.toJson(),
       },
     );
 
-    final Map<String, dynamic>? data = _asJsonMap(response.data);
-    final Object? errorValue = data?['error'];
-    if (errorValue != null) {
-      throw StateError(errorValue.toString());
-    }
-
     final UserTravelPreferences savedPreferences =
-        _parsePreferences(data?['preferences']) ?? preferences;
+        _parsePreferences(data['preferences']) ?? preferences;
     await _setCachedCurrentUserPreferences(
       userId,
       savedPreferences,
@@ -124,20 +178,11 @@ class TravelPreferencesRepository extends ChangeNotifier {
     if (userId == null) {
       return;
     }
-    final Session? session = _client.auth.currentSession;
-    if (session != null) {
-      final FunctionResponse response = await _client.functions.invoke(
-        _functionName,
-        headers: <String, String>{
-          'Authorization': 'Bearer ${session.accessToken}',
-        },
-        body: const <String, dynamic>{'action': 'clearTravelPreferences'},
+    if ((await _currentAccessToken()) != null) {
+      final Map<String, dynamic> data = await _invokeTravelPreferences(
+        const <String, dynamic>{'action': 'clearTravelPreferences'},
       );
-      final Map<String, dynamic>? data = _asJsonMap(response.data);
-      final Object? errorValue = data?['error'];
-      if (errorValue != null) {
-        throw StateError(errorValue.toString());
-      }
+      _asJsonMap(data);
     }
 
     await _setCachedCurrentUserPreferences(userId, null);
@@ -184,8 +229,7 @@ class TravelPreferencesRepository extends ChangeNotifier {
       return;
     }
 
-    final Session? session = _client.auth.currentSession;
-    if (session == null) {
+    if ((await _currentAccessToken()) == null) {
       _currentPreferences = _readCachedCurrentUserPreferences();
       if (notify) {
         notifyListeners();
@@ -194,22 +238,12 @@ class TravelPreferencesRepository extends ChangeNotifier {
     }
 
     try {
-      final FunctionResponse response = await _client.functions.invoke(
-        _functionName,
-        headers: <String, String>{
-          'Authorization': 'Bearer ${session.accessToken}',
-        },
-        body: const <String, dynamic>{'action': 'getTravelPreferences'},
+      final Map<String, dynamic> data = await _invokeTravelPreferences(
+        const <String, dynamic>{'action': 'getTravelPreferences'},
       );
 
-      final Map<String, dynamic>? data = _asJsonMap(response.data);
-      final Object? errorValue = data?['error'];
-      if (errorValue != null) {
-        throw StateError(errorValue.toString());
-      }
-
       final UserTravelPreferences? remotePreferences = _parsePreferences(
-        data?['preferences'],
+        data['preferences'],
       );
       if (remotePreferences == null && _currentPreferences != null) {
         if (notify) {
@@ -298,7 +332,9 @@ class TravelPreferencesRepository extends ChangeNotifier {
 
   @override
   void dispose() {
-    AuthRepository.instance.removeListener(_handleAuthChanged);
+    if (_listensToAuth) {
+      AuthRepository.instance.removeListener(_handleAuthChanged);
+    }
     super.dispose();
   }
 }

@@ -40,7 +40,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
       await TravelPreferencesRepository.instance.initialize();
       await ReferenceDataCacheRepository.instance.initialize();
       await TripStore.instance.init();
-      await ForumStore.instance.init();
+      await ForumStore.instance.init(preload: false);
       await initDeepLinks();
       await ReferenceDataCacheRepository.instance.refreshStaleInBackground();
 

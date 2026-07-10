@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/features/explore/data/explore_repository.dart';
 import 'package:hellovietnam/features/explore/domain/explore_item.dart';
 import 'package:hellovietnam/features/explore/domain/explore_province.dart';
@@ -19,39 +20,40 @@ void main() {
       int fetchCount = 0;
       String? capturedLanguage;
       final ExploreRepository repository = ExploreRepository(
-        sectionsFetcher: ({
-          ExploreProvince? province,
-          required int limitPerCategory,
-          String? language,
-        }) async {
-          fetchCount += 1;
-          capturedLanguage = language;
-          return <String, dynamic>{
-            'province': <String, dynamic>{
-              'id': 'province-1',
-              'name': 'Da Nang',
-              'area': 'Central',
-            },
-            'sections': <String, dynamic>{
-              'activities': <String, dynamic>{
-                'items': <Map<String, dynamic>>[
-                  <String, dynamic>{
-                    'id': 'activity-1',
-                    'name': 'Dragon Bridge Walk',
-                    'imagePath': 'assets/images/explore/sample.jpg',
-                    'category': 'activities',
-                    'subtitle': 'Riverfront',
-                    'provinceId': 'province-1',
-                    'provinceName': 'Da Nang',
+        sectionsFetcher:
+            ({
+              ExploreProvince? province,
+              required int limitPerCategory,
+              String? language,
+            }) async {
+              fetchCount += 1;
+              capturedLanguage = language;
+              return <String, dynamic>{
+                'province': <String, dynamic>{
+                  'id': 'province-1',
+                  'name': 'Da Nang',
+                  'area': 'Central',
+                },
+                'sections': <String, dynamic>{
+                  'activities': <String, dynamic>{
+                    'items': <Map<String, dynamic>>[
+                      <String, dynamic>{
+                        'id': 'activity-1',
+                        'name': 'Dragon Bridge Walk',
+                        'imagePath': 'assets/images/explore/sample.jpg',
+                        'category': 'activities',
+                        'subtitle': 'Riverfront',
+                        'provinceId': 'province-1',
+                        'provinceName': 'Da Nang',
+                      },
+                    ],
                   },
-                ],
-              },
-              'culture': <String, dynamic>{'items': <Object?>[]},
-              'food': <String, dynamic>{'items': <Object?>[]},
-              'local_products': <String, dynamic>{'items': <Object?>[]},
+                  'culture': <String, dynamic>{'items': <Object?>[]},
+                  'food': <String, dynamic>{'items': <Object?>[]},
+                  'local_products': <String, dynamic>{'items': <Object?>[]},
+                },
+              };
             },
-          };
-        },
       );
 
       final ExploreSectionsData fresh = await repository.loadSections();
@@ -65,19 +67,17 @@ void main() {
       expect(cached?.province?.area, 'Central');
       expect(cached?.categories.first.id, 'activities');
       expect(cached?.categories.first.items.single.name, 'Dragon Bridge Walk');
-      expect(
-        cached?.categories.first.items.single.provinceName,
-        'Da Nang',
-      );
+      expect(cached?.categories.first.items.single.provinceName, 'Da Nang');
     });
 
     test('returns null when there is no cached sections payload', () async {
       final ExploreRepository repository = ExploreRepository(
-        sectionsFetcher: ({
-          ExploreProvince? province,
-          required int limitPerCategory,
-          String? language,
-        }) async => <String, dynamic>{},
+        sectionsFetcher:
+            ({
+              ExploreProvince? province,
+              required int limitPerCategory,
+              String? language,
+            }) async => <String, dynamic>{},
       );
 
       final ExploreSectionsData? cached = await repository.loadCachedSections(
@@ -89,35 +89,36 @@ void main() {
 
     test('separates cached sections by current app language', () async {
       final ExploreRepository repository = ExploreRepository(
-        sectionsFetcher: ({
-          ExploreProvince? province,
-          required int limitPerCategory,
-          String? language,
-        }) async => <String, dynamic>{
-          'province': <String, dynamic>{
-            'id': 'province-1',
-            'name': 'Da Nang',
-          },
-          'sections': <String, dynamic>{
-            'activities': <String, dynamic>{
-              'items': <Map<String, dynamic>>[
-                <String, dynamic>{
-                  'id': 'activity-1',
-                  'name': language == 'vi'
-                      ? 'Cau Rong'
-                      : 'Dragon Bridge Walk',
-                  'imagePath': 'assets/images/explore/sample.jpg',
-                  'category': 'activities',
-                  'provinceId': 'province-1',
-                  'provinceName': 'Da Nang',
+        sectionsFetcher:
+            ({
+              ExploreProvince? province,
+              required int limitPerCategory,
+              String? language,
+            }) async => <String, dynamic>{
+              'province': <String, dynamic>{
+                'id': 'province-1',
+                'name': 'Da Nang',
+              },
+              'sections': <String, dynamic>{
+                'activities': <String, dynamic>{
+                  'items': <Map<String, dynamic>>[
+                    <String, dynamic>{
+                      'id': 'activity-1',
+                      'name': language == 'vi'
+                          ? 'Cau Rong'
+                          : 'Dragon Bridge Walk',
+                      'imagePath': 'assets/images/explore/sample.jpg',
+                      'category': 'activities',
+                      'provinceId': 'province-1',
+                      'provinceName': 'Da Nang',
+                    },
+                  ],
                 },
-              ],
+                'culture': <String, dynamic>{'items': <Object?>[]},
+                'food': <String, dynamic>{'items': <Object?>[]},
+                'local_products': <String, dynamic>{'items': <Object?>[]},
+              },
             },
-            'culture': <String, dynamic>{'items': <Object?>[]},
-            'food': <String, dynamic>{'items': <Object?>[]},
-            'local_products': <String, dynamic>{'items': <Object?>[]},
-          },
-        },
       );
 
       final ExploreProvince province = const ExploreProvince(
@@ -142,28 +143,30 @@ void main() {
       String? capturedLanguage;
 
       final ExploreRepository repository = ExploreRepository(
-        sectionsFetcher: ({
-          ExploreProvince? province,
-          required int limitPerCategory,
-          String? language,
-        }) async => <String, dynamic>{},
-        categoryItemsFetcher: ({
-          required DetailCategory category,
-          ExploreProvince? province,
-          required int limit,
-          required int offset,
-          String? language,
-        }) async {
-          capturedLanguage = language;
-          return <ExploreItem>[
-            const ExploreItem(
-              id: 'activity-1',
-              name: 'Dragon Bridge Walk',
-              imagePath: 'assets/images/explore/sample.jpg',
-              category: DetailCategory.activities,
-            ),
-          ];
-        },
+        sectionsFetcher:
+            ({
+              ExploreProvince? province,
+              required int limitPerCategory,
+              String? language,
+            }) async => <String, dynamic>{},
+        categoryItemsFetcher:
+            ({
+              required DetailCategory category,
+              ExploreProvince? province,
+              required int limit,
+              required int offset,
+              String? language,
+            }) async {
+              capturedLanguage = language;
+              return <ExploreItem>[
+                const ExploreItem(
+                  id: 'activity-1',
+                  name: 'Dragon Bridge Walk',
+                  imagePath: 'assets/images/explore/sample.jpg',
+                  category: DetailCategory.activities,
+                ),
+              ];
+            },
       );
 
       final List<ExploreItem> items = await repository.loadCategoryItems(
@@ -172,6 +175,52 @@ void main() {
       );
 
       expect(capturedLanguage, 'en');
+      expect(items.single.name, 'Dragon Bridge Walk');
+    });
+
+    test('passes category paging payload to shared function client', () async {
+      Object? capturedBody;
+
+      final ExploreRepository repository = ExploreRepository(
+        languageCodeProvider: () => 'en',
+        functionClient: SupabaseFunctionClient(
+          invoker:
+              (
+                String functionName, {
+                Map<String, String>? headers,
+                Object? body,
+              }) async {
+                expect(functionName, 'explore');
+                capturedBody = body;
+                return <String, dynamic>{
+                  'items': <Map<String, dynamic>>[
+                    <String, dynamic>{
+                      'id': 'activity-1',
+                      'name': 'Dragon Bridge Walk',
+                      'imagePath': 'assets/images/explore/sample.jpg',
+                      'category': 'activities',
+                    },
+                  ],
+                };
+              },
+        ),
+      );
+
+      final List<ExploreItem> items = await repository.loadCategoryItems(
+        DetailCategory.activities,
+        province: const ExploreProvince(id: 'province-1', name: 'Da Nang'),
+        limit: 12,
+        offset: 24,
+      );
+
+      expect(capturedBody, <String, Object?>{
+        'action': 'getExploreCategoryItems',
+        'category': 'activities',
+        'provinceId': 'province-1',
+        'limit': 12,
+        'offset': 24,
+        'language': 'en',
+      });
       expect(items.single.name, 'Dragon Bridge Walk');
     });
   });

@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/config/env.dart';
+import '../../../core/network/supabase_function_client.dart';
+import '../../../core/network/supabase_table_client.dart';
 
 class SubscriptionPlanInfo {
   const SubscriptionPlanInfo({
@@ -144,10 +146,25 @@ class SubscriptionCheckoutResult {
 }
 
 class SubscriptionRepository {
-  SubscriptionRepository({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+  SubscriptionRepository({
+    SupabaseClient? client,
+    SupabaseFunctionClient? functionClient,
+    SupabaseTableClient? tableClient,
+  }) : _clientOverride = client,
+       _functionClient = functionClient,
+       _tableClient = tableClient;
 
-  final SupabaseClient _client;
+  final SupabaseClient? _clientOverride;
+  final SupabaseFunctionClient? _functionClient;
+  final SupabaseTableClient? _tableClient;
+
+  SupabaseClient get _client => _clientOverride ?? Supabase.instance.client;
+
+  SupabaseFunctionClient get _resolvedFunctionClient =>
+      _functionClient ?? SupabaseFunctionClient(client: _client);
+
+  SupabaseTableClient get _resolvedTableClient =>
+      _tableClient ?? const SupabaseTableClient();
 
   static const Map<String, SubscriptionPlanInfo> fallbackPlans =
       <String, SubscriptionPlanInfo>{
@@ -182,13 +199,18 @@ class SubscriptionRepository {
 
   Future<SubscriptionPlanInfo> loadPlan(String code) async {
     try {
-      final Map<String, dynamic>? row = await _client
-          .from('subscription_plan')
-          .select(
-            'id_subscription_plan, code, name, duration_days, price_minor',
-          )
-          .eq('code', code)
-          .maybeSingle();
+      final Map<String, dynamic>? row = await _resolvedTableClient.maybeSingle(
+        'subscription plan',
+        () async {
+          return _client
+              .from('subscription_plan')
+              .select(
+                'id_subscription_plan, code, name, duration_days, price_minor',
+              )
+              .eq('code', code)
+              .maybeSingle();
+        },
+      );
       if (row == null) return fallbackPlan(code);
       return SubscriptionPlanInfo(
         id: row['id_subscription_plan']?.toString(),
@@ -212,22 +234,23 @@ class SubscriptionRepository {
     if (user == null) return null;
 
     try {
-      final List<dynamic> rows = await _client
-          .from('premium_subscription')
-          .select(
-            'end_date, subscription_plan:id_plan(code, name, duration_days)',
-          )
-          .eq('id_user', user.id)
-          .eq('status', 'active')
-          .gt('end_date', DateTime.now().toUtc().toIso8601String())
-          .order('end_date', ascending: false)
-          .limit(1);
+      final List<Map<String, dynamic>>
+      rows = await _resolvedTableClient.list('current subscription', () async {
+        return _client
+            .from('premium_subscription')
+            .select(
+              'end_date, subscription_plan:id_plan(code, name, duration_days)',
+            )
+            .eq('id_user', user.id)
+            .eq('status', 'active')
+            .gt('end_date', DateTime.now().toUtc().toIso8601String())
+            .order('end_date', ascending: false)
+            .limit(1);
+      });
 
       if (rows.isEmpty) return null;
 
-      final Map<String, dynamic> row = Map<String, dynamic>.from(
-        rows.first as Map,
-      );
+      final Map<String, dynamic> row = rows.first;
       final Object? rawPlan = row['subscription_plan'];
       if (rawPlan is! Map) return null;
 
@@ -248,20 +271,22 @@ class SubscriptionRepository {
     if (user == null) return const <SubscriptionPaymentHistoryItem>[];
 
     try {
-      final List<dynamic> rows = await _client
-          .from('payment')
-          .select(
-            'id_payment, amount_minor, currency, status, provider, method, external_ref, created_at, confirmed_at, subscription_plan:id_subscription_plan(code, name)',
-          )
-          .eq('id_user', user.id)
-          .order('created_at', ascending: false)
-          .limit(12);
+      final List<Map<String, dynamic>> rows = await _resolvedTableClient.list(
+        'subscription payment history',
+        () async {
+          return _client
+              .from('payment')
+              .select(
+                'id_payment, amount_minor, currency, status, provider, method, external_ref, created_at, confirmed_at, subscription_plan:id_subscription_plan(code, name)',
+              )
+              .eq('id_user', user.id)
+              .order('created_at', ascending: false)
+              .limit(12);
+        },
+      );
 
       return rows
-          .map((Object? raw) {
-            final Map<String, dynamic> row = Map<String, dynamic>.from(
-              raw as Map,
-            );
+          .map((Map<String, dynamic> row) {
             final Object? rawPlan = row['subscription_plan'];
             final Map<String, dynamic> plan = rawPlan is Map
                 ? Map<String, dynamic>.from(rawPlan)
@@ -303,14 +328,19 @@ class SubscriptionRepository {
     );
     if (loyaltyPreview != null) return loyaltyPreview;
 
-    final Map<String, dynamic>? row = await _client
-        .from('voucher')
-        .select(
-          'code, type, value, max_discount_value, min_order_amount_min, id_applicable_plan',
-        )
-        .ilike('code', normalized)
-        .eq('status', 'active')
-        .maybeSingle();
+    final Map<String, dynamic>? row = await _resolvedTableClient.maybeSingle(
+      'subscription voucher',
+      () async {
+        return _client
+            .from('voucher')
+            .select(
+              'code, type, value, max_discount_value, min_order_amount_min, id_applicable_plan',
+            )
+            .ilike('code', normalized)
+            .eq('status', 'active')
+            .maybeSingle();
+      },
+    );
 
     if (row == null) {
       throw Exception('Voucher is invalid or expired.');
@@ -359,18 +389,22 @@ class SubscriptionRepository {
     if (user == null) return const <SubscriptionVoucherOption>[];
 
     try {
-      final List<dynamic> rows = await _client
-          .from('voucher_wallet')
-          .select(
-            'wallet_code, status, expires_at, voucher_config:id_voucher(title, description, discount_type, discount_value, target_type)',
-          )
-          .eq('id_user', user.id)
-          .eq('status', 'available')
-          .order('redeemed_at', ascending: false);
+      final List<Map<String, dynamic>> rows = await _resolvedTableClient.list(
+        'loyalty subscription vouchers',
+        () async {
+          return _client
+              .from('voucher_wallet')
+              .select(
+                'wallet_code, status, expires_at, voucher_config:id_voucher(title, description, discount_type, discount_value, target_type)',
+              )
+              .eq('id_user', user.id)
+              .eq('status', 'available')
+              .order('redeemed_at', ascending: false);
+        },
+      );
 
       return rows
-          .map((Object? raw) {
-            final Map<String, dynamic> row = _asMap(raw);
+          .map((Map<String, dynamic> row) {
             final DateTime? expiresAt = DateTime.tryParse(
               row['expires_at']?.toString() ?? '',
             );
@@ -417,14 +451,19 @@ class SubscriptionRepository {
     final User? user = _client.auth.currentUser;
     if (user == null) return null;
 
-    final Map<String, dynamic>? row = await _client
-        .from('voucher_wallet')
-        .select(
-          'wallet_code, status, expires_at, voucher_config:id_voucher(title, discount_type, discount_value, target_type)',
-        )
-        .eq('id_user', user.id)
-        .eq('wallet_code', code)
-        .maybeSingle();
+    final Map<String, dynamic>? row = await _resolvedTableClient.maybeSingle(
+      'loyalty wallet voucher',
+      () async {
+        return _client
+            .from('voucher_wallet')
+            .select(
+              'wallet_code, status, expires_at, voucher_config:id_voucher(title, discount_type, discount_value, target_type)',
+            )
+            .eq('id_user', user.id)
+            .eq('wallet_code', code)
+            .maybeSingle();
+      },
+    );
 
     if (row == null) return null;
 
@@ -501,19 +540,25 @@ class SubscriptionRepository {
       throw Exception('Please sign in before purchasing a subscription.');
     }
 
-    final List<dynamic> rows = await _client.rpc(
-      'purchase_subscription_with_voucher',
-      params: <String, dynamic>{
-        'p_plan_code': planCode,
-        'p_provider': provider,
-        'p_method': method,
-        'p_voucher_code': voucherCode,
+    final List<Map<String, dynamic>> rows = await _resolvedTableClient.list(
+      'subscription purchase',
+      () async {
+        return _client.rpc(
+          'purchase_subscription_with_voucher',
+          params: <String, dynamic>{
+            'p_plan_code': planCode,
+            'p_provider': provider,
+            'p_method': method,
+            'p_voucher_code': voucherCode,
+          },
+        );
       },
     );
+    if (rows.isEmpty) {
+      throw Exception('Subscription purchase did not return a result.');
+    }
 
-    final Map<String, dynamic> row = Map<String, dynamic>.from(
-      rows.first as Map,
-    );
+    final Map<String, dynamic> row = rows.first;
     return SubscriptionPurchaseResult(
       paymentId: row['id_payment'].toString(),
       subscriptionId: row['id_subscription'].toString(),
@@ -533,7 +578,7 @@ class SubscriptionRepository {
     required String successUrl,
     required String cancelUrl,
   }) async {
-    final FunctionResponse response = await _client.functions.invoke(
+    final Map<String, dynamic> data = await _resolvedFunctionClient.invokeJson(
       Env.subscriptionPaymentFunction,
       body: <String, dynamic>{
         'action': 'create_checkout',
@@ -543,20 +588,19 @@ class SubscriptionRepository {
         'cancelUrl': cancelUrl,
       },
     );
-    return _checkoutResultFromResponse(response.data);
+    return _checkoutResultFromResponse(data);
   }
 
   Future<SubscriptionPurchaseResult> confirmStripeCheckout({
     required String sessionId,
   }) async {
-    final FunctionResponse response = await _client.functions.invoke(
+    final Map<String, dynamic> data = await _resolvedFunctionClient.invokeJson(
       Env.subscriptionPaymentFunction,
       body: <String, dynamic>{
         'action': 'confirm_checkout',
         'sessionId': sessionId,
       },
     );
-    final Map<String, dynamic> data = _asMap(response.data);
     return _purchaseResultFromMap(_asMap(data['purchase']));
   }
 

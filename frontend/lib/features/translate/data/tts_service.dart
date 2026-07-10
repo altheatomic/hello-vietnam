@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 class TtsService {
@@ -34,9 +35,7 @@ class TtsService {
     final dynamic languageResult = await _flutterTts.setLanguage(locale);
     _log('setLanguage($locale) -> $languageResult');
     final String? voiceName = await _setBestVoice(locale);
-    _log(
-      'speak locale=$locale voice=${voiceName ?? 'default'} text="$value"',
-    );
+    _log('speak locale=$locale voice=${voiceName ?? 'default'} text="$value"');
     await _flutterTts.speak(value);
     return true;
   }
@@ -62,7 +61,9 @@ class TtsService {
 
       final dynamic nextDefaultEngine = await _flutterTts.getDefaultEngine;
       final dynamic nextEngines = await _flutterTts.getEngines;
-      _log('after setEngine engines=$nextEngines defaultEngine=$nextDefaultEngine');
+      _log(
+        'after setEngine engines=$nextEngines defaultEngine=$nextDefaultEngine',
+      );
     } catch (error) {
       _log('setEngine skipped: $error');
     }
@@ -150,8 +151,8 @@ class TtsService {
   }
 
   void _log(String message) {
-    // Useful when diagnosing Android engines that silently fall back to English.
-    // ignore: avoid_print
-    print('TtsService: $message');
+    if (kDebugMode) {
+      debugPrint('TtsService: $message');
+    }
   }
 }

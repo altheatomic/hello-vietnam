@@ -101,7 +101,6 @@ class _TranslatePageState extends State<TranslatePage>
   bool _isTranslating = false;
   String _translatedText = '';
   String? _translationError;
-  Timer? _translateDebounce;
   int _translationRequestId = 0;
   TranslateMode _mode = TranslateMode.basic;
   bool _isCheckingPremium = false;
@@ -157,7 +156,6 @@ class _TranslatePageState extends State<TranslatePage>
 
   @override
   void dispose() {
-    _translateDebounce?.cancel();
     unawaited(_audioPlayer.dispose());
     unawaited(TtsService.instance.stop());
     _swapButtonController.dispose();
@@ -165,9 +163,27 @@ class _TranslatePageState extends State<TranslatePage>
     super.dispose();
   }
 
-  void _scheduleTranslate({String? text, bool immediate = false}) {
-    _translateDebounce?.cancel();
+  void _handleInputChanged(String value) {
+    ++_translationRequestId;
+    setState(() {
+      _isTranslating = false;
+      _isDownloadingModel = false;
+      _translationError = null;
+      _translatedText = '';
+    });
+  }
 
+  void _markTranslationStale() {
+    ++_translationRequestId;
+    setState(() {
+      _isTranslating = false;
+      _isDownloadingModel = false;
+      _translationError = null;
+      _translatedText = '';
+    });
+  }
+
+  void _requestTranslate({String? text}) {
     final String value = (text ?? _inputController.text).trim();
     if (value.isEmpty) {
       setState(() {
@@ -191,15 +207,7 @@ class _TranslatePageState extends State<TranslatePage>
       _isTranslating = true;
       _translationError = null;
     });
-
-    if (immediate) {
-      unawaited(_translate(value));
-      return;
-    }
-
-    _translateDebounce = Timer(const Duration(milliseconds: 550), () {
-      unawaited(_translate(value));
-    });
+    unawaited(_translate(value));
   }
 
   Future<void> _translate(String text) async {
@@ -306,7 +314,7 @@ class _TranslatePageState extends State<TranslatePage>
       }
     });
 
-    _scheduleTranslate(immediate: true);
+    _markTranslationStale();
   }
 
   void _swapLanguages() {
@@ -316,7 +324,7 @@ class _TranslatePageState extends State<TranslatePage>
         _source = _allLanguages[2];
         _target = _allLanguages[1];
       });
-      _scheduleTranslate(immediate: true);
+      _markTranslationStale();
       return;
     }
 
@@ -325,13 +333,12 @@ class _TranslatePageState extends State<TranslatePage>
       _source = _target;
       _target = temp;
     });
-    _scheduleTranslate(immediate: true);
+    _markTranslationStale();
   }
 
   void _handleQuickExample(String value) {
     _inputController.text = value;
-    setState(() {});
-    _scheduleTranslate(text: value, immediate: true);
+    _markTranslationStale();
   }
 
   Future<bool> _speakTranslatedText(String text, _LanguageOption target) async {
@@ -477,9 +484,9 @@ class _TranslatePageState extends State<TranslatePage>
                     _InputCard(
                       source: _source,
                       controller: _inputController,
-                      onChanged: (String value) {
-                        _scheduleTranslate(text: value);
-                      },
+                      isBusy: _isTranslating || _isDownloadingModel,
+                      onChanged: _handleInputChanged,
+                      onTranslate: _requestTranslate,
                       onClear: () {
                         _inputController.clear();
                         setState(() {
@@ -704,22 +711,28 @@ class _InputCard extends StatelessWidget {
   const _InputCard({
     required this.source,
     required this.controller,
+    required this.isBusy,
     required this.onChanged,
+    required this.onTranslate,
     required this.onClear,
   });
 
   final _LanguageOption source;
   final TextEditingController controller;
+  final bool isBusy;
   final ValueChanged<String> onChanged;
+  final VoidCallback onTranslate;
   final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
+    final bool canTranslate = controller.text.trim().isNotEmpty && !isBusy;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      constraints: const BoxConstraints(minHeight: 154),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF7ED0F5),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -733,8 +746,8 @@ class _InputCard extends StatelessWidget {
                 source.name,
                 style: const TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF8A96A8),
-                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFE1F6FF),
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const Spacer(),
@@ -745,14 +758,14 @@ class _InputCard extends StatelessWidget {
                   child: Container(
                     width: 28,
                     height: 28,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFFF2F4F7),
+                      color: Colors.white.withValues(alpha: 0.25),
                     ),
                     child: const Icon(
                       Icons.close_rounded,
                       size: 16,
-                      color: Color(0xFF9AA5B5),
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -767,18 +780,52 @@ class _InputCard extends StatelessWidget {
               hintText: context.l10n.ui('Enter text to translate...'),
               hintStyle: const TextStyle(
                 fontSize: 16,
-                color: Color(0xFFA6B0BF),
+                color: Color(0xA0EAF7FF),
               ),
               border: InputBorder.none,
             ),
-            style: const TextStyle(fontSize: 17, color: Color(0xFF1D2A3B)),
+            cursorColor: Colors.white,
+            style: const TextStyle(fontSize: 17, color: Colors.white),
           ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '${controller.text.length}/1000',
-              style: const TextStyle(fontSize: 12, color: Color(0xFFC2C9D3)),
-            ),
+          Row(
+            children: <Widget>[
+              Text(
+                '${controller.text.length}/1000',
+                style: const TextStyle(fontSize: 12, color: Color(0xDDEAF7FF)),
+              ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: canTranslate ? onTranslate : null,
+                icon: isBusy
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF2FAFEF),
+                          ),
+                        ),
+                      )
+                    : const Icon(Icons.check_rounded, size: 16),
+                label: Text(context.l10n.ui('Translate')),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.92),
+                  foregroundColor: const Color(0xFF2FAFEF),
+                  disabledBackgroundColor: Colors.white.withValues(alpha: 0.28),
+                  disabledForegroundColor: Colors.white.withValues(alpha: 0.7),
+                  minimumSize: const Size(116, 38),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

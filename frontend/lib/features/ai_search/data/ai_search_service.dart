@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:hellovietnam/core/config/env.dart';
+import 'package:hellovietnam/core/network/edge_function_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
@@ -77,8 +78,8 @@ class AiSearchResult {
       secondaryTags: readStringList('secondary_tags'),
       bestTime: (json['best_time'] as String? ?? '').trim(),
       note: (json['note'] as String? ?? '').trim(),
-      culturalSignificance:
-          (json['cultural_significance'] as String? ?? '').trim(),
+      culturalSignificance: (json['cultural_significance'] as String? ?? '')
+          .trim(),
       usageBullets: readStringList('usage_bullets'),
       productionMethod: (json['production_method'] as String? ?? '').trim(),
       alternativeNames: (json['alternative_names'] as String? ?? '').trim(),
@@ -89,9 +90,15 @@ class AiSearchResult {
 }
 
 class AiSearchService {
-  AiSearchService({http.Client? client}) : _client = client ?? http.Client();
+  AiSearchService({http.Client? client, EdgeFunctionClient? edgeFunctionClient})
+    : _edgeFunctionClient =
+          edgeFunctionClient ??
+          EdgeFunctionClient(
+            client: client,
+            accessTokenProvider: () async => Env.supabaseAnonKey,
+          );
 
-  final http.Client _client;
+  final EdgeFunctionClient _edgeFunctionClient;
 
   Future<AiSearchResult> analyzeImage(XFile file) async {
     final Uint8List bytes = await file.readAsBytes();
@@ -99,35 +106,19 @@ class AiSearchService {
       throw AiSearchException('Anh tai len dang rong.');
     }
 
-    final Uri uri = Uri.parse('${Env.supabaseUrl}/functions/v1/ai-search');
     try {
-      final http.Response response = await _client.post(
-        uri,
-        headers: <String, String>{
-          'apikey': Env.supabaseAnonKey,
-          'Authorization': 'Bearer ${Env.supabaseAnonKey}',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(<String, dynamic>{
+      final Map<String, dynamic> data = await _edgeFunctionClient.postJson(
+        'ai-search',
+        requireAuth: true,
+        body: <String, Object?>{
           'imageBase64': base64Encode(bytes),
           'mimeType': _inferMimeType(file),
           'fileName': file.name,
-        }),
+        },
       );
-
-      final Map<String, dynamic> data =
-          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-
-      if (response.statusCode >= 400) {
-        throw AiSearchException(
-          _mapServerError(
-            (data['error'] as String?) ??
-                'AI Search function failed (${response.statusCode}).',
-          ),
-        );
-      }
-
       return AiSearchResult.fromJson(data);
+    } on EdgeFunctionException catch (error) {
+      throw AiSearchException(_mapServerError(error.message));
     } on AiSearchException {
       rethrow;
     } catch (error) {

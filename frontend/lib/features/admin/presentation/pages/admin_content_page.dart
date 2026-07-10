@@ -12,23 +12,25 @@ import '../widgets/admin_form_components.dart';
 import '../widgets/admin_section_header.dart';
 
 class AdminContentPage extends StatefulWidget {
-  const AdminContentPage({super.key, required this.config});
+  const AdminContentPage({super.key, required this.config, this.repository});
 
   final AdminContentResourceConfig config;
+  final AdminContentRepository? repository;
 
   @override
   State<AdminContentPage> createState() => _AdminContentPageState();
 }
 
 class _AdminContentPageState extends State<AdminContentPage> {
-  final AdminContentRepository _repository = AdminContentRepository();
   final TextEditingController _searchController = TextEditingController();
   final List<AdminContentRecord> _records = <AdminContentRecord>[];
   Timer? _searchDebounce;
+  late final AdminContentRepository _repository;
 
   static const int _pageSize = 8;
   int _currentPage = 1;
   int _totalCount = 0;
+  int _loadRequestId = 0;
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -43,6 +45,7 @@ class _AdminContentPageState extends State<AdminContentPage> {
   @override
   void initState() {
     super.initState();
+    _repository = widget.repository ?? AdminContentRepository();
     _loadRecords();
   }
 
@@ -64,6 +67,7 @@ class _AdminContentPageState extends State<AdminContentPage> {
   }
 
   Future<void> _loadRecords({bool showLoader = true}) async {
+    final int requestId = ++_loadRequestId;
     if (showLoader && mounted) {
       setState(() {
         _isLoading = true;
@@ -78,7 +82,7 @@ class _AdminContentPageState extends State<AdminContentPage> {
         pageSize: _pageSize,
         query: _searchController.text,
       );
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _records
           ..clear()
@@ -89,7 +93,7 @@ class _AdminContentPageState extends State<AdminContentPage> {
         _errorMessage = null;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _isLoading = false;
         _errorMessage = error.toString();
@@ -107,21 +111,34 @@ class _AdminContentPageState extends State<AdminContentPage> {
   }
 
   Future<void> _openForm([AdminContentRecord? record]) async {
+    AdminContentRecord? formRecord = record;
+    if (record != null) {
+      try {
+        formRecord = await _repository.fetchRecord(_config, record);
+      } catch (error) {
+        if (!mounted) return;
+        _showSnack('Load record failed: $error');
+        return;
+      }
+    }
+
+    if (!mounted) return;
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierColor: const Color(0x80152B43),
-      builder: (_) => _AdminContentFormDialog(config: _config, record: record),
+      builder: (_) =>
+          _AdminContentFormDialog(config: _config, record: formRecord),
     );
     if (result == null || !mounted) return;
 
     try {
-      if (record == null) {
+      if (formRecord == null) {
         await _repository.create(_config, result);
       } else {
-        await _repository.update(_config, record, result);
+        await _repository.update(_config, formRecord, result);
       }
       if (!mounted) return;
-      _showSnack(record == null ? 'Created successfully.' : 'Updated.');
+      _showSnack(formRecord == null ? 'Created successfully.' : 'Updated.');
       await _loadRecords(showLoader: false);
     } catch (error) {
       if (!mounted) return;

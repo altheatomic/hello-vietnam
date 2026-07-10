@@ -1,7 +1,5 @@
-// ignore_for_file: use_null_aware_elements
-
-import 'dart:math' show min;
-
+import 'package:hellovietnam/core/network/supabase_function_client.dart';
+import 'package:hellovietnam/core/network/supabase_table_client.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/admin_food.dart';
@@ -14,17 +12,33 @@ class AdminFoodPageResult {
 }
 
 class AdminFoodRepository {
-  AdminFoodRepository({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+  AdminFoodRepository({
+    SupabaseClient? client,
+    SupabaseFunctionClient? functionClient,
+    SupabaseTableClient? tableClient,
+  }) : _clientOverride = client,
+       _functionClient =
+           functionClient ??
+           SupabaseFunctionClient(client: client ?? Supabase.instance.client),
+       _tableClient = tableClient;
 
   static const String _functionName = 'admin-food';
+  static const String _foodTable = 'food';
   static const String _defaultLanguage = 'en';
   static const Duration _cacheTtl = Duration(seconds: 45);
 
   static DateTime? _typesCachedAt;
   static List<FoodType>? _typesCache;
 
-  final SupabaseClient _client;
+  final SupabaseClient? _clientOverride;
+  final SupabaseFunctionClient _functionClient;
+  final SupabaseTableClient? _tableClient;
+  _FoodTableColumns? _foodColumns;
+
+  SupabaseClient get _client => _clientOverride ?? Supabase.instance.client;
+
+  SupabaseTableClient get _resolvedTableClient =>
+      _tableClient ?? const SupabaseTableClient();
 
   Future<AdminFoodPageResult> fetchFoods({
     String language = _defaultLanguage,
@@ -35,45 +49,48 @@ class AdminFoodRepository {
     String? sortField,
     String? sortDirection,
   }) async {
-    final data = await _invokeAction(
-      action: 'listFoods',
-      payload: <String, dynamic>{
-        'language': language,
-        'page': page,
-        'pageSize': pageSize,
-        'query': query,
-        if (typeId != null) 'typeId': typeId,
-        if (sortField != null) 'sortField': sortField,
-        if (sortDirection != null) 'sortDirection': sortDirection,
-      },
-    );
-
-    final List<dynamic> rawFoods =
-        (data['foods'] as List<dynamic>?) ?? <dynamic>[];
-    final foods = rawFoods
-        .whereType<Map<dynamic, dynamic>>()
-        .map(
-          (raw) => _foodFromJson(
-            Map<String, dynamic>.from(raw.cast<String, dynamic>()),
-          ),
-        )
-        .toList(growable: false);
-
-    final total = (data['total'] as num?)?.toInt();
-    if (total != null) {
-      return AdminFoodPageResult(foods: foods, totalCount: total);
-    }
-
-    final fallbackFoods = _clientSideFallbackPage(
-      foods: foods,
+    final columns = await _resolveFoodColumns();
+    final range = SupabaseTableClient.rangeForPage(
       page: page,
       pageSize: pageSize,
-      query: query,
-      typeId: typeId,
-      sortField: sortField,
-      sortDirection: sortDirection,
     );
-    return fallbackFoods;
+
+    dynamic filter = _client.from(_foodTable).select('*');
+
+    final trimmedTypeId = typeId?.trim();
+    if (trimmedTypeId != null && trimmedTypeId.isNotEmpty) {
+      filter = filter.eq(columns.typeColumn, trimmedTypeId);
+    }
+
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isNotEmpty) {
+      filter = filter.or(_foodSearchFilter(columns, trimmedQuery));
+    }
+
+    final sortColumn = switch (sortField) {
+      'name' => columns.nameColumn,
+      'city' => columns.cityColumn,
+      _ => columns.idColumn,
+    };
+    final ascending = sortDirection != 'descending';
+
+    final SupabasePagedRows pageRows = await _resolvedTableClient.pagedRows(
+      'food page',
+      () async {
+        return filter
+            .order(sortColumn, ascending: ascending)
+            .range(range.from, range.to)
+            .count(CountOption.exact);
+      },
+    );
+    final rows = pageRows.rows;
+    final cityNames = await _loadCityNames(rows, columns);
+    final foods = rows
+        .map((row) => _foodFromTableRow(row, columns, cityNames))
+        .toList(growable: false);
+    final totalCount = pageRows.totalCount ?? foods.length;
+
+    return AdminFoodPageResult(foods: foods, totalCount: totalCount);
   }
 
   Future<List<FoodType>> fetchFoodTypes({
@@ -181,32 +198,76 @@ class AdminFoodRepository {
     _invalidateFoodsCache();
   }
 
+  Future<_FoodTableColumns> _resolveFoodColumns() async {
+    if (_foodColumns != null) return _foodColumns!;
+
+    final rows = await _resolvedTableClient.list(
+      'food columns',
+      () async => _client.from(_foodTable).select('*').limit(1),
+    );
+    final sample = rows.isEmpty ? const <String, dynamic>{} : rows.first;
+    _foodColumns = _FoodTableColumns.fromSample(sample);
+    return _foodColumns!;
+  }
+
+  String _foodSearchFilter(_FoodTableColumns columns, String query) {
+    final escaped = query.replaceAll('%', r'\%').replaceAll(',', r'\,');
+    final searchableColumns = <String>{
+      columns.nameColumn,
+      columns.descriptionColumn,
+    };
+    return searchableColumns
+        .map((column) => '$column.ilike.%$escaped%')
+        .join(',');
+  }
+
+  Future<Map<String, String>> _loadCityNames(
+    List<Map<String, dynamic>> rows,
+    _FoodTableColumns columns,
+  ) async {
+    if (!columns.cityIsForeignKey) return const <String, String>{};
+
+    final ids = rows
+        .map((row) => _readNullableString(row, columns.cityColumn))
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (ids.isEmpty) return const <String, String>{};
+
+    final lookup = columns.cityLookup;
+    try {
+      final lookupRows = await _resolvedTableClient.list(
+        '${lookup.table} lookup',
+        () async {
+          return _client
+              .from(lookup.table)
+              .select('${lookup.idColumn}, ${lookup.nameColumn}')
+              .inFilter(lookup.idColumn, ids)
+              .limit(ids.length);
+        },
+      );
+      return <String, String>{
+        for (final row in lookupRows)
+          if (_readNullableString(row, lookup.idColumn) != null &&
+              _readNullableString(row, lookup.nameColumn) != null)
+            _readNullableString(row, lookup.idColumn)!: _readNullableString(
+              row,
+              lookup.nameColumn,
+            )!,
+      };
+    } catch (_) {
+      return const <String, String>{};
+    }
+  }
+
   Future<Map<String, dynamic>> _invokeAction({
     required String action,
     Map<String, dynamic>? payload,
   }) async {
-    final Session? session = _client.auth.currentSession;
-    final Map<String, String> headers = <String, String>{};
-    if (session?.accessToken case final String token) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-
-    final response = await _client.functions.invoke(
+    return _functionClient.invokeJson(
       _functionName,
-      headers: headers.isEmpty ? null : headers,
       body: <String, dynamic>{'action': action, ...?payload},
-    );
-
-    final dynamic rawData = response.data;
-    if (rawData is Map<String, dynamic>) {
-      return rawData;
-    }
-    if (rawData is Map) {
-      return Map<String, dynamic>.from(rawData);
-    }
-
-    throw StateError(
-      'Unexpected response from function "$_functionName" for action "$action".',
     );
   }
 
@@ -219,6 +280,66 @@ class AdminFoodRepository {
       'urlImage': food.urlImage,
       'description': food.description,
     };
+  }
+
+  AdminFood _foodFromTableRow(
+    Map<String, dynamic> row,
+    _FoodTableColumns columns,
+    Map<String, String> cityNames,
+  ) {
+    final rawCity =
+        _firstString(row, <String>[
+          columns.cityColumn,
+          'city',
+          'province',
+          'city_province',
+        ]) ??
+        'Unknown';
+    final city = columns.cityIsForeignKey
+        ? cityNames[rawCity] ?? rawCity
+        : rawCity;
+
+    return AdminFood(
+      id:
+          _firstString(row, <String>[
+            columns.idColumn,
+            'id_food',
+            'food_id',
+            'id',
+          ]) ??
+          '',
+      name:
+          _firstString(row, <String>[
+            columns.nameColumn,
+            'name',
+            'food_name',
+            'title',
+          ]) ??
+          'Unnamed food',
+      typeId:
+          _firstString(row, <String>[
+            columns.typeColumn,
+            'typeId',
+            'food_type_id',
+            'id_food_type',
+            'type_id',
+            'type',
+          ]) ??
+          'other',
+      city: city.isEmpty ? 'Unknown' : city,
+      urlImage: _firstString(row, <String>[
+        columns.imageColumn,
+        'image_path',
+        'url_image',
+        'image_url',
+        'image',
+      ]),
+      description: _firstString(row, <String>[
+        columns.descriptionColumn,
+        'description',
+        'desc',
+      ]),
+    );
   }
 
   AdminFood _foodFromJson(Map<String, dynamic> json) {
@@ -248,53 +369,6 @@ class AdminFoodRepository {
     );
   }
 
-  AdminFoodPageResult _clientSideFallbackPage({
-    required List<AdminFood> foods,
-    required int page,
-    required int pageSize,
-    required String query,
-    required String? typeId,
-    required String? sortField,
-    required String? sortDirection,
-  }) {
-    final normalizedQuery = query.trim().toLowerCase();
-    final filtered = foods
-        .where((food) {
-          final matchesType = typeId == null || food.typeId == typeId;
-          final matchesQuery =
-              normalizedQuery.isEmpty ||
-              food.name.toLowerCase().contains(normalizedQuery) ||
-              food.city.toLowerCase().contains(normalizedQuery);
-          return matchesType && matchesQuery;
-        })
-        .toList(growable: false);
-
-    int compareText(String left, String right) =>
-        left.toLowerCase().compareTo(right.toLowerCase());
-
-    filtered.sort((left, right) {
-      final base = switch (sortField) {
-        'name' => compareText(left.name, right.name),
-        'city' => compareText(left.city, right.city),
-        _ => compareText(left.id, right.id),
-      };
-      return sortDirection == 'descending' ? -base : base;
-    });
-
-    final start = (page - 1) * pageSize;
-    if (start >= filtered.length) {
-      return AdminFoodPageResult(
-        foods: const <AdminFood>[],
-        totalCount: filtered.length,
-      );
-    }
-    final end = min(start + pageSize, filtered.length);
-    return AdminFoodPageResult(
-      foods: filtered.sublist(start, end),
-      totalCount: filtered.length,
-    );
-  }
-
   Map<String, dynamic> _readMap(Map<String, dynamic> json, String key) {
     final dynamic value = json[key];
     if (value is Map<String, dynamic>) return value;
@@ -317,18 +391,112 @@ class AdminFoodRepository {
     return text.isEmpty ? null : text;
   }
 
+  String? _firstString(Map<String, dynamic> json, Iterable<String> keys) {
+    for (final key in keys) {
+      final value = _readNullableString(json, key);
+      if (value != null) return value;
+    }
+    return null;
+  }
+
   static bool _isFresh(DateTime? time) {
     if (time == null) return false;
     return DateTime.now().difference(time) < _cacheTtl;
   }
 
   static void _invalidateFoodsCache() {
-    // Food lists are page-loaded from the edge function, so there is no full
-    // list cache to clear. Keep this hook for write operations.
+    // Food lists are page-loaded from Supabase, so there is no full list cache.
   }
 
   static void _invalidateTypesCache() {
     _typesCache = null;
     _typesCachedAt = null;
   }
+}
+
+class _FoodTableColumns {
+  const _FoodTableColumns({
+    required this.idColumn,
+    required this.nameColumn,
+    required this.typeColumn,
+    required this.cityColumn,
+    required this.imageColumn,
+    required this.descriptionColumn,
+  });
+
+  final String idColumn;
+  final String nameColumn;
+  final String typeColumn;
+  final String cityColumn;
+  final String imageColumn;
+  final String descriptionColumn;
+
+  bool get cityIsForeignKey =>
+      cityColumn == 'id_province' ||
+      cityColumn == 'province_id' ||
+      cityColumn == 'id_city' ||
+      cityColumn == 'city_id';
+
+  _CityLookup get cityLookup {
+    if (cityColumn == 'id_province' || cityColumn == 'province_id') {
+      return const _CityLookup(
+        table: 'province',
+        idColumn: 'id_province',
+        nameColumn: 'name',
+      );
+    }
+    return const _CityLookup(
+      table: 'city_province',
+      idColumn: 'id_city',
+      nameColumn: 'city',
+    );
+  }
+
+  factory _FoodTableColumns.fromSample(Map<String, dynamic> sample) {
+    return _FoodTableColumns(
+      idColumn: _pickColumn(sample, <String>['id_food', 'food_id', 'id']),
+      nameColumn: _pickColumn(sample, <String>['name', 'food_name', 'title']),
+      typeColumn: _pickColumn(sample, <String>[
+        'food_type_id',
+        'id_food_type',
+        'type_id',
+        'type',
+      ]),
+      cityColumn: _pickColumn(sample, <String>[
+        'id_province',
+        'province_id',
+        'id_city',
+        'city_id',
+        'city_province',
+        'city',
+        'province',
+      ]),
+      imageColumn: _pickColumn(sample, <String>[
+        'image_path',
+        'url_image',
+        'image_url',
+        'image',
+      ]),
+      descriptionColumn: _pickColumn(sample, <String>['description', 'desc']),
+    );
+  }
+
+  static String _pickColumn(Map<String, dynamic> sample, List<String> keys) {
+    for (final key in keys) {
+      if (sample.containsKey(key)) return key;
+    }
+    return keys.first;
+  }
+}
+
+class _CityLookup {
+  const _CityLookup({
+    required this.table,
+    required this.idColumn,
+    required this.nameColumn,
+  });
+
+  final String table;
+  final String idColumn;
+  final String nameColumn;
 }

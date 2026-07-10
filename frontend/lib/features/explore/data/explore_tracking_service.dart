@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:hellovietnam/core/config/env.dart';
+import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -17,12 +18,14 @@ class ExploreTrackingService {
   ExploreTrackingService({
     SupabaseClient? client,
     ExploreTrackingSender? sender,
+    SupabaseFunctionClient? functionClient,
     String? Function()? accessTokenProvider,
     String Function()? requestIdGenerator,
     String functionName = Env.exploreFunction,
   }) : _client = client,
        _functionName = functionName,
        _sender = sender,
+       _functionClient = functionClient,
        _accessTokenProvider = accessTokenProvider,
        _requestIdGenerator = requestIdGenerator;
 
@@ -31,6 +34,7 @@ class ExploreTrackingService {
   final SupabaseClient? _client;
   final String _functionName;
   final ExploreTrackingSender? _sender;
+  final SupabaseFunctionClient? _functionClient;
   final String? Function()? _accessTokenProvider;
   final String Function()? _requestIdGenerator;
 
@@ -104,7 +108,7 @@ class ExploreTrackingService {
     final String? accessToken = _accessTokenProvider != null
         ? _accessTokenProvider.call()
         : _client?.auth.currentSession?.accessToken ??
-            Supabase.instance.client.auth.currentSession?.accessToken;
+              Supabase.instance.client.auth.currentSession?.accessToken;
     if (accessToken == null || accessToken.trim().isEmpty) {
       if (kDebugMode) {
         debugPrint(
@@ -148,8 +152,10 @@ class ExploreTrackingService {
     Map<String, String>? headers,
     required Map<String, dynamic> body,
   }) async {
-    final SupabaseClient client = _client ?? Supabase.instance.client;
-    await client.functions.invoke(
+    final SupabaseFunctionClient functionClient =
+        _functionClient ??
+        SupabaseFunctionClient(client: _client ?? Supabase.instance.client);
+    await functionClient.invokeVoid(
       _functionName,
       headers: headers,
       body: body,

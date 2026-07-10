@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/network/supabase_table_client.dart';
 import '../domain/destination.dart';
 import '../domain/dish.dart';
 
@@ -11,10 +12,17 @@ class HomeFeaturedContent {
 }
 
 class HomeRepository {
-  HomeRepository({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+  HomeRepository({SupabaseClient? client, SupabaseTableClient? tableClient})
+    : _clientOverride = client,
+      _tableClient = tableClient;
 
-  final SupabaseClient _client;
+  final SupabaseClient? _clientOverride;
+  final SupabaseTableClient? _tableClient;
+
+  SupabaseClient get _client => _clientOverride ?? Supabase.instance.client;
+
+  SupabaseTableClient get _resolvedTableClient =>
+      _tableClient ?? const SupabaseTableClient();
 
   Future<HomeFeaturedContent> fetchFeaturedContent({int limit = 4}) async {
     final results = await Future.wait<dynamic>(<Future<dynamic>>[
@@ -29,10 +37,10 @@ class HomeRepository {
   }
 
   Future<List<Destination>> _fetchDestinations(int limit) async {
-    final List<Map<String, dynamic>> rows = await _client
-        .from('province')
-        .select()
-        .limit(limit);
+    final List<Map<String, dynamic>> rows = await _resolvedTableClient.list(
+      'featured provinces',
+      () async => _client.from('province').select().limit(limit),
+    );
 
     return rows
         .where((Map<String, dynamic> row) => _provinceName(row).isNotEmpty)
@@ -51,22 +59,31 @@ class HomeRepository {
               _text(row['area']),
               _text(row['region']),
               _text(row['zone']),
+              _shortCategory(_text(row['short_description'])),
               _shortCategory(_text(row['description'])),
               'Vietnam destination',
             ]),
-            rating: _ratingFromSeed(seed),
-            imagePath: _destinationFallbackImage(seed),
+            rating: _rowRating(row, fallbackSeed: seed),
+            imagePath: _firstNonEmpty(<String>[
+              _text(row['cover_image']),
+              _destinationFallbackImage(seed),
+            ]),
           );
         })
         .toList(growable: false);
   }
 
   Future<List<Dish>> _fetchDishes(int limit) async {
-    final List<Map<String, dynamic>> rows = await _client
-        .from('food')
-        .select('id_food, name, type, image_path, description')
-        .order('name')
-        .limit(limit);
+    final List<Map<String, dynamic>> rows = await _resolvedTableClient.list(
+      'featured foods',
+      () async {
+        return _client
+            .from('food')
+            .select('id_food, name, type, image_path, description')
+            .order('name')
+            .limit(limit);
+      },
+    );
 
     return rows
         .where((Map<String, dynamic> row) => _text(row['name']).isNotEmpty)
@@ -114,6 +131,14 @@ class HomeRepository {
   double _ratingFromSeed(int seed) {
     final int normalized = seed.abs() % 55;
     return double.parse((4.25 + normalized / 100).toStringAsFixed(2));
+  }
+
+  double _rowRating(Map<String, dynamic> row, {required int fallbackSeed}) {
+    final Object? value = row['average_rating'];
+    if (value is num) return double.parse(value.toStringAsFixed(2));
+    final double? parsed = double.tryParse(value?.toString() ?? '');
+    if (parsed != null) return double.parse(parsed.toStringAsFixed(2));
+    return _ratingFromSeed(fallbackSeed);
   }
 
   String _shortCategory(String description) {
