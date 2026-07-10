@@ -1,0 +1,169 @@
+"""
+db/place_repository.py
+Fetch places from Supabase with required filters only.
+
+Required filters (applied at DB level):
+  - id_province matches
+  - status = active
+  - is_itinerary_eligible = true (via inner join)
+  - latitude / longitude not null
+
+Optional filters (rating, budget) are applied in services/filters.py.
+"""
+
+from typing import Any
+
+from services.module3_optimizer import haversine_km
+
+# Display names for subcategories shown to English-language users.
+_SUBCATEGORY_EN: dict[str, str] = {
+    "Y tế / Bệnh viện":          "Hospital / Clinic",
+    "Nhà thuốc":                  "Pharmacy",
+    "Ngân hàng / ATM":            "Bank / ATM",
+    "Trạm xăng":                  "Gas Station",
+    "Cơ quan hành chính":         "Government Office",
+    "Công an / Cảnh sát":         "Police Station",
+    "Trường học / Đại học":       "School / University",
+    "Bến xe / Sân bay / Ga tàu": "Transport Hub",
+}
+
+
+def fetch_nearby_amenities(
+    supabase: Any,
+    lat: float,
+    lng: float,
+    subcategory_names: list[str],
+    limit_per_category: int = 3,
+    radius_km: float = 15.0,
+) -> list[dict]:
+    response = (
+        supabase
+        .table("place_localized_en")
+        .select(
+            "id_place,name,latitude,longitude,"
+            "place_subcategory!inner(name)"
+        )
+        .in_("place_subcategory.name", subcategory_names)
+        .eq("status", "active")
+        .filter("latitude", "not.is", "null")
+        .filter("longitude", "not.is", "null")
+        .limit(500)
+        .execute()
+    )
+    rows = response.data or []
+
+    # Compute distance, filter by radius, then group by subcategory.
+    # limit_per_category is applied AFTER the radius filter.
+    by_cat: dict[str, list] = {}
+    for r in rows:
+        dist = haversine_km(lat, lng, float(r["latitude"]), float(r["longitude"]))
+        if dist > radius_km:
+            continue
+        sub_vi = (r.get("place_subcategory") or {}).get("name", "")
+        sub_en = _SUBCATEGORY_EN.get(sub_vi, sub_vi)
+        entry = {
+            "id_place": str(r["id_place"]),
+            "name": r["name"],
+            "subcategory_name": sub_en,
+            "latitude": r["latitude"],
+            "longitude": r["longitude"],
+            "distance_km": round(dist, 3),
+            "estimated_minutes": round(dist / 30.0 * 60),
+        }
+        by_cat.setdefault(sub_vi, []).append(entry)
+
+    result = []
+    for sub in subcategory_names:
+        places = sorted(by_cat.get(sub, []), key=lambda x: x["distance_km"])
+        result.extend(places[:limit_per_category])
+    return sorted(result, key=lambda x: x["distance_km"])
+
+
+def fetch_places_near_point(
+    supabase: Any,
+    target_lat: float,
+    target_lng: float,
+    radius_km: float = 5.0,
+    limit: int = 500,
+) -> list[dict]:
+    """Fetch itinerary-eligible places within radius_km of a lat/lng point.
+
+    Uses a bounding-box pre-filter at DB level, then Haversine for exact distance.
+    Auto-expands radius (5→10→15 km) if fewer than 24 candidates are found.
+    """
+    from math import cos, radians
+
+    lat_delta = radius_km / 111.0
+    lng_delta = radius_km / (111.0 * cos(radians(target_lat)))
+
+    select_fields = (
+        "id_place,id_place_subcategory,name,short_description,"
+        "status,cover_image,gallery,address,latitude,longitude,"
+        "average_rating,review_count,minimum_price,maximum_price,"
+        "estimated_duration_minutes,timespan,timeclose,"
+        "place_subcategory!inner(name,place_category,is_itinerary_eligible)"
+    )
+
+    resp = (
+        supabase
+        .table("place_localized_en")
+        .select(select_fields)
+        .gte("latitude",  target_lat - lat_delta)
+        .lte("latitude",  target_lat + lat_delta)
+        .gte("longitude", target_lng - lng_delta)
+        .lte("longitude", target_lng + lng_delta)
+        .eq("status", "active")
+        .eq("place_subcategory.is_itinerary_eligible", True)
+        .filter("latitude",  "not.is", "null")
+        .filter("longitude", "not.is", "null")
+        .limit(limit)
+        .execute()
+    )
+    candidates = resp.data or []
+
+    within = [
+        p for p in candidates
+        if haversine_km(
+            target_lat, target_lng,
+            float(p["latitude"]), float(p["longitude"]),
+        ) <= radius_km
+    ]
+
+    # Auto-expand if not enough candidates and radius is still small.
+    if len(within) < 24 and radius_km < 15.0:
+        return fetch_places_near_point(
+            supabase, target_lat, target_lng,
+            radius_km=min(radius_km * 2, 15.0),
+            limit=limit,
+        )
+
+    return within[:limit]
+
+
+def fetch_places_required_filter(
+    supabase: Any,
+    province_id: str,
+    limit: int = 500,
+) -> list[dict]:
+    select_fields = (
+        "id_place,id_place_subcategory,name,short_description,"
+        "status,cover_image,gallery,address,latitude,longitude,"
+        "average_rating,review_count,minimum_price,maximum_price,"
+        "estimated_duration_minutes,timespan,timeclose,"
+        "place_subcategory!inner(name,place_category,is_itinerary_eligible)"
+    )
+
+    response = (
+        supabase
+        .table("place_localized_en")
+        .select(select_fields)
+        .eq("old_province", province_id)
+        .eq("status", "active")
+        .eq("place_subcategory.is_itinerary_eligible", True)
+        .filter("latitude", "not.is", "null")
+        .filter("longitude", "not.is", "null")
+        .limit(limit)
+        .execute()
+    )
+
+    return response.data or []
