@@ -4,16 +4,37 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/utils/maps_launcher.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 
+void _openDayRoute(List<TripPlannerActivityData> activities) {
+  final realPlaces = activities.where((a) => a.tag != 'lunch_break').toList();
+  if (realPlaces.isEmpty) return;
+  if (realPlaces.length == 1) {
+    openGoogleMapsPin(lat: realPlaces.first.lat, lng: realPlaces.first.lng);
+    return;
+  }
+  final first = realPlaces.first;
+  final last = realPlaces.last;
+  final middle = realPlaces.sublist(1, realPlaces.length - 1);
+  openGoogleMapsDirections(
+    originLat: first.lat,
+    originLng: first.lng,
+    destLat: last.lat,
+    destLng: last.lng,
+    waypoints: middle.map((a) => (lat: a.lat, lng: a.lng)).toList(),
+  );
+}
+
 class TripDayDetailPage extends StatelessWidget {
-  const TripDayDetailPage({super.key, required this.dayIndex});
+  const TripDayDetailPage({super.key, required this.dayIndex, this.dayData});
 
   final int dayIndex;
+  final TripPlannerDayData? dayData;
 
   @override
   Widget build(BuildContext context) {
-    final TripPlannerDayData day = TripPlannerMockData.dayAt(dayIndex);
+    final TripPlannerDayData day = dayData ?? TripPlannerMockData.dayAt(dayIndex);
 
     return Scaffold(
       body: Container(
@@ -71,22 +92,28 @@ class TripDayDetailPage extends StatelessWidget {
                     const SizedBox(height: 22),
                     _GradientActionButton(
                       label: 'Create Trip on Google Maps',
-                      onTap: () => context.push(
-                        AppRoutes.tripPlannerMapPath(dayIndex, 0),
-                      ),
+                      onTap: () => _openDayRoute(day.activities),
                     ),
                     const SizedBox(height: 22),
-                    ...day.activities.asMap().entries.map(
-                      (MapEntry<int, TripPlannerActivityData> entry) => Padding(
-                        padding: const EdgeInsets.only(bottom: 18),
-                        child: _ActivityDetailCard(
-                          activity: entry.value,
-                          onDirections: () => context.push(
-                            AppRoutes.tripPlannerMapPath(dayIndex, entry.key),
+                    ...day.activities
+                        .where((a) => a.tag != 'lunch_break')
+                        .toList()
+                        .asMap()
+                        .entries
+                        .map(
+                          (MapEntry<int, TripPlannerActivityData> entry) =>
+                              Padding(
+                            padding: const EdgeInsets.only(bottom: 18),
+                            child: _ActivityDetailCard(
+                              activity: entry.value,
+                              onDirections: () => context.push(
+                                AppRoutes.tripPlannerMapPath(
+                                    dayIndex, entry.key),
+                                extra: entry.value,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -128,22 +155,19 @@ class _ActivityDetailCard extends StatelessWidget {
         children: <Widget>[
           _TimePill(time: activity.time),
           const SizedBox(height: 18),
-          Container(
-            height: 112,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: <Color>[Color(0xFFF2F4F8), Color(0xFFE6EAF0)],
-              ),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.image_outlined,
-                size: 42,
-                color: Color(0xFFAEB7C4),
-              ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              height: 112,
+              width: double.infinity,
+              child: activity.imageUrl != null
+                  ? Image.network(
+                      activity.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stack) =>
+                          _ImagePlaceholder(),
+                    )
+                  : _ImagePlaceholder(),
             ),
           ),
           const SizedBox(height: 16),
@@ -224,6 +248,18 @@ class _ActivityDetailCard extends StatelessWidget {
           const SizedBox(height: 18),
           _GradientActionButton(label: 'Get Directions', onTap: onDirections),
         ],
+      ),
+    );
+  }
+}
+
+class _ImagePlaceholder extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFEEF1F5),
+      child: const Center(
+        child: Icon(Icons.image_outlined, size: 42, color: Color(0xFFAEB7C4)),
       ),
     );
   }

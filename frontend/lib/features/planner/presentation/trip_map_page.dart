@@ -1,204 +1,247 @@
-import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/utils/maps_launcher.dart';
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
+import 'package:latlong2/latlong.dart';
 
-class TripMapPage extends StatelessWidget {
+class TripMapPage extends StatefulWidget {
   const TripMapPage({
     super.key,
     required this.dayIndex,
     required this.activityIndex,
+    this.activity,
   });
 
   final int dayIndex;
   final int activityIndex;
+  final TripPlannerActivityData? activity;
+
+  @override
+  State<TripMapPage> createState() => _TripMapPageState();
+}
+
+class _TripMapPageState extends State<TripMapPage> {
+  late final TripPlannerActivityData _activity;
+  List<TripPlannerNearbyPlace> _places = <TripPlannerNearbyPlace>[];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _activity = widget.activity ??
+        TripPlannerMockData.activityAt(widget.dayIndex, widget.activityIndex);
+    _loadNearby();
+  }
+
+  Future<void> _loadNearby() async {
+    final double lat = _activity.lat;
+    final double lng = _activity.lng;
+    if (lat == 0.0 && lng == 0.0) {
+      setState(() {
+        _places = _activity.nearbyPlaces;
+        _loading = false;
+      });
+      return;
+    }
+    try {
+      final nearby = await TripRepository().getNearbyPlaces(lat, lng);
+      if (!mounted) return;
+      setState(() {
+        _places = nearby
+            .map((p) => TripPlannerNearbyPlace(
+                  title: p.name,
+                  subtitle: p.subcategoryName,
+                  distance: p.distanceKm < 1
+                      ? '${(p.distanceKm * 1000).round()}m'
+                      : '${p.distanceKm.toStringAsFixed(1)}km',
+                  eta: '${p.estimatedMinutes} mins',
+                  lat: p.latitude,
+                  lng: p.longitude,
+                ))
+            .toList();
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _places = _activity.nearbyPlaces;
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final TripPlannerActivityData activity = TripPlannerMockData.activityAt(
-      dayIndex,
-      activityIndex,
-    );
-
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: <Color>[
-              Color(0xFFF1F6FE),
-              Color(0xFFDFF5FF),
-              Color(0xFFCCF6F1),
-            ],
+      body: Stack(
+        children: <Widget>[
+          // Real map fills the screen
+          _RealMap(activity: _activity, places: _loading ? <TripPlannerNearbyPlace>[] : _places),
+
+          // Decorative blur orbs
+          const Positioned(
+            top: -90,
+            right: -60,
+            child: IgnorePointer(child: _DecorativeOrb(size: 220, color: Color(0x332BC3FF))),
           ),
-        ),
-        child: Stack(
-          children: <Widget>[
-            const Positioned(
-              top: -90,
-              right: -60,
-              child: _DecorativeOrb(size: 220, color: Color(0x662BC3FF)),
-            ),
-            const Positioned(
-              bottom: 120,
-              left: -40,
-              child: _DecorativeOrb(size: 180, color: Color(0x5556E2D5)),
-            ),
-            SafeArea(
-              child: Column(
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                    child: Row(
-                      children: <Widget>[
-                        _BackButtonCircle(onTap: () => context.pop()),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
+          const Positioned(
+            bottom: 240,
+            left: -40,
+            child: IgnorePointer(child: _DecorativeOrb(size: 180, color: Color(0x3356E2D5))),
+          ),
+
+          // Header card (back + title)
+          SafeArea(
+            child: Column(
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                  child: Row(
+                    children: <Widget>[
+                      _BackButtonCircle(onTap: () => context.pop()),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.96),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: const Color(0xFFD8F2FF),
+                              width: 1.2,
                             ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.96),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: const Color(0xFFD8F2FF),
-                                width: 1.2,
+                            boxShadow: const <BoxShadow>[
+                              BoxShadow(
+                                color: Color(0x220F2C4F),
+                                blurRadius: 22,
+                                offset: Offset(0, 12),
                               ),
-                              boxShadow: const <BoxShadow>[
-                                BoxShadow(
-                                  color: Color(0x220F2C4F),
-                                  blurRadius: 22,
-                                  offset: Offset(0, 12),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                _activity.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
                                 ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  activity.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textPrimary,
-                                  ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                _activity.distanceLabel,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Color(0xFF6A7585),
                                 ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  activity.distanceLabel,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    color: Color(0xFF6A7585),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  Expanded(
-                    child: Stack(
-                      children: <Widget>[
-                        const Positioned.fill(
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(18, 26, 18, 300),
-                            child: _MapIllustration(),
-                          ),
-                        ),
-                        Positioned(
-                          left: 156,
-                          top: 250,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(999),
-                              gradient: const LinearGradient(
-                                colors: <Color>[
-                                  Color(0xFF2F8FF8),
-                                  Color(0xFF3D6EF4),
-                                ],
-                              ),
-                              boxShadow: const <BoxShadow>[
-                                BoxShadow(
-                                  color: Color(0x2D2F8FF8),
-                                  blurRadius: 18,
-                                  offset: Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: Text(
-                              activity.nearbyPlaces.first.eta,
-                              style: const TextStyle(
-                                fontSize: 19,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          right: 22,
-                          bottom: 260,
-                          child: Container(
-                            width: 58,
-                            height: 58,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: const LinearGradient(
-                                colors: <Color>[
-                                  Color(0xFF2D9BF8),
-                                  Color(0xFF3269F4),
-                                ],
-                              ),
-                              boxShadow: const <BoxShadow>[
-                                BoxShadow(
-                                  color: Color(0x332D9BF8),
-                                  blurRadius: 18,
-                                  offset: Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.send_outlined,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.bottomCenter,
-                          child: _ResultSheet(places: activity.nearbyPlaces),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+
+                // Pushes result sheet to bottom
+                const Spacer(),
+
+                _ResultSheet(
+                  places: _places,
+                  loading: _loading,
+                  originLat: _activity.lat,
+                  originLng: _activity.lng,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
+// ── Real map ──────────────────────────────────────────────────────────────────
+
+class _RealMap extends StatelessWidget {
+  const _RealMap({required this.activity, required this.places});
+
+  final TripPlannerActivityData activity;
+  final List<TripPlannerNearbyPlace> places;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasCoords = activity.lat != 0.0 || activity.lng != 0.0;
+    final LatLng center = hasCoords
+        ? LatLng(activity.lat, activity.lng)
+        : const LatLng(21.0285, 105.8357); // fallback: Hanoi
+
+    return FlutterMap(
+      options: MapOptions(
+        initialCenter: center,
+        initialZoom: 15,
+      ),
+      children: <Widget>[
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.example.hellovietnam',
+        ),
+        MarkerLayer(
+          markers: <Marker>[
+            // Origin marker (red)
+            if (hasCoords)
+              Marker(
+                point: LatLng(activity.lat, activity.lng),
+                child: const Icon(
+                  Icons.location_pin,
+                  color: Colors.red,
+                  size: 40,
+                ),
+              ),
+            // Nearby place markers (blue)
+            ...places
+                .where((p) => p.lat != 0.0 || p.lng != 0.0)
+                .map((p) => Marker(
+                      point: LatLng(p.lat, p.lng),
+                      child: const Icon(
+                        Icons.place,
+                        color: Colors.blue,
+                        size: 30,
+                      ),
+                    )),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ── Result sheet ──────────────────────────────────────────────────────────────
+
 class _ResultSheet extends StatelessWidget {
-  const _ResultSheet({required this.places});
+  const _ResultSheet({
+    required this.places,
+    required this.loading,
+    required this.originLat,
+    required this.originLng,
+  });
 
   final List<TripPlannerNearbyPlace> places;
+  final bool loading;
+  final double originLat;
+  final double originLng;
 
   @override
   Widget build(BuildContext context) {
@@ -224,7 +267,7 @@ class _ResultSheet extends StatelessWidget {
             children: const <Widget>[
               Expanded(
                 child: Text(
-                  'Result',
+                  'Nearby',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -245,36 +288,30 @@ class _ResultSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF7F9FD),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE1E7F0)),
-            ),
-            child: const Row(
-              children: <Widget>[
-                Icon(Icons.search_rounded, color: Color(0xFF9BA5B4), size: 24),
-                SizedBox(width: 10),
-                Text(
-                  'Find in results',
-                  style: TextStyle(fontSize: 16, color: Color(0xFF98A2B1)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
           Expanded(
-            child: ListView.separated(
-              physics: const BouncingScrollPhysics(),
-              itemCount: places.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (BuildContext context, int index) {
-                final TripPlannerNearbyPlace place = places[index];
-                return _NearbyPlaceTile(place: place);
-              },
-            ),
+            child: loading
+                ? const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : places.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No nearby places found.',
+                          style: TextStyle(color: Color(0xFF8A95A5)),
+                        ),
+                      )
+                    : ListView.separated(
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: places.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        itemBuilder: (BuildContext context, int index) {
+                          return _NearbyPlaceTile(
+                            place: places[index],
+                            originLat: originLat,
+                            originLng: originLng,
+                          );
+                        },
+                      ),
           ),
         ],
       ),
@@ -282,10 +319,18 @@ class _ResultSheet extends StatelessWidget {
   }
 }
 
+// ── Nearby place tile ─────────────────────────────────────────────────────────
+
 class _NearbyPlaceTile extends StatelessWidget {
-  const _NearbyPlaceTile({required this.place});
+  const _NearbyPlaceTile({
+    required this.place,
+    required this.originLat,
+    required this.originLng,
+  });
 
   final TripPlannerNearbyPlace place;
+  final double originLat;
+  final double originLng;
 
   @override
   Widget build(BuildContext context) {
@@ -364,16 +409,12 @@ class _NearbyPlaceTile extends StatelessWidget {
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () {
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    SnackBar(
-                      content: Text('Routing to ${place.title}'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-              },
+              onTap: () => openGoogleMapsDirections(
+                originLat: originLat,
+                originLng: originLng,
+                destLat: place.lat,
+                destLng: place.lng,
+              ),
               borderRadius: BorderRadius.circular(999),
               child: Ink(
                 padding: const EdgeInsets.symmetric(
@@ -411,124 +452,22 @@ class _NearbyPlaceTile extends StatelessWidget {
 
   String _iconForType(String type) {
     final String value = type.toLowerCase();
-    if (value.contains('hospital') ||
-        value.contains('clinic') ||
-        value.contains('medical')) {
+    if (value.contains('y tế') || value.contains('bệnh viện') || value.contains('hospital')) {
       return '🏥';
     }
-    if (value.contains('pharmacy')) {
+    if (value.contains('nhà thuốc') || value.contains('pharmacy')) {
       return '💊';
     }
-    if (value.contains('cafe')) {
-      return '☕';
-    }
-    if (value.contains('shopping')) {
-      return '🛍️';
-    }
-    if (value.contains('transport')) {
+    if (value.contains('bến xe') || value.contains('sân bay') || value.contains('ga tàu') || value.contains('transport')) {
       return '🚌';
     }
+    if (value.contains('cafe')) return '☕';
+    if (value.contains('shopping')) return '🛍️';
     return '📍';
   }
 }
 
-class _MapIllustration extends StatelessWidget {
-  const _MapIllustration();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: <Widget>[
-        Positioned.fill(child: CustomPaint(painter: _RoutePainter())),
-        const Positioned(
-          left: 74,
-          top: 54,
-          child: _RedMapMarker(icon: Icons.account_balance_rounded),
-        ),
-        const Positioned(
-          left: 176,
-          top: 138,
-          child: _RedMapMarker(icon: Icons.circle, iconSize: 12),
-        ),
-        const Positioned(
-          left: 154,
-          top: 214,
-          child: Text('🚶', style: TextStyle(fontSize: 20)),
-        ),
-      ],
-    );
-  }
-}
-
-class _RedMapMarker extends StatelessWidget {
-  const _RedMapMarker({required this.icon, this.iconSize = 20});
-
-  final IconData icon;
-  final double iconSize;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 52,
-      height: 52,
-      decoration: const BoxDecoration(
-        color: Color(0xFFFF3341),
-        shape: BoxShape.circle,
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Color(0x29FF3341),
-            blurRadius: 18,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Icon(icon, color: Colors.white, size: iconSize),
-    );
-  }
-}
-
-class _RoutePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = const Color(0xFF5B8DF8)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-
-    final Path path = Path()
-      ..moveTo(size.width * 0.18, size.height * 0.28)
-      ..quadraticBezierTo(
-        size.width * 0.36,
-        size.height * 0.12,
-        size.width * 0.55,
-        size.height * 0.24,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.74,
-        size.height * 0.35,
-        size.width * 0.88,
-        size.height * 0.18,
-      );
-
-    for (final PathMetric metric in path.computeMetrics()) {
-      double distance = 0;
-      const double dashWidth = 1.6;
-      const double dashSpace = 2.4;
-      while (distance < metric.length) {
-        final Path extract = metric.extractPath(
-          distance,
-          math.min(distance + dashWidth, metric.length),
-        );
-        canvas.drawPath(extract, paint);
-        distance += dashWidth + dashSpace;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
+// ── Shared widgets ────────────────────────────────────────────────────────────
 
 class _BackButtonCircle extends StatelessWidget {
   const _BackButtonCircle({required this.onTap});
@@ -540,7 +479,7 @@ class _BackButtonCircle extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.82),
+        color: Colors.white.withValues(alpha: 0.92),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x18000000),

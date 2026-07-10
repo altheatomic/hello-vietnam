@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
-import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/features/planner/data/models/trip_plan_request.dart';
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
+import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
 
 class TripBudgetPage extends StatefulWidget {
-  const TripBudgetPage({super.key});
+  const TripBudgetPage({super.key, this.wizard});
+
+  final TripWizardData? wizard;
 
   @override
   State<TripBudgetPage> createState() => _TripBudgetPageState();
@@ -22,9 +26,11 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
   final TextEditingController _budgetController = TextEditingController();
   String? _selectedRange;
   bool _isFormatting = false;
+  bool _isLoading = false;
 
   bool get _hasTypedBudget => _budgetController.text.trim().isNotEmpty;
-  bool get _canGenerate => _hasTypedBudget || _selectedRange != null;
+  bool get _canGenerate =>
+      !_isLoading && (_hasTypedBudget || _selectedRange != null);
 
   @override
   void initState() {
@@ -70,8 +76,43 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
     });
   }
 
-  void _showGeneratePlaceholder() {
-    context.push(AppRoutes.tripPlannerResult);
+  Future<void> _generate() async {
+    final wizard = widget.wizard;
+    final idProvince = wizard?.idProvince;
+    final nDays = wizard?.nDays;
+
+    if (idProvince == null || nDays == null) {
+      _showError('Missing trip details. Please start from the beginning.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await TripRepository().planTrip(
+        TripPlanRequest(
+          idProvince: idProvince,
+          nDays: nDays,
+          startDate: wizard?.startDate,
+        ),
+      );
+      if (!mounted) return;
+      context.push(AppRoutes.tripPlannerResult, extra: response);
+    } catch (e) {
+      if (!mounted) return;
+      _showError('Could not generate your trip. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ));
   }
 
   String _formatVndDigits(String digits) {
@@ -93,32 +134,34 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
     return PlannerStepScaffold(
       currentStep: 5,
       badgeIcon: Icons.account_balance_wallet_outlined,
-      title: context.l10n.ui('Choose your budget'),
-      subtitle: context.l10n.ui('Pick one option below to continue'),
+      title: 'Choose your budget',
+      subtitle: 'Pick one option below to continue',
       onBack: () => context.pop(),
       nextEnabled: _canGenerate,
-      nextLabel: context.l10n.ui('Generate'),
-      onNext: _showGeneratePlaceholder,
+      nextLabel: _isLoading ? 'Generating...' : 'Generate',
+      onNext: _isLoading ? null : _generate,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              context.l10n.ui('Option 1: Enter daily budget'),
-              style: const TextStyle(
+            if (_isLoading) ...<Widget>[
+              const _LoadingBanner(),
+              const SizedBox(height: 20),
+            ],
+            const Text(
+              'Option 1: Enter daily budget',
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF162235),
               ),
             ),
             const SizedBox(height: 10),
-            Text(
-              context.l10n.ui(
-                'Use an exact amount per day if you already know your spending limit.',
-              ),
-              style: const TextStyle(
+            const Text(
+              'Use an exact amount per day if you already know your spending limit.',
+              style: TextStyle(
                 fontSize: 14.5,
                 fontStyle: FontStyle.italic,
                 color: Color(0xFF6F7B8A),
@@ -133,29 +176,25 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
             ),
             if (_hasTypedBudget) ...<Widget>[
               const SizedBox(height: 10),
-              _SelectedBudgetHint(
-                label: context.l10n.ui(
-                  'Using exact daily budget. Price range will be ignored.',
-                ),
+              const _SelectedBudgetHint(
+                label: 'Using exact daily budget. Price range will be ignored.',
               ),
             ],
             const SizedBox(height: 24),
             const _OptionDivider(),
             const SizedBox(height: 24),
-            Text(
-              context.l10n.ui('Option 2: Choose price range'),
-              style: const TextStyle(
+            const Text(
+              'Option 2: Choose price range',
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF162235),
               ),
             ),
             const SizedBox(height: 10),
-            Text(
-              context.l10n.ui(
-                'Use a quick preset instead of typing an exact amount.',
-              ),
-              style: const TextStyle(
+            const Text(
+              'Use a quick preset instead of typing an exact amount.',
+              style: TextStyle(
                 fontSize: 14.5,
                 fontStyle: FontStyle.italic,
                 color: Color(0xFF6F7B8A),
@@ -169,20 +208,54 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: _BudgetRangeCard(
-                  label: context.l10n.ui(range),
+                  label: range,
                   selected: selected,
                   onTap: () => _selectRange(range),
                 ),
               );
             }),
             if (_selectedRange != null)
-              _SelectedBudgetHint(
-                label: context.l10n.ui(
-                  'Using price range. Typed daily budget will be ignored.',
-                ),
+              const _SelectedBudgetHint(
+                label: 'Using price range. Typed daily budget will be ignored.',
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LoadingBanner extends StatelessWidget {
+  const _LoadingBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FAFF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFB8E9FF)),
+      ),
+      child: const Row(
+        children: <Widget>[
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2.5),
+          ),
+          SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              'Generating your personalised itinerary…',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF3B495D),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -208,7 +281,7 @@ class _BudgetInputField extends StatelessWidget {
           BoxShadow(
             color: selected ? const Color(0x2222B7F1) : const Color(0x260F2C4F),
             blurRadius: selected ? 24 : 28,
-            offset: Offset(0, 14),
+            offset: const Offset(0, 14),
           ),
         ],
       ),
@@ -229,7 +302,7 @@ class _BudgetInputField extends StatelessWidget {
             color: Color(0xFF9AA3B2),
             size: 22,
           ),
-          hintText: context.l10n.ui('e.g. 800,000 VND per day'),
+          hintText: 'e.g. 800,000 VND per day',
           hintStyle: const TextStyle(
             fontSize: 15.5,
             color: Color(0xFF9AA3B2),
@@ -246,10 +319,8 @@ class _BudgetInputField extends StatelessWidget {
                   ),
                 ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 18,
-          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
         ),
       ),
     );
@@ -261,8 +332,8 @@ class _OptionDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: const <Widget>[
+    return const Row(
+      children: <Widget>[
         Expanded(child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2)),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 14),

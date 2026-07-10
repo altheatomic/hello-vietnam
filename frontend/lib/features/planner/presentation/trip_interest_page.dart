@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
-import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/features/planner/data/models/trip_plan_request.dart';
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
+import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
 
 class TripInterestPage extends StatefulWidget {
-  const TripInterestPage({super.key});
+  const TripInterestPage({super.key, this.wizard});
+
+  final TripWizardData? wizard;
 
   @override
   State<TripInterestPage> createState() => _TripInterestPageState();
@@ -14,13 +18,13 @@ class TripInterestPage extends StatefulWidget {
 class _TripInterestPageState extends State<TripInterestPage> {
   static const List<_InterestOption> _options = <_InterestOption>[
     _InterestOption(
-      id: 'culture',
+      id: 'culture_history',
       emoji: '🏛️',
       title: 'Culture & History',
       subtitle: 'Museums, temples, heritage',
     ),
     _InterestOption(
-      id: 'nature',
+      id: 'nature_outdoor',
       emoji: '🌿',
       title: 'Nature & Outdoor',
       subtitle: 'Hiking, beaches, parks',
@@ -39,7 +43,8 @@ class _TripInterestPageState extends State<TripInterestPage> {
     ),
   ];
 
-  final Set<String> _selectedIds = <String>{'entertainment'};
+  final Set<String> _selectedIds = <String>{};
+  bool _isLoading = false;
 
   void _toggleOption(String id) {
     setState(() {
@@ -51,8 +56,60 @@ class _TripInterestPageState extends State<TripInterestPage> {
     });
   }
 
-  void _showNextPlaceholder() {
-    context.push(AppRoutes.tripPlannerBudget);
+  Future<void> _generate() async {
+    final wizard = widget.wizard;
+    final nDays = wizard?.nDays;
+    final tripType = wizard?.tripType;
+    final isBusinessTrip = tripType == 'business';
+
+    // Validate: business trip needs lat/lng; leisure trip needs idProvince.
+    if (nDays == null) {
+      _showError('Missing trip details. Please start from the beginning.');
+      return;
+    }
+    if (isBusinessTrip) {
+      if (wizard?.targetLat == null || wizard?.targetLng == null) {
+        _showError('Missing business location. Please go back and enter an address.');
+        return;
+      }
+    } else {
+      if (wizard?.idProvince == null) {
+        _showError('Missing destination. Please start from the beginning.');
+        return;
+      }
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await TripRepository().planTrip(
+        TripPlanRequest(
+          idProvince: isBusinessTrip ? null : wizard?.idProvince,
+          nDays: nDays,
+          startDate: wizard?.startDate,
+          savePlan: true,
+          interestOptionIds: _selectedIds.toList(),
+          targetLat: isBusinessTrip ? wizard?.targetLat : null,
+          targetLng: isBusinessTrip ? wizard?.targetLng : null,
+        ),
+      );
+      if (!mounted) return;
+      context.push(AppRoutes.tripPlannerResult, extra: response);
+    } catch (e) {
+      if (!mounted) return;
+      _showError('Could not generate your trip. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ));
   }
 
   @override
@@ -60,27 +117,70 @@ class _TripInterestPageState extends State<TripInterestPage> {
     return PlannerStepScaffold(
       currentStep: 4,
       badgeIcon: Icons.explore_outlined,
-      title: context.l10n.ui('What is your interest?'),
-      subtitle: context.l10n.ui('Select your preferences (multiple choices)'),
+      title: 'What is your interest?',
+      subtitle: 'Select your preferences (multiple choices)',
       onBack: () => context.pop(),
-      nextEnabled: _selectedIds.isNotEmpty,
-      onNext: _showNextPlaceholder,
+      nextEnabled: _selectedIds.isNotEmpty && !_isLoading,
+      nextLabel: _isLoading ? 'Generating...' : 'Generate',
+      onNext: _isLoading ? null : _generate,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 8),
         child: Column(
-          children: _options.map((_InterestOption option) {
-            final bool selected = _selectedIds.contains(option.id);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _InterestCard(
-                option: option,
-                selected: selected,
-                onTap: () => _toggleOption(option.id),
-              ),
-            );
-          }).toList(),
+          children: <Widget>[
+            if (_isLoading) ...<Widget>[
+              _LoadingBanner(),
+              const SizedBox(height: 20),
+            ],
+            ..._options.map((_InterestOption option) {
+              final bool selected = _selectedIds.contains(option.id);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _InterestCard(
+                  option: option,
+                  selected: selected,
+                  onTap: _isLoading ? null : () => _toggleOption(option.id),
+                ),
+              );
+            }),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _LoadingBanner extends StatelessWidget {
+  const _LoadingBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FAFF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFB8E9FF)),
+      ),
+      child: const Row(
+        children: <Widget>[
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2.5),
+          ),
+          SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              'Generating your personalised itinerary…',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF3B495D),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -90,12 +190,12 @@ class _InterestCard extends StatelessWidget {
   const _InterestCard({
     required this.option,
     required this.selected,
-    required this.onTap,
+    this.onTap,
   });
 
   final _InterestOption option;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +235,7 @@ class _InterestCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      context.l10n.ui(option.title),
+                      option.title,
                       style: const TextStyle(
                         fontSize: 16.5,
                         fontWeight: FontWeight.w800,
@@ -144,7 +244,7 @@ class _InterestCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      context.l10n.ui(option.subtitle),
+                      option.subtitle,
                       style: const TextStyle(
                         fontSize: 14,
                         fontStyle: FontStyle.italic,
