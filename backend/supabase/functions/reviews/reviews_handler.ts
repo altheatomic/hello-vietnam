@@ -9,7 +9,7 @@ import {
   requireAuthenticatedUserId,
   requireAuthorizationHeader,
 } from "../auth/auth_guard.ts";
-import { ReviewService } from "./review_service.ts";
+import { ReviewModerationError, ReviewService } from "./review_service.ts";
 import {
   CONTENT_REGISTRY,
   type ContentRef,
@@ -69,7 +69,11 @@ export async function handleReviewsRequest(req: Request): Promise<Response> {
         return jsonResponse({ error: `Unsupported action: ${action}` }, 400);
     }
   } catch (error) {
-    if (error instanceof AuthorizationError || error instanceof RequestValidationError) {
+    if (
+      error instanceof AuthorizationError ||
+      error instanceof RequestValidationError ||
+      error instanceof ReviewModerationError
+    ) {
       return jsonResponse({ error: error.message }, error.statusCode);
     }
     const message = error instanceof Error ? error.message : "Unexpected error.";

@@ -9,6 +9,7 @@ import {
   parseUpsertPayload,
   summarizePublishedReviews,
 } from "./reviews_handler.ts";
+import { rejectBannedReview } from "./review_service.ts";
 
 Deno.test("parseUpsertPayload rejects unsupported content types", () => {
   assertThrows(
@@ -43,6 +44,14 @@ Deno.test("evaluateModeration blocks banned keywords before suspected matches", 
       },
     ]),
     { status: "blocked", moderationResult: "banned" },
+  );
+});
+
+Deno.test("rejectBannedReview rejects banned submissions before persistence", () => {
+  assertThrows(
+    () => rejectBannedReview({ status: "blocked", moderationResult: "banned" }),
+    Error,
+    "Review contains prohibited content.",
   );
 });
 

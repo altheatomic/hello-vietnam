@@ -7,6 +7,7 @@ import {
 import {
   CONTENT_REGISTRY,
   type ContentRef,
+  type ModerationDecision,
   type ModerationKeyword,
   type RatingSummaryRecord,
   type ReviewListPayload,
@@ -74,6 +75,7 @@ export class ReviewService {
   async upsertReview(userId: string, payload: UpsertReviewPayload): Promise<Record<string, unknown>> {
     await this.assertContentExists(payload);
     const decision = evaluateModeration(payload.comment, await this.getActiveKeywords());
+    rejectBannedReview(decision);
     const { data, error } = await this.client
       .from("reviews")
       .upsert({
@@ -96,20 +98,36 @@ export class ReviewService {
     contentType: ContentRef["contentType"],
     contentId: string,
   ): Promise<RatingSummaryRecord> {
+    let summary = emptySummary();
+
+    // A second verified pass narrows stale aggregate overwrites between requests.
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      summary = await this.calculateRatingSummary(contentType, contentId);
+      const { error: upsertError } = await this.client
+        .from("rating_summary")
+        .upsert({ content_type: contentType, content_id: contentId, ...summary } as never, {
+          onConflict: "content_type,content_id",
+        });
+      if (upsertError) throw new Error(`rating_summary: ${upsertError.message}`);
+
+      const stored = await this.getReviewSummary({ contentType, contentId });
+      if (ratingSummariesMatch(stored, summary)) return summary;
+    }
+
+    return summary;
+  }
+
+  private async calculateRatingSummary(
+    contentType: ContentRef["contentType"],
+    contentId: string,
+  ): Promise<RatingSummaryRecord> {
     const { data, error } = await this.client
       .from("reviews")
       .select("rating, status, updated_at")
       .eq("content_type", contentType)
       .eq("content_id", contentId);
     if (error) throw new Error(`reviews: ${error.message}`);
-    const summary = summarizePublishedReviews(data ?? []);
-    const { error: upsertError } = await this.client
-      .from("rating_summary")
-      .upsert({ content_type: contentType, content_id: contentId, ...summary } as never, {
-        onConflict: "content_type,content_id",
-      });
-    if (upsertError) throw new Error(`rating_summary: ${upsertError.message}`);
-    return summary;
+    return summarizePublishedReviews(data ?? []);
   }
 
   private async assertContentExists(payload: ContentRef): Promise<void> {
@@ -130,6 +148,19 @@ export class ReviewService {
       .eq("is_active", true);
     if (error) throw new Error(`moderation_keyword: ${error.message}`);
     return data ?? [];
+  }
+}
+
+export class ReviewModerationError extends Error {
+  constructor(message: string, readonly statusCode = 400) {
+    super(message);
+    this.name = "ReviewModerationError";
+  }
+}
+
+export function rejectBannedReview(decision: ModerationDecision): void {
+  if (decision.moderationResult === "banned") {
+    throw new ReviewModerationError("Review contains prohibited content.");
   }
 }
 
@@ -156,4 +187,18 @@ function emptySummary(): RatingSummaryRecord {
     rating_5_count: 0,
     last_reviewed_at: null,
   };
+}
+
+function ratingSummariesMatch(
+  first: RatingSummaryRecord,
+  second: RatingSummaryRecord,
+): boolean {
+  return first.average_rating === second.average_rating &&
+    first.review_count === second.review_count &&
+    first.rating_1_count === second.rating_1_count &&
+    first.rating_2_count === second.rating_2_count &&
+    first.rating_3_count === second.rating_3_count &&
+    first.rating_4_count === second.rating_4_count &&
+    first.rating_5_count === second.rating_5_count &&
+    first.last_reviewed_at === second.last_reviewed_at;
 }
