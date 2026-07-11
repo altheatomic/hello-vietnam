@@ -83,7 +83,7 @@ export async function handleReviewsRequest(req: Request): Promise<Response> {
 
 export function parseContentRef(value: JsonObject): ContentRef {
   const contentType = requiredString(value.contentType, "contentType");
-  if (!(contentType in CONTENT_REGISTRY)) {
+  if (!Object.hasOwn(CONTENT_REGISTRY, contentType)) {
     throw new RequestValidationError("Invalid contentType.");
   }
   const contentId = requiredString(value.contentId, "contentId");

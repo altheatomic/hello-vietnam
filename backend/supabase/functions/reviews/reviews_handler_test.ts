@@ -25,6 +25,20 @@ Deno.test("parseUpsertPayload rejects unsupported content types", () => {
   );
 });
 
+Deno.test("parseUpsertPayload rejects inherited content type names", () => {
+  assertThrows(
+    () =>
+      parseUpsertPayload({
+        contentType: "toString",
+        contentId: "00000000-0000-0000-0000-000000000001",
+        rating: 5,
+        comment: "Great",
+      }),
+    Error,
+    "Invalid contentType",
+  );
+});
+
 Deno.test("normalizeReviewText removes Vietnamese diacritics and normalizes whitespace", () => {
   assertEquals(normalizeReviewText("  Pho   Bo  "), "pho bo");
 });
