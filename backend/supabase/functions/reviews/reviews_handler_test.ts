@@ -47,6 +47,19 @@ Deno.test("evaluateModeration blocks banned keywords before suspected matches", 
   );
 });
 
+Deno.test("evaluateModeration preserves regex syntax and case", () => {
+  assertEquals(
+    evaluateModeration("AB", [
+      {
+        normalized_keyword: "^[A-Z]{2}$",
+        match_type: "regex",
+        severity: "banned",
+      },
+    ]),
+    { status: "blocked", moderationResult: "banned" },
+  );
+});
+
 Deno.test("rejectBannedReview rejects banned submissions before persistence", () => {
   assertThrows(
     () => rejectBannedReview({ status: "blocked", moderationResult: "banned" }),

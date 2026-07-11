@@ -38,6 +38,7 @@ export type ReviewListPayload = ContentRef & {
 };
 
 export type ModerationKeyword = {
+  keyword?: string;
   normalized_keyword: string;
   match_type: string;
   severity: string;
@@ -76,7 +77,7 @@ export function evaluateModeration(
   let hasSuspectedMatch = false;
 
   for (const keyword of keywords) {
-    if (!matchesKeyword(normalizedComment, keyword)) continue;
+    if (!matchesKeyword(comment, normalizedComment, keyword)) continue;
     if (keyword.severity === "banned") {
       return { status: "blocked", moderationResult: "banned" };
     }
@@ -118,17 +119,23 @@ export function summarizePublishedReviews(
   };
 }
 
-function matchesKeyword(comment: string, keyword: ModerationKeyword): boolean {
-  const pattern = normalizeReviewText(keyword.normalized_keyword);
-  if (!pattern) return false;
-  if (keyword.match_type === "exact") return comment === pattern;
-  if (keyword.match_type === "contains") return comment.includes(pattern);
+function matchesKeyword(
+  comment: string,
+  normalizedComment: string,
+  keyword: ModerationKeyword,
+): boolean {
   if (keyword.match_type === "regex") {
+    const pattern = keyword.keyword ?? keyword.normalized_keyword;
+    if (!pattern) return false;
     try {
       return new RegExp(pattern, "u").test(comment);
     } catch {
       return false;
     }
   }
+  const pattern = normalizeReviewText(keyword.normalized_keyword);
+  if (!pattern) return false;
+  if (keyword.match_type === "exact") return normalizedComment === pattern;
+  if (keyword.match_type === "contains") return normalizedComment.includes(pattern);
   return false;
 }

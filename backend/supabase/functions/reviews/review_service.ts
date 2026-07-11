@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   evaluateModeration,
-  summarizePublishedReviews,
 } from "./review_types.ts";
 import {
   CONTENT_REGISTRY,
@@ -98,36 +97,15 @@ export class ReviewService {
     contentType: ContentRef["contentType"],
     contentId: string,
   ): Promise<RatingSummaryRecord> {
-    let summary = emptySummary();
-
-    // A second verified pass narrows stale aggregate overwrites between requests.
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      summary = await this.calculateRatingSummary(contentType, contentId);
-      const { error: upsertError } = await this.client
-        .from("rating_summary")
-        .upsert({ content_type: contentType, content_id: contentId, ...summary } as never, {
-          onConflict: "content_type,content_id",
-        });
-      if (upsertError) throw new Error(`rating_summary: ${upsertError.message}`);
-
-      const stored = await this.getReviewSummary({ contentType, contentId });
-      if (ratingSummariesMatch(stored, summary)) return summary;
-    }
-
-    return summary;
-  }
-
-  private async calculateRatingSummary(
-    contentType: ContentRef["contentType"],
-    contentId: string,
-  ): Promise<RatingSummaryRecord> {
     const { data, error } = await this.client
-      .from("reviews")
-      .select("rating, status, updated_at")
-      .eq("content_type", contentType)
-      .eq("content_id", contentId);
-    if (error) throw new Error(`reviews: ${error.message}`);
-    return summarizePublishedReviews(data ?? []);
+      .rpc("refresh_rating_summary", {
+        p_content_type: contentType,
+        p_content_id: contentId,
+      })
+      .single();
+    if (error) throw new Error(`refresh_rating_summary: ${error.message}`);
+    if (!data) throw new Error("refresh_rating_summary returned no summary.");
+    return data as RatingSummaryRecord;
   }
 
   private async assertContentExists(payload: ContentRef): Promise<void> {
@@ -144,7 +122,7 @@ export class ReviewService {
   private async getActiveKeywords(): Promise<ModerationKeyword[]> {
     const { data, error } = await this.client
       .from("moderation_keyword")
-      .select("normalized_keyword, match_type, severity")
+      .select("keyword, normalized_keyword, match_type, severity")
       .eq("is_active", true);
     if (error) throw new Error(`moderation_keyword: ${error.message}`);
     return data ?? [];
@@ -187,18 +165,4 @@ function emptySummary(): RatingSummaryRecord {
     rating_5_count: 0,
     last_reviewed_at: null,
   };
-}
-
-function ratingSummariesMatch(
-  first: RatingSummaryRecord,
-  second: RatingSummaryRecord,
-): boolean {
-  return first.average_rating === second.average_rating &&
-    first.review_count === second.review_count &&
-    first.rating_1_count === second.rating_1_count &&
-    first.rating_2_count === second.rating_2_count &&
-    first.rating_3_count === second.rating_3_count &&
-    first.rating_4_count === second.rating_4_count &&
-    first.rating_5_count === second.rating_5_count &&
-    first.last_reviewed_at === second.last_reviewed_at;
 }
