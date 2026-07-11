@@ -3,7 +3,10 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/features/reviews/domain/review_models.dart';
 
 typedef ReviewComposerSubmit =
-    Future<void> Function({required int rating, required String comment});
+    Future<UpsertReviewResult> Function({
+      required int rating,
+      required String comment,
+    });
 
 class ReviewComposerSheet extends StatefulWidget {
   const ReviewComposerSheet({
@@ -49,9 +52,12 @@ class _ReviewComposerSheetState extends State<ReviewComposerSheet> {
 
     setState(() => _isSubmitting = true);
     try {
-      await widget.onSubmit(rating: _selectedRating, comment: comment);
+      final UpsertReviewResult result = await widget.onSubmit(
+        rating: _selectedRating,
+        comment: comment,
+      );
       if (!mounted) return;
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(result);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

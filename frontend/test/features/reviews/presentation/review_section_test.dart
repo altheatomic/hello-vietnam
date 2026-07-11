@@ -145,6 +145,121 @@ void main() {
     expect(find.text('star-5 page 1 comment 0'), findsOneWidget);
     expect(find.text('all page 2 comment 0'), findsNothing);
   });
+
+  testWidgets('submit review updates summary and shows edit CTA', (
+    WidgetTester tester,
+  ) async {
+    RatingSummary currentSummary = const RatingSummary(
+      averageRating: 4.0,
+      reviewCount: 2,
+      rating1Count: 0,
+      rating2Count: 0,
+      rating3Count: 0,
+      rating4Count: 2,
+      rating5Count: 0,
+    );
+    List<ReviewEntry> currentItems = const <ReviewEntry>[
+      ReviewEntry(
+        id: 'review-old',
+        userName: 'Alex',
+        rating: 4,
+        comment: 'Solid bowl.',
+        updatedAtLabel: '2026-07-10',
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ReviewSection(
+              contentType: ReviewContentType.food,
+              contentId: 'food-1',
+              itemTitle: 'Pho',
+              initialSummary: currentSummary,
+              summaryLoader: () async => currentSummary,
+              myReviewLoader: () async => const MyReviewState(review: null),
+              loader: ({
+                required int page,
+                required int pageSize,
+                int? ratingFilter,
+              }) async {
+                return ReviewListPage(
+                  items: currentItems,
+                  page: page,
+                  pageSize: pageSize,
+                  totalCount: currentItems.length,
+                  hasMore: false,
+                );
+              },
+              upsertReview: ({required int rating, required String comment}) async {
+                currentSummary = const RatingSummary(
+                  averageRating: 4.3,
+                  reviewCount: 3,
+                  rating1Count: 0,
+                  rating2Count: 0,
+                  rating3Count: 0,
+                  rating4Count: 2,
+                  rating5Count: 1,
+                );
+                currentItems = const <ReviewEntry>[
+                  ReviewEntry(
+                    id: 'review-3',
+                    userName: 'You',
+                    rating: 5,
+                    comment: 'Great place',
+                    updatedAtLabel: '2026-07-12',
+                  ),
+                  ReviewEntry(
+                    id: 'review-old',
+                    userName: 'Alex',
+                    rating: 4,
+                    comment: 'Solid bowl.',
+                    updatedAtLabel: '2026-07-10',
+                  ),
+                ];
+                return const UpsertReviewResult(
+                  summary: RatingSummary(
+                    averageRating: 4.3,
+                    reviewCount: 3,
+                    rating1Count: 0,
+                    rating2Count: 0,
+                    rating3Count: 0,
+                    rating4Count: 2,
+                    rating5Count: 1,
+                  ),
+                  review: ReviewEntry(
+                    id: 'review-3',
+                    userName: 'You',
+                    rating: 5,
+                    comment: 'Great place',
+                    updatedAtLabel: '2026-07-12',
+                  ),
+                );
+              },
+              listHeight: 160,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.text('Write a review'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('review-cta')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Write a review'), findsWidgets);
+    await tester.enterText(find.byType(TextField), 'Great place');
+    await tester.tap(find.text('Publish review'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit your review'), findsOneWidget);
+    expect(find.text('3 reviews'), findsOneWidget);
+    expect(find.text('Great place'), findsOneWidget);
+    expect(find.text('4.3'), findsOneWidget);
+  });
 }
 
 class _LoadCall {

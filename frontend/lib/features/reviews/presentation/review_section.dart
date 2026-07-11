@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/features/reviews/data/review_repository.dart';
 import 'package:hellovietnam/features/reviews/domain/review_models.dart';
+import 'package:hellovietnam/features/reviews/presentation/review_composer_sheet.dart';
 
 typedef ReviewSummaryLoader = Future<RatingSummary> Function();
 typedef ReviewPageLoader =
@@ -13,6 +14,11 @@ typedef ReviewPageLoader =
       int? ratingFilter,
     });
 typedef MyReviewLoader = Future<MyReviewState> Function();
+typedef ReviewUpsertCallback =
+    Future<UpsertReviewResult> Function({
+      required int rating,
+      required String comment,
+    });
 
 class ReviewSection extends StatefulWidget {
   const ReviewSection({
@@ -25,6 +31,7 @@ class ReviewSection extends StatefulWidget {
     this.summaryLoader,
     this.loader,
     this.myReviewLoader,
+    this.upsertReview,
     this.pageSize = 10,
     this.listHeight = 420,
   });
@@ -37,6 +44,7 @@ class ReviewSection extends StatefulWidget {
   final ReviewSummaryLoader? summaryLoader;
   final ReviewPageLoader? loader;
   final MyReviewLoader? myReviewLoader;
+  final ReviewUpsertCallback? upsertReview;
   final int pageSize;
   final double listHeight;
 
@@ -222,6 +230,70 @@ class _ReviewSectionState extends State<ReviewSection> {
     await _loadFirstPage();
   }
 
+  Future<UpsertReviewResult> _submitReview({
+    required int rating,
+    required String comment,
+  }) {
+    final ReviewUpsertCallback? upsertReview = widget.upsertReview;
+    if (upsertReview != null) {
+      return upsertReview(rating: rating, comment: comment);
+    }
+    return _repository.upsertReview(
+      contentType: widget.contentType!,
+      contentId: widget.contentId,
+      rating: rating,
+      comment: comment,
+    );
+  }
+
+  Future<void> _openComposer() async {
+    if (widget.contentType == null) {
+      return;
+    }
+
+    final UpsertReviewResult? result =
+        await showModalBottomSheet<UpsertReviewResult>(
+          context: context,
+          isScrollControlled: true,
+          builder: (BuildContext context) {
+            return ReviewComposerSheet(
+              itemTitle: widget.itemTitle,
+              initialReview: _myReview,
+              submitLabel: _myReview == null ? 'Publish review' : 'Update review',
+              onSubmit: ({
+                required int rating,
+                required String comment,
+              }) => _submitReview(rating: rating, comment: comment),
+            );
+          },
+        );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    final int? previousFilter = _activeRatingFilter;
+    setState(() {
+      _summary = result.summary;
+      _myReview = result.review;
+      _activeRatingFilter = null;
+    });
+
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
+
+    if (previousFilter == null) {
+      setState(() {
+        _items
+          ..removeWhere((ReviewEntry item) => item.id == result.review.id)
+          ..insert(0, result.review);
+      });
+    }
+
+    await _loadFirstPage();
+  }
+
   String get _ctaLabel =>
       _myReview == null ? 'Write a review' : 'Edit your review';
 
@@ -246,7 +318,7 @@ class _ReviewSectionState extends State<ReviewSection> {
           alignment: Alignment.centerLeft,
           child: FilledButton.tonalIcon(
             key: const ValueKey<String>('review-cta'),
-            onPressed: () {},
+            onPressed: _openComposer,
             icon: const Icon(Icons.rate_review_outlined),
             label: Text(_ctaLabel),
           ),
