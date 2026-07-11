@@ -108,10 +108,12 @@ export function parseUpsertPayload(value: JsonObject): UpsertReviewPayload {
 
 export function parseReviewListPayload(value: JsonObject): ReviewListPayload {
   const content = parseContentRef(value);
+  const ratingFilter = optionalRatingFilter(value.ratingFilter);
   return {
     ...content,
     page: boundedPositiveInt(value.page, 1, 100000),
     pageSize: boundedPositiveInt(value.pageSize, 20, 100),
+    ...(ratingFilter === undefined ? {} : { ratingFilter }),
   };
 }
 
@@ -147,6 +149,15 @@ function requiredString(value: unknown, fieldName: string): string {
 function boundedPositiveInt(value: unknown, fallback: number, max: number): number {
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, max) : fallback;
+}
+
+function optionalRatingFilter(value: unknown): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 5) {
+    throw new RequestValidationError("ratingFilter must be an integer between 1 and 5.");
+  }
+  return parsed;
 }
 
 function isJsonObject(value: unknown): value is JsonObject {

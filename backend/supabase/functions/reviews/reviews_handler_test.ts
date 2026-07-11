@@ -6,17 +6,20 @@ import {
 import {
   evaluateModeration,
   normalizeReviewText,
+  parseReviewListPayload,
   parseUpsertPayload,
   summarizePublishedReviews,
 } from "./reviews_handler.ts";
 import { rejectBannedReview } from "./review_service.ts";
+
+const validContentId = "11111111-1111-4111-8111-111111111111";
 
 Deno.test("parseUpsertPayload rejects unsupported content types", () => {
   assertThrows(
     () =>
       parseUpsertPayload({
         contentType: "hotel",
-        contentId: "00000000-0000-0000-0000-000000000001",
+        contentId: validContentId,
         rating: 5,
         comment: "Great",
       }),
@@ -30,12 +33,42 @@ Deno.test("parseUpsertPayload rejects inherited content type names", () => {
     () =>
       parseUpsertPayload({
         contentType: "toString",
-        contentId: "00000000-0000-0000-0000-000000000001",
+        contentId: validContentId,
         rating: 5,
         comment: "Great",
       }),
     Error,
     "Invalid contentType",
+  );
+});
+
+Deno.test("parseReviewListPayload accepts an optional rating filter", () => {
+  const payload = parseReviewListPayload({
+    contentType: "food",
+    contentId: validContentId,
+    ratingFilter: 4,
+  });
+
+  assertEquals(payload.ratingFilter, 4);
+  assertEquals(
+    parseReviewListPayload({
+      contentType: "food",
+      contentId: validContentId,
+    }).ratingFilter,
+    undefined,
+  );
+});
+
+Deno.test("parseReviewListPayload rejects an invalid rating filter", () => {
+  assertThrows(
+    () =>
+      parseReviewListPayload({
+        contentType: "food",
+        contentId: validContentId,
+        ratingFilter: 6,
+      }),
+    Error,
+    "ratingFilter must be an integer between 1 and 5.",
   );
 });
 

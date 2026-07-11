@@ -35,6 +35,7 @@ export type UpsertReviewPayload = ContentRef & {
 export type ReviewListPayload = ContentRef & {
   page: number;
   pageSize: number;
+  ratingFilter?: number;
 };
 
 export type ModerationKeyword = {

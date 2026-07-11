@@ -40,12 +40,16 @@ export class ReviewService {
   async getReviews(payload: ReviewListPayload): Promise<Record<string, unknown>> {
     const from = (payload.page - 1) * payload.pageSize;
     const to = from + payload.pageSize - 1;
-    const { data, count, error } = await this.client
+    let query = this.client
       .from("reviews")
       .select("id_review, rating, comment, status, moderation_result, created_at, updated_at", { count: "exact" })
       .eq("content_type", payload.contentType)
       .eq("content_id", payload.contentId)
-      .eq("status", "published")
+      .eq("status", "published");
+    if (payload.ratingFilter !== undefined) {
+      query = query.eq("rating", payload.ratingFilter);
+    }
+    const { data, count, error } = await query
       .order("updated_at", { ascending: false })
       .range(from, to);
     if (error) throw new Error(`reviews: ${error.message}`);
