@@ -1,0 +1,159 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import {
+  evaluateModeration,
+  summarizePublishedReviews,
+} from "./review_types.ts";
+import {
+  CONTENT_REGISTRY,
+  type ContentRef,
+  type ModerationKeyword,
+  type RatingSummaryRecord,
+  type ReviewListPayload,
+  type UpsertReviewPayload,
+} from "./review_types.ts";
+
+type ReviewRow = {
+  id_review: string;
+  rating: number;
+  comment: string;
+  status: string;
+  moderation_result: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export class ReviewService {
+  constructor(private readonly client: SupabaseClient) {}
+
+  async getReviewSummary(payload: ContentRef): Promise<RatingSummaryRecord> {
+    const { data, error } = await this.client
+      .from("rating_summary")
+      .select("average_rating, review_count, rating_1_count, rating_2_count, rating_3_count, rating_4_count, rating_5_count, last_reviewed_at")
+      .eq("content_type", payload.contentType)
+      .eq("content_id", payload.contentId)
+      .maybeSingle();
+    if (error) throw new Error(`rating_summary: ${error.message}`);
+    return data ?? emptySummary();
+  }
+
+  async getReviews(payload: ReviewListPayload): Promise<Record<string, unknown>> {
+    const from = (payload.page - 1) * payload.pageSize;
+    const to = from + payload.pageSize - 1;
+    const { data, count, error } = await this.client
+      .from("reviews")
+      .select("id_review, rating, comment, status, moderation_result, created_at, updated_at", { count: "exact" })
+      .eq("content_type", payload.contentType)
+      .eq("content_id", payload.contentId)
+      .eq("status", "published")
+      .order("updated_at", { ascending: false })
+      .range(from, to);
+    if (error) throw new Error(`reviews: ${error.message}`);
+    const totalCount = count ?? 0;
+    return {
+      items: (data ?? []).map(mapReviewRow),
+      page: payload.page,
+      pageSize: payload.pageSize,
+      totalCount,
+      hasMore: payload.page * payload.pageSize < totalCount,
+    };
+  }
+
+  async getMyReview(userId: string, payload: ContentRef): Promise<Record<string, unknown> | null> {
+    const { data, error } = await this.client
+      .from("reviews")
+      .select("id_review, rating, comment, status, moderation_result, created_at, updated_at")
+      .eq("id_user", userId)
+      .eq("content_type", payload.contentType)
+      .eq("content_id", payload.contentId)
+      .maybeSingle();
+    if (error) throw new Error(`reviews: ${error.message}`);
+    return data ? mapReviewRow(data) : null;
+  }
+
+  async upsertReview(userId: string, payload: UpsertReviewPayload): Promise<Record<string, unknown>> {
+    await this.assertContentExists(payload);
+    const decision = evaluateModeration(payload.comment, await this.getActiveKeywords());
+    const { data, error } = await this.client
+      .from("reviews")
+      .upsert({
+        id_user: userId,
+        content_type: payload.contentType,
+        content_id: payload.contentId,
+        rating: payload.rating,
+        comment: payload.comment,
+        status: decision.status,
+        moderation_result: decision.moderationResult,
+      } as never, { onConflict: "id_user,content_type,content_id" })
+      .select("id_review, rating, comment, status, moderation_result, created_at, updated_at")
+      .single();
+    if (error) throw new Error(`reviews: ${error.message}`);
+    const summary = await this.refreshRatingSummary(payload.contentType, payload.contentId);
+    return { review: mapReviewRow(data), summary };
+  }
+
+  async refreshRatingSummary(
+    contentType: ContentRef["contentType"],
+    contentId: string,
+  ): Promise<RatingSummaryRecord> {
+    const { data, error } = await this.client
+      .from("reviews")
+      .select("rating, status, updated_at")
+      .eq("content_type", contentType)
+      .eq("content_id", contentId);
+    if (error) throw new Error(`reviews: ${error.message}`);
+    const summary = summarizePublishedReviews(data ?? []);
+    const { error: upsertError } = await this.client
+      .from("rating_summary")
+      .upsert({ content_type: contentType, content_id: contentId, ...summary } as never, {
+        onConflict: "content_type,content_id",
+      });
+    if (upsertError) throw new Error(`rating_summary: ${upsertError.message}`);
+    return summary;
+  }
+
+  private async assertContentExists(payload: ContentRef): Promise<void> {
+    const entry = CONTENT_REGISTRY[payload.contentType];
+    const { data, error } = await this.client
+      .from(entry.table)
+      .select(entry.idColumn)
+      .eq(entry.idColumn, payload.contentId)
+      .maybeSingle();
+    if (error) throw new Error(`${entry.table}: ${error.message}`);
+    if (!data) throw new Error("Content not found.");
+  }
+
+  private async getActiveKeywords(): Promise<ModerationKeyword[]> {
+    const { data, error } = await this.client
+      .from("moderation_keyword")
+      .select("normalized_keyword, match_type, severity")
+      .eq("is_active", true);
+    if (error) throw new Error(`moderation_keyword: ${error.message}`);
+    return data ?? [];
+  }
+}
+
+function mapReviewRow(row: ReviewRow): Record<string, unknown> {
+  return {
+    id: row.id_review,
+    rating: row.rating,
+    comment: row.comment,
+    status: row.status,
+    moderationResult: row.moderation_result,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function emptySummary(): RatingSummaryRecord {
+  return {
+    average_rating: null,
+    review_count: 0,
+    rating_1_count: 0,
+    rating_2_count: 0,
+    rating_3_count: 0,
+    rating_4_count: 0,
+    rating_5_count: 0,
+    last_reviewed_at: null,
+  };
+}
