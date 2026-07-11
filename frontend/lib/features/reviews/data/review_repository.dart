@@ -39,7 +39,7 @@ class ReviewRepository {
         'contentId': contentId,
         'page': page,
         'pageSize': pageSize,
-        if (ratingFilter != null) 'rating': ratingFilter,
+        if (ratingFilter != null) 'ratingFilter': ratingFilter,
         'sort': 'newest',
       },
     );

@@ -47,6 +47,7 @@ class ItemDetailRequest {
 
 class ItemDetail {
   final String id;
+  final String? reviewContentId;
   final String name;
   final DetailCategory category;
   final List<String> images;
@@ -56,10 +57,10 @@ class ItemDetail {
   final String ratingLabel;
   final String description;
   final String whatToExpect;
-  final List<ItemReview> reviews;
 
   const ItemDetail({
     required this.id,
+    this.reviewContentId,
     required this.name,
     required this.category,
     required this.images,
@@ -69,11 +70,13 @@ class ItemDetail {
     required this.ratingLabel,
     required this.description,
     required this.whatToExpect,
-    required this.reviews,
   });
+
+  String get effectiveReviewContentId => reviewContentId ?? id;
 
   ItemDetail copyWith({
     String? id,
+    String? reviewContentId,
     String? name,
     DetailCategory? category,
     List<String>? images,
@@ -83,10 +86,10 @@ class ItemDetail {
     String? ratingLabel,
     String? description,
     String? whatToExpect,
-    List<ItemReview>? reviews,
   }) {
     return ItemDetail(
       id: id ?? this.id,
+      reviewContentId: reviewContentId ?? this.reviewContentId,
       name: name ?? this.name,
       category: category ?? this.category,
       images: images ?? this.images,
@@ -96,7 +99,6 @@ class ItemDetail {
       ratingLabel: ratingLabel ?? this.ratingLabel,
       description: description ?? this.description,
       whatToExpect: whatToExpect ?? this.whatToExpect,
-      reviews: reviews ?? this.reviews,
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'package:hellovietnam/features/reviews/domain/review_models.dart';
+
 enum DetailCategory {
   activities,
   culture,
@@ -56,5 +58,18 @@ enum DetailCategory {
       default:
         return DetailCategory.activities;
     }
+  }
+}
+
+ReviewContentType? reviewContentTypeForDetailCategory(DetailCategory category) {
+  switch (category) {
+    case DetailCategory.activities:
+      return ReviewContentType.activity;
+    case DetailCategory.culture:
+      return ReviewContentType.culture;
+    case DetailCategory.food:
+      return ReviewContentType.food;
+    case DetailCategory.localProducts:
+      return ReviewContentType.localProduct;
   }
 }

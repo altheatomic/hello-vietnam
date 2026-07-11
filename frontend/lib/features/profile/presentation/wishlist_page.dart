@@ -425,7 +425,6 @@ class _WishlistPageState extends State<WishlistPage> {
       ratingLabel: item.rating.toStringAsFixed(1),
       description: item.detailDescription,
       whatToExpect: item.highlightsDescription,
-      reviews: const <ItemReview>[],
     );
   }
 

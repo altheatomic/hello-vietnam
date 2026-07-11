@@ -39,6 +39,18 @@ class RatingSummary {
   final int rating5Count;
   final String? lastReviewedAt;
 
+  int countForStar(int star) => switch (star) {
+    1 => rating1Count,
+    2 => rating2Count,
+    3 => rating3Count,
+    4 => rating4Count,
+    5 => rating5Count,
+    _ => 0,
+  };
+
+  int get totalStarCount =>
+      rating1Count + rating2Count + rating3Count + rating4Count + rating5Count;
+
   factory RatingSummary.fromJson(Map<String, dynamic> json) {
     return RatingSummary(
       averageRating: _doubleValue(json['average_rating']),

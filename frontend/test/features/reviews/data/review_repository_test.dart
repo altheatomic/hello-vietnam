@@ -38,7 +38,7 @@ void main() {
       'contentId': 'food-1',
       'page': 1,
       'pageSize': 10,
-      'rating': 5,
+      'ratingFilter': 5,
       'sort': 'newest',
     });
   });
