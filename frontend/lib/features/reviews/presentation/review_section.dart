@@ -27,7 +27,6 @@ class ReviewSection extends StatefulWidget {
     required this.contentId,
     required this.itemTitle,
     this.repository,
-    this.initialSummary,
     this.summaryLoader,
     this.loader,
     this.myReviewLoader,
@@ -40,7 +39,6 @@ class ReviewSection extends StatefulWidget {
   final String contentId;
   final String itemTitle;
   final ReviewRepository? repository;
-  final RatingSummary? initialSummary;
   final ReviewSummaryLoader? summaryLoader;
   final ReviewPageLoader? loader;
   final MyReviewLoader? myReviewLoader;
@@ -58,6 +56,7 @@ class _ReviewSectionState extends State<ReviewSection> {
   ReviewEntry? _myReview;
   final List<ReviewEntry> _items = <ReviewEntry>[];
   bool _isLoadingSummary = false;
+  bool _isLoadingMyReview = false;
   bool _isLoadingFirstPage = false;
   bool _isLoadingMore = false;
   bool _hasMore = false;
@@ -71,7 +70,6 @@ class _ReviewSectionState extends State<ReviewSection> {
   @override
   void initState() {
     super.initState();
-    _summary = widget.initialSummary;
     _scrollController = ScrollController()..addListener(_handleScroll);
     unawaited(_loadInitialData());
   }
@@ -123,6 +121,7 @@ class _ReviewSectionState extends State<ReviewSection> {
       return;
     }
 
+    setState(() => _isLoadingMyReview = true);
     try {
       final MyReviewState state =
           await (myReviewLoader?.call() ??
@@ -135,6 +134,10 @@ class _ReviewSectionState extends State<ReviewSection> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _myReview = null);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingMyReview = false);
+      }
     }
   }
 
@@ -295,7 +298,9 @@ class _ReviewSectionState extends State<ReviewSection> {
   }
 
   String get _ctaLabel =>
-      _myReview == null ? 'Write a review' : 'Edit your review';
+      _myReview == null
+          ? 'Write a review'
+          : 'Edit your review';
 
   @override
   Widget build(BuildContext context) {
@@ -458,13 +463,6 @@ class _SectionHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              const Spacer(),
-              if (isLoading)
-                const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
             ],
           ),
           const SizedBox(height: 4),

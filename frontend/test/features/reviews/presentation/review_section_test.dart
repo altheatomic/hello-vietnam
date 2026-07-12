@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hellovietnam/features/reviews/domain/review_models.dart';
@@ -14,6 +16,109 @@ void main() {
     rating5Count: 10,
   );
 
+  testWidgets('review section shows placeholder summary while summary is loading', (
+    WidgetTester tester,
+  ) async {
+    final Completer<RatingSummary> summaryCompleter = Completer<RatingSummary>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ReviewSection(
+              contentType: ReviewContentType.food,
+              contentId: 'food-1',
+              itemTitle: 'Pho',
+              summaryLoader: () => summaryCompleter.future,
+              myReviewLoader: () async => const MyReviewState(review: null),
+              loader: ({
+                required int page,
+                required int pageSize,
+                int? ratingFilter,
+              }) async {
+                return const ReviewListPage(
+                  items: <ReviewEntry>[],
+                  page: 1,
+                  pageSize: 10,
+                  totalCount: 0,
+                  hasMore: false,
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey<String>('review-summary-average')), findsOneWidget);
+    expect(find.text('0.0'), findsOneWidget);
+    expect(find.text('0 reviews'), findsOneWidget);
+    expect(find.text('No ratings yet'), findsOneWidget);
+
+    summaryCompleter.complete(summary);
+    await tester.pumpAndSettle();
+
+    expect(find.text('4.6'), findsOneWidget);
+    expect(find.text('20 reviews'), findsOneWidget);
+  });
+
+  testWidgets('review CTA shows write immediately and updates to edit later', (
+    WidgetTester tester,
+  ) async {
+    final Completer<MyReviewState> myReviewCompleter = Completer<MyReviewState>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ReviewSection(
+              contentType: ReviewContentType.food,
+              contentId: 'food-1',
+              itemTitle: 'Pho',
+              summaryLoader: () async => summary,
+              myReviewLoader: () => myReviewCompleter.future,
+              loader: ({
+                required int page,
+                required int pageSize,
+                int? ratingFilter,
+              }) async {
+                return const ReviewListPage(
+                  items: <ReviewEntry>[],
+                  page: 1,
+                  pageSize: 10,
+                  totalCount: 0,
+                  hasMore: false,
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.text('Write a review'), findsOneWidget);
+    expect(find.text('Edit your review'), findsNothing);
+
+    myReviewCompleter.complete(
+      const MyReviewState(
+        review: ReviewEntry(
+          id: 'review-1',
+          userName: 'You',
+          rating: 5,
+          comment: 'Great place',
+          updatedAtLabel: '2026-07-12',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit your review'), findsOneWidget);
+  });
+
   testWidgets('review section loads next page once near list end', (
     WidgetTester tester,
   ) async {
@@ -27,7 +132,6 @@ void main() {
               contentType: ReviewContentType.food,
               contentId: 'food-1',
               itemTitle: 'Pho',
-              initialSummary: summary,
               summaryLoader: () async => summary,
               myReviewLoader: () async => const MyReviewState(review: null),
               loader: ({
@@ -89,7 +193,6 @@ void main() {
               contentType: ReviewContentType.food,
               contentId: 'food-1',
               itemTitle: 'Pho',
-              initialSummary: summary,
               summaryLoader: () async => summary,
               myReviewLoader: () async => const MyReviewState(review: null),
               loader: ({
@@ -176,7 +279,6 @@ void main() {
               contentType: ReviewContentType.food,
               contentId: 'food-1',
               itemTitle: 'Pho',
-              initialSummary: currentSummary,
               summaryLoader: () async => currentSummary,
               myReviewLoader: () async => const MyReviewState(review: null),
               loader: ({
@@ -259,6 +361,99 @@ void main() {
     expect(find.text('3 reviews'), findsOneWidget);
     expect(find.text('Great place'), findsOneWidget);
     expect(find.text('4.3'), findsOneWidget);
+  });
+
+  testWidgets('submit review resets active rating filter and reloads first page', (
+    WidgetTester tester,
+  ) async {
+    final List<_LoadCall> calls = <_LoadCall>[];
+    RatingSummary currentSummary = summary;
+    List<ReviewEntry> currentItems = const <ReviewEntry>[
+      ReviewEntry(
+        id: 'review-old',
+        userName: 'Alex',
+        rating: 5,
+        comment: 'Existing filtered review',
+        updatedAtLabel: '2026-07-10',
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ReviewSection(
+              contentType: ReviewContentType.food,
+              contentId: 'food-1',
+              itemTitle: 'Pho',
+              summaryLoader: () async => currentSummary,
+              myReviewLoader: () async => const MyReviewState(review: null),
+              loader: ({
+                required int page,
+                required int pageSize,
+                int? ratingFilter,
+              }) async {
+                calls.add(_LoadCall(page: page, ratingFilter: ratingFilter));
+                return ReviewListPage(
+                  items: currentItems,
+                  page: page,
+                  pageSize: pageSize,
+                  totalCount: currentItems.length,
+                  hasMore: false,
+                );
+              },
+              upsertReview: ({required int rating, required String comment}) async {
+                currentSummary = const RatingSummary(
+                  averageRating: 4.7,
+                  reviewCount: 21,
+                  rating1Count: 1,
+                  rating2Count: 1,
+                  rating3Count: 2,
+                  rating4Count: 6,
+                  rating5Count: 11,
+                );
+                currentItems = const <ReviewEntry>[
+                  ReviewEntry(
+                    id: 'review-new',
+                    userName: 'You',
+                    rating: 5,
+                    comment: 'Fresh review after reset',
+                    updatedAtLabel: '2026-07-13',
+                  ),
+                ];
+                return UpsertReviewResult(
+                  summary: currentSummary,
+                  review: currentItems.first,
+                );
+              },
+              listHeight: 160,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('review-filter-5')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Existing filtered review'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('review-cta')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Fresh review after reset');
+    await tester.tap(find.text('Publish review'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Fresh review after reset'), findsOneWidget);
+    expect(
+      calls,
+      <_LoadCall>[
+        const _LoadCall(page: 1),
+        const _LoadCall(page: 1, ratingFilter: 5),
+        const _LoadCall(page: 1),
+      ],
+    );
   });
 }
 

@@ -226,38 +226,6 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
     }
   }
 
-  RatingSummary _initialReviewSummary(ItemDetail detail) {
-    final int reviewCount = detail.reviewCount;
-    if (reviewCount == 0) {
-      return const RatingSummary(
-        averageRating: 0,
-        reviewCount: 0,
-        rating1Count: 0,
-        rating2Count: 0,
-        rating3Count: 0,
-        rating4Count: 0,
-        rating5Count: 0,
-      );
-    }
-
-    final int lowerStar = detail.rating.floor().clamp(1, 5);
-    final int upperStar = detail.rating.ceil().clamp(1, 5);
-    final int upperCount = lowerStar == upperStar
-        ? reviewCount
-        : ((detail.rating - lowerStar) * reviewCount).round().clamp(0, reviewCount);
-    final int lowerCount = reviewCount - upperCount;
-
-    return RatingSummary(
-      averageRating: detail.rating,
-      reviewCount: reviewCount,
-      rating1Count: lowerStar == 1 ? lowerCount : upperStar == 1 ? upperCount : 0,
-      rating2Count: lowerStar == 2 ? lowerCount : upperStar == 2 ? upperCount : 0,
-      rating3Count: lowerStar == 3 ? lowerCount : upperStar == 3 ? upperCount : 0,
-      rating4Count: lowerStar == 4 ? lowerCount : upperStar == 4 ? upperCount : 0,
-      rating5Count: lowerStar == 5 ? lowerCount : upperStar == 5 ? upperCount : 0,
-    );
-  }
-
   ReviewContentType? get _reviewContentType {
     if (!_detail.hasReviewTarget) {
       return null;
@@ -325,7 +293,6 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                       contentId: _detail.effectiveReviewContentId,
                       itemTitle: _detail.name,
                       repository: widget.reviewRepository,
-                      initialSummary: _initialReviewSummary(_detail),
                     ),
                     const SizedBox(height: 18),
                   ],

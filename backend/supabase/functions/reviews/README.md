@@ -3,7 +3,7 @@
 Invoke this function with a POST JSON body containing an `action`.
 
 - `getReviewSummary`: `contentType`, `contentId`
-- `getReviews`: `contentType`, `contentId`, optional `page` and `pageSize`
+- `getReviews`: `contentType`, `contentId`, optional `page`, `pageSize`, and `ratingFilter`
 - `getMyReview`: authenticated; `contentType`, `contentId`
 - `upsertReview`: authenticated; `contentType`, `contentId`, `rating` (1-5), and `comment`
 

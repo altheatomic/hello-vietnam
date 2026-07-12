@@ -11,6 +11,7 @@ import {
   summarizePublishedReviews,
 } from "./reviews_handler.ts";
 import { rejectBannedReview } from "./review_service.ts";
+import { CONTENT_REGISTRY } from "./review_types.ts";
 
 const validContentId = "11111111-1111-4111-8111-111111111111";
 
@@ -70,6 +71,16 @@ Deno.test("parseReviewListPayload rejects an invalid rating filter", () => {
     Error,
     "ratingFilter must be an integer between 1 and 5.",
   );
+});
+
+Deno.test("content registry matches the current database id columns", () => {
+  assertEquals(CONTENT_REGISTRY.activity.idCandidates, ["id"]);
+  assertEquals(CONTENT_REGISTRY.culture.idCandidates, ["id"]);
+  assertEquals(CONTENT_REGISTRY.food.idCandidates, ["id_food"]);
+  assertEquals(CONTENT_REGISTRY.local_product.idCandidates, ["id"]);
+  assertEquals(CONTENT_REGISTRY.place.idCandidates, ["id_place"]);
+  assertEquals(CONTENT_REGISTRY.province.idCandidates, ["id_province"]);
+  assertEquals(CONTENT_REGISTRY.old_province.idCandidates, ["id_province"]);
 });
 
 Deno.test("normalizeReviewText removes Vietnamese diacritics and normalizes whitespace", () => {

@@ -9,17 +9,17 @@ export type ReviewContentType =
 
 export type ContentRegistryEntry = {
   table: string;
-  idColumn: string;
+  idCandidates: string[];
 };
 
 export const CONTENT_REGISTRY: Record<ReviewContentType, ContentRegistryEntry> = {
-  activity: { table: "activity", idColumn: "id_activity" },
-  culture: { table: "culture", idColumn: "id_culture" },
-  food: { table: "food", idColumn: "id_food" },
-  local_product: { table: "local_products", idColumn: "id_local_product" },
-  place: { table: "place", idColumn: "id_place" },
-  province: { table: "province", idColumn: "id_province" },
-  old_province: { table: "old_province", idColumn: "id_province" },
+  activity: { table: "activity", idCandidates: ["id"] },
+  culture: { table: "culture", idCandidates: ["id"] },
+  food: { table: "food", idCandidates: ["id_food"] },
+  local_product: { table: "local_products", idCandidates: ["id"] },
+  place: { table: "place", idCandidates: ["id_place"] },
+  province: { table: "province", idCandidates: ["id_province"] },
+  old_province: { table: "old_province", idCandidates: ["id_province"] },
 };
 
 export type ContentRef = {

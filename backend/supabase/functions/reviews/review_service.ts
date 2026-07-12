@@ -39,27 +39,32 @@ export class ReviewService {
 
   async getReviews(payload: ReviewListPayload): Promise<Record<string, unknown>> {
     const from = (payload.page - 1) * payload.pageSize;
-    const to = from + payload.pageSize - 1;
+    const to = from + payload.pageSize;
     let query = this.client
       .from("reviews")
-      .select("id_review, rating, comment, status, moderation_result, created_at, updated_at", { count: "exact" })
+      .select("id_review, rating, comment, status, moderation_result, created_at, updated_at")
       .eq("content_type", payload.contentType)
       .eq("content_id", payload.contentId)
       .eq("status", "published");
     if (payload.ratingFilter !== undefined) {
       query = query.eq("rating", payload.ratingFilter);
     }
-    const { data, count, error } = await query
+    const { data, error } = await query
       .order("updated_at", { ascending: false })
       .range(from, to);
     if (error) throw new Error(`reviews: ${error.message}`);
-    const totalCount = count ?? 0;
+    const fetchedRows = data ?? [];
+    const hasMore = fetchedRows.length > payload.pageSize;
+    const visibleRows = hasMore
+      ? fetchedRows.slice(0, payload.pageSize)
+      : fetchedRows;
+    const totalCount = from + visibleRows.length + (hasMore ? 1 : 0);
     return {
-      items: (data ?? []).map(mapReviewRow),
+      items: visibleRows.map(mapReviewRow),
       page: payload.page,
       pageSize: payload.pageSize,
       totalCount,
-      hasMore: payload.page * payload.pageSize < totalCount,
+      hasMore,
     };
   }
 
@@ -114,13 +119,32 @@ export class ReviewService {
 
   private async assertContentExists(payload: ContentRef): Promise<void> {
     const entry = CONTENT_REGISTRY[payload.contentType];
-    const { data, error } = await this.client
-      .from(entry.table)
-      .select(entry.idColumn)
-      .eq(entry.idColumn, payload.contentId)
-      .maybeSingle();
-    if (error) throw new Error(`${entry.table}: ${error.message}`);
-    if (!data) throw new Error("Content not found.");
+    let sawMissingColumn = false;
+
+    for (const idColumn of entry.idCandidates) {
+      const { data, error } = await this.client
+        .from(entry.table)
+        .select(idColumn)
+        .eq(idColumn, payload.contentId)
+        .maybeSingle();
+
+      if (!error) {
+        if (data) return;
+        continue;
+      }
+
+      if (isMissingColumnError(error.message, idColumn)) {
+        sawMissingColumn = true;
+        continue;
+      }
+
+      throw new Error(`${entry.table}: ${error.message}`);
+    }
+
+    if (sawMissingColumn) {
+      throw new Error(`No compatible id column found for ${entry.table}.`);
+    }
+    throw new Error("Content not found.");
   }
 
   private async getActiveKeywords(): Promise<ModerationKeyword[]> {
@@ -169,4 +193,8 @@ function emptySummary(): RatingSummaryRecord {
     rating_5_count: 0,
     last_reviewed_at: null,
   };
+}
+
+function isMissingColumnError(message: string, column: string): boolean {
+  return message.includes(`column ${column} does not exist`);
 }
