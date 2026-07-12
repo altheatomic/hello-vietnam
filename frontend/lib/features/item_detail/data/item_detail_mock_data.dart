@@ -61,7 +61,6 @@ List<String> _sanitizeImages(
 final Map<String, ItemDetail> _mockDetails = <String, ItemDetail>{
   'activities:ha1': ItemDetail(
     id: 'ha1',
-    reviewContentId: '11111111-1111-4111-8111-111111111111',
     name: 'Hue Ancient Capital',
     category: DetailCategory.activities,
     images: const <String>['', '', '', ''],
@@ -76,7 +75,6 @@ final Map<String, ItemDetail> _mockDetails = <String, ItemDetail>{
   ),
   'activities:ha2': ItemDetail(
     id: 'ha2',
-    reviewContentId: '22222222-2222-4222-8222-222222222222',
     name: 'Hue Festival',
     category: DetailCategory.activities,
     images: const <String>['', ''],
@@ -91,7 +89,6 @@ final Map<String, ItemDetail> _mockDetails = <String, ItemDetail>{
   ),
   'culture:hc1': ItemDetail(
     id: 'hc1',
-    reviewContentId: '33333333-3333-4333-8333-333333333333',
     name: 'The Imperial City of Hue',
     category: DetailCategory.culture,
     images: const <String>['', '', ''],
@@ -106,7 +103,6 @@ final Map<String, ItemDetail> _mockDetails = <String, ItemDetail>{
   ),
   'food:hf1': ItemDetail(
     id: 'hf1',
-    reviewContentId: '44444444-4444-4444-8444-444444444444',
     name: 'Traditional Cuisines',
     category: DetailCategory.food,
     images: const <String>['', '', ''],
@@ -121,7 +117,6 @@ final Map<String, ItemDetail> _mockDetails = <String, ItemDetail>{
   ),
   'food:hf2': ItemDetail(
     id: 'hf2',
-    reviewContentId: '55555555-5555-4555-8555-555555555555',
     name: 'Bun Bo Hue',
     category: DetailCategory.food,
     images: const <String>['', ''],
@@ -136,7 +131,6 @@ final Map<String, ItemDetail> _mockDetails = <String, ItemDetail>{
   ),
   'local_products:hp1': ItemDetail(
     id: 'hp1',
-    reviewContentId: '66666666-6666-4666-8666-666666666666',
     name: 'Incense Choke',
     category: DetailCategory.localProducts,
     images: const <String>['', '', ''],

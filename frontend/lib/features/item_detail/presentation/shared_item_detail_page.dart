@@ -258,11 +258,19 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
     );
   }
 
+  ReviewContentType? get _reviewContentType {
+    if (!_detail.hasReviewTarget) {
+      return null;
+    }
+    return reviewContentTypeForDetailCategory(_detail.category);
+  }
+
   @override
   Widget build(BuildContext context) {
     final insertedSections =
         widget.insertedSectionsBuilder?.call(context, _detail) ??
         const <Widget>[];
+    final ReviewContentType? reviewContentType = _reviewContentType;
     final ThemeData theme = Theme.of(context);
 
     return Scaffold(
@@ -309,16 +317,18 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     const SizedBox(height: 28),
                   ] else
                     const SizedBox(height: 28),
-                  _SectionTitle(title: context.l10n.ui('Reviews')),
-                  const SizedBox(height: 14),
-                  ReviewSection(
-                    contentType: reviewContentTypeForDetailCategory(_detail.category),
-                    contentId: _detail.effectiveReviewContentId,
-                    itemTitle: _detail.name,
-                    repository: widget.reviewRepository,
-                    initialSummary: _initialReviewSummary(_detail),
-                  ),
-                  const SizedBox(height: 18),
+                  if (reviewContentType != null) ...<Widget>[
+                    _SectionTitle(title: context.l10n.ui('Reviews')),
+                    const SizedBox(height: 14),
+                    ReviewSection(
+                      contentType: reviewContentType,
+                      contentId: _detail.effectiveReviewContentId,
+                      itemTitle: _detail.name,
+                      repository: widget.reviewRepository,
+                      initialSummary: _initialReviewSummary(_detail),
+                    ),
+                    const SizedBox(height: 18),
+                  ],
                   _SectionTitle(title: context.l10n.ui('What to expect')),
                   const SizedBox(height: 10),
                   Text(

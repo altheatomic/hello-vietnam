@@ -1,6 +1,11 @@
 import 'detail_category.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 
+final RegExp _uuidPattern = RegExp(
+  r'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+  caseSensitive: false,
+);
+
 class ItemDetailRequest {
   final String id;
   final String name;
@@ -73,6 +78,10 @@ class ItemDetail {
   });
 
   String get effectiveReviewContentId => reviewContentId ?? id;
+
+  bool get hasReviewTarget =>
+      (reviewContentId != null && reviewContentId!.trim().isNotEmpty) ||
+      _uuidPattern.hasMatch(id);
 
   ItemDetail copyWith({
     String? id,

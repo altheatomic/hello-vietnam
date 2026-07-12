@@ -58,6 +58,16 @@ class _ReviewComposerSheetState extends State<ReviewComposerSheet> {
       );
       if (!mounted) return;
       Navigator.of(context).pop(result);
+    } catch (error) {
+      if (!mounted) return;
+      final String message = error.toString().trim();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message.isEmpty ? 'Could not publish your review.' : message,
+          ),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
