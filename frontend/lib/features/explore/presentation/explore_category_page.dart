@@ -75,14 +75,13 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
     });
 
     try {
-      final List<List<ExploreItem>> results = await Future.wait(
-        <Future<List<ExploreItem>>>[
-          _repository.loadCategoryItems(DetailCategory.activities),
-          _repository.loadCategoryItems(DetailCategory.culture),
-          _repository.loadCategoryItems(DetailCategory.food),
-          _repository.loadCategoryItems(DetailCategory.localProducts),
-        ],
-      );
+      final List<List<ExploreItem>> results =
+          await Future.wait(<Future<List<ExploreItem>>>[
+            _repository.loadCategoryItems(DetailCategory.activities),
+            _repository.loadCategoryItems(DetailCategory.culture),
+            _repository.loadCategoryItems(DetailCategory.food),
+            _repository.loadCategoryItems(DetailCategory.localProducts),
+          ]);
 
       if (!mounted) return;
 
@@ -250,7 +249,8 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
           SliverFillRemaining(
             hasScrollBody: false,
             child: _PageStateMessage(
-              title: 'No ${_filterLabels[_selectedFilter].toLowerCase()} found.',
+              title:
+                  'No ${_filterLabels[_selectedFilter].toLowerCase()} found.',
               subtitle: currentCategory.emptyMessage,
             ),
           )
@@ -276,9 +276,7 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.only(bottom: 24),
-                child: Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
               ),
             ),
         ],
@@ -409,12 +407,16 @@ class _ResultCardState extends State<_ResultCard> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to update wishlist.')),
+        SnackBar(
+          content: Text(context.l10n.ui('Please sign in to update wishlist.')),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Update wishlist failed: $error')),
+        SnackBar(
+          content: Text('${context.l10n.ui('Update wishlist failed')}: $error'),
+        ),
       );
     }
   }

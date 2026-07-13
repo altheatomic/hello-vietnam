@@ -32,7 +32,6 @@ import '../features/loyalty/presentation/loyalty_page.dart';
 
 import '../features/forum/presentation/forum_page.dart';
 import '../features/forum/presentation/forum_profile_page.dart';
-import '../features/forum/presentation/forum_notifications_page.dart';
 import '../features/forum/presentation/create_post_page.dart';
 import '../features/forum/domain/create_forum_post_request.dart';
 import '../features/forum/presentation/forum_saved_posts_page.dart';
@@ -122,7 +121,6 @@ class AppRoutes {
   static const forum = '/forum';
   static const forumMe = '/forum/me';
   static const forumProfile = '/forum/profile/:authorId';
-  static const forumNotifications = '/forum/notifications';
   static const forumSaved = '/forum/saved';
   static const forumCreate = '/forum/create';
   static const forumPost = '/forum/post/:postId';
@@ -291,7 +289,7 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.forum,
-        builder: (c, s) => const ForumPage(),
+        redirect: (context, state) => AppRoutes.messages,
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
@@ -303,11 +301,6 @@ GoRouter buildRouter() {
         path: AppRoutes.forumProfile,
         builder: (c, s) =>
             ForumProfilePage(authorId: s.pathParameters['authorId'] ?? ''),
-      ),
-      GoRoute(
-        parentNavigatorKey: rootNavigatorKey,
-        path: AppRoutes.forumNotifications,
-        builder: (c, s) => const ForumNotificationsPage(),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
@@ -852,7 +845,8 @@ class _CustomBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final BorderRadius radius = BorderRadius.circular(30);
+    final BorderRadius radius = BorderRadius.circular(34);
+    const EdgeInsets navPadding = EdgeInsets.symmetric(horizontal: 14);
     final Color shadowColor = isDark
         ? Colors.black.withValues(alpha: 0.36)
         : Colors.black.withValues(alpha: 0.10);
@@ -860,7 +854,7 @@ class _CustomBottomNav extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+      minimum: const EdgeInsets.fromLTRB(8, 0, 8, 10),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: radius,
@@ -878,7 +872,7 @@ class _CustomBottomNav extends StatelessWidget {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
             child: Container(
-              height: 68,
+              height: 70,
               decoration: BoxDecoration(
                 borderRadius: radius,
                 gradient: LinearGradient(
@@ -903,58 +897,64 @@ class _CustomBottomNav extends StatelessWidget {
               ),
               child: LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
-                  final double slotWidth = constraints.maxWidth / _items.length;
-                  final double indicatorWidth = (slotWidth - 8)
-                      .clamp(54.0, 70.0)
+                  final double availableWidth =
+                      constraints.maxWidth - navPadding.horizontal;
+                  final double slotWidth = availableWidth / _items.length;
+                  final double indicatorWidth = (slotWidth - 14)
+                      .clamp(54.0, 68.0)
                       .toDouble();
 
-                  return Stack(
-                    alignment: Alignment.centerLeft,
-                    children: <Widget>[
-                      TweenAnimationBuilder<double>(
-                        tween: Tween<double>(
-                          begin: selectedVisualIndex.toDouble(),
-                          end: selectedVisualIndex.toDouble(),
+                  return Padding(
+                    padding: navPadding,
+                    child: Stack(
+                      alignment: Alignment.centerLeft,
+                      children: <Widget>[
+                        TweenAnimationBuilder<double>(
+                          tween: Tween<double>(
+                            begin: selectedVisualIndex.toDouble(),
+                            end: selectedVisualIndex.toDouble(),
+                          ),
+                          duration: const Duration(milliseconds: 360),
+                          curve: Curves.easeOutCubic,
+                          builder:
+                              (
+                                BuildContext context,
+                                double value,
+                                Widget? child,
+                              ) {
+                                return Transform.translate(
+                                  offset: Offset(
+                                    (value * slotWidth) +
+                                        ((slotWidth - indicatorWidth) / 2),
+                                    0,
+                                  ),
+                                  child: child,
+                                );
+                              },
+                          child: _NavSelectionIndicator(
+                            width: indicatorWidth,
+                            isDark: isDark,
+                          ),
                         ),
-                        duration: const Duration(milliseconds: 360),
-                        curve: Curves.easeOutCubic,
-                        builder:
-                            (
-                              BuildContext context,
-                              double value,
-                              Widget? child,
-                            ) {
-                              return Transform.translate(
-                                offset: Offset(
-                                  (value * slotWidth) +
-                                      ((slotWidth - indicatorWidth) / 2),
-                                  0,
-                                ),
-                                child: child,
-                              );
-                            },
-                        child: _NavSelectionIndicator(
-                          width: indicatorWidth,
-                          isDark: isDark,
+                        Row(
+                          children: List.generate(_items.length, (i) {
+                            final int? branchIndex = _branchIndexForVisual(i);
+                            final bool isSelected = i == selectedVisualIndex;
+                            return Expanded(
+                              child: _buildNavItem(
+                                context,
+                                _items[i],
+                                isSelected,
+                                branchIndex == null
+                                    ? () =>
+                                          context.go(AppRoutes.tripPlannerSaved)
+                                    : () => onTap(branchIndex),
+                              ),
+                            );
+                          }),
                         ),
-                      ),
-                      Row(
-                        children: List.generate(_items.length, (i) {
-                          final int? branchIndex = _branchIndexForVisual(i);
-                          final bool isSelected = i == selectedVisualIndex;
-                          return Expanded(
-                            child: _buildNavItem(
-                              context,
-                              _items[i],
-                              isSelected,
-                              branchIndex == null
-                                  ? () => context.go(AppRoutes.tripPlannerSaved)
-                                  : () => onTap(branchIndex),
-                            ),
-                          );
-                        }),
-                      ),
-                    ],
+                      ],
+                    ),
                   );
                 },
               ),
@@ -981,7 +981,7 @@ class _CustomBottomNav extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        height: 52,
+        height: 54,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1045,9 +1045,9 @@ class _NavSelectionIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: width,
-      height: 52,
+      height: 54,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

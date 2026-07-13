@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/config/env.dart';
 import '../core/data/reference_data_cache_repository.dart';
+import '../core/language/app_language.dart';
+import '../core/storage/local_storage.dart' as app_storage;
 import '../core/widgets/app_loading_screen.dart';
 import '../features/forum/data/forum_store.dart';
 import '../features/personalization/data/travel_preferences_repository.dart';
@@ -36,6 +38,8 @@ class _AppBootstrapState extends State<AppBootstrap> {
         anonKey: Env.supabaseAnonKey,
       );
 
+      await app_storage.LocalStorage.instance.initialize();
+      await AppLanguageController.instance.initialize();
       await ThemeController.instance.initialize();
       await TravelPreferencesRepository.instance.initialize();
       await ReferenceDataCacheRepository.instance.initialize();

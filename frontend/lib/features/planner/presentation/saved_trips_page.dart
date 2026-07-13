@@ -269,7 +269,7 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 10),
                                   child: _FilterChipButton(
-                                    label: filter.label,
+                                    label: context.l10n.ui(filter.label),
                                     selected: selected,
                                     onTap: () {
                                       setState(() {
@@ -307,7 +307,7 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                                   children: <Widget>[
                                     Expanded(
                                       child: Text(
-                                        entry.key,
+                                        context.l10n.ui(entry.key),
                                         style: const TextStyle(
                                           fontSize: 23,
                                           fontWeight: FontWeight.w800,
@@ -316,7 +316,9 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                                       ),
                                     ),
                                     Text(
-                                      '${entry.value.length} trips',
+                                      context.l10n.savedTripGroupCount(
+                                        entry.value.length,
+                                      ),
                                       style: const TextStyle(
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.w700,
@@ -405,7 +407,7 @@ class _SummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  '$totalTrips saved itineraries',
+                  context.l10n.savedItinerariesCount(totalTrips),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -414,7 +416,7 @@ class _SummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$remainingStops places still waiting to be checked off.',
+                  context.l10n.savedPlacesWaiting(remainingStops),
                   style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF667488),
@@ -541,7 +543,7 @@ class _SavedTripCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            trip.title,
+                            context.l10n.ui(trip.title),
                             style: const TextStyle(
                               fontSize: 18.5,
                               fontWeight: FontWeight.w800,
@@ -551,7 +553,7 @@ class _SavedTripCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            '${trip.destination} • ${trip.tripType}',
+                            '${context.l10n.ui(trip.destination)} • ${context.l10n.ui(trip.tripType)}',
                             style: const TextStyle(
                               fontSize: 14.5,
                               color: Color(0xFF5D6A7E),
@@ -560,7 +562,7 @@ class _SavedTripCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            trip.dateLabel,
+                            context.l10n.ui(trip.dateLabel),
                             style: const TextStyle(
                               fontSize: 13.5,
                               color: Color(0xFF8391A2),
@@ -578,15 +580,17 @@ class _SavedTripCard extends StatelessWidget {
                     Expanded(
                       child: _InfoPill(
                         icon: Icons.account_balance_wallet_outlined,
-                        label: trip.budgetLabel,
+                        label: context.l10n.ui(trip.budgetLabel),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: _InfoPill(
                         icon: Icons.checklist_rounded,
-                        label:
-                            '${trip.completedStops}/${trip.stops.length} completed',
+                        label: context.l10n.savedTripCompletedCount(
+                          trip.completedStops,
+                          trip.stops.length,
+                        ),
                       ),
                     ),
                   ],
@@ -605,7 +609,7 @@ class _SavedTripCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  trip.statusMessage,
+                  trip.statusMessage(context),
                   style: const TextStyle(
                     fontSize: 13.5,
                     color: Color(0xFF768496),
@@ -709,7 +713,7 @@ class _SavedStopTile extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                stop.title,
+                context.l10n.ui(stop.title),
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.w800,
@@ -723,7 +727,7 @@ class _SavedStopTile extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                stop.note,
+                context.l10n.ui(stop.note),
                 style: const TextStyle(
                   fontSize: 13.5,
                   color: Color(0xFF6E7C8F),
@@ -799,7 +803,7 @@ class _TripActionButton extends StatelessWidget {
           ),
           child: Center(
             child: Text(
-              label,
+              context.l10n.ui(label),
               style: TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w800,
@@ -878,7 +882,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        status.label,
+        context.l10n.ui(status.label),
         style: TextStyle(
           fontSize: 12.5,
           fontWeight: FontWeight.w800,
@@ -933,24 +937,30 @@ class _EmptySavedTripsState extends StatelessWidget {
             borderRadius: BorderRadius.circular(28),
             border: Border.all(color: const Color(0xFFD7F0F7)),
           ),
-          child: const Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(Icons.luggage_outlined, size: 42, color: Color(0xFF6F8093)),
-              SizedBox(height: 12),
+              const Icon(
+                Icons.luggage_outlined,
+                size: 42,
+                color: Color(0xFF6F8093),
+              ),
+              const SizedBox(height: 12),
               Text(
-                'No trips match this filter yet.',
-                style: TextStyle(
+                context.l10n.ui('No trips match this filter yet.'),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Try another filter or create a new itinerary from Trip Planner.',
+                context.l10n.ui(
+                  'Try another filter or create a new itinerary from Trip Planner.',
+                ),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14.5,
                   color: Color(0xFF718093),
                   height: 1.45,
@@ -1051,14 +1061,14 @@ class _SavedTrip {
     return _TripStatus.inProgress;
   }
 
-  String get statusMessage {
+  String statusMessage(BuildContext context) {
     switch (status) {
       case _TripStatus.upcoming:
-        return 'Everything is still planned and ready to go.';
+        return context.l10n.ui('Everything is still planned and ready to go.');
       case _TripStatus.inProgress:
-        return '$remainingStops places left to complete on this trip.';
+        return context.l10n.savedTripRemainingPlaces(remainingStops);
       case _TripStatus.completed:
-        return 'All planned places are marked as completed.';
+        return context.l10n.ui('All planned places are marked as completed.');
     }
   }
 

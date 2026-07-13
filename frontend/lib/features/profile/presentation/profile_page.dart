@@ -271,7 +271,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           _SettingRow(
                             icon: Icons.stars_rounded,
-                            title: 'Loyalty Rewards',
+                            title: context.l10n.ui('Loyalty Rewards'),
                             onTap: () => context.push(AppRoutes.loyalty),
                           ),
                         ],

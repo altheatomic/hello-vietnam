@@ -26,6 +26,7 @@ class _TripDurationPageState extends State<TripDurationPage> {
       nextEnabled: _selectedRange != null,
       onNext: () => context.push(AppRoutes.tripPlannerInterest),
       body: DateRangeCalendar(
+        scrollable: false,
         onRangeChanged: (DateTimeRange? range) =>
             setState(() => _selectedRange = range),
       ),

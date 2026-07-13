@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,7 +61,9 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
       if (!mounted) return;
       _refresh();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Loyalty updated successfully.')),
+        SnackBar(
+          content: Text(context.l10n.ui('Loyalty updated successfully.')),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -76,7 +79,11 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
     final String? route = _routeForAction(rule.actionType);
     if (route == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Daily login is awarded automatically.')),
+        SnackBar(
+          content: Text(
+            context.l10n.ui('Daily login is awarded automatically.'),
+          ),
+        ),
       );
       return;
     }

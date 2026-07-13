@@ -11,18 +11,24 @@ class PlannerStepScaffold extends StatelessWidget {
     required this.badgeIcon,
     required this.title,
     required this.subtitle,
-    required this.body,
     required this.onBack,
+    this.body,
+    this.bodySlivers = const <Widget>[],
+    this.stickyBodyHeader,
+    this.stickyBodyHeaderExtent = 76,
     this.onNext,
     this.nextEnabled = false,
     this.nextLabel = 'Next',
-  });
+  }) : assert(body != null || bodySlivers.length > 0);
 
   final int currentStep;
   final IconData badgeIcon;
   final String title;
   final String subtitle;
-  final Widget body;
+  final Widget? body;
+  final List<Widget> bodySlivers;
+  final Widget? stickyBodyHeader;
+  final double stickyBodyHeaderExtent;
   final VoidCallback onBack;
   final VoidCallback? onNext;
   final bool nextEnabled;
@@ -63,6 +69,8 @@ class PlannerStepScaffold extends StatelessWidget {
                   final double subtitleSize = tight ? 14.5 : 15.5;
                   final double badgeSize = tight ? 68 : 78;
                   final double badgeIconSize = tight ? 30 : 34;
+                  final double questionSize = tight ? 21 : 23;
+                  final double questionSubtitleSize = tight ? 15 : 16;
 
                   return Padding(
                     padding: EdgeInsets.fromLTRB(
@@ -105,34 +113,41 @@ class PlannerStepScaffold extends StatelessWidget {
                           currentStep: currentStep,
                           labelSize: tight ? 14 : 15,
                         ),
-                        SizedBox(height: tight ? 18 : 22),
-                        _BadgeIcon(
-                          icon: badgeIcon,
-                          size: badgeSize,
-                          iconSize: badgeIconSize,
-                        ),
-                        SizedBox(height: tight ? 18 : 22),
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: tight ? 21 : 23,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                            height: 1.08,
+                        SizedBox(height: tight ? 10 : 12),
+                        Expanded(
+                          child: CustomScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            slivers: <Widget>[
+                              SliverToBoxAdapter(
+                                child: _PlannerStepQuestionHeader(
+                                  badgeIcon: badgeIcon,
+                                  badgeSize: badgeSize,
+                                  badgeIconSize: badgeIconSize,
+                                  title: title,
+                                  subtitle: subtitle,
+                                  titleSize: questionSize,
+                                  subtitleSize: questionSubtitleSize,
+                                  compact: tight,
+                                ),
+                              ),
+                              if (stickyBodyHeader != null)
+                                SliverPersistentHeader(
+                                  pinned: true,
+                                  delegate: _StickyBodyHeaderDelegate(
+                                    extent: stickyBodyHeaderExtent,
+                                    child: stickyBodyHeader!,
+                                  ),
+                                ),
+                              if (bodySlivers.isNotEmpty)
+                                ...bodySlivers
+                              else
+                                SliverToBoxAdapter(child: body!),
+                              const SliverToBoxAdapter(
+                                child: SizedBox(height: 8),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontSize: tight ? 15 : 16,
-                            fontStyle: FontStyle.italic,
-                            color: const Color(0xFF6F7B8A),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: tight ? 18 : 22),
-                        Expanded(child: body),
                         SizedBox(height: tight ? 10 : 14),
                         Row(
                           children: <Widget>[
@@ -157,6 +172,104 @@ class PlannerStepScaffold extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _PlannerStepQuestionHeader extends StatelessWidget {
+  const _PlannerStepQuestionHeader({
+    required this.badgeIcon,
+    required this.badgeSize,
+    required this.badgeIconSize,
+    required this.title,
+    required this.subtitle,
+    required this.titleSize,
+    required this.subtitleSize,
+    required this.compact,
+  });
+
+  final IconData badgeIcon;
+  final double badgeSize;
+  final double badgeIconSize;
+  final String title;
+  final String subtitle;
+  final double titleSize;
+  final double subtitleSize;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        top: compact ? 6 : 10,
+        bottom: compact ? 16 : 20,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _BadgeIcon(icon: badgeIcon, size: badgeSize, iconSize: badgeIconSize),
+          SizedBox(height: compact ? 18 : 22),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: titleSize,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+              height: 1.08,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: subtitleSize,
+              fontStyle: FontStyle.italic,
+              color: const Color(0xFF6F7B8A),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StickyBodyHeaderDelegate extends SliverPersistentHeaderDelegate {
+  const _StickyBodyHeaderDelegate({required this.extent, required this.child});
+
+  final double extent;
+  final Widget child;
+
+  @override
+  double get minExtent => extent;
+
+  @override
+  double get maxExtent => extent;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            Color(0xFFF1F6FE),
+            Color(0xFFDFF5FF),
+            Color(0xFFCCF6F1),
+          ],
+        ),
+      ),
+      child: Padding(padding: const EdgeInsets.only(bottom: 16), child: child),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickyBodyHeaderDelegate oldDelegate) {
+    return extent != oldDelegate.extent || child != oldDelegate.child;
   }
 }
 

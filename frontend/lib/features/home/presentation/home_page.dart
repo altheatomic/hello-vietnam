@@ -187,6 +187,20 @@ class _HomePageState extends State<HomePage>
                             ),
                           ),
                         ),
+                      if (!isDark)
+                        PositionedDirectional(
+                          top: statusBarHeight - 36,
+                          end: 112,
+                          child: _HomeSunHalo(pulse: _galaxyTwinkleController),
+                        ),
+                      if (!isDark)
+                        PositionedDirectional(
+                          top: statusBarHeight + 12,
+                          end: 56,
+                          child: _HomeDriftingClouds(
+                            drift: _galaxyTwinkleController,
+                          ),
+                        ),
                       Padding(
                         padding: EdgeInsets.fromLTRB(
                           AppConstants.pagePadding,
@@ -205,8 +219,12 @@ class _HomePageState extends State<HomePage>
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
+                                      fontFamily: 'CDAIndependence',
                                       fontSize: 27,
-                                      fontWeight: FontWeight.w800,
+                                      fontWeight: FontWeight.w600,
+                                      fontVariations: const <FontVariation>[
+                                        FontVariation('wght', 600),
+                                      ],
                                       color: isDark
                                           ? const Color(0xFFFFDFA3)
                                           : AppColors.accentGold,
@@ -576,6 +594,172 @@ class _HomeDecorativeOrb extends StatelessWidget {
   }
 }
 
+class _HomeSunHalo extends StatelessWidget {
+  const _HomeSunHalo({required this.pulse});
+
+  final Animation<double> pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: CustomPaint(
+        size: const Size(132, 116),
+        painter: _HomeSunHaloPainter(pulse: pulse),
+      ),
+    );
+  }
+}
+
+class _HomeSunHaloPainter extends CustomPainter {
+  const _HomeSunHaloPainter({required Animation<double> pulse})
+    : _pulse = pulse,
+      super(repaint: pulse);
+
+  final Animation<double> _pulse;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Offset center = Offset(size.width * 0.50, size.height * 0.50);
+    final double wave = (math.sin(_pulse.value * math.pi * 2) + 1) / 2;
+    final List<_SunRing> rings = <_SunRing>[
+      const _SunRing(56, 0.28),
+      const _SunRing(44, 0.34),
+      const _SunRing(32, 0.42),
+    ];
+
+    for (final _SunRing ring in rings) {
+      canvas.drawCircle(
+        center,
+        ring.radius,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8)
+          ..color = Colors.white.withValues(alpha: ring.alpha),
+      );
+      canvas.drawCircle(
+        center,
+        ring.radius,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.8
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.5)
+          ..color = Colors.white.withValues(alpha: ring.alpha + 0.08),
+      );
+    }
+
+    final double coreRadius = 17 + wave * 3.2;
+    final double coreAlpha = 0.78 + wave * 0.20;
+    final Paint corePaint = Paint()
+      ..shader = RadialGradient(
+        colors: <Color>[
+          Colors.white.withValues(alpha: 0.92 + wave * 0.08),
+          const Color(0xFFFFF176).withValues(alpha: coreAlpha),
+          const Color(0xFFFFE082).withValues(alpha: 0.54 + wave * 0.18),
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: coreRadius));
+
+    canvas.drawCircle(center, coreRadius, corePaint);
+    canvas.drawCircle(
+      center,
+      coreRadius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.1
+        ..color = Colors.white.withValues(alpha: 0.74 + wave * 0.18),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HomeSunHaloPainter oldDelegate) => false;
+}
+
+class _SunRing {
+  const _SunRing(this.radius, this.alpha);
+
+  final double radius;
+  final double alpha;
+}
+
+class _HomeDriftingClouds extends StatelessWidget {
+  const _HomeDriftingClouds({required this.drift});
+
+  final Animation<double> drift;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: CustomPaint(
+        size: const Size(240, 108),
+        painter: _HomeDriftingCloudsPainter(drift: drift),
+      ),
+    );
+  }
+}
+
+class _HomeDriftingCloudsPainter extends CustomPainter {
+  const _HomeDriftingCloudsPainter({required Animation<double> drift})
+    : _drift = drift,
+      super(repaint: drift);
+
+  final Animation<double> _drift;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double t = _drift.value * math.pi * 2;
+    _drawCloud(
+      canvas,
+      Offset(26 + math.sin(t) * 10, 56),
+      2.16,
+      Colors.white.withValues(alpha: 0.88),
+    );
+    _drawCloud(
+      canvas,
+      Offset(116 + math.sin(t + math.pi * 0.8) * 12, 34),
+      1.72,
+      Colors.white.withValues(alpha: 0.78),
+    );
+    _drawCloud(
+      canvas,
+      Offset(178 + math.sin(t + math.pi * 1.35) * 9, 60),
+      1.48,
+      Colors.white.withValues(alpha: 0.70),
+    );
+  }
+
+  void _drawCloud(Canvas canvas, Offset origin, double scale, Color color) {
+    final Paint cloudPaint = Paint()
+      ..color = color
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.2);
+
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: origin + Offset(18 * scale, 8 * scale),
+        width: 42 * scale,
+        height: 15 * scale,
+      ),
+      cloudPaint,
+    );
+    canvas.drawCircle(
+      origin + Offset(8 * scale, 7 * scale),
+      8 * scale,
+      cloudPaint,
+    );
+    canvas.drawCircle(
+      origin + Offset(19 * scale, 3 * scale),
+      10 * scale,
+      cloudPaint,
+    );
+    canvas.drawCircle(
+      origin + Offset(30 * scale, 7 * scale),
+      7 * scale,
+      cloudPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HomeDriftingCloudsPainter oldDelegate) => false;
+}
+
 class _GalaxyHeaderPainter extends CustomPainter {
   const _GalaxyHeaderPainter({required Animation<double> twinkle})
     : _twinkle = twinkle,
@@ -819,13 +1003,17 @@ class _FavoriteRecommendationCardState
       );
       if (!mounted || result != null) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to update wishlist.')),
+        SnackBar(
+          content: Text(context.l10n.ui('Please sign in to update wishlist.')),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${context.l10n.ui('Update wishlist failed')}: $error'),
+        ),
+      );
     }
   }
 

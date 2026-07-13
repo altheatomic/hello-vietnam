@@ -2,16 +2,12 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../data/ai_search_service.dart';
 
-enum _AiSearchView {
-  initial,
-  analyzing,
-  resultFood,
-  resultObject,
-}
+enum _AiSearchView { initial, analyzing, resultFood, resultObject }
 
 class AiSearchPage extends StatefulWidget {
   const AiSearchPage({super.key});
@@ -102,7 +98,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Khong mo duoc anh: $error')),
+        SnackBar(
+          content: Text('${context.l10n.ui('Could not open image')}: $error'),
+        ),
       );
     }
   }
@@ -127,9 +125,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
       setState(() {
         _view = _AiSearchView.initial;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
     }
   }
 
@@ -144,8 +142,8 @@ class _AiSearchPageState extends State<AiSearchPage> {
         child: _view == _AiSearchView.initial
             ? _buildInitialView(context)
             : _view == _AiSearchView.analyzing
-                ? _buildAnalyzingView(context)
-                : _buildResultView(context, _activeData),
+            ? _buildAnalyzingView(context)
+            : _buildResultView(context, _activeData),
       ),
     );
   }
@@ -386,10 +384,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
               duration: const Duration(milliseconds: 900),
               curve: Curves.easeInOut,
               builder: (BuildContext context, double value, Widget? child) {
-                return Transform.scale(
-                  scale: value,
-                  child: child,
-                );
+                return Transform.scale(scale: value, child: child);
               },
               child: Container(
                 width: 112,
@@ -475,27 +470,32 @@ class _AiSearchPageState extends State<AiSearchPage> {
                             : Image.asset(
                                 data.heroAssetPath,
                                 fit: BoxFit.cover,
-                                errorBuilder: (
-                                  BuildContext context,
-                                  Object error,
-                                  StackTrace? stackTrace,
-                                ) {
-                                  return Container(
-                                    decoration: const BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: <Color>[
-                                          Color(0xFF5B6073),
-                                          Color(0xFF202736),
-                                        ],
-                                      ),
-                                    ),
-                                    child: const Center(
-                                      child: Icon(Icons.image_not_supported, color: Colors.white70, size: 36),
-                                    ),
-                                  );
-                                },
+                                errorBuilder:
+                                    (
+                                      BuildContext context,
+                                      Object error,
+                                      StackTrace? stackTrace,
+                                    ) {
+                                      return Container(
+                                        decoration: const BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: <Color>[
+                                              Color(0xFF5B6073),
+                                              Color(0xFF202736),
+                                            ],
+                                          ),
+                                        ),
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.image_not_supported,
+                                            color: Colors.white70,
+                                            size: 36,
+                                          ),
+                                        ),
+                                      );
+                                    },
                               ),
                         Container(
                           decoration: const BoxDecoration(
@@ -516,12 +516,17 @@ class _AiSearchPageState extends State<AiSearchPage> {
                             children: <Widget>[
                               GestureDetector(
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.32),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.32,
+                                      ),
                                       width: 1,
                                     ),
                                   ),
@@ -583,7 +588,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
                                 ),
                               ),
                               if (_selectedImageName != null &&
-                                  _selectedImageName!.trim().isNotEmpty) ...<Widget>[
+                                  _selectedImageName!
+                                      .trim()
+                                      .isNotEmpty) ...<Widget>[
                                 const SizedBox(height: 2),
                                 Text(
                                   _selectedImageName!,
@@ -606,7 +613,10 @@ class _AiSearchPageState extends State<AiSearchPage> {
                       children: <Widget>[
                         _buildMatchCard(data),
                         const SizedBox(height: 12),
-                        if (data.isFood) ..._buildFoodCards(data) else ..._buildObjectCards(data),
+                        if (data.isFood)
+                          ..._buildFoodCards(data)
+                        else
+                          ..._buildObjectCards(data),
                       ],
                     ),
                   ),
@@ -693,9 +703,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
       _buildInfoCard(
         icon: Icons.place_outlined,
         title: 'SUGGESTED PLACES TO TRY',
-        child: Column(
-          children: data.places.map(_buildPlaceLine).toList(),
-        ),
+        child: Column(children: data.places.map(_buildPlaceLine).toList()),
       ),
     ];
   }
@@ -705,9 +713,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
       _buildInfoCard(
         icon: Icons.sell_outlined,
         title: 'CATEGORY',
-        child: Wrap(
-          children: <Widget>[_buildPill(data.categoryText)],
-        ),
+        child: Wrap(children: <Widget>[_buildPill(data.categoryText)]),
       ),
       const SizedBox(height: 12),
       _buildInfoCard(
@@ -774,9 +780,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
       _buildInfoCard(
         icon: Icons.storefront_outlined,
         title: 'WHERE TO BUY / SEE IT',
-        child: Column(
-          children: data.places.map(_buildPlaceLine).toList(),
-        ),
+        child: Column(children: data.places.map(_buildPlaceLine).toList()),
       ),
     ];
   }
@@ -793,16 +797,8 @@ class _AiSearchPageState extends State<AiSearchPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: _cardShadow1,
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
-          BoxShadow(
-            color: _cardShadow2,
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
+          BoxShadow(color: _cardShadow1, blurRadius: 3, offset: Offset(0, 1)),
+          BoxShadow(color: _cardShadow2, blurRadius: 12, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -817,11 +813,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
                   color: _accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(7),
                 ),
-                child: Icon(
-                  icon,
-                  size: 14,
-                  color: _accentDark,
-                ),
+                child: Icon(icon, size: 14, color: _accentDark),
               ),
               const SizedBox(width: 8),
               Text(
@@ -859,7 +851,11 @@ class _AiSearchPageState extends State<AiSearchPage> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.check_circle_outline, color: data.matchLabelColor, size: 16),
+              Icon(
+                Icons.check_circle_outline,
+                color: data.matchLabelColor,
+                size: 16,
+              ),
               const SizedBox(width: 8),
               Text(
                 data.matchLabel,
@@ -1005,10 +1001,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
     );
   }
 
-  Widget _glassButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+  Widget _glassButton({required IconData icon, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(

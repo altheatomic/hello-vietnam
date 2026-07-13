@@ -59,7 +59,8 @@ class _FeatureButton extends StatelessWidget {
         Positioned.fill(
           child: GestureDetector(
             onTap: () {
-              if (item.route == AppRoutes.tripPlanner) {
+              if (item.route == AppRoutes.tripPlanner ||
+                  item.route == AppRoutes.messages) {
                 context.go(item.route);
                 return;
               }

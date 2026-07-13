@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
@@ -726,7 +727,11 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
       if (next == null) {
         setState(() => _isFavorite = previous);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please sign in to update wishlist.')),
+          SnackBar(
+            content: Text(
+              context.l10n.ui('Please sign in to update wishlist.'),
+            ),
+          ),
         );
         return;
       }
@@ -734,9 +739,11 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _isFavorite = previous);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${context.l10n.ui('Update wishlist failed')}: $error'),
+        ),
+      );
     }
   }
 
@@ -917,9 +924,9 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                         ),
                         if (isPlace) ...<Widget>[
                           const SizedBox(height: 16),
-                          const Text(
-                            'Location',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.ui('Location'),
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF0C709D),
@@ -938,9 +945,9 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                           _RatingSection(rating: widget.item.rating),
                         ] else if (isFood) ...<Widget>[
                           const SizedBox(height: 16),
-                          const Text(
-                            'Ingredients',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.ui('Ingredients'),
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF0C709D),
@@ -949,9 +956,9 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                           const SizedBox(height: 6),
                           _BulletList(items: widget.item.ingredients),
                           const SizedBox(height: 12),
-                          const Text(
-                            'Flavor',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.ui('Flavor'),
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF0C709D),
@@ -963,9 +970,9 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                           _RatingSection(rating: widget.item.rating),
                         ] else ...<Widget>[
                           const SizedBox(height: 16),
-                          const Text(
-                            'The highlights of a visit',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.ui('The highlights of a visit'),
+                            style: const TextStyle(
                               fontSize: 34,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF0C709D),
@@ -1065,7 +1072,7 @@ class WishlistAllImagesPage extends StatelessWidget {
                   ),
                   Expanded(
                     child: Text(
-                      '${item.title.replaceFirst('TP. ', '')} Images',
+                      '${item.title.replaceFirst('TP. ', '')} ${context.l10n.ui('Images')}',
                       style: const TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
@@ -1464,7 +1471,7 @@ class _WishlistTypeChip extends StatelessWidget {
         ),
       ),
       child: Text(
-        type.label,
+        context.l10n.wishlistTypeLabel(type.name),
         style: TextStyle(
           color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
           fontSize: 11,
@@ -1546,6 +1553,7 @@ class _WishlistCategoryDropdown extends StatelessWidget {
     final Color foreground = isDark
         ? AppColors.primaryLight
         : AppColors.primaryDark;
+    final WishlistType? currentType = selectedType;
 
     return PopupMenuButton<WishlistType?>(
       initialValue: selectedType,
@@ -1568,7 +1576,7 @@ class _WishlistCategoryDropdown extends StatelessWidget {
         PopupMenuItem<WishlistType?>(
           value: null,
           child: Text(
-            'All Category',
+            context.l10n.ui('All Category'),
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w700,
@@ -1579,7 +1587,7 @@ class _WishlistCategoryDropdown extends StatelessWidget {
           (WishlistType type) => PopupMenuItem<WishlistType?>(
             value: type,
             child: Text(
-              type.label,
+              context.l10n.wishlistTypeLabel(type.name),
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
@@ -1620,7 +1628,9 @@ class _WishlistCategoryDropdown extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 112),
               child: Text(
-                selectedType?.label ?? 'All Category',
+                currentType == null
+                    ? context.l10n.ui('All Category')
+                    : context.l10n.wishlistTypeLabel(currentType.name),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(

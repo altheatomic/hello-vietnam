@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../core/language/app_language.dart';
 import 'theme.dart';
 import 'theme_controller.dart';
 
@@ -10,17 +11,20 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: ThemeController.instance,
-      builder: (BuildContext context, Widget? child) {
-        return MaterialApp.router(
-          debugShowCheckedModeBanner: false,
-          theme: buildTheme(),
-          darkTheme: buildDarkTheme(),
-          themeMode: ThemeController.instance.themeMode,
-          routerConfig: router,
-        );
-      },
+    return AppLanguageScope(
+      controller: AppLanguageController.instance,
+      child: AnimatedBuilder(
+        animation: ThemeController.instance,
+        builder: (BuildContext context, Widget? child) {
+          return MaterialApp.router(
+            debugShowCheckedModeBanner: false,
+            theme: buildTheme(),
+            darkTheme: buildDarkTheme(),
+            themeMode: ThemeController.instance.themeMode,
+            routerConfig: router,
+          );
+        },
+      ),
     );
   }
 }

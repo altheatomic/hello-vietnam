@@ -65,22 +65,18 @@ class _TripInterestPageState extends State<TripInterestPage> {
       onBack: () => context.pop(),
       nextEnabled: _selectedIds.isNotEmpty,
       onNext: _showNextPlaceholder,
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Column(
-          children: _options.map((_InterestOption option) {
-            final bool selected = _selectedIds.contains(option.id);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _InterestCard(
-                option: option,
-                selected: selected,
-                onTap: () => _toggleOption(option.id),
-              ),
-            );
-          }).toList(),
-        ),
+      body: Column(
+        children: _options.map((_InterestOption option) {
+          final bool selected = _selectedIds.contains(option.id);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _InterestCard(
+              option: option,
+              selected: selected,
+              onTap: () => _toggleOption(option.id),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

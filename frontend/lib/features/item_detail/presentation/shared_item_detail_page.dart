@@ -155,7 +155,11 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
       if (next == null) {
         setState(() => _isFavorite = previous);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please sign in to update wishlist.')),
+          SnackBar(
+            content: Text(
+              context.l10n.ui('Please sign in to update wishlist.'),
+            ),
+          ),
         );
       } else {
         setState(() => _isFavorite = next);
@@ -173,9 +177,11 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _isFavorite = previous);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${context.l10n.ui('Update wishlist failed')}: $error'),
+        ),
+      );
     }
   }
 
@@ -357,7 +363,7 @@ class _DetailHeader extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
           children: <TextSpan>[
-            const TextSpan(text: 'Discover, '),
+            TextSpan(text: '${context.l10n.ui('Discover')}, '),
             TextSpan(
               text: '$title!',
               style: const TextStyle(
@@ -541,7 +547,9 @@ class _QuickInfoCard extends StatelessWidget {
                       GestureDetector(
                         onTap: onToggleExpanded,
                         child: Text(
-                          isExpanded ? 'Less' : 'More',
+                          isExpanded
+                              ? context.l10n.ui('Less')
+                              : context.l10n.ui('More'),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,

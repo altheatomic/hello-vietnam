@@ -98,9 +98,9 @@ class _BestTimeCard extends StatelessWidget {
                   color: AppColors.primaryLight.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Text(
-                  'Recommended season',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.ui('Recommended season'),
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primaryDark,

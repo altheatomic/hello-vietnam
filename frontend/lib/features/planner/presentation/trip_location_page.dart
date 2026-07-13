@@ -99,15 +99,13 @@ class _TripLocationPageState extends State<TripLocationPage> {
       onBack: () => context.pop(),
       nextEnabled: _selectedDestinationId != null,
       onNext: _showNextPlaceholder,
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _SearchDestinationField(controller: _searchController),
-            const SizedBox(height: 18),
-            Text(
+      stickyBodyHeader: _SearchDestinationField(controller: _searchController),
+      stickyBodyHeaderExtent: 78,
+      bodySlivers: <Widget>[
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 2, bottom: 14),
+            child: Text(
               context.l10n.ui('Popular Destinations'),
               style: const TextStyle(
                 fontSize: 17,
@@ -115,34 +113,30 @@ class _TripLocationPageState extends State<TripLocationPage> {
                 color: Color(0xFF162235),
               ),
             ),
-            const SizedBox(height: 14),
-            GridView.builder(
-              itemCount: visibleDestinations.length,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.25,
-              ),
-              itemBuilder: (BuildContext context, int index) {
-                final _DestinationCardData destination =
-                    visibleDestinations[index];
-                return _DestinationCard(
-                  data: destination,
-                  selected: destination.id == _selectedDestinationId,
-                  onTap: () {
-                    setState(() {
-                      _selectedDestinationId = destination.id;
-                    });
-                  },
-                );
-              },
-            ),
-          ],
+          ),
         ),
-      ),
+        SliverGrid.builder(
+          itemCount: visibleDestinations.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.25,
+          ),
+          itemBuilder: (BuildContext context, int index) {
+            final _DestinationCardData destination = visibleDestinations[index];
+            return _DestinationCard(
+              data: destination,
+              selected: destination.id == _selectedDestinationId,
+              onTap: () {
+                setState(() {
+                  _selectedDestinationId = destination.id;
+                });
+              },
+            );
+          },
+        ),
+      ],
     );
   }
 }

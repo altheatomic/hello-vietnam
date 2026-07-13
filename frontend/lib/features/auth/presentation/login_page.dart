@@ -176,19 +176,6 @@ class _LoginPageState extends State<LoginPage> {
               ],
             ),
           ),
-
-          // Fixed close button
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            left: 12,
-            child: IconButton(
-              onPressed: () => context.pop(),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.7),
-              ),
-              icon: const Icon(Icons.close, color: Colors.black87),
-            ),
-          ),
         ],
       ),
     );

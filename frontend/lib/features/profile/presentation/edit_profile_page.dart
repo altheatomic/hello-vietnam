@@ -87,9 +87,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const Text(
-                'Choose Avatar',
-                style: TextStyle(
+              Text(
+                context.l10n.ui('Choose Avatar'),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF1A1A1A),
@@ -99,14 +99,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Chon anh tu thiet bi'),
+                title: Text(context.l10n.ui('Choose photo from device')),
                 onTap: _isUploadingAvatar ? null : _pickAvatarFromDevice,
               ),
               if (_avatarUrl != null && _avatarUrl!.trim().isNotEmpty)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.delete_outline_rounded),
-                  title: const Text('Go avatar da upload'),
+                  title: Text(context.l10n.ui('Remove uploaded avatar')),
                   onTap: _isUploadingAvatar ? null : _removeUploadedAvatar,
                 ),
               const SizedBox(height: 12),
@@ -175,12 +175,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _avatarUrl = avatarUrl;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cap nhat avatar thanh cong.')),
+        SnackBar(content: Text(context.l10n.ui('Avatar updated.'))),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tai avatar len that bai: $error')),
+        SnackBar(
+          content: Text('${context.l10n.ui('Upload avatar failed')}: $error'),
+        ),
       );
     } finally {
       if (mounted) {
@@ -198,14 +200,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
       setState(() {
         _avatarUrl = null;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Da go avatar da upload.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.ui('Uploaded avatar removed.'))),
+      );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Go avatar that bai: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${context.l10n.ui('Remove avatar failed')}: $error'),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isUploadingAvatar = false);

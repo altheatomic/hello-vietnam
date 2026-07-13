@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 
 class TripMapPage extends StatelessWidget {
@@ -369,7 +370,7 @@ class _NearbyPlaceTile extends StatelessWidget {
                   ..hideCurrentSnackBar()
                   ..showSnackBar(
                     SnackBar(
-                      content: Text('Routing to ${place.title}'),
+                      content: Text(context.l10n.routingTo(place.title)),
                       behavior: SnackBarBehavior.floating,
                     ),
                   );

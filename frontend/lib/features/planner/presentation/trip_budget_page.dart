@@ -99,90 +99,86 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
       nextEnabled: _canGenerate,
       nextLabel: context.l10n.ui('Generate'),
       onNext: _showGeneratePlaceholder,
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              context.l10n.ui('Option 1: Enter daily budget'),
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF162235),
-              ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            context.l10n.ui('Option 1: Enter daily budget'),
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF162235),
             ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            context.l10n.ui(
+              'Use an exact amount per day if you already know your spending limit.',
+            ),
+            style: const TextStyle(
+              fontSize: 14.5,
+              fontStyle: FontStyle.italic,
+              color: Color(0xFF6F7B8A),
+              fontWeight: FontWeight.w500,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _BudgetInputField(
+            controller: _budgetController,
+            selected: _hasTypedBudget,
+          ),
+          if (_hasTypedBudget) ...<Widget>[
             const SizedBox(height: 10),
-            Text(
-              context.l10n.ui(
-                'Use an exact amount per day if you already know your spending limit.',
-              ),
-              style: const TextStyle(
-                fontSize: 14.5,
-                fontStyle: FontStyle.italic,
-                color: Color(0xFF6F7B8A),
-                fontWeight: FontWeight.w500,
-                height: 1.4,
+            _SelectedBudgetHint(
+              label: context.l10n.ui(
+                'Using exact daily budget. Price range will be ignored.',
               ),
             ),
-            const SizedBox(height: 16),
-            _BudgetInputField(
-              controller: _budgetController,
-              selected: _hasTypedBudget,
-            ),
-            if (_hasTypedBudget) ...<Widget>[
-              const SizedBox(height: 10),
-              _SelectedBudgetHint(
-                label: context.l10n.ui(
-                  'Using exact daily budget. Price range will be ignored.',
-                ),
-              ),
-            ],
-            const SizedBox(height: 24),
-            const _OptionDivider(),
-            const SizedBox(height: 24),
-            Text(
-              context.l10n.ui('Option 2: Choose price range'),
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF162235),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              context.l10n.ui(
-                'Use a quick preset instead of typing an exact amount.',
-              ),
-              style: const TextStyle(
-                fontSize: 14.5,
-                fontStyle: FontStyle.italic,
-                color: Color(0xFF6F7B8A),
-                fontWeight: FontWeight.w500,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 22),
-            ..._priceRanges.map((String range) {
-              final bool selected = _selectedRange == range;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: _BudgetRangeCard(
-                  label: context.l10n.ui(range),
-                  selected: selected,
-                  onTap: () => _selectRange(range),
-                ),
-              );
-            }),
-            if (_selectedRange != null)
-              _SelectedBudgetHint(
-                label: context.l10n.ui(
-                  'Using price range. Typed daily budget will be ignored.',
-                ),
-              ),
           ],
-        ),
+          const SizedBox(height: 24),
+          const _OptionDivider(),
+          const SizedBox(height: 24),
+          Text(
+            context.l10n.ui('Option 2: Choose price range'),
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF162235),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            context.l10n.ui(
+              'Use a quick preset instead of typing an exact amount.',
+            ),
+            style: const TextStyle(
+              fontSize: 14.5,
+              fontStyle: FontStyle.italic,
+              color: Color(0xFF6F7B8A),
+              fontWeight: FontWeight.w500,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 22),
+          ..._priceRanges.map((String range) {
+            final bool selected = _selectedRange == range;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: _BudgetRangeCard(
+                label: context.l10n.ui(range),
+                selected: selected,
+                onTap: () => _selectRange(range),
+              ),
+            );
+          }),
+          if (_selectedRange != null)
+            _SelectedBudgetHint(
+              label: context.l10n.ui(
+                'Using price range. Typed daily budget will be ignored.',
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -262,13 +258,15 @@ class _OptionDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: const <Widget>[
-        Expanded(child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2)),
+      children: <Widget>[
+        const Expanded(
+          child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2),
+        ),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text(
-            'OR',
-            style: TextStyle(
+            context.l10n.ui('OR'),
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
               color: Color(0xFF8A95A5),
@@ -276,7 +274,9 @@ class _OptionDivider extends StatelessWidget {
             ),
           ),
         ),
-        Expanded(child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2)),
+        const Expanded(
+          child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2),
+        ),
       ],
     );
   }

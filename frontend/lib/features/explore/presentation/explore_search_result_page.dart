@@ -74,23 +74,25 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
       final ExploreProvince province = await _resolveProvince(
         widget.selectedProvince,
       );
-      final List<List<ExploreItem>> results = await Future.wait(
-        <Future<List<ExploreItem>>>[
-          _repository.loadCategoryItems(
-            DetailCategory.activities,
-            province: province,
-          ),
-          _repository.loadCategoryItems(
-            DetailCategory.culture,
-            province: province,
-          ),
-          _repository.loadCategoryItems(DetailCategory.food, province: province),
-          _repository.loadCategoryItems(
-            DetailCategory.localProducts,
-            province: province,
-          ),
-        ],
-      );
+      final List<List<ExploreItem>> results =
+          await Future.wait(<Future<List<ExploreItem>>>[
+            _repository.loadCategoryItems(
+              DetailCategory.activities,
+              province: province,
+            ),
+            _repository.loadCategoryItems(
+              DetailCategory.culture,
+              province: province,
+            ),
+            _repository.loadCategoryItems(
+              DetailCategory.food,
+              province: province,
+            ),
+            _repository.loadCategoryItems(
+              DetailCategory.localProducts,
+              province: province,
+            ),
+          ]);
 
       if (!mounted) return;
 
@@ -314,7 +316,8 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
           SliverFillRemaining(
             hasScrollBody: false,
             child: _PageStateMessage(
-              title: 'No ${_filterLabels[_selectedFilter].toLowerCase()} found.',
+              title:
+                  'No ${_filterLabels[_selectedFilter].toLowerCase()} found.',
               subtitle: currentCategory.emptyMessage,
             ),
           )
@@ -340,9 +343,7 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.only(bottom: 24),
-                child: Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
               ),
             ),
         ],
@@ -396,10 +397,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
     final double statusBarH = MediaQuery.of(context).padding.top;
     return Container(
       color: Colors.white,
-      padding: EdgeInsets.only(
-        top: statusBarH > 0 ? statusBarH : 0,
-        bottom: 6,
-      ),
+      padding: EdgeInsets.only(top: statusBarH > 0 ? statusBarH : 0, bottom: 6),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(
@@ -442,9 +440,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                               end: Alignment.bottomRight,
                               colors: <Color>[
                                 Colors.white.withValues(alpha: 0.78),
-                                const Color(
-                                  0xFFEAF7FD,
-                                ).withValues(alpha: 0.9),
+                                const Color(0xFFEAF7FD).withValues(alpha: 0.9),
                               ],
                             ),
                       borderRadius: BorderRadius.circular(15),
@@ -534,12 +530,16 @@ class _ResultCardState extends State<_ResultCard> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to update wishlist.')),
+        SnackBar(
+          content: Text(context.l10n.ui('Please sign in to update wishlist.')),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Update wishlist failed: $error')),
+        SnackBar(
+          content: Text('${context.l10n.ui('Update wishlist failed')}: $error'),
+        ),
       );
     }
   }

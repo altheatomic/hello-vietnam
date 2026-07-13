@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
@@ -76,8 +77,8 @@ class ForumProfilePage extends StatelessWidget {
                 : store.profileById(targetAuthorId);
             if (profile == null) {
               if (store.isLoading) {
-                return const AppLoadingScreen(
-                  message: 'Loading profile',
+                return AppLoadingScreen(
+                  message: context.l10n.ui('Loading profile'),
                   compact: true,
                 );
               }
@@ -85,7 +86,9 @@ class ForumProfilePage extends StatelessWidget {
               return Center(
                 child: TextButton(
                   onPressed: () => context.pop(),
-                  child: Text(store.errorMessage ?? 'Profile not found'),
+                  child: Text(
+                    store.errorMessage ?? context.l10n.ui('Profile not found'),
+                  ),
                 ),
               );
             }
@@ -96,11 +99,9 @@ class ForumProfilePage extends StatelessWidget {
               children: <Widget>[
                 ForumProfileTopBar(
                   title: profile.author.name,
-                  subtitle: '${posts.length} posts',
+                  subtitle: context.l10n.forumPostsCount(posts.length),
                   onBack: () => context.pop(),
                   onBookmark: () => context.push(AppRoutes.forumSaved),
-                  onNotification: () =>
-                      context.push(AppRoutes.forumNotifications),
                   onAvatarTap: () => context.push(AppRoutes.forumMe),
                   avatarUrl: store.currentUserAuthor.avatarUrl,
                   showCurrentAvatar: profile.isCurrentUser,
@@ -122,7 +123,7 @@ class ForumProfilePage extends StatelessWidget {
                       ),
                       const SizedBox(height: 28),
                       Text(
-                        'Posts',
+                        context.l10n.ui('Posts'),
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,

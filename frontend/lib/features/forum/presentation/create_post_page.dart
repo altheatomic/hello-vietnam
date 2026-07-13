@@ -158,7 +158,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 title: context.l10n.ui('Create post'),
                 onBack: () => context.pop(),
                 onBookmark: _openImagePicker,
-                onNotification: () {},
                 onAvatarTap: () {},
                 avatarUrl: _currentUserAuthor.avatarUrl,
                 showBookmark: !_isShareFromExplore,
@@ -202,7 +201,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               _PostButton(enabled: canSubmit, onTap: _submit),
                             ],
                           ),
-                          if (widget.request.sharedExploreItem != null) ...<Widget>[
+                          if (widget.request.sharedExploreItem !=
+                              null) ...<Widget>[
                             const SizedBox(height: 18),
                             _SharedExplorePreview(
                               item: widget.request.sharedExploreItem!,
@@ -440,7 +440,7 @@ class _PostButton extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             child: Text(
-              'Post',
+              context.l10n.ui('Post'),
               style: TextStyle(
                 color: enabled
                     ? Colors.white
