@@ -14,6 +14,8 @@ Pipeline (single-pass, batched):
 
 from __future__ import annotations
 
+import math
+
 from services.module1_algorithm import (
     build_user_interest_state_from_rows,
     rank_places_by_tag_match,
@@ -27,9 +29,14 @@ from services.module1_repository import (
     fetch_user_interest_tags,
 )
 
-_MAX_PLACES_TOTAL = 3000
-_MIN_PLACES_PER_PROVINCE = 3
-_MAX_SAMPLE_PER_PROVINCE = 200
+def _popularity_score(avg_rating: float, review_count: int) -> float:
+    """
+    Popularity score based on rating and review volume.
+    Formula: rating x log(review_count + 1)
+    """
+    if not avg_rating or avg_rating <= 0:
+        return 0.0
+    return avg_rating * math.log(review_count + 1)
 
 
 def _compute_alpha(cf_scores: dict, total_places: int) -> float:
@@ -77,14 +84,13 @@ def recommend_provinces(supabase, id_user: str, limit: int = 20) -> list[dict]:
         .eq("place_subcategory.is_itinerary_eligible", True)
         .filter("latitude", "not.is", "null")
         .filter("longitude", "not.is", "null")
-        .limit(_MAX_PLACES_TOTAL)
         .execute()
     )
     all_places = resp.data or []
     if not all_places:
         return []
 
-    # Group by province, cap sample per province
+    # Group by province
     by_province: dict[str, list[dict]] = {}
     for p in all_places:
         prov_id = str(p.get("old_province") or "")
@@ -103,6 +109,54 @@ def recommend_provinces(supabase, id_user: str, limit: int = 20) -> list[dict]:
     user_interest_state = build_user_interest_state_from_rows(
         interest_rows, tag_map, id_tag_map
     )
+    is_cold_start = len(user_interest_state) == 0
+
+    # Cold-start users have no CB/CF signal yet, so rank provinces by trending
+    # place popularity instead of producing arbitrary zero-score ordering.
+    if is_cold_start:
+        results: list[dict] = []
+        for prov_id, places in by_province.items():
+            pop_scores = [
+                _popularity_score(
+                    float(p.get("average_rating") or 0.0),
+                    int(p.get("review_count") or 0),
+                )
+                for p in places
+            ]
+            avg_pop = sum(pop_scores) / len(pop_scores)
+            province_pop = avg_pop * math.log(len(places) + 1)
+
+            top_place = max(
+                places,
+                key=lambda p: _popularity_score(
+                    float(p.get("average_rating") or 0.0),
+                    int(p.get("review_count") or 0),
+                ),
+            )
+            gallery_urls = _extract_gallery_urls(top_place.get("gallery") or [])
+            avg_rating = round(
+                sum((p.get("average_rating") or 0.0) for p in places) / len(places), 1
+            )
+
+            results.append({
+                "id_province":  prov_id,
+                "name":         province_map[prov_id],
+                "place_count":  len(places),
+                "cover_image":  top_place.get("cover_image"),
+                "gallery":      gallery_urls,
+                "avg_rating":   avg_rating,
+                "cb_score":     0.0,
+                "cf_score":     0.0,
+                "final_score":  province_pop,
+                "fallback":     "trending",
+            })
+
+        max_score = max((r["final_score"] for r in results), default=0.0) or 1.0
+        for r in results:
+            r["final_score"] = round(r["final_score"] / max_score, 4)
+
+        results.sort(key=lambda x: x["final_score"], reverse=True)
+        return results[:limit]
 
     # ── Step 4: Batch-fetch place tags & CF scores for all places ─────────────
     all_place_ids = [str(p["id_place"]) for p in all_places]
@@ -112,13 +166,9 @@ def recommend_provinces(supabase, id_user: str, limit: int = 20) -> list[dict]:
     # ── Step 5: Score each province ───────────────────────────────────────────
     results: list[dict] = []
     for prov_id, places in by_province.items():
-        if len(places) < _MIN_PLACES_PER_PROVINCE:
-            continue
+        place_ids_set = {str(p["id_place"]) for p in places}
 
-        sample = places[:_MAX_SAMPLE_PER_PROVINCE]
-        sample_ids_set = {str(p["id_place"]) for p in sample}
-
-        enriched = attach_place_tags_to_places(sample, place_tag_rows)
+        enriched = attach_place_tags_to_places(places, place_tag_rows)
         ranked = rank_places_by_tag_match(
             enriched, user_interest_state,
             weight_field="final_weight",
@@ -127,10 +177,10 @@ def recommend_provinces(supabase, id_user: str, limit: int = 20) -> list[dict]:
 
         avg_cb = sum(p.get("tag_match") or 0.0 for p in ranked) / len(ranked)
 
-        cf_subset = {k: v for k, v in cf_scores_all.items() if k in sample_ids_set}
+        cf_subset = {k: v for k, v in cf_scores_all.items() if k in place_ids_set}
         avg_cf = sum(cf_subset.values()) / len(cf_subset) if cf_subset else 0.0
 
-        alpha = _compute_alpha(cf_subset, len(sample))
+        alpha = _compute_alpha(cf_subset, len(places))
         final_score = alpha * avg_cb + (1 - alpha) * avg_cf
 
         top = ranked[0] if ranked else {}
@@ -138,7 +188,7 @@ def recommend_provinces(supabase, id_user: str, limit: int = 20) -> list[dict]:
         gallery_urls = _extract_gallery_urls(top.get("gallery") or [])
 
         avg_rating = round(
-            sum((p.get("average_rating") or 0.0) for p in sample) / len(sample), 1
+            sum((p.get("average_rating") or 0.0) for p in places) / len(places), 1
         )
 
         results.append({
