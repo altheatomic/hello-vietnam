@@ -21,7 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()  # picks up .env in cwd if present
 
-from db.connection import close_pool, init_pool
+from db.connection import close_pool
 from routes.trip import router as trip_router
 from routes.events import router as events_router
 from routes.recommend import router as recommend_router
@@ -29,7 +29,6 @@ from routes.recommend import router as recommend_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_pool()
     yield
     await close_pool()
 

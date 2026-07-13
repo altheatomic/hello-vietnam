@@ -134,7 +134,7 @@ async def _log_failure(conn, log_id: str, error: str) -> None:
 
 
 async def run_cf_retrain(triggered_by: str = 'cron') -> dict:
-    pool = get_pool()
+    pool = await get_pool()
     async with pool.acquire() as conn:
         log_id = await _log_start(conn, triggered_by)
 

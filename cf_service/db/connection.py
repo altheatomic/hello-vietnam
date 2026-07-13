@@ -1,10 +1,13 @@
 """
-db/connection.py
-asyncpg connection pool — shared across request lifetime via FastAPI lifespan.
-DATABASE_URL must be set as an environment variable (Supabase connection string).
+Shared asyncpg connection pool.
+
+The core trip-planning endpoints use the Supabase REST client, so the service
+should not fail startup just because direct Postgres connectivity is unavailable.
+Direct DB connections are initialized lazily by endpoints/jobs that need them.
 """
 
 import os
+
 import asyncpg
 
 _pool: asyncpg.Pool | None = None
@@ -12,8 +15,15 @@ _pool: asyncpg.Pool | None = None
 
 async def init_pool() -> None:
     global _pool
+    if _pool is not None:
+        return
+
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL is not configured.")
+
     _pool = await asyncpg.create_pool(
-        dsn=os.environ["DATABASE_URL"],
+        dsn=database_url,
         min_size=2,
         max_size=10,
         command_timeout=60,
@@ -27,16 +37,14 @@ async def close_pool() -> None:
         _pool = None
 
 
-def get_pool() -> asyncpg.Pool:
-    """Return the shared pool — for background tasks that self-manage connections."""
+async def get_pool() -> asyncpg.Pool:
     if _pool is None:
-        raise RuntimeError("Connection pool not initialised. Call init_pool() at startup.")
+        await init_pool()
     return _pool
 
 
 async def get_db():
-    """FastAPI dependency — yields a single connection from the pool."""
     if _pool is None:
-        raise RuntimeError("Connection pool not initialised. Call init_pool() at startup.")
+        await init_pool()
     async with _pool.acquire() as conn:
         yield conn
