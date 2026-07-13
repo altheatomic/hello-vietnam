@@ -366,6 +366,242 @@ For list surfaces such as explore cards, only summary data should be loaded:
 
 List surfaces should not request paginated review comments.
 
+### 12. Scale Target: 1,000 To 10,000 Users
+
+For the expected range of `1,000` to `10,000` users, the review system should
+optimize for fast reads, bounded write cost, and low operational complexity.
+This traffic level does not require queues, Redis, or distributed background
+workers by default. A synchronous write path with precomputed summary reads is
+the right balance.
+
+Recommended architecture at this scale:
+
+- `reviews` remains the source of truth for each user submission
+- `rating_summary` remains the only source for rendered star counts and average rating
+- review detail pages always split reads into `summary`, `list`, and optional `my review`
+- list queries always stay paginated and never fetch the full review history
+- star filters only reload the list, not the summary
+
+This architecture keeps reads effectively constant-time for summary data while
+keeping review-list cost proportional to the requested page size, not total
+review volume.
+
+### 13. Concrete Read And Write Strategy
+
+#### Detail page read flow
+
+When a user opens an item detail page, frontend should launch these requests in
+parallel:
+
+1. `getReviewSummary(contentType, contentId)`
+2. `getReviews(contentType, contentId, page = 1, pageSize = 10, ratingFilter = null)`
+3. `getMyReview(contentType, contentId)` if the user is authenticated
+
+Rendering priority:
+
+- summary should appear as soon as `getReviewSummary` returns
+- list should render independently when page `1` returns
+- CTA should switch from loading to `Write a review` or `Edit your review`
+  when `getMyReview` resolves
+
+Important UX rule:
+
+- do not render placeholder rating numbers from item mock data or parent item detail fields
+- if summary has not loaded yet, use a neutral loading state or skeleton
+
+#### Review submit flow
+
+At this scale, submit and edit should remain synchronous:
+
+1. authenticate the user
+2. validate `content_type`
+3. validate `content_id`
+4. confirm the target item exists in the mapped content table
+5. validate `rating`
+6. validate `comment`
+7. run moderation
+8. upsert the row into `reviews`
+9. recompute exactly one summary row in `rating_summary`
+10. return the saved review and updated summary to frontend
+
+This is still appropriate for `1,000` to `10,000` users because each write
+touches one review row and one summary row for one item only.
+
+### 14. Database Index Strategy
+
+To support fast detail-page reads at this scale, the schema should include
+indexes that match the real query patterns.
+
+Recommended `reviews` indexes:
+
+```sql
+create index if not exists reviews_content_lookup_idx
+    on public.reviews (content_type, content_id, status, updated_at desc);
+
+create index if not exists reviews_content_rating_lookup_idx
+    on public.reviews (content_type, content_id, status, rating, updated_at desc);
+
+create index if not exists reviews_user_lookup_idx
+    on public.reviews (id_user, content_type, content_id);
+```
+
+Usage:
+
+- `reviews_content_lookup_idx` supports the default `All` tab
+- `reviews_content_rating_lookup_idx` supports `1-star` through `5-star` filters
+- `reviews_user_lookup_idx` supports `getMyReview`
+
+Recommended `moderation_keyword` index:
+
+```sql
+create index if not exists moderation_keyword_active_idx
+    on public.moderation_keyword (is_active, severity, language);
+```
+
+The goal is to ensure that the most common detail-page queries remain index-led
+even when an item accumulates a large number of reviews.
+
+### 15. API Contract For Scalable Reads
+
+The review API should keep summary reads separate from list reads.
+
+#### `getReviewSummary`
+
+Input:
+
+- `contentType`
+- `contentId`
+
+Output:
+
+- `average_rating`
+- `review_count`
+- `rating_1_count`
+- `rating_2_count`
+- `rating_3_count`
+- `rating_4_count`
+- `rating_5_count`
+- `last_reviewed_at`
+
+This payload should always come from `rating_summary`.
+
+#### `getReviews`
+
+Input:
+
+- `contentType`
+- `contentId`
+- `page`
+- `pageSize`
+- optional `ratingFilter`
+
+Output:
+
+- `items`
+- `page`
+- `pageSize`
+- `totalCount`
+- `hasMore`
+
+This payload should always come from paginated `reviews` rows with
+`status = 'published'`.
+
+#### `getMyReview`
+
+Input:
+
+- `contentType`
+- `contentId`
+
+Output:
+
+- review object or `null`
+
+#### `upsertReview`
+
+Input:
+
+- `contentType`
+- `contentId`
+- `rating`
+- `comment`
+
+Output:
+
+- saved `review`
+- refreshed `summary`
+
+This contract lets frontend update the summary immediately after a successful
+submit without waiting for an additional round trip.
+
+### 16. Frontend State Model
+
+The reusable review section should own its own state instead of relying on
+parent item-detail placeholders.
+
+Recommended state:
+
+- `_summary`
+- `_myReview`
+- `_items`
+- `_currentPage`
+- `_hasMore`
+- `_activeRatingFilter`
+- `_isLoadingSummary`
+- `_isLoadingFirstPage`
+- `_isLoadingMore`
+- `_listError`
+
+Behavior rules:
+
+- opening the detail page starts summary and list loading independently
+- changing the star filter resets only the list state
+- summary stays stable while filter changes
+- submit success updates `_summary` and `_myReview`, resets the filter to `All`,
+  then reloads page `1`
+- infinite scroll must block duplicate page fetches while `_isLoadingMore = true`
+
+This keeps the UI responsive and prevents large review counts from expanding
+the amount of client-side work.
+
+### 17. Cache Strategy For This User Range
+
+For `1,000` to `10,000` users, the system should begin with light caching only.
+
+Recommended baseline:
+
+- in-memory frontend cache for summary per item during the current session
+- optional in-memory cache for review page `1` by `(contentType, contentId, ratingFilter)`
+- no Redis or dedicated cache layer required at the start
+
+Recommended filter behavior:
+
+- first tap on a star filter fetches from backend
+- repeated taps on the same filter may reuse cached page `1`
+- background refresh is optional, not required in the first release
+
+This gives a noticeable UX improvement without introducing new infrastructure.
+
+### 18. When To Upgrade Beyond Synchronous Summary Refresh
+
+The current synchronous summary refresh should remain the default unless the
+team observes one or more of these signs:
+
+- review submit latency becomes noticeably slow
+- a small set of items receives many review writes in a short time
+- database CPU rises because many summary refreshes are happening concurrently
+- write traffic starts to rival or exceed read traffic for the review feature
+
+Only after those signals appear should the team consider:
+
+- queued summary recomputation
+- background workers
+- cache invalidation layers
+- more advanced aggregation pipelines
+
+For the current target range, those additions would likely add complexity
+without proportionate benefit.
+
 ## Error Handling
 
 - unauthenticated submit => return the existing sign-in requirement behavior
@@ -424,5 +660,8 @@ Implement the smallest complete version with:
 - a `moderation_keyword` table
 - a backend content registry for item validation
 - detail-page review summary plus paginated infinite-scroll review list
+- synchronous per-item summary refresh
+- indexes tuned for `All` and star-filtered review-list reads
+- no fake summary placeholders while real review data is loading
 
 This gives the product a scalable review foundation without requiring separate review systems for each content type.

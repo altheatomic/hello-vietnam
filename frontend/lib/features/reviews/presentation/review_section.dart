@@ -56,7 +56,6 @@ class _ReviewSectionState extends State<ReviewSection> {
   ReviewEntry? _myReview;
   final List<ReviewEntry> _items = <ReviewEntry>[];
   bool _isLoadingSummary = false;
-  bool _isLoadingMyReview = false;
   bool _isLoadingFirstPage = false;
   bool _isLoadingMore = false;
   bool _hasMore = false;
@@ -121,7 +120,6 @@ class _ReviewSectionState extends State<ReviewSection> {
       return;
     }
 
-    setState(() => _isLoadingMyReview = true);
     try {
       final MyReviewState state =
           await (myReviewLoader?.call() ??
@@ -134,10 +132,6 @@ class _ReviewSectionState extends State<ReviewSection> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _myReview = null);
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingMyReview = false);
-      }
     }
   }
 
