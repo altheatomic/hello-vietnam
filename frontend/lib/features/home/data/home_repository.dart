@@ -121,7 +121,7 @@ class HomeRepository {
   String _dishFallbackImage(int seed) {
     const images = <String>[
       'assets/images/homepage/bestdishes_bg.jpeg',
-      'assets/images/dishes/banh_mi.jpg',
+      'assets/images/homepage/bestdishes_bg.jpeg',
       'assets/images/explore/explore_bg.jpeg',
       'assets/images/Auth_Image/Login.png',
     ];

@@ -109,6 +109,6 @@ const List<Dish> mockDishes = [
     name: 'Banh Mi',
     category: 'Street food · Snack',
     rating: 4.60,
-    imagePath: 'assets/images/dishes/banh_mi.jpg',
+    imagePath: 'assets/images/homepage/bestdishes_bg.jpeg',
   ),
 ];

@@ -92,7 +92,7 @@ class _TripLocationPageState extends State<TripLocationPage> {
       extra: TripWizardData(
         idProvince: selected.id,
         provinceName: selected.name,
-      ),
+      ).toJson(),
     );
   }
 

@@ -45,7 +45,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
     subtitle: 'Bun Cha',
     summary:
         'Chargrilled pork patties and belly served with cold vermicelli noodles, fresh herbs, and a sweet-savory dipping sauce - a Hanoi lunchtime staple.',
-    heroAssetPath: 'assets/images/dishes/banh_mi.jpg',
+    heroAssetPath: 'assets/images/homepage/bestdishes_bg.jpeg',
     primaryTags: <String>[
       'Vermicelli',
       'Pork Patty',
@@ -1105,7 +1105,7 @@ class _RecognitionData {
           ? result.summary
           : 'Gemini did not return a detailed summary for this image.',
       heroAssetPath: result.isFood
-          ? 'assets/images/dishes/banh_mi.jpg'
+          ? 'assets/images/homepage/bestdishes_bg.jpeg'
           : 'assets/images/avatar/avatar.jpg',
       categoryText: result.categoryText,
       primaryTags: result.primaryTags,

@@ -20,6 +20,28 @@ class TripWizardData {
   final double? targetLng;
   final String? businessAddress;
 
+  factory TripWizardData.fromJson(Map<String, dynamic> json) => TripWizardData(
+        idProvince: json['idProvince'] as String?,
+        provinceName: json['provinceName'] as String?,
+        startDate: json['startDate'] as String?,
+        nDays: json['nDays'] as int?,
+        tripType: json['tripType'] as String?,
+        targetLat: (json['targetLat'] as num?)?.toDouble(),
+        targetLng: (json['targetLng'] as num?)?.toDouble(),
+        businessAddress: json['businessAddress'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'idProvince': idProvince,
+        'provinceName': provinceName,
+        'startDate': startDate,
+        'nDays': nDays,
+        'tripType': tripType,
+        'targetLat': targetLat,
+        'targetLng': targetLng,
+        'businessAddress': businessAddress,
+      };
+
   TripWizardData copyWith({
     String? idProvince,
     String? provinceName,

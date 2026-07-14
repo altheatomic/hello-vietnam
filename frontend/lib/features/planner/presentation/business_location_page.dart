@@ -91,7 +91,7 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
       );
 
       if (!mounted) return;
-      context.push('/trip-planner/duration', extra: wizard);
+      context.push('/trip-planner/duration', extra: wizard.toJson());
     } catch (_) {
       if (mounted) _showError('Không thể kết nối, thử lại sau.');
     } finally {
