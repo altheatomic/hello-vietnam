@@ -429,7 +429,7 @@ class _WishlistPageState extends State<WishlistPage> {
     );
   }
 
-  Future<void> _loadWishlist() async {
+  Future<void> _loadWishlist({bool force = false}) async {
     setState(() {
       _isLoading = true;
       _loadError = null;
@@ -445,8 +445,17 @@ class _WishlistPageState extends State<WishlistPage> {
       return;
     }
 
+    if (!force && _wishlistController.isLoaded) {
+      if (!mounted) return;
+      setState(() {
+        _syncedItems = _mappedControllerItems();
+        _isLoading = false;
+      });
+      return;
+    }
+
     try {
-      await _wishlistController.refresh();
+      await _wishlistController.ensureLoaded(force: force);
       if (!mounted) return;
       setState(() {
         _syncedItems = _mappedControllerItems();
@@ -635,7 +644,7 @@ class _WishlistPageState extends State<WishlistPage> {
                   ? _WishlistStatusView(
                       message: 'Load wishlist failed.\n$_loadError',
                       actionLabel: 'Retry',
-                      onActionTap: () => _loadWishlist(),
+                      onActionTap: () => _loadWishlist(force: true),
                     )
                   : _filteredItems.isEmpty
                   ? _WishlistStatusView(

@@ -61,7 +61,12 @@ class WishlistController extends ChangeNotifier {
         fallbackName: fallbackName,
       );
       _setLocalFavorite(key, isFavorite);
-      await refresh();
+      _updateLocalWishlistItem(
+        type: type,
+        itemId: rawItemId,
+        isFavorite: isFavorite,
+        fallbackName: fallbackName,
+      );
       if (isFavorite && !previous) {
         unawaited(
           _awardWishlistPoints(
@@ -97,7 +102,11 @@ class WishlistController extends ChangeNotifier {
         type: type,
         isFavorite: isFavorite,
       );
-      await refresh();
+      _updateLocalWishlistItem(
+        type: type,
+        itemId: itemId,
+        isFavorite: isFavorite,
+      );
       if (isFavorite && !previous) {
         unawaited(_awardWishlistPoints(type: type, itemId: itemId));
       }
@@ -140,6 +149,60 @@ class WishlistController extends ChangeNotifier {
     }
     _isLoaded = true;
     notifyListeners();
+  }
+
+  void _updateLocalWishlistItem({
+    required FavoriteType type,
+    required String itemId,
+    required bool isFavorite,
+    String? fallbackName,
+  }) {
+    final String normalizedId = itemId.trim();
+    if (normalizedId.isEmpty) return;
+
+    final int index = _items.indexWhere(
+      (WishlistRepositoryItem item) =>
+          item.type == type && item.id == normalizedId,
+    );
+    if (!isFavorite) {
+      if (index < 0) return;
+      final next = List<WishlistRepositoryItem>.of(_items)..removeAt(index);
+      _items = List<WishlistRepositoryItem>.unmodifiable(next);
+      notifyListeners();
+      return;
+    }
+
+    if (index >= 0) return;
+    final String title = fallbackName?.trim().isNotEmpty == true
+        ? fallbackName!.trim()
+        : _fallbackTitleForType(type);
+    _items = List<WishlistRepositoryItem>.unmodifiable(<WishlistRepositoryItem>[
+      WishlistRepositoryItem(
+        id: normalizedId,
+        type: type,
+        title: title,
+        description: '',
+      ),
+      ..._items,
+    ]);
+    notifyListeners();
+  }
+
+  String _fallbackTitleForType(FavoriteType type) {
+    switch (type) {
+      case FavoriteType.city:
+        return 'Saved city';
+      case FavoriteType.place:
+        return 'Saved place';
+      case FavoriteType.food:
+        return 'Saved food';
+      case FavoriteType.culture:
+        return 'Saved culture';
+      case FavoriteType.activity:
+        return 'Saved activity';
+      case FavoriteType.localProduct:
+        return 'Saved local product';
+    }
   }
 
   String _key(FavoriteType type, String rawItemId) {

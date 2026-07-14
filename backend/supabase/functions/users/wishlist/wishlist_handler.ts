@@ -11,7 +11,13 @@ import {
 } from "../../auth/auth_guard.ts";
 
 type JsonObject = Record<string, unknown>;
-type FavoriteType = "city" | "place" | "food";
+type FavoriteType =
+  | "city"
+  | "place"
+  | "food"
+  | "culture"
+  | "activity"
+  | "local_product";
 
 type WishlistItem = {
   id: string;
@@ -39,17 +45,21 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const FAVORITE_FOOD_TABLE = "favorite_food";
 const FAVORITE_PLACE_TABLE = "favorite_place";
 const FAVORITE_CITY_TABLE = "favorite_city";
+const FAVORITE_CULTURE_TABLE = "favorite_culture";
+const FAVORITE_ACTIVITY_TABLE = "favorite_activity";
+const FAVORITE_LOCAL_PRODUCT_TABLE = "favorite_local_product";
 
 const FOOD_TABLE = "food";
 const FOOD_TRANSLATION_TABLE = "food_translation";
 const PLACE_TABLE = "place";
+const CULTURE_TABLE = "culture";
+const ACTIVITY_TABLE = "activity";
+const LOCAL_PRODUCTS_TABLE = "local_products";
 const DEFAULT_LANGUAGE = "en";
-const HANDLER_VERSION = "wishlist-be-2026-05-15-v2";
 
-const CITY_TABLE_CANDIDATES = ["province", "city_province"];
+const CITY_TABLE = "province";
 const CITY_ID_CANDIDATES_BY_TABLE: Record<string, string[]> = {
-  province: ["id_province", "id_city", "province_id", "id"],
-  city_province: ["id_city", "id_province", "city_id", "id"],
+  province: ["id_province"],
 };
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -59,8 +69,6 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 export async function handleWishlistRequest(req: Request): Promise<Response> {
-  console.log(`[wishlist] version=${HANDLER_VERSION} request method=${req.method}`);
-
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -92,7 +100,6 @@ export async function handleWishlistRequest(req: Request): Promise<Response> {
     if (!action) {
       return jsonResponse({ error: "Missing action." }, 400);
     }
-    console.log(`[wishlist] action=${action}`);
 
     switch (action) {
       case "listWishlist": {
@@ -129,10 +136,9 @@ export async function handleWishlistRequest(req: Request): Promise<Response> {
             400,
           );
         }
-        console.log(
-          `[wishlist] setFavorite isFavorite=${isFavorite} raw=${String(payload.isFavorite)} type=${type} itemId=${itemId}`,
+        return jsonResponse(
+          await service.setFavorite(itemId, type, isFavorite),
         );
-        return jsonResponse(await service.setFavorite(itemId, type, isFavorite));
       }
       default:
         return jsonResponse({ error: `Unsupported action: ${action}` }, 400);
@@ -142,13 +148,14 @@ export async function handleWishlistRequest(req: Request): Promise<Response> {
     if (error instanceof AuthorizationError) {
       return jsonResponse({ error: error.message }, error.statusCode);
     }
-    const message = error instanceof Error ? error.message : "Unexpected error.";
+    const message = error instanceof Error
+      ? error.message
+      : "Unexpected error.";
     return jsonResponse({ error: message }, 500);
   }
 }
 
 class WishlistService {
-  private cityTableName: string | null = null;
   private favoriteItemColumnCache = new Map<string, string>();
 
   constructor(
@@ -160,8 +167,18 @@ class WishlistService {
     const foodConfig = favoriteConfigForType("food");
     const placeConfig = favoriteConfigForType("place");
     const cityConfig = favoriteConfigForType("city");
+    const cultureConfig = favoriteConfigForType("culture");
+    const activityConfig = favoriteConfigForType("activity");
+    const localProductConfig = favoriteConfigForType("local_product");
 
-    const [foodRows, placeRows, cityRows] = await Promise.all([
+    const [
+      foodRows,
+      placeRows,
+      cityRows,
+      cultureRows,
+      activityRows,
+      localProductRows,
+    ] = await Promise.all([
       this.selectFavoriteRows(foodConfig.table, foodConfig.itemColumns, "food"),
       this.selectFavoriteRows(
         placeConfig.table,
@@ -169,9 +186,31 @@ class WishlistService {
         "place",
       ),
       this.selectFavoriteRows(cityConfig.table, cityConfig.itemColumns, "city"),
+      this.selectFavoriteRows(
+        cultureConfig.table,
+        cultureConfig.itemColumns,
+        "culture",
+      ),
+      this.selectFavoriteRows(
+        activityConfig.table,
+        activityConfig.itemColumns,
+        "activity",
+      ),
+      this.selectFavoriteRows(
+        localProductConfig.table,
+        localProductConfig.itemColumns,
+        "local_product",
+      ),
     ]);
 
-    const ordered = [...foodRows, ...placeRows, ...cityRows].sort(
+    const ordered = [
+      ...foodRows,
+      ...placeRows,
+      ...cityRows,
+      ...cultureRows,
+      ...activityRows,
+      ...localProductRows,
+    ].sort(
       (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
     );
     if (ordered.length === 0) return [];
@@ -179,15 +218,54 @@ class WishlistService {
     const cityIds = new Set<string>();
     const placeIds = new Set<string>();
     const foodIds = new Set<string>();
+    const cultureIds = new Set<string>();
+    const activityIds = new Set<string>();
+    const localProductIds = new Set<string>();
     for (const row of ordered) {
       if (row.type === "city") cityIds.add(row.id);
       if (row.type === "place") placeIds.add(row.id);
       if (row.type === "food") foodIds.add(row.id);
+      if (row.type === "culture") cultureIds.add(row.id);
+      if (row.type === "activity") activityIds.add(row.id);
+      if (row.type === "local_product") localProductIds.add(row.id);
     }
 
-    const cityMap = await this.loadCityItems(Array.from(cityIds));
-    const placeMap = await this.loadPlaceItems(Array.from(placeIds));
-    const foodMap = await this.loadFoodItems(Array.from(foodIds), language);
+    const [
+      cityMap,
+      placeMap,
+      foodMap,
+      cultureMap,
+      activityMap,
+      localProductMap,
+    ] = await Promise.all([
+      this.loadCityItems(Array.from(cityIds)),
+      this.loadPlaceItems(Array.from(placeIds)),
+      this.loadFoodItems(Array.from(foodIds), language),
+      this.loadGenericContentItems({
+        ids: Array.from(cultureIds),
+        table: CULTURE_TABLE,
+        idColumn: "id",
+        type: "culture",
+        fallbackDescription: (title) =>
+          `${title} is part of Vietnam cultural heritage.`,
+      }),
+      this.loadGenericContentItems({
+        ids: Array.from(activityIds),
+        table: ACTIVITY_TABLE,
+        idColumn: "id",
+        type: "activity",
+        fallbackDescription: (title) =>
+          `${title} is a memorable activity to try in Vietnam.`,
+      }),
+      this.loadGenericContentItems({
+        ids: Array.from(localProductIds),
+        table: LOCAL_PRODUCTS_TABLE,
+        idColumn: "id",
+        type: "local_product",
+        fallbackDescription: (title) =>
+          `${title} is one of Vietnam regional specialties.`,
+      }),
+    ]);
 
     const output: WishlistItem[] = [];
     const seen = new Set<string>();
@@ -195,12 +273,17 @@ class WishlistService {
       const key = `${ref.type}:${ref.id}`;
       if (seen.has(key)) continue;
 
-      const item =
-        ref.type === "city"
-          ? cityMap.get(ref.id)
-          : ref.type === "place"
-          ? placeMap.get(ref.id)
-          : foodMap.get(ref.id);
+      const item = ref.type === "city"
+        ? cityMap.get(ref.id)
+        : ref.type === "place"
+        ? placeMap.get(ref.id)
+        : ref.type === "food"
+        ? foodMap.get(ref.id)
+        : ref.type === "culture"
+        ? cultureMap.get(ref.id)
+        : ref.type === "activity"
+        ? activityMap.get(ref.id)
+        : localProductMap.get(ref.id);
       if (!item) continue;
 
       output.push(item);
@@ -253,9 +336,6 @@ class WishlistService {
   ): Promise<void> {
     const config = favoriteConfigForType(type);
     const itemColumn = await this.resolveFavoriteItemColumn(config);
-    console.log(
-      `[wishlist] setFavorite branch=${isFavorite ? "upsert" : "delete"} type=${type} table=${config.table} itemColumn=${itemColumn} itemId=${itemId}`,
-    );
 
     if (isFavorite) {
       await this.assertItemExists(type, itemId);
@@ -272,44 +352,12 @@ class WishlistService {
     }
 
     {
-      const deleteColumns = favoriteItemColumnCandidatesForType(type);
-      let deletedRowsCount = 0;
-
-      for (const deleteColumn of deleteColumns) {
-        try {
-          const { data, error } = await this.client
-            .from(config.table)
-            .delete()
-            .eq("id_user", this.userId)
-            .eq(deleteColumn, itemId)
-            .select(deleteColumn);
-
-          if (error) {
-            if (isUndefinedColumnError(error)) {
-              continue;
-            }
-            throw new Error(`${config.table}: ${error.message}`);
-          }
-
-          const deletedRows = asRows(data);
-          deletedRowsCount += deletedRows.length;
-          console.log(
-            `[wishlist] delete attempt table=${config.table} column=${deleteColumn} affected=${deletedRows.length}`,
-          );
-          if (deletedRows.length === 0) {
-            continue;
-          }
-        } catch (error) {
-          if (isUndefinedColumnError(error)) {
-            continue;
-          }
-          throw error;
-        }
-      }
-
-      console.log(
-        `[wishlist] delete type=${type} table=${config.table} user=${this.userId} item=${itemId} deleted_rows=${deletedRowsCount}`,
-      );
+      const { error } = await this.client
+        .from(config.table)
+        .delete()
+        .eq("id_user", this.userId)
+        .eq(itemColumn, itemId);
+      if (error) throw new Error(`${config.table}: ${error.message}`);
     }
   }
 
@@ -318,33 +366,16 @@ class WishlistService {
     itemId: string,
   ): Promise<boolean> {
     const config = favoriteConfigForType(type);
-    for (const itemColumn of favoriteItemColumnCandidatesForType(type)) {
-      try {
-        const { data, error } = await this.client
-          .from(config.table)
-          .select(itemColumn)
-          .eq("id_user", this.userId)
-          .eq(itemColumn, itemId)
-          .limit(1);
+    const itemColumn = await this.resolveFavoriteItemColumn(config);
+    const { data, error } = await this.client
+      .from(config.table)
+      .select(itemColumn)
+      .eq("id_user", this.userId)
+      .eq(itemColumn, itemId)
+      .limit(1);
 
-        if (error) {
-          if (isUndefinedColumnError(error)) {
-            continue;
-          }
-          throw new Error(`${config.table}: ${error.message}`);
-        }
-
-        if (asRows(data).length > 0) {
-          return true;
-        }
-      } catch (error) {
-        if (isUndefinedColumnError(error)) {
-          continue;
-        }
-        throw error;
-      }
-    }
-    return false;
+    if (error) throw new Error(`${config.table}: ${error.message}`);
+    return asRows(data).length > 0;
   }
 
   private async resolveItemId(
@@ -364,12 +395,20 @@ class WishlistService {
       );
     }
 
-    const resolvedId =
-      type === "city"
-        ? await this.findCityIdByName(normalizedName)
-        : type === "place"
-        ? await this.findPlaceIdByName(normalizedName)
-        : await this.findFoodIdByName(normalizedName);
+    const resolvedId = type === "city"
+      ? await this.findCityIdByName(normalizedName)
+      : type === "place"
+      ? await this.findPlaceIdByName(normalizedName)
+      : type === "food"
+      ? await this.findFoodIdByName(normalizedName)
+      : type === "culture"
+      ? await this.findGenericContentIdByName(CULTURE_TABLE, normalizedName)
+      : type === "activity"
+      ? await this.findGenericContentIdByName(ACTIVITY_TABLE, normalizedName)
+      : await this.findGenericContentIdByName(
+        LOCAL_PRODUCTS_TABLE,
+        normalizedName,
+      );
 
     if (!resolvedId) {
       throw new Error(`Cannot find ${type} id for "${normalizedName}".`);
@@ -377,35 +416,18 @@ class WishlistService {
     return resolvedId;
   }
 
-  private async assertItemExists(type: FavoriteType, itemId: string): Promise<void> {
+  private async assertItemExists(
+    type: FavoriteType,
+    itemId: string,
+  ): Promise<void> {
     if (type === "city") {
-      const table = await this.resolveCityTableName();
-      if (!table) throw new Error("City table not found.");
-
-      const idCandidates = CITY_ID_CANDIDATES_BY_TABLE[table] ?? ["id"];
-      let found = false;
-      for (const idColumn of idCandidates) {
-        try {
-          const { data, error } = await this.client
-            .from(table)
-            .select(idColumn)
-            .eq(idColumn, itemId)
-            .maybeSingle();
-          if (error) {
-            if (isUndefinedColumnError(error)) continue;
-            throw error;
-          }
-          if (data != null) {
-            found = true;
-            break;
-          }
-        } catch (error) {
-          if (isUndefinedColumnError(error)) continue;
-          throw error;
-        }
-      }
-
-      if (!found) {
+      const { data, error } = await this.client
+        .from(CITY_TABLE)
+        .select("id_province")
+        .eq("id_province", itemId)
+        .maybeSingle();
+      if (error) throw new Error(`${CITY_TABLE}: ${error.message}`);
+      if (data == null) {
         throw new Error(`City item does not exist: ${itemId}`);
       }
       return;
@@ -422,6 +444,25 @@ class WishlistService {
       return;
     }
 
+    if (type === "culture") {
+      await this.assertGenericItemExists(CULTURE_TABLE, itemId, "Culture");
+      return;
+    }
+
+    if (type === "activity") {
+      await this.assertGenericItemExists(ACTIVITY_TABLE, itemId, "Activity");
+      return;
+    }
+
+    if (type === "local_product") {
+      await this.assertGenericItemExists(
+        LOCAL_PRODUCTS_TABLE,
+        itemId,
+        "Local product",
+      );
+      return;
+    }
+
     const { data, error } = await this.client
       .from(FOOD_TABLE)
       .select("id_food")
@@ -431,12 +472,28 @@ class WishlistService {
     if (data == null) throw new Error(`Food item does not exist: ${itemId}`);
   }
 
+  private async assertGenericItemExists(
+    table: string,
+    itemId: string,
+    label: string,
+  ): Promise<void> {
+    const { data, error } = await this.client
+      .from(table)
+      .select("id")
+      .eq("id", itemId)
+      .maybeSingle();
+    if (error) throw new Error(`${table}: ${error.message}`);
+    if (data == null) {
+      throw new Error(`${label} item does not exist: ${itemId}`);
+    }
+  }
+
   private async selectFavoriteRows(
     table: string,
     itemColumns: string[],
     type: FavoriteType,
   ): Promise<FavoriteRef[]> {
-    const itemColumn = await this.resolveColumnFromCandidates(table, itemColumns);
+    const itemColumn = itemColumns[0];
     const { data, error } = await this.client
       .from(table)
       .select(`${itemColumn},created_at`)
@@ -465,50 +522,22 @@ class WishlistService {
       return cached;
     }
 
-    const resolved = await this.resolveColumnFromCandidates(
-      config.table,
-      config.itemColumns,
-    );
+    const resolved = config.itemColumns[0];
     this.favoriteItemColumnCache.set(config.table, resolved);
     return resolved;
   }
 
-  private async resolveColumnFromCandidates(
-    table: string,
-    candidates: string[],
-  ): Promise<string> {
-    for (const column of candidates) {
-      try {
-        const { error } = await this.client.from(table).select(column).limit(1);
-        if (error) throw error;
-        return column;
-      } catch (error) {
-        if (isUndefinedColumnError(error)) {
-          continue;
-        }
-        if (isMissingTableError(error)) {
-          throw new Error(`Table "${table}" does not exist.`);
-        }
-        throw error;
-      }
-    }
-
-    throw new Error(
-      `Could not determine favorite item column for "${table}". Tried: ${candidates.join(", ")}`,
-    );
-  }
-
-  private async loadCityItems(ids: string[]): Promise<Map<string, WishlistItem>> {
+  private async loadCityItems(
+    ids: string[],
+  ): Promise<Map<string, WishlistItem>> {
     if (ids.length === 0) return new Map<string, WishlistItem>();
-
-    const cityTable = await this.resolveCityTableName();
-    if (!cityTable) return new Map<string, WishlistItem>();
 
     const cityRows = await selectRowsByIdCandidates(
       this.client,
-      cityTable,
+      CITY_TABLE,
       ids,
-      CITY_ID_CANDIDATES_BY_TABLE[cityTable] ?? ["id"],
+      CITY_ID_CANDIDATES_BY_TABLE[CITY_TABLE],
+      "id_province,name,short_description,cover_image",
     );
 
     const nameColumn = pickColumn(
@@ -538,10 +567,9 @@ class WishlistService {
         id,
         type: "city",
         title: name.startsWith("TP.") ? name : `TP. ${name}`,
-        description:
-          stringValue(
-            descriptionColumn ? row[descriptionColumn] : null,
-          ) ?? `${name} is a beautiful destination in Vietnam.`,
+        description: stringValue(
+          descriptionColumn ? row[descriptionColumn] : null,
+        ) ?? `${name} is a beautiful destination in Vietnam.`,
         imageUrl: firstImageToken(
           stringValue(imageColumn ? row[imageColumn] : null),
         ),
@@ -560,6 +588,7 @@ class WishlistService {
       PLACE_TABLE,
       ids,
       ["id_place", "place_id", "id"],
+      "id_place,name,short_description,cover_image",
     );
 
     const nameColumn = pickColumn(placeRows.rows, ["name", "title"], "name");
@@ -586,10 +615,9 @@ class WishlistService {
         id,
         type: "place",
         title: name,
-        description:
-          stringValue(
-            descriptionColumn ? row[descriptionColumn] : null,
-          ) ?? `${name} is a must-visit place in Vietnam.`,
+        description: stringValue(
+          descriptionColumn ? row[descriptionColumn] : null,
+        ) ?? `${name} is a must-visit place in Vietnam.`,
         imageUrl: firstImageToken(
           stringValue(imageColumn ? row[imageColumn] : null),
         ),
@@ -609,6 +637,7 @@ class WishlistService {
       FOOD_TABLE,
       ids,
       ["id_food", "food_id", "id"],
+      "id_food,name,description,image_path",
     );
 
     const imageColumn = pickOptionalColumn(foodRows.rows, [
@@ -663,16 +692,14 @@ class WishlistService {
       if (!id) continue;
 
       const trans = preferredTranslations.get(id);
-      const title =
-        stringValue(trans?.[translationNameColumn]) ??
+      const title = stringValue(trans?.[translationNameColumn]) ??
         stringValue(fallbackNameColumn ? row[fallbackNameColumn] : null) ??
         "Unnamed food";
-      const description =
-        stringValue(
-          trans && translationDescriptionColumn
-            ? trans[translationDescriptionColumn]
-            : null,
-        ) ??
+      const description = stringValue(
+        trans && translationDescriptionColumn
+          ? trans[translationDescriptionColumn]
+          : null,
+      ) ??
         stringValue(
           fallbackDescriptionColumn ? row[fallbackDescriptionColumn] : null,
         ) ??
@@ -691,41 +718,49 @@ class WishlistService {
     return output;
   }
 
-  private async resolveCityTableName(): Promise<string | null> {
-    if (this.cityTableName != null) return this.cityTableName;
+  private async loadGenericContentItems(args: {
+    ids: string[];
+    table: string;
+    idColumn: string;
+    type: Extract<FavoriteType, "culture" | "activity" | "local_product">;
+    fallbackDescription: (title: string) => string;
+  }): Promise<Map<string, WishlistItem>> {
+    const { ids, table, idColumn, type, fallbackDescription } = args;
+    if (ids.length === 0) return new Map<string, WishlistItem>();
 
-    for (const tableName of CITY_TABLE_CANDIDATES) {
-      try {
-        const { error } = await this.client.from(tableName).select("*").limit(1);
-        if (error) throw error;
-        this.cityTableName = tableName;
-        return tableName;
-      } catch (error) {
-        if (isMissingTableError(error)) continue;
-        throw error;
-      }
+    const rows = await selectRowsByIdCandidates(
+      this.client,
+      table,
+      ids,
+      [idColumn],
+      `${idColumn},name,short_description,cover_image`,
+    );
+
+    const output = new Map<string, WishlistItem>();
+    for (const row of rows.rows) {
+      const id = stringValue(row[rows.idColumn]);
+      const title = stringValue(row.name);
+      if (!id || !title) continue;
+
+      output.set(id, {
+        id,
+        type,
+        title,
+        description: stringValue(row.short_description) ??
+          fallbackDescription(title),
+        imageUrl: firstImageToken(stringValue(row.cover_image)),
+      });
     }
-    return null;
+    return output;
   }
 
   private async findCityIdByName(cityName: string): Promise<string | null> {
-    const table = await this.resolveCityTableName();
-    if (!table) return null;
-
-    const idCandidates = CITY_ID_CANDIDATES_BY_TABLE[table] ?? ["id"];
-    const nameCandidates = ["name", "province_name", "city", "province"];
-    for (const idColumn of idCandidates) {
-      for (const nameColumn of nameCandidates) {
-        const id = await findIdByName(this.client, {
-          table,
-          idColumn,
-          nameColumn,
-          name: cityName,
-        });
-        if (id) return id;
-      }
-    }
-    return null;
+    return findIdByName(this.client, {
+      table: CITY_TABLE,
+      idColumn: "id_province",
+      nameColumn: "name",
+      name: cityName,
+    });
   }
 
   private async findPlaceIdByName(placeName: string): Promise<string | null> {
@@ -755,6 +790,18 @@ class WishlistService {
     }
     return null;
   }
+
+  private async findGenericContentIdByName(
+    table: string,
+    name: string,
+  ): Promise<string | null> {
+    return findIdByName(this.client, {
+      table,
+      idColumn: "id",
+      nameColumn: "name",
+      name,
+    });
+  }
 }
 
 function favoriteConfigForType(type: FavoriteType): FavoriteTableConfig {
@@ -762,34 +809,34 @@ function favoriteConfigForType(type: FavoriteType): FavoriteTableConfig {
     case "food":
       return {
         table: FAVORITE_FOOD_TABLE,
-        itemColumns: ["id_food", "id_item", "food_id", "id"],
+        itemColumns: ["id_food"],
       };
     case "place":
       return {
         table: FAVORITE_PLACE_TABLE,
-        itemColumns: ["id_place", "id_item", "place_id", "id"],
+        itemColumns: ["id_place"],
       };
     case "city":
       return {
         table: FAVORITE_CITY_TABLE,
-        itemColumns: ["id_province", "id_item", "id_city", "id"],
+        itemColumns: ["id_province"],
+      };
+    case "culture":
+      return {
+        table: FAVORITE_CULTURE_TABLE,
+        itemColumns: ["id_culture"],
+      };
+    case "activity":
+      return {
+        table: FAVORITE_ACTIVITY_TABLE,
+        itemColumns: ["id_activity"],
+      };
+    case "local_product":
+      return {
+        table: FAVORITE_LOCAL_PRODUCT_TABLE,
+        itemColumns: ["id_local_product"],
       };
   }
-}
-
-function favoriteItemColumnCandidatesForType(type: FavoriteType): string[] {
-  const config = favoriteConfigForType(type);
-  const ordered = [
-    ...config.itemColumns,
-    type === "food"
-      ? "id_food"
-      : type === "place"
-      ? "id_place"
-      : "id_province",
-    "id_item",
-    "id",
-  ];
-  return Array.from(new Set(ordered));
 }
 
 async function findIdByName(
@@ -834,12 +881,13 @@ async function selectRowsByIdCandidates(
   table: string,
   ids: string[],
   idCandidates: string[],
+  selectColumns = "*",
 ): Promise<{ idColumn: string; rows: JsonObject[] }> {
   for (const idColumn of idCandidates) {
     try {
       const { data, error } = await client
         .from(table)
-        .select("*")
+        .select(selectColumns)
         .in(idColumn, ids);
       if (error) throw error;
       return { idColumn, rows: asRows(data) };
@@ -853,7 +901,9 @@ async function selectRowsByIdCandidates(
   }
 
   throw new Error(
-    `Could not determine id column for table "${table}". Tried: ${idCandidates.join(", ")}`,
+    `Could not determine id column for table "${table}". Tried: ${
+      idCandidates.join(", ")
+    }`,
   );
 }
 
@@ -897,10 +947,20 @@ function pickPreferredTranslations(
   return preferred;
 }
 
-function parseFavoriteType(value: string | null): FavoriteType | null {
+export function parseFavoriteType(value: string | null): FavoriteType | null {
   if (!value) return null;
   const normalized = value.trim().toLowerCase();
-  if (normalized === "city" || normalized === "place" || normalized === "food") {
+  if (normalized === "localproduct" || normalized === "local-products") {
+    return "local_product";
+  }
+  if (
+    normalized === "city" ||
+    normalized === "place" ||
+    normalized === "food" ||
+    normalized === "culture" ||
+    normalized === "activity" ||
+    normalized === "local_product"
+  ) {
     return normalized;
   }
   return null;
@@ -909,7 +969,9 @@ function parseFavoriteType(value: string | null): FavoriteType | null {
 function requireFavoriteType(value: unknown): FavoriteType {
   const parsed = parseFavoriteType(stringValue(value));
   if (!parsed) {
-    throw new Error('type must be one of "city", "place", "food".');
+    throw new Error(
+      'type must be one of "city", "place", "food", "culture", "activity", "local_product".',
+    );
   }
   return parsed;
 }
