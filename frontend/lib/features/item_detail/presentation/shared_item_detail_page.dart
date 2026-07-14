@@ -17,12 +17,16 @@ import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart
 import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import 'package:hellovietnam/features/report/presentation/report_issue_popup.dart';
+import 'package:hellovietnam/features/reviews/data/review_repository.dart';
+import 'package:hellovietnam/features/reviews/domain/review_models.dart';
+import 'package:hellovietnam/features/reviews/presentation/review_section.dart';
 
 class SharedItemDetailPage extends StatefulWidget {
   const SharedItemDetailPage({
     super.key,
     this.request,
     this.detail,
+    this.reviewRepository,
     this.insertedSectionsBuilder,
     this.favoriteType,
     this.favoriteRawId,
@@ -34,6 +38,7 @@ class SharedItemDetailPage extends StatefulWidget {
 
   final ItemDetailRequest? request;
   final ItemDetail? detail;
+  final ReviewRepository? reviewRepository;
   final List<Widget> Function(BuildContext context, ItemDetail detail)?
   insertedSectionsBuilder;
   final FavoriteType? favoriteType;
@@ -200,11 +205,19 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
     }
   }
 
+  ReviewContentType? get _reviewContentType {
+    if (!_detail.hasReviewTarget) {
+      return null;
+    }
+    return reviewContentTypeForDetailCategory(_detail.category);
+  }
+
   @override
   Widget build(BuildContext context) {
     final insertedSections =
         widget.insertedSectionsBuilder?.call(context, _detail) ??
         const <Widget>[];
+    final ReviewContentType? reviewContentType = _reviewContentType;
     final ThemeData theme = Theme.of(context);
 
     return Scaffold(
@@ -253,17 +266,27 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     const SizedBox(height: 28),
                   _SectionTitle(title: context.l10n.ui('Reviews')),
                   const SizedBox(height: 14),
-                  _ReviewSummary(
-                    rating: _detail.rating,
-                    ratingLabel: _detail.ratingLabel,
-                    reviewCount: _detail.reviewCount,
-                  ),
-                  const SizedBox(height: 14),
-                  _ReviewCarousel(
-                    reviews: _detail.reviews,
-                    controller: _reviewPageController,
-                  ),
-                  const SizedBox(height: 18),
+                  if (reviewContentType != null) ...<Widget>[
+                    ReviewSection(
+                      contentType: reviewContentType,
+                      contentId: _detail.effectiveReviewContentId,
+                      itemTitle: _detail.name,
+                      repository: widget.reviewRepository,
+                    ),
+                    const SizedBox(height: 18),
+                  ] else ...<Widget>[
+                    _ReviewSummary(
+                      rating: _detail.rating,
+                      ratingLabel: _detail.ratingLabel,
+                      reviewCount: _detail.reviewCount,
+                    ),
+                    const SizedBox(height: 14),
+                    _ReviewCarousel(
+                      reviews: _detail.reviews,
+                      controller: _reviewPageController,
+                    ),
+                    const SizedBox(height: 18),
+                  ],
                   _SectionTitle(title: context.l10n.ui('What to expect')),
                   const SizedBox(height: 10),
                   Text(

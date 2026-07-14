@@ -162,6 +162,19 @@ class AppStrings {
   String get dismiss => _vi ? 'Ẩn' : 'Dismiss';
 
   String get retry => _vi ? 'Thử lại' : 'Retry';
+  String reviewCount(int count) => _vi ? '$count đánh giá' : '$count reviews';
+  String reviewRatingFilterLabel(int star) => _vi ? '$star sao' : '$star-star';
+  String reviewBreakdownStarLabel(int star) => _vi ? '$star sao' : '$star star';
+  String noReviewsYetFor(String title) =>
+      _vi ? 'Chưa có đánh giá nào cho $title.' : 'No reviews yet for $title.';
+  String reviewSummaryLabel(double rating) {
+    if (rating >= 4.7) return _vi ? 'Tuyệt vời' : 'Fantastic';
+    if (rating >= 4.3) return _vi ? 'Rất tốt' : 'Great';
+    if (rating >= 3.5) return _vi ? 'Tốt' : 'Good';
+    if (rating > 0) return _vi ? 'Ổn' : 'Fair';
+    return _vi ? 'Chưa có xếp hạng' : 'No ratings yet';
+  }
+
   String get signIn => _vi ? 'Đăng nhập' : 'Sign in';
   String get allCategories => _vi ? 'Tất cả danh mục' : 'All Categories';
   String get loadWishlistFailed =>
@@ -677,6 +690,15 @@ class AppStrings {
     'Personal Data': 'Dữ liệu cá nhân',
     'All Images': 'Tất cả ảnh',
     'Reviews': 'Đánh giá',
+    'Could not load reviews right now.': 'Hiện chưa tải được đánh giá.',
+    'Write a review': 'Viết đánh giá',
+    'Edit your review': 'Sửa đánh giá của bạn',
+    'Publish review': 'Đăng đánh giá',
+    'Update review': 'Cập nhật đánh giá',
+    'Save review': 'Lưu đánh giá',
+    'Could not publish your review.': 'Không thể đăng đánh giá của bạn.',
+    'Share what stood out for you...': 'Chia sẻ điều làm bạn ấn tượng...',
+    'Traveler': 'Du khách',
     'What to expect': 'Trải nghiệm nổi bật',
     'Best time to visit': 'Thời điểm đẹp nhất',
     'Map placeholder': 'Bản đồ',

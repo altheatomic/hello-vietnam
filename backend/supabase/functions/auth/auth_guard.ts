@@ -19,7 +19,7 @@ export function requireAuthorizationHeader(value: string | null): string {
 }
 
 export async function requireAuthenticatedUserId(
-  client: ReturnType<typeof createClient>,
+  client: ReturnType<typeof createClient> | any,
 ): Promise<string> {
   const {
     data: { user },
@@ -34,7 +34,7 @@ export async function requireAuthenticatedUserId(
 }
 
 export async function requireRole(
-  client: ReturnType<typeof createClient>,
+  client: ReturnType<typeof createClient> | any,
   userId: string,
   role: string,
 ): Promise<void> {
