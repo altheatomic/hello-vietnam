@@ -1,7 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -m py_compile services/schedule_builder.py)"
+      "Bash(python -m py_compile services/schedule_builder.py)",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_main.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_overlap.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_places.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_places2.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_seed_schema.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_rate_trigger.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_reviews.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_reviews2.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_reviews3.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_auth.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_interest.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_interest2.py\")"
     ]
   }
 }

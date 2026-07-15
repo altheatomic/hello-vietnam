@@ -3,16 +3,18 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 
-// ── SharedPreferences keys (namespaced to avoid collisions) ──────────────────
+// ── SharedPreferences keys (namespaced per user so a device switching ────────
+// accounts never resurrects the previous account's active trip) ─────────────
 
-const String _kTitle = 'trip_store.title';
-const String _kActivatedAt = 'trip_store.activated_at';
-const String _kTripStartDate = 'trip_store.trip_start_date';
-const String _kIdPlan = 'trip_store.id_plan';
-const String _kDays = 'trip_store.days';
+String _kTitle(String userId) => 'trip_store.title.$userId';
+String _kActivatedAt(String userId) => 'trip_store.activated_at.$userId';
+String _kTripStartDate(String userId) => 'trip_store.trip_start_date.$userId';
+String _kIdPlan(String userId) => 'trip_store.id_plan.$userId';
+String _kDays(String userId) => 'trip_store.days.$userId';
 
 // ── Public types ──────────────────────────────────────────────────────────────
 
@@ -187,6 +189,8 @@ class TripStore extends ChangeNotifier {
   ActiveTrip? _activeTrip;
   TripStatus? _lastStatus;
   Timer? _refreshTimer;
+  String? _currentUserId;
+  StreamSubscription<AuthState>? _authSubscription;
 
   ActiveTrip? get activeTrip => _activeTrip;
   bool get hasActiveTrip => _activeTrip != null;
@@ -195,24 +199,53 @@ class TripStore extends ChangeNotifier {
 
   /// Must be called once in [main] before [runApp].
   ///
-  /// Restores any persisted active trip from SharedPreferences so that the
-  /// first build of HomePage already sees the correct state.
+  /// Restores any persisted active trip (scoped to the currently signed-in
+  /// user) from SharedPreferences so that the first build of HomePage already
+  /// sees the correct state, then subscribes to auth state changes so that
+  /// switching accounts on the same device swaps to that account's own trip
+  /// instead of leaking the previous account's.
   Future<void> init() async {
+    _currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    await _loadForCurrentUser();
+    _authSubscription ??= Supabase.instance.client.auth.onAuthStateChange.listen(
+      (AuthState data) => _onAuthStateChanged(data.session?.user.id),
+    );
+  }
+
+  /// Reacts to login/logout/account-switch: clears the in-memory trip
+  /// immediately (so the UI never flashes the previous account's trip) and
+  /// reloads whatever is persisted for the newly active user, if any.
+  void _onAuthStateChanged(String? newUserId) {
+    if (newUserId == _currentUserId) return; // same user — e.g. token refresh
+
+    _stopTimer();
+    _activeTrip = null;
+    _lastStatus = null;
+    _currentUserId = newUserId;
+    notifyListeners();
+
+    unawaited(_loadForCurrentUser());
+  }
+
+  Future<void> _loadForCurrentUser() async {
+    final String? userId = _currentUserId;
+    if (userId == null) return; // logged out — nothing to restore
+
     try {
       final prefs = await SharedPreferences.getInstance();
-      final title = prefs.getString(_kTitle);
-      final activatedAtStr = prefs.getString(_kActivatedAt);
-      final tripStartDateStr = prefs.getString(_kTripStartDate);
+      final title = prefs.getString(_kTitle(userId));
+      final activatedAtStr = prefs.getString(_kActivatedAt(userId));
+      final tripStartDateStr = prefs.getString(_kTripStartDate(userId));
 
       if (title == null || activatedAtStr == null || tripStartDateStr == null) {
-        return; // No persisted trip.
+        return; // No persisted trip for this user.
       }
 
       final activatedAt = DateTime.tryParse(activatedAtStr);
       final tripStartDate = DateTime.tryParse(tripStartDateStr);
       if (activatedAt == null || tripStartDate == null) return;
 
-      final daysJson = prefs.getString(_kDays);
+      final daysJson = prefs.getString(_kDays(userId));
       List<TripPlannerDayData> days;
       if (daysJson != null) {
         final decoded = jsonDecode(daysJson) as List;
@@ -223,20 +256,22 @@ class TripStore extends ChangeNotifier {
         days = TripPlannerMockData.tripDays;
       }
 
+      // The user may have changed again while the prefs read was in flight.
+      if (userId != _currentUserId) return;
+
       _activeTrip = ActiveTrip(
         title: title,
         days: days,
         activatedAt: activatedAt,
         tripStartDate: tripStartDate,
-        idPlan: prefs.getString(_kIdPlan),
+        idPlan: prefs.getString(_kIdPlan(userId)),
       );
       _lastStatus = _activeTrip!.status;
       _startTimer();
-      // No notifyListeners() — init() runs before runApp, listeners don't
-      // exist yet. The first build reads _activeTrip directly.
+      notifyListeners();
     } catch (e) {
       // SharedPreferences failure is non-fatal: app continues without restore.
-      debugPrint('TripStore.init: failed to restore persisted trip — $e');
+      debugPrint('TripStore._loadForCurrentUser: failed to restore trip — $e');
     }
   }
 
@@ -303,20 +338,27 @@ class TripStore extends ChangeNotifier {
   // ── Persistence ─────────────────────────────────────────────────────────────
 
   Future<void> _persist() async {
-    if (_activeTrip == null) return;
+    final String? userId = _currentUserId;
+    if (_activeTrip == null || userId == null) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       final daysEncoded = jsonEncode(
         _activeTrip!.days.map((d) => d.toJson()).toList(),
       );
       final futures = <Future<bool>>[
-        prefs.setString(_kTitle, _activeTrip!.title),
-        prefs.setString(_kActivatedAt, _activeTrip!.activatedAt.toIso8601String()),
-        prefs.setString(_kTripStartDate, _activeTrip!.tripStartDate.toIso8601String()),
-        prefs.setString(_kDays, daysEncoded),
+        prefs.setString(_kTitle(userId), _activeTrip!.title),
+        prefs.setString(
+          _kActivatedAt(userId),
+          _activeTrip!.activatedAt.toIso8601String(),
+        ),
+        prefs.setString(
+          _kTripStartDate(userId),
+          _activeTrip!.tripStartDate.toIso8601String(),
+        ),
+        prefs.setString(_kDays(userId), daysEncoded),
       ];
       if (_activeTrip!.idPlan != null) {
-        futures.add(prefs.setString(_kIdPlan, _activeTrip!.idPlan!));
+        futures.add(prefs.setString(_kIdPlan(userId), _activeTrip!.idPlan!));
       }
       await Future.wait(futures);
     } catch (e) {
@@ -325,14 +367,16 @@ class TripStore extends ChangeNotifier {
   }
 
   Future<void> _clearPersistence() async {
+    final String? userId = _currentUserId;
+    if (userId == null) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       await Future.wait(<Future<bool>>[
-        prefs.remove(_kTitle),
-        prefs.remove(_kActivatedAt),
-        prefs.remove(_kTripStartDate),
-        prefs.remove(_kIdPlan),
-        prefs.remove(_kDays),
+        prefs.remove(_kTitle(userId)),
+        prefs.remove(_kActivatedAt(userId)),
+        prefs.remove(_kTripStartDate(userId)),
+        prefs.remove(_kIdPlan(userId)),
+        prefs.remove(_kDays(userId)),
       ]);
     } catch (e) {
       debugPrint('TripStore._clearPersistence: failed — $e');

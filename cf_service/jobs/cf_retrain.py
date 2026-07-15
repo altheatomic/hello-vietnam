@@ -20,9 +20,10 @@ from ml.wals_model import train_wals, compute_cf_scores
 
 async def _load_events_from_db(conn) -> dict:
     rating_rows = await conn.fetch("""
-        SELECT id_user, id_item AS place_id, rating
-        FROM rate_item
-        WHERE item_type = 'place'
+        SELECT id_user, content_id AS place_id, rating
+        FROM reviews
+        WHERE content_type = 'place'
+          AND status = 'published'
           AND rating IS NOT NULL
     """)
     ratings = [
@@ -48,11 +49,12 @@ async def _load_events_from_db(conn) -> dict:
     ]
 
     review_rows = await conn.fetch("""
-        SELECT id_user, id_item AS place_id
-        FROM rate_item
-        WHERE item_type = 'place'
-          AND review IS NOT NULL
-          AND review != ''
+        SELECT id_user, content_id AS place_id
+        FROM reviews
+        WHERE content_type = 'place'
+          AND status = 'published'
+          AND comment IS NOT NULL
+          AND btrim(comment) <> ''
     """)
     reviews = [
         {'user_id': str(r['id_user']), 'place_id': str(r['place_id'])}
