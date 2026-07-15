@@ -91,6 +91,19 @@ class TripRepository {
         .toList();
   }
 
+  Future<void> triggerCfRetrain() async {
+    await _invoke(<String, Object?>{'action': 'triggerCfRetrain'});
+  }
+
+  Future<List<CfRetrainLog>> getCfRetrainLogs() async {
+    final data = await _invoke(<String, Object?>{'action': 'getCfRetrainLogs'});
+    final raw = data['logs'] as List<dynamic>? ?? <dynamic>[];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(CfRetrainLog.fromJson)
+        .toList();
+  }
+
   Future<Map<String, dynamic>> _invoke(Map<String, Object?> body) {
     return _functionClient.invokeJson(
       Env.tripPlannerFunction,

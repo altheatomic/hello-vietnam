@@ -88,6 +88,12 @@ class AdminSidebar extends StatefulWidget {
       selectedIcon: Icons.apps_rounded,
       route: '/admin/popular-apps',
     ),
+    _NavDestination(
+      label: 'CF Retrain',
+      icon: Icons.model_training_outlined,
+      selectedIcon: Icons.model_training_rounded,
+      route: '/admin/cf-retrain',
+    ),
   ];
 
   @override

@@ -12,9 +12,9 @@ import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_dat
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TripResultPage extends StatefulWidget {
-  const TripResultPage({super.key, this.plan, this.wizard});
+  const TripResultPage({super.key, required this.plan, this.wizard});
 
-  final TripPlanResponse? plan;
+  final TripPlanResponse plan;
   final TripWizardData? wizard;
 
   @override
@@ -26,7 +26,7 @@ class _TripResultPageState extends State<TripResultPage> {
   bool _isSharing = false;
 
   Future<void> _handleSave() async {
-    final idPlan = widget.plan?.idPlan;
+    final idPlan = widget.plan.idPlan;
     if (idPlan == null) {
       _showSnackBar('No plan ID — please generate again.');
       return;
@@ -48,7 +48,7 @@ class _TripResultPageState extends State<TripResultPage> {
 
   void _handleShare() {
     final plan = widget.plan;
-    if (plan == null || plan.idPlan == null) {
+    if (plan.idPlan == null) {
       _showSnackBar('Save the trip first before sharing.');
       return;
     }
@@ -79,7 +79,7 @@ class _TripResultPageState extends State<TripResultPage> {
 
   Future<void> _shareToForum() async {
     final plan = widget.plan;
-    if (plan == null || plan.idPlan == null) return;
+    if (plan.idPlan == null) return;
 
     setState(() => _isSharing = true);
     try {
@@ -139,9 +139,7 @@ class _TripResultPageState extends State<TripResultPage> {
 
   @override
   Widget build(BuildContext context) {
-    final days = widget.plan != null
-        ? _convertPlan(widget.plan!)
-        : TripPlannerMockData.tripDays;
+    final days = _convertPlan(widget.plan);
 
     final totalActivities =
         days.fold<int>(0, (sum, d) => sum + d.activities.length);
@@ -222,7 +220,7 @@ class _TripResultPageState extends State<TripResultPage> {
                         TripStore.instance.startTrip(
                           title: 'Your Vietnam Adventure',
                           days: days,
-                          idPlan: widget.plan?.idPlan,
+                          idPlan: widget.plan.idPlan,
                         );
                         context.go(AppRoutes.home);
                       },

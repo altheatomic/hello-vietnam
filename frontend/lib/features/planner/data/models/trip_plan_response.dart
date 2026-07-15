@@ -216,6 +216,39 @@ class SavedPlanItem {
   }
 }
 
+/// One row from `cf_retrain_log`, returned by the `getCfRetrainLogs` action.
+class CfRetrainLog {
+  const CfRetrainLog({
+    required this.idLog,
+    required this.triggeredBy,
+    required this.startedAt,
+    this.finishedAt,
+    required this.status,
+    this.rowsWritten,
+    this.errorMsg,
+  });
+
+  final String idLog;
+  final String triggeredBy;
+  final String startedAt;
+  final String? finishedAt;
+  final String status;
+  final int? rowsWritten;
+  final String? errorMsg;
+
+  factory CfRetrainLog.fromJson(Map<String, dynamic> json) {
+    return CfRetrainLog(
+      idLog:       json['id_log']       as String? ?? '',
+      triggeredBy: json['triggered_by'] as String? ?? '',
+      startedAt:   json['started_at']   as String? ?? '',
+      finishedAt:  json['finished_at']  as String?,
+      status:      json['status']       as String? ?? '',
+      rowsWritten: (json['rows_written'] as num?)?.toInt(),
+      errorMsg:    json['error_msg']    as String?,
+    );
+  }
+}
+
 /// Nearby amenity from `GET /api/places/nearby`.
 class NearbyPlace {
   const NearbyPlace({

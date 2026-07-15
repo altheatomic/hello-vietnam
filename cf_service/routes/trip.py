@@ -12,7 +12,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, model_validator
 from typing import List, Optional
 
-from db.connection import get_db
+from db.connection import get_pool
 from db.supabase_client import get_supabase
 from services.trip_planner import NoTripCandidatesError, TripPlannerService
 
@@ -154,12 +154,26 @@ async def trigger_cf_retrain(background_tasks: BackgroundTasks):
 
 
 @router.get("/admin/cf/retrain/logs")
-async def get_retrain_logs(conn=Depends(get_db)):
-    rows = await conn.fetch("""
-        SELECT id_log, triggered_by, started_at, finished_at,
-               status, rows_written, error_msg
-        FROM cf_retrain_log
-        ORDER BY started_at DESC
-        LIMIT 20
-    """)
+async def get_retrain_logs():
+    try:
+        pool = await get_pool()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503, detail=f"CF retrain database unavailable: {exc}"
+        ) from exc
+
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT id_log, triggered_by, started_at, finished_at,
+                       status, rows_written, error_msg
+                FROM cf_retrain_log
+                ORDER BY started_at DESC
+                LIMIT 20
+            """)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to load retrain logs: {exc}"
+        ) from exc
+
     return [dict(r) for r in rows]

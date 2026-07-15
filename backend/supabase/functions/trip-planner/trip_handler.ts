@@ -7,18 +7,20 @@ import {
   AuthorizationError,
   requireAuthenticatedUserId,
   requireAuthorizationHeader,
+  requireRole,
 } from "../auth/auth_guard.ts";
 
 type JsonObject = Record<string, unknown>;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 // Set via: supabase secrets set CF_SERVICE_URL=https://your-cf-service.run.app
 const CF_SERVICE_URL =
   Deno.env.get("CF_SERVICE_URL") ?? "http://localhost:8000";
 const HANDLER_VERSION = "trip-planner-2026-06-06-v1";
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error("Missing required Supabase environment variables.");
 }
 
@@ -65,6 +67,10 @@ export async function handleTripPlannerRequest(
         return clonePlan(userId, payload);
       case "savePlan":
         return savePlan(userId, payload);
+      case "triggerCfRetrain":
+        return triggerCfRetrain(userId);
+      case "getCfRetrainLogs":
+        return getCfRetrainLogs(userId);
       default:
         return jsonResponse({ error: `Unsupported action: ${action}` }, 400);
     }
@@ -133,6 +139,32 @@ async function savePlan(userId: string, p: JsonObject): Promise<Response> {
   });
 }
 
+async function triggerCfRetrain(userId: string): Promise<Response> {
+  const adminClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+  await requireRole(adminClient, userId, "admin");
+  return proxyPost("/admin/cf/retrain", {});
+}
+
+async function getCfRetrainLogs(userId: string): Promise<Response> {
+  const adminClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+  await requireRole(adminClient, userId, "admin");
+
+  const r = await fetch(`${CF_SERVICE_URL}/admin/cf/retrain/logs`);
+  const { data, error } = await parseUpstreamJson(r);
+  if (error != null) return error;
+
+  if (!r.ok) {
+    return jsonResponse(
+      { error: strVal((data as JsonObject)?.detail) ?? "Request failed." },
+      r.status,
+    );
+  }
+  // cf_service returns a bare JSON array here (unlike the other endpoints,
+  // which return objects) — wrap it so the response shape matches every
+  // other action's `{ ... }` contract that invokeJson() expects.
+  return jsonResponse({ logs: data });
+}
+
 async function proxyPost(path: string, body: unknown): Promise<Response> {
   console.log(`[trip-planner] cf_service_host=${new URL(CF_SERVICE_URL).host}`);
   const r = await fetch(`${CF_SERVICE_URL}${path}`, {
@@ -140,27 +172,63 @@ async function proxyPost(path: string, body: unknown): Promise<Response> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const data = (await r.json()) as JsonObject;
-  console.log(`[trip-planner] cf_service_status=${r.status} days=${Array.isArray(data.days) ? data.days.length : "N/A"}`);
+  const { data, error } = await parseUpstreamJson(r);
+  if (error != null) return error;
+
+  const obj = data as JsonObject;
+  console.log(`[trip-planner] cf_service_status=${r.status} days=${Array.isArray(obj.days) ? obj.days.length : "N/A"}`);
   if (!r.ok)
     return jsonResponse(
-      { error: strVal(data.detail) ?? "Request failed." },
+      { error: strVal(obj.detail) ?? "Request failed." },
       r.status,
     );
-  return jsonResponse(data);
+  return jsonResponse(obj);
 }
 
 async function proxyGet(path: string): Promise<Response> {
   console.log(`[trip-planner] cf_service_host=${new URL(CF_SERVICE_URL).host}`);
   const r = await fetch(`${CF_SERVICE_URL}${path}`);
-  const data = (await r.json()) as JsonObject;
-  console.log(`[trip-planner] cf_service_status=${r.status} days=${Array.isArray(data.days) ? data.days.length : "N/A"}`);
+  const { data, error } = await parseUpstreamJson(r);
+  if (error != null) return error;
+
+  const obj = data as JsonObject;
+  console.log(`[trip-planner] cf_service_status=${r.status} days=${Array.isArray(obj.days) ? obj.days.length : "N/A"}`);
   if (!r.ok)
     return jsonResponse(
-      { error: strVal(data.detail) ?? "Request failed." },
+      { error: strVal(obj.detail) ?? "Request failed." },
       r.status,
     );
-  return jsonResponse(data);
+  return jsonResponse(obj);
+}
+
+/// Safely parses an upstream cf_service response body as JSON.
+///
+/// cf_service can fail before reaching a route handler (e.g. a dependency
+/// raising before the JSON exception handler applies) and Starlette's default
+/// error path returns a plain-text "Internal Server Error" body in that case.
+/// Calling `.json()` on that unconditionally throws a SyntaxError that, left
+/// uncaught, aborts the edge function invocation — which the browser then
+/// misreports as a CORS failure rather than the real upstream 500. Reading
+/// the body as text first and parsing it ourselves keeps every failure mode
+/// inside a normal, CORS-headers-included JSON error response.
+async function parseUpstreamJson(
+  r: Response,
+): Promise<{ data: unknown; error: Response | null }> {
+  const raw = await r.text();
+  try {
+    return { data: raw.length > 0 ? JSON.parse(raw) : {}, error: null };
+  } catch {
+    console.error(
+      `[trip-planner] cf_service returned non-JSON body (status=${r.status}): ${raw.slice(0, 500)}`,
+    );
+    return {
+      data: null,
+      error: jsonResponse(
+        { error: `cf_service returned an unexpected response (status ${r.status}).` },
+        502,
+      ),
+    };
+  }
 }
 
 function strVal(v: unknown): string | null {

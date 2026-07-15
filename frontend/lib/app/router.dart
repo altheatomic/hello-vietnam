@@ -18,6 +18,7 @@ import '../features/planner/presentation/trip_day_detail_page.dart';
 import '../features/planner/presentation/trip_duration_page.dart';
 import '../features/planner/presentation/trip_interest_page.dart';
 import '../features/planner/presentation/trip_map_page.dart';
+import '../features/planner/presentation/trip_planner_mock_data.dart';
 import '../features/planner/presentation/trip_planner_page.dart';
 import '../features/planner/presentation/widgets/trip_result_loader.dart';
 import '../features/planner/presentation/saved_trips_page.dart';
@@ -79,6 +80,7 @@ import '../features/admin/presentation/pages/admin_feedback_page.dart';
 import '../features/admin/presentation/pages/admin_food_page.dart';
 import '../features/admin/presentation/pages/admin_content_page.dart';
 import '../features/admin/presentation/pages/admin_popular_app_page.dart';
+import '../features/admin/presentation/pages/admin_cf_retrain_page.dart';
 import '../features/admin/domain/admin_content.dart';
 import '../features/personalization/data/travel_preferences_repository.dart';
 import '../features/personalization/presentation/travel_preferences_onboarding_page.dart';
@@ -348,6 +350,7 @@ class AppRoutes {
   static const adminCultures = '/admin/cultures';
   static const adminLocalProducts = '/admin/local-products';
   static const adminPopularApps = '/admin/popular-apps';
+  static const adminCfRetrain = '/admin/cf-retrain';
   static const deleteUserData = '$profile/delete-user-data';
 
   static String forumPostPath(String postId) => '/forum/post/$postId';
@@ -829,6 +832,13 @@ GoRouter buildRouter() {
               child: const AdminPopularAppPage(),
             ),
           ),
+          GoRoute(
+            path: AppRoutes.adminCfRetrain,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminCfRetrainPage(),
+            ),
+          ),
         ],
       ),
       StatefulShellRoute.indexedStack(
@@ -898,6 +908,9 @@ GoRouter buildRouter() {
                                 state.pathParameters['dayIndex'] ?? '',
                               ) ??
                               0,
+                          dayData: state.extra is TripPlannerDayData
+                              ? state.extra as TripPlannerDayData
+                              : null,
                         ),
                         routes: [
                           GoRoute(
@@ -913,6 +926,9 @@ GoRouter buildRouter() {
                                     state.pathParameters['activityIndex'] ?? '',
                                   ) ??
                                   0,
+                              activity: state.extra is TripPlannerActivityData
+                                  ? state.extra as TripPlannerActivityData
+                                  : null,
                             ),
                           ),
                         ],
