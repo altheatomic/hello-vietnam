@@ -40,12 +40,17 @@ class ReferenceDataCacheRepository {
     return _getTableRecords('province', forceRefresh: forceRefresh);
   }
 
+  Future<List<ReferenceRecord>> getOldProvinces({bool forceRefresh = false}) {
+    return _getTableRecords('old_province', forceRefresh: forceRefresh);
+  }
+
   Future<void> warmUp() async {
     await initialize();
     await Future.wait(<Future<List<ReferenceRecord>>>[
       getZones(),
       getRegions(),
       getProvinces(),
+      getOldProvinces(),
     ]);
   }
 
@@ -54,6 +59,7 @@ class ReferenceDataCacheRepository {
     unawaited(_refreshIfStale('zone'));
     unawaited(_refreshIfStale('region'));
     unawaited(_refreshIfStale('province'));
+    unawaited(_refreshIfStale('old_province'));
   }
 
   Future<void> clearAll() async {
@@ -68,6 +74,10 @@ class ReferenceDataCacheRepository {
       app_storage.LocalStorage.instance.remove(_storageKeyFor('province')),
       app_storage.LocalStorage.instance.remove(
         _storageTimestampKeyFor('province'),
+      ),
+      app_storage.LocalStorage.instance.remove(_storageKeyFor('old_province')),
+      app_storage.LocalStorage.instance.remove(
+        _storageTimestampKeyFor('old_province'),
       ),
     ]);
   }

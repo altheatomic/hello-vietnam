@@ -118,7 +118,7 @@ const List<ExploreCategory> exploreCategories = [
       ExploreItem(
         id: 'd3',
         name: 'Banh mi',
-        imagePath: 'assets/images/dishes/banh_mi.jpg',
+        imagePath: 'assets/images/homepage/bestdishes_bg.jpeg',
         category: DetailCategory.food,
       ),
       ExploreItem(

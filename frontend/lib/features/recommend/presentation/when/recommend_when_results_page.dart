@@ -3,19 +3,50 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
+import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import '../../data/recommend_mock_data.dart';
+import '../../data/recommend_repository.dart';
 import '../../domain/recommend_destination.dart';
 
-class RecommendWhenResultsPage extends StatelessWidget {
+class RecommendWhenResultsPage extends StatefulWidget {
   const RecommendWhenResultsPage({super.key, required this.dateRange});
 
   final DateTimeRange dateRange;
 
+  @override
+  State<RecommendWhenResultsPage> createState() =>
+      _RecommendWhenResultsPageState();
+}
+
+class _RecommendWhenResultsPageState extends State<RecommendWhenResultsPage> {
+  List<RecommendDestination> _destinations = <RecommendDestination>[];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDestinations();
+  }
+
+  Future<void> _loadDestinations() async {
+    List<RecommendDestination> destinations;
+    try {
+      destinations = await RecommendRepository().getPersonalizedProvinces();
+    } catch (_) {
+      destinations = mockRecommendDestinations;
+    }
+    if (!mounted) return;
+    setState(() {
+      _destinations = destinations;
+      _isLoading = false;
+    });
+  }
+
   List<RecommendDestination> get _filtered {
-    final int month = dateRange.start.month;
-    return mockRecommendDestinations.where((RecommendDestination d) {
+    final int month = widget.dateRange.start.month;
+    return _destinations.where((RecommendDestination d) {
       return d.bestMonths.isEmpty || d.bestMonths.contains(month);
     }).toList();
   }
@@ -39,11 +70,11 @@ class RecommendWhenResultsPage extends StatelessWidget {
   }
 
   String get _rangeLabel {
-    return '${_monthShort(dateRange.start.month)} ${dateRange.start.day} - ${_monthShort(dateRange.end.month)} ${dateRange.end.day}';
+    return '${_monthShort(widget.dateRange.start.month)} ${widget.dateRange.start.day} - ${_monthShort(widget.dateRange.end.month)} ${widget.dateRange.end.day}';
   }
 
   String get _durationLabel {
-    final int days = dateRange.duration.inDays + 1;
+    final int days = widget.dateRange.duration.inDays + 1;
     return '$days ${days == 1 ? 'day' : 'days'} trip';
   }
 
@@ -74,7 +105,9 @@ class RecommendWhenResultsPage extends StatelessWidget {
                   ],
           ),
         ),
-        child: results.isEmpty
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : results.isEmpty
             ? SafeArea(
                 child: const EmptyState(
                   icon: Icons.calendar_today_rounded,
@@ -464,7 +497,7 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        dest.name,
+                        removeVietnameseDiacritics(dest.name),
                         style: TextStyle(
                           fontSize: 15.5,
                           fontWeight: FontWeight.w800,

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
-import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
+import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 
 class SavedTripsPage extends StatefulWidget {
   const SavedTripsPage({super.key});
@@ -14,121 +16,111 @@ class SavedTripsPage extends StatefulWidget {
 }
 
 class _SavedTripsPageState extends State<SavedTripsPage> {
-  final List<_SavedTrip> _trips = <_SavedTrip>[
-    _SavedTrip(
-      id: 'trip-hoian',
-      monthLabel: 'April 2026',
-      title: 'Hoi An Heritage Escape',
-      destination: 'Hoi An',
-      tripType: 'Leisure',
-      dateLabel: '16 Apr • 3 days 2 nights',
-      budgetLabel: '900,000 VND / day',
-      accentColors: const <Color>[
-        Color(0xFFFFD6B5),
-        Color(0xFFFFF1C8),
-        Color(0xFFCFF5F6),
-      ],
-      stops: <_SavedStop>[
-        _SavedStop(
-          id: 'hoian-1',
-          timeLabel: '08:00',
-          title: 'Japanese Covered Bridge',
-          note: 'Architecture and old town walk',
-          isCompleted: true,
-        ),
-        _SavedStop(
-          id: 'hoian-2',
-          timeLabel: '12:30',
-          title: 'Riverside Lunch Market',
-          note: 'Try cao lau and local desserts',
-          isCompleted: false,
-        ),
-        _SavedStop(
-          id: 'hoian-3',
-          timeLabel: '18:30',
-          title: 'Lantern Boat Ride',
-          note: 'Evening activity on Thu Bon River',
-          isCompleted: false,
-        ),
-      ],
-    ),
-    _SavedTrip(
-      id: 'trip-dalat',
-      monthLabel: 'April 2026',
-      title: 'Da Lat Cool Weather Weekend',
-      destination: 'Da Lat',
-      tripType: 'Leisure',
-      dateLabel: '22 Apr • 2 days 1 night',
-      budgetLabel: 'Standard range',
-      accentColors: const <Color>[
-        Color(0xFFE5F7F4),
-        Color(0xFFDDF4FF),
-        Color(0xFFF1ECFF),
-      ],
-      stops: <_SavedStop>[
-        _SavedStop(
-          id: 'dalat-1',
-          timeLabel: '07:30',
-          title: 'Pine Hill Sunrise Spot',
-          note: 'Coffee stop with valley view',
-          isCompleted: false,
-        ),
-        _SavedStop(
-          id: 'dalat-2',
-          timeLabel: '10:00',
-          title: 'Domaine de Marie Church',
-          note: 'Photo stop and short sightseeing',
-          isCompleted: false,
-        ),
-        _SavedStop(
-          id: 'dalat-3',
-          timeLabel: '15:00',
-          title: 'Night Market Walk',
-          note: 'Street food and souvenirs',
-          isCompleted: false,
-        ),
-      ],
-    ),
-    _SavedTrip(
-      id: 'trip-hanoi',
-      monthLabel: 'March 2026',
-      title: 'Hanoi Culture Sprint',
-      destination: 'Hanoi',
-      tripType: 'Business',
-      dateLabel: '28 Mar • 1 day',
-      budgetLabel: '1,200,000 VND / day',
-      accentColors: const <Color>[
-        Color(0xFFDDEBFF),
-        Color(0xFFE3FBFF),
-        Color(0xFFF4F2FF),
-      ],
-      stops: <_SavedStop>[
-        _SavedStop(
-          id: 'hanoi-1',
-          timeLabel: '09:00',
-          title: 'Temple of Literature',
-          note: 'Morning cultural visit',
-          isCompleted: true,
-        ),
-        _SavedStop(
-          id: 'hanoi-2',
-          timeLabel: '13:00',
-          title: 'Old Quarter Food Tour',
-          note: 'Lunch tasting route',
-          isCompleted: true,
-        ),
-        _SavedStop(
-          id: 'hanoi-3',
-          timeLabel: '17:30',
-          title: 'Hoan Kiem Lake',
-          note: 'Late afternoon walk',
-          isCompleted: true,
-        ),
-      ],
-    ),
-  ];
+  List<_SavedTrip> _trips = <_SavedTrip>[];
+  bool _isLoading = true;
 
   _TripFilter _selectedFilter = _TripFilter.all;
+
+  static const List<List<Color>> _palettes = <List<Color>>[
+    <Color>[Color(0xFFFFD6B5), Color(0xFFFFF1C8), Color(0xFFCFF5F6)],
+    <Color>[Color(0xFFE5F7F4), Color(0xFFDDF4FF), Color(0xFFF1ECFF)],
+    <Color>[Color(0xFFDDEBFF), Color(0xFFE3FBFF), Color(0xFFF4F2FF)],
+  ];
+
+  static const List<String> _monthNames = <String>[
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  static const List<String> _shortMonths = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedTrips();
+  }
+
+  void _openItinerary(String idPlan) {
+    context.push(AppRoutes.tripPlannerResultPath(idPlan: idPlan));
+  }
+
+  Future<void> _loadSavedTrips() async {
+    try {
+      final items = await TripRepository().listSavedPlans();
+      if (!mounted) return;
+      setState(() {
+        _trips = items
+            .asMap()
+            .entries
+            .map((MapEntry<int, SavedPlanItem> e) => _fromItem(e.key, e.value))
+            .toList();
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showMessage('Could not load saved trips.');
+    }
+  }
+
+  static _SavedTrip _fromItem(int index, SavedPlanItem item) {
+    final DateTime createdAt =
+        DateTime.tryParse(item.createdAt) ?? DateTime.now();
+    final String monthLabel =
+        '${_monthNames[createdAt.month - 1]} ${createdAt.year}';
+
+    final DateTime? startDate = DateTime.tryParse(item.startAt);
+    final int nDays = int.tryParse(item.duration) ?? 1;
+    final String dateLabel = startDate != null
+        ? '${startDate.day} ${_shortMonths[startDate.month - 1]} • '
+              '$nDays ${nDays == 1 ? 'day' : 'days'}'
+        : '$nDays days';
+
+    return _SavedTrip(
+      id: item.idPlan,
+      monthLabel: monthLabel,
+      title: item.customTitle ?? 'Your Vietnam Adventure',
+      destination: item.provinceName.isEmpty ? 'Vietnam' : item.provinceName,
+      tripType: 'Leisure',
+      dateLabel: dateLabel,
+
+      accentColors: _palettes[index % _palettes.length],
+      stops: item.stops
+          .map(
+            (SavedPlanStop s) => _SavedStop(
+              id: s.id,
+              timeLabel: s.timeLabel,
+              title: s.title,
+              note: s.note,
+              isCompleted: false,
+            ),
+          )
+          .toList(),
+    );
+  }
 
   List<_SavedTrip> get _visibleTrips {
     return _trips.where((_SavedTrip trip) {
@@ -174,8 +166,12 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
   Widget build(BuildContext context) {
     final Map<String, List<_SavedTrip>> groupedTrips =
         <String, List<_SavedTrip>>{};
-    for (final _SavedTrip trip in _visibleTrips) {
-      groupedTrips.putIfAbsent(trip.monthLabel, () => <_SavedTrip>[]).add(trip);
+    if (!_isLoading) {
+      for (final _SavedTrip trip in _visibleTrips) {
+        groupedTrips
+            .putIfAbsent(trip.monthLabel, () => <_SavedTrip>[])
+            .add(trip);
+      }
     }
 
     return Scaffold(
@@ -232,9 +228,9 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                             ],
                           ),
                           const SizedBox(height: 22),
-                          Text(
-                            context.l10n.ui('Saved Trips'),
-                            style: const TextStyle(
+                          const Text(
+                            'Saved Trips',
+                            style: TextStyle(
                               fontSize: 31,
                               fontWeight: FontWeight.w900,
                               color: AppColors.textPrimary,
@@ -242,11 +238,9 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            context.l10n.ui(
-                              'Pick up where you left off and tick places as you complete them.',
-                            ),
-                            style: const TextStyle(
+                          const Text(
+                            'Pick up where you left off and tick places as you complete them.',
+                            style: TextStyle(
                               fontSize: 15,
                               color: Color(0xFF687384),
                               height: 1.45,
@@ -269,7 +263,7 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 10),
                                   child: _FilterChipButton(
-                                    label: context.l10n.ui(filter.label),
+                                    label: filter.label,
                                     selected: selected,
                                     onTap: () {
                                       setState(() {
@@ -286,7 +280,12 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                       ),
                     ),
                   ),
-                  if (groupedTrips.isEmpty)
+                  if (_isLoading)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (groupedTrips.isEmpty)
                     const SliverFillRemaining(
                       hasScrollBody: false,
                       child: _EmptySavedTripsState(),
@@ -307,7 +306,7 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                                   children: <Widget>[
                                     Expanded(
                                       child: Text(
-                                        context.l10n.ui(entry.key),
+                                        entry.key,
                                         style: const TextStyle(
                                           fontSize: 23,
                                           fontWeight: FontWeight.w800,
@@ -316,9 +315,7 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                                       ),
                                     ),
                                     Text(
-                                      context.l10n.savedTripGroupCount(
-                                        entry.value.length,
-                                      ),
+                                      '${entry.value.length} trips',
                                       style: const TextStyle(
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.w700,
@@ -335,13 +332,11 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                                     trip: trip,
                                     onToggleStop: (String stopId) =>
                                         _toggleStop(trip.id, stopId),
-                                    onOpenPlan: () => context.push(
-                                      AppRoutes.tripPlannerResult,
-                                    ),
+                                    onOpenPlan: () => _openItinerary(trip.id),
                                     onPlanAgain: () =>
                                         context.go(AppRoutes.tripPlanner),
                                     onTripTapped: () => _showMessage(
-                                      context.l10n.savedTripUpdated(trip.title),
+                                      '${trip.title} updated in Saved Trips',
                                     ),
                                   ),
                                 ),
@@ -407,7 +402,7 @@ class _SummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  context.l10n.savedItinerariesCount(totalTrips),
+                  '$totalTrips saved itineraries',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -416,7 +411,7 @@ class _SummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  context.l10n.savedPlacesWaiting(remainingStops),
+                  '$remainingStops places still waiting to be checked off.',
                   style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF667488),
@@ -543,7 +538,7 @@ class _SavedTripCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            context.l10n.ui(trip.title),
+                            trip.title,
                             style: const TextStyle(
                               fontSize: 18.5,
                               fontWeight: FontWeight.w800,
@@ -553,7 +548,7 @@ class _SavedTripCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            '${context.l10n.ui(trip.destination)} • ${context.l10n.ui(trip.tripType)}',
+                            '${removeVietnameseDiacritics(trip.destination)} • ${trip.tripType}',
                             style: const TextStyle(
                               fontSize: 14.5,
                               color: Color(0xFF5D6A7E),
@@ -562,7 +557,7 @@ class _SavedTripCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            context.l10n.ui(trip.dateLabel),
+                            trip.dateLabel,
                             style: const TextStyle(
                               fontSize: 13.5,
                               color: Color(0xFF8391A2),
@@ -575,25 +570,10 @@ class _SavedTripCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: _InfoPill(
-                        icon: Icons.account_balance_wallet_outlined,
-                        label: context.l10n.ui(trip.budgetLabel),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _InfoPill(
-                        icon: Icons.checklist_rounded,
-                        label: context.l10n.savedTripCompletedCount(
-                          trip.completedStops,
-                          trip.stops.length,
-                        ),
-                      ),
-                    ),
-                  ],
+                _InfoPill(
+                  icon: Icons.checklist_rounded,
+                  label:
+                      '${trip.completedStops}/${trip.stops.length} completed',
                 ),
                 const SizedBox(height: 14),
                 ClipRRect(
@@ -609,7 +589,7 @@ class _SavedTripCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  trip.statusMessage(context),
+                  trip.statusMessage,
                   style: const TextStyle(
                     fontSize: 13.5,
                     color: Color(0xFF768496),
@@ -713,7 +693,7 @@ class _SavedStopTile extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                context.l10n.ui(stop.title),
+                stop.title,
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.w800,
@@ -727,7 +707,7 @@ class _SavedStopTile extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                context.l10n.ui(stop.note),
+                stop.note,
                 style: const TextStyle(
                   fontSize: 13.5,
                   color: Color(0xFF6E7C8F),
@@ -803,7 +783,7 @@ class _TripActionButton extends StatelessWidget {
           ),
           child: Center(
             child: Text(
-              context.l10n.ui(label),
+              label,
               style: TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w800,
@@ -882,7 +862,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        context.l10n.ui(status.label),
+        status.label,
         style: TextStyle(
           fontSize: 12.5,
           fontWeight: FontWeight.w800,
@@ -937,30 +917,24 @@ class _EmptySavedTripsState extends StatelessWidget {
             borderRadius: BorderRadius.circular(28),
             border: Border.all(color: const Color(0xFFD7F0F7)),
           ),
-          child: Column(
+          child: const Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const Icon(
-                Icons.luggage_outlined,
-                size: 42,
-                color: Color(0xFF6F8093),
-              ),
-              const SizedBox(height: 12),
+              Icon(Icons.luggage_outlined, size: 42, color: Color(0xFF6F8093)),
+              SizedBox(height: 12),
               Text(
-                context.l10n.ui('No trips match this filter yet.'),
-                style: const TextStyle(
+                'No trips match this filter yet.',
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
-                context.l10n.ui(
-                  'Try another filter or create a new itinerary from Trip Planner.',
-                ),
+                'Try another filter or create a new itinerary from Trip Planner.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14.5,
                   color: Color(0xFF718093),
                   height: 1.45,
@@ -1033,7 +1007,6 @@ class _SavedTrip {
     required this.destination,
     required this.tripType,
     required this.dateLabel,
-    required this.budgetLabel,
     required this.accentColors,
     required this.stops,
   });
@@ -1044,7 +1017,6 @@ class _SavedTrip {
   final String destination;
   final String tripType;
   final String dateLabel;
-  final String budgetLabel;
   final List<Color> accentColors;
   final List<_SavedStop> stops;
 
@@ -1061,14 +1033,14 @@ class _SavedTrip {
     return _TripStatus.inProgress;
   }
 
-  String statusMessage(BuildContext context) {
+  String get statusMessage {
     switch (status) {
       case _TripStatus.upcoming:
-        return context.l10n.ui('Everything is still planned and ready to go.');
+        return 'Everything is still planned and ready to go.';
       case _TripStatus.inProgress:
-        return context.l10n.savedTripRemainingPlaces(remainingStops);
+        return '$remainingStops places left to complete on this trip.';
       case _TripStatus.completed:
-        return context.l10n.ui('All planned places are marked as completed.');
+        return 'All planned places are marked as completed.';
     }
   }
 
@@ -1087,7 +1059,6 @@ class _SavedTrip {
       destination: destination,
       tripType: tripType,
       dateLabel: dateLabel,
-      budgetLabel: budgetLabel,
       accentColors: accentColors,
       stops: List<_SavedStop>.generate(stops.length, (int index) {
         final _SavedStop stop = stops[index];

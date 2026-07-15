@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -29,6 +31,9 @@ class SharedItemDetailPage extends StatefulWidget {
     this.favoriteType,
     this.favoriteRawId,
     this.favoriteName,
+    this.reviewContentType,
+    this.showReviews = true,
+    this.showWhatToExpect = true,
   }) : assert(
          request != null || detail != null,
          'Either request or detail must be provided.',
@@ -42,6 +47,9 @@ class SharedItemDetailPage extends StatefulWidget {
   final FavoriteType? favoriteType;
   final String? favoriteRawId;
   final String? favoriteName;
+  final ReviewContentType? reviewContentType;
+  final bool showReviews;
+  final bool showWhatToExpect;
 
   @override
   State<SharedItemDetailPage> createState() => _SharedItemDetailPageState();
@@ -52,10 +60,10 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
   final ExploreTrackingService _exploreTrackingService =
       ExploreTrackingService.instance;
   late bool _isFavorite;
+  late final PageController _reviewPageController;
   int _currentPage = 0;
   bool _descExpanded = false;
   FavoriteType? _favoriteType;
-  bool _wishlistListenerBound = false;
   late final String _favoriteRawId;
   late final String _favoriteName;
 
@@ -71,8 +79,17 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
     _favoriteName = widget.favoriteName ?? _detail.name;
     _isFavorite = _favoriteType == null
         ? _detail.isFavorite
-        : _safeWishlistFavoriteLookup() || _detail.isFavorite;
-    _bindWishlistController();
+        : WishlistController.instance.isFavorite(
+                type: _favoriteType!,
+                rawItemId: _favoriteRawId,
+              ) ||
+              _detail.isFavorite;
+    _reviewPageController = PageController(viewportFraction: 0.9);
+    WishlistController.instance.addListener(_syncFavoriteFromController);
+    WishlistController.instance.ensureLoaded().then((_) {
+      if (!mounted) return;
+      _syncFavoriteFromController();
+    });
     if (_shouldTrackExploreBehavior) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         unawaited(
@@ -88,41 +105,9 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
 
   @override
   void dispose() {
-    if (_wishlistListenerBound) {
-      WishlistController.instance.removeListener(_syncFavoriteFromController);
-    }
+    WishlistController.instance.removeListener(_syncFavoriteFromController);
+    _reviewPageController.dispose();
     super.dispose();
-  }
-
-  void _bindWishlistController() {
-    if (_favoriteType == null) {
-      return;
-    }
-    try {
-      WishlistController.instance.addListener(_syncFavoriteFromController);
-      _wishlistListenerBound = true;
-      WishlistController.instance.ensureLoaded().then((_) {
-        if (!mounted) return;
-        _syncFavoriteFromController();
-      });
-    } catch (_) {
-      _wishlistListenerBound = false;
-    }
-  }
-
-  bool _safeWishlistFavoriteLookup() {
-    final FavoriteType? type = _favoriteType;
-    if (type == null) {
-      return false;
-    }
-    try {
-      return WishlistController.instance.isFavorite(
-        type: type,
-        rawItemId: _favoriteRawId,
-      );
-    } catch (_) {
-      return false;
-    }
   }
 
   void _syncFavoriteFromController() {
@@ -155,11 +140,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
       if (next == null) {
         setState(() => _isFavorite = previous);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.l10n.ui('Please sign in to update wishlist.'),
-            ),
-          ),
+          const SnackBar(content: Text('Please sign in to update wishlist.')),
         );
       } else {
         setState(() => _isFavorite = next);
@@ -177,11 +158,9 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _isFavorite = previous);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${context.l10n.ui('Update wishlist failed')}: $error'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
     }
   }
 
@@ -233,6 +212,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
   }
 
   ReviewContentType? get _reviewContentType {
+    if (widget.reviewContentType != null) return widget.reviewContentType;
     if (!_detail.hasReviewTarget) {
       return null;
     }
@@ -291,29 +271,45 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     const SizedBox(height: 28),
                   ] else
                     const SizedBox(height: 28),
-                  if (reviewContentType != null) ...<Widget>[
+                  if (widget.showReviews) ...<Widget>[
                     _SectionTitle(title: context.l10n.ui('Reviews')),
                     const SizedBox(height: 14),
-                    ReviewSection(
-                      contentType: reviewContentType,
-                      contentId: _detail.effectiveReviewContentId,
-                      itemTitle: _detail.name,
-                      repository: widget.reviewRepository,
+                    if (reviewContentType != null) ...<Widget>[
+                      ReviewSection(
+                        contentType: reviewContentType,
+                        contentId: _detail.effectiveReviewContentId,
+                        itemTitle: _detail.name,
+                        repository: widget.reviewRepository,
+                      ),
+                      const SizedBox(height: 18),
+                    ] else ...<Widget>[
+                      _ReviewSummary(
+                        rating: _detail.rating,
+                        ratingLabel: _detail.ratingLabel,
+                        reviewCount: _detail.reviewCount,
+                      ),
+                      const SizedBox(height: 14),
+                      _ReviewCarousel(
+                        reviews: _detail.reviews,
+                        controller: _reviewPageController,
+                      ),
+                      const SizedBox(height: 18),
+                    ],
+                  ],
+                  if (widget.showWhatToExpect) ...<Widget>[
+                    _SectionTitle(title: context.l10n.ui('What to expect')),
+                    const SizedBox(height: 10),
+                    Text(
+                      _detail.whatToExpect,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.7,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      textAlign: TextAlign.justify,
                     ),
                     const SizedBox(height: 18),
                   ],
-                  _SectionTitle(title: context.l10n.ui('What to expect')),
-                  const SizedBox(height: 10),
-                  Text(
-                    _detail.whatToExpect,
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.7,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    textAlign: TextAlign.justify,
-                  ),
-                  const SizedBox(height: 18),
                   ..._detail.images
                       .take(4)
                       .map(
@@ -363,7 +359,7 @@ class _DetailHeader extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
           children: <TextSpan>[
-            TextSpan(text: '${context.l10n.ui('Discover')}, '),
+            const TextSpan(text: 'Discover, '),
             TextSpan(
               text: '$title!',
               style: const TextStyle(
@@ -547,9 +543,7 @@ class _QuickInfoCard extends StatelessWidget {
                       GestureDetector(
                         onTap: onToggleExpanded,
                         child: Text(
-                          isExpanded
-                              ? context.l10n.ui('Less')
-                              : context.l10n.ui('More'),
+                          isExpanded ? 'Less' : 'More',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -626,6 +620,506 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+class _ReviewSummary extends StatelessWidget {
+  const _ReviewSummary({
+    required this.rating,
+    required this.ratingLabel,
+    required this.reviewCount,
+  });
+
+  final double rating;
+  final String ratingLabel;
+  final int reviewCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color secondaryText = isDark
+        ? const Color(0xFFA9BCC7)
+        : AppColors.textSecondary;
+
+    return Wrap(
+      spacing: 14,
+      runSpacing: 10,
+      crossAxisAlignment: WrapCrossAlignment.end,
+      children: <Widget>[
+        RichText(
+          text: TextSpan(
+            children: <TextSpan>[
+              TextSpan(
+                text: rating.toStringAsFixed(1),
+                style: const TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
+              ),
+              TextSpan(
+                text: '/5',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: secondaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                ratingLabel,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+              Text(
+                '$reviewCount reviews',
+                style: TextStyle(fontSize: 13, color: secondaryText),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReviewCarousel extends StatelessWidget {
+  const _ReviewCarousel({required this.reviews, required this.controller});
+
+  final List<ItemReview> reviews;
+  final PageController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    if (reviews.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: <Widget>[
+        SizedBox(
+          height: 280,
+          child: PageView.builder(
+            controller: controller,
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            itemCount: reviews.length,
+            itemBuilder: (BuildContext context, int index) {
+              return AnimatedBuilder(
+                animation: controller,
+                builder: (BuildContext context, Widget? child) {
+                  final page = controller.hasClients
+                      ? (controller.page ?? controller.initialPage.toDouble())
+                      : controller.initialPage.toDouble();
+                  final distance = (page - index).abs().clamp(0.0, 1.0);
+                  final emphasis = (1 - distance).clamp(0.0, 1.0);
+                  final scale = 1 - (distance * 0.08);
+                  final opacity = 0.82 + (emphasis * 0.18);
+                  final translateY = 12 - (emphasis * 12);
+
+                  return Transform.scale(
+                    scale: scale,
+                    alignment: Alignment.center,
+                    child: Transform.translate(
+                      offset: Offset(0, translateY),
+                      child: Opacity(
+                        opacity: opacity,
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            right: index == reviews.length - 1 ? 0 : 12,
+                          ),
+                          child: _ReviewCard(
+                            review: reviews[index],
+                            emphasis: emphasis,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                child: const SizedBox.shrink(),
+              );
+            },
+          ),
+        ),
+        if (reviews.length > 1) ...<Widget>[
+          const SizedBox(height: 14),
+          _LiquidPaginationDots(
+            controller: controller,
+            itemCount: reviews.length,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ReviewCard extends StatelessWidget {
+  const _ReviewCard({required this.review, this.emphasis = 1});
+
+  final ItemReview review;
+  final double emphasis;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color primaryText = Theme.of(context).colorScheme.onSurface;
+    final Color secondaryText = isDark
+        ? const Color(0xFFA9BCC7)
+        : AppColors.textSecondary;
+    final shadowColor = Color.lerp(
+      Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+      AppColors.primary.withValues(alpha: isDark ? 0.14 : 0.22),
+      emphasis,
+    )!;
+    final borderColor = Color.lerp(
+      Colors.white.withValues(alpha: isDark ? 0.08 : 0.55),
+      AppColors.primaryLight.withValues(alpha: isDark ? 0.22 : 0.95),
+      emphasis,
+    )!;
+    final surfaceTop = Color.lerp(
+      isDark
+          ? const Color(0xFF0B1A22).withValues(alpha: 0.82)
+          : Colors.white.withValues(alpha: 0.76),
+      isDark
+          ? const Color(0xFF122832).withValues(alpha: 0.90)
+          : Colors.white.withValues(alpha: 0.92),
+      emphasis,
+    )!;
+    final surfaceBottom = Color.lerp(
+      isDark
+          ? const Color(0xFF07161D).withValues(alpha: 0.86)
+          : AppColors.primaryLight.withValues(alpha: 0.14),
+      isDark
+          ? const Color(0xFF0B1A22).withValues(alpha: 0.94)
+          : AppColors.primaryLight.withValues(alpha: 0.28),
+      emphasis,
+    )!;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: 12 + (emphasis * 6),
+          sigmaY: 12 + (emphasis * 6),
+        ),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[surfaceTop, surfaceBottom],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: borderColor, width: 1.2 + emphasis),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: shadowColor,
+                blurRadius: 18 + (emphasis * 16),
+                offset: Offset(0, 8 + (emphasis * 6)),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: <Widget>[
+              Positioned(
+                top: -24,
+                right: -10,
+                child: Container(
+                  width: 110,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: <Color>[
+                        isDark
+                            ? AppColors.primaryLight.withValues(
+                                alpha: 0.08 + (emphasis * 0.04),
+                              )
+                            : Colors.white.withValues(
+                                alpha: 0.4 + (emphasis * 0.18),
+                              ),
+                        Colors.white.withValues(alpha: isDark ? 0.0 : 0.02),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -34,
+                left: -20,
+                child: Container(
+                  width: 132,
+                  height: 132,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: <Color>[
+                        AppColors.primaryLight.withValues(
+                          alpha: 0.20 + (emphasis * 0.12),
+                        ),
+                        AppColors.primaryLight.withValues(alpha: 0.02),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: <Color>[
+                              Colors.white.withValues(alpha: 0.9),
+                              AppColors.primaryLight.withValues(alpha: 0.34),
+                            ],
+                          ),
+                          boxShadow: <BoxShadow>[
+                            BoxShadow(
+                              color: AppColors.primary.withValues(
+                                alpha: 0.10 + (emphasis * 0.10),
+                              ),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.person_outline_rounded,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              review.userName,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: primaryText,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              review.date,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _UserRatingBadge(review: review, emphasis: emphasis),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    review.comment,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.55,
+                      color: primaryText,
+                    ),
+                  ),
+                  if (review.thumbnails.isNotEmpty) ...<Widget>[
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      height: 70,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: review.thumbnails.length,
+                        separatorBuilder: (BuildContext context, int index) =>
+                            const SizedBox(width: 8),
+                        itemBuilder: (BuildContext context, int index) {
+                          return _ThumbnailImage(
+                            imagePath: review.thumbnails[index],
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UserRatingBadge extends StatelessWidget {
+  const _UserRatingBadge({required this.review, this.emphasis = 1});
+
+  final ItemReview review;
+  final double emphasis;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = Theme.of(context).colorScheme.onSurface;
+    final Color labelColor = isDark
+        ? AppColors.primaryLight
+        : AppColors.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: <Color>[
+            isDark
+                ? const Color(0xFF0B1A22).withValues(alpha: 0.72)
+                : Colors.white.withValues(alpha: 0.75),
+            AppColors.primaryLight.withValues(
+              alpha: isDark
+                  ? 0.05 + (emphasis * 0.04)
+                  : 0.16 + (emphasis * 0.12),
+            ),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(
+            alpha: isDark ? 0.16 + (emphasis * 0.10) : 0.24 + (emphasis * 0.4),
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: <Widget>[
+          Text(
+            review.ratingLabel,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: labelColor,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Icon(
+                Icons.star_rounded,
+                size: 14,
+                color: AppColors.starColor,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                review.rating.toStringAsFixed(1),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiquidPaginationDots extends StatelessWidget {
+  const _LiquidPaginationDots({
+    required this.controller,
+    required this.itemCount,
+  });
+
+  final PageController controller;
+  final int itemCount;
+
+  @override
+  Widget build(BuildContext context) {
+    const double dotSize = 8;
+    const double dotSpacing = 18;
+
+    return SizedBox(
+      width: dotSize + ((itemCount - 1) * dotSpacing),
+      height: 10,
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (BuildContext context, Widget? child) {
+          final page = controller.hasClients
+              ? (controller.page ?? controller.initialPage.toDouble())
+              : controller.initialPage.toDouble();
+          final clampedPage = page.clamp(
+            0.0,
+            math.max(0, itemCount - 1).toDouble(),
+          );
+          final stretch = math.sin((clampedPage % 1) * math.pi);
+          final blobWidth = dotSize + (dotSpacing * 0.95 * stretch);
+
+          return Stack(
+            alignment: Alignment.centerLeft,
+            children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: List<Widget>.generate(
+                  itemCount,
+                  (int index) => Container(
+                    width: dotSize,
+                    height: dotSize,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight.withValues(alpha: 0.28),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+              Transform.translate(
+                offset: Offset(clampedPage * dotSpacing, 0),
+                child: Container(
+                  width: blobWidth,
+                  height: dotSize,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: <Color>[
+                        AppColors.primaryLight,
+                        AppColors.primary,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.22),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _GalleryImageCard extends StatelessWidget {
   const _GalleryImageCard({required this.imagePath});
 
@@ -653,6 +1147,28 @@ class _GalleryImageCard extends StatelessWidget {
             borderRadius: 0,
             showOverlay: false,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThumbnailImage extends StatelessWidget {
+  const _ThumbnailImage({required this.imagePath});
+
+  final String imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: 70,
+        height: 70,
+        child: _NetworkOrAssetImage(
+          imagePath: imagePath,
+          borderRadius: 0,
+          showOverlay: false,
         ),
       ),
     );

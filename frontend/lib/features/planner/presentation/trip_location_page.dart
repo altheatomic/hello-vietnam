@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
-import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
+import 'package:hellovietnam/core/data/reference_data_cache_repository.dart';
+import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
 
 class TripLocationPage extends StatefulWidget {
   const TripLocationPage({super.key});
@@ -11,138 +13,177 @@ class TripLocationPage extends StatefulWidget {
   State<TripLocationPage> createState() => _TripLocationPageState();
 }
 
-class _TripLocationPageState extends State<TripLocationPage> {
-  static const List<_DestinationCardData>
-  _allDestinations = <_DestinationCardData>[
-    _DestinationCardData(
-      id: 'halong',
-      name: 'Ha Long Bay',
-      region: 'Quang Ninh',
-      imageUrl:
-          'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=900&q=80',
-    ),
-    _DestinationCardData(
-      id: 'hoian',
-      name: 'Hoi An',
-      region: 'Quang Nam',
-      imageUrl:
-          'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=900&q=80',
-    ),
-    _DestinationCardData(
-      id: 'dalat',
-      name: 'Da Lat',
-      region: 'Lam Dong',
-      imageUrl:
-          'https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=900&q=80',
-    ),
-    _DestinationCardData(
-      id: 'phuquoc',
-      name: 'Phu Quoc',
-      region: 'Kien Giang',
-      imageUrl:
-          'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80',
-    ),
-    _DestinationCardData(id: 'sapa', name: 'Sapa', region: 'Lao Cai'),
-    _DestinationCardData(
-      id: 'nhatrang',
-      name: 'Nha Trang',
-      region: 'Khanh Hoa',
-      imageUrl:
-          'https://images.unsplash.com/photo-1526481280695-3c4691f7d2d5?auto=format&fit=crop&w=900&q=80',
-    ),
-  ];
+// Fallback shown when city_province table is empty / migration not yet applied.
+const List<_ProvinceItem> _kFallbackProvinces = <_ProvinceItem>[
+  _ProvinceItem(id: 'halong', name: 'Ha Long Bay', area: 'Quang Ninh'),
+  _ProvinceItem(id: 'hoian', name: 'Hoi An', area: 'Quang Nam'),
+  _ProvinceItem(id: 'dalat', name: 'Da Lat', area: 'Lam Dong'),
+  _ProvinceItem(id: 'phuquoc', name: 'Phu Quoc', area: 'Kien Giang'),
+  _ProvinceItem(id: 'sapa', name: 'Sapa', area: 'Lao Cai'),
+  _ProvinceItem(id: 'nhatrang', name: 'Nha Trang', area: 'Khanh Hoa'),
+];
 
+class _TripLocationPageState extends State<TripLocationPage> {
   final TextEditingController _searchController = TextEditingController();
-  String? _selectedDestinationId;
+  List<_ProvinceItem> _provinces = <_ProvinceItem>[];
+  String? _selectedId;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_handleSearchChanged);
+    _searchController.addListener(_onSearchChanged);
+    _loadProvinces();
   }
 
   @override
   void dispose() {
     _searchController
-      ..removeListener(_handleSearchChanged)
+      ..removeListener(_onSearchChanged)
       ..dispose();
     super.dispose();
   }
 
-  void _handleSearchChanged() {
-    setState(() {});
+  void _onSearchChanged() => setState(() {});
+
+  Future<void> _loadProvinces() async {
+    try {
+      final List<ReferenceRecord> rows = await ReferenceDataCacheRepository
+          .instance
+          .getOldProvinces();
+
+      if (!mounted) return;
+
+      setState(() {
+        _provinces = rows
+            .map(
+              (Map<String, dynamic> row) => _ProvinceItem(
+                id: (row['id_province'] as String? ?? '').trim(),
+                name: (row['name'] as String? ?? '').trim(),
+                area: (row['region_code'] as String? ?? '').trim(),
+                coverImage: row['cover_image'] as String?,
+              ),
+            )
+            .where(
+              (_ProvinceItem item) =>
+                  item.id.isNotEmpty && item.name.isNotEmpty,
+            )
+            .take(100)
+            .toList();
+
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _provinces = _kFallbackProvinces.toList();
+        _isLoading = false;
+      });
+    }
   }
 
-  List<_DestinationCardData> get _filteredDestinations {
-    final String query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return _allDestinations;
-    return _allDestinations.where((_DestinationCardData item) {
-      return item.name.toLowerCase().contains(query) ||
-          item.region.toLowerCase().contains(query);
-    }).toList();
+  List<_ProvinceItem> get _filtered {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return _provinces;
+    return _provinces
+        .where(
+          (p) =>
+              p.name.toLowerCase().contains(query) ||
+              p.area.toLowerCase().contains(query),
+        )
+        .toList();
   }
 
-  void _showNextPlaceholder() {
-    context.push(AppRoutes.tripPlannerDuration);
+  void _onNext() {
+    final selected = _provinces.firstWhere((p) => p.id == _selectedId);
+    context.push(
+      AppRoutes.tripPlannerDuration,
+      extra: TripWizardData(
+        idProvince: selected.id,
+        provinceName: selected.name,
+      ).toJson(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<_DestinationCardData> visibleDestinations =
-        _filteredDestinations;
-
     return PlannerStepScaffold(
       currentStep: 2,
       badgeIcon: Icons.location_on_outlined,
-      title: context.l10n.ui('Where to?'),
-      subtitle: context.l10n.ui('Choose your dream destination'),
+      title: 'Where to?',
+      subtitle: 'Choose your dream destination',
       onBack: () => context.pop(),
-      nextEnabled: _selectedDestinationId != null,
-      onNext: _showNextPlaceholder,
-      stickyBodyHeader: _SearchDestinationField(controller: _searchController),
-      stickyBodyHeaderExtent: 78,
-      bodySlivers: <Widget>[
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 2, bottom: 14),
-            child: Text(
-              context.l10n.ui('Popular Destinations'),
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF162235),
+      nextEnabled: _selectedId != null,
+      onNext: _onNext,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _provinces.isEmpty
+          ? const _EmptyView()
+          : SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _SearchField(controller: _searchController),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Destinations',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF162235),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  GridView.builder(
+                    itemCount: _filtered.length,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 1.25,
+                        ),
+                    itemBuilder: (context, index) {
+                      final p = _filtered[index];
+                      return _DestinationCard(
+                        item: p,
+                        selected: p.id == _selectedId,
+                        onTap: () => setState(() => _selectedId = p.id),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
-          ),
-        ),
-        SliverGrid.builder(
-          itemCount: visibleDestinations.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.25,
-          ),
-          itemBuilder: (BuildContext context, int index) {
-            final _DestinationCardData destination = visibleDestinations[index];
-            return _DestinationCard(
-              data: destination,
-              selected: destination.id == _selectedDestinationId,
-              onTap: () {
-                setState(() {
-                  _selectedDestinationId = destination.id;
-                });
-              },
-            );
-          },
-        ),
-      ],
     );
   }
 }
 
-class _SearchDestinationField extends StatelessWidget {
-  const _SearchDestinationField({required this.controller});
+// ── Data model ────────────────────────────────────────────────────────────────
+
+class _ProvinceItem {
+  const _ProvinceItem({
+    required this.id,
+    required this.name,
+    required this.area,
+    this.coverImage,
+  });
+
+  final String id;
+  final String name;
+  final String area;
+  final String? coverImage;
+}
+
+// ── Widgets ───────────────────────────────────────────────────────────────────
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller});
 
   final TextEditingController controller;
 
@@ -168,23 +209,20 @@ class _SearchDestinationField extends StatelessWidget {
           fontWeight: FontWeight.w500,
           color: Color(0xFF162235),
         ),
-        decoration: InputDecoration(
-          prefixIcon: const Icon(
+        decoration: const InputDecoration(
+          prefixIcon: Icon(
             Icons.search_rounded,
             color: Color(0xFF98A2B3),
             size: 24,
           ),
-          hintText: context.l10n.ui('Search destination...'),
-          hintStyle: const TextStyle(
+          hintText: 'Search destination...',
+          hintStyle: TextStyle(
             fontSize: 15.5,
             color: Color(0xFF98A2B3),
             fontWeight: FontWeight.w500,
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 18,
-          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 18),
         ),
       ),
     );
@@ -193,12 +231,12 @@ class _SearchDestinationField extends StatelessWidget {
 
 class _DestinationCard extends StatelessWidget {
   const _DestinationCard({
-    required this.data,
+    required this.item,
     required this.selected,
     required this.onTap,
   });
 
-  final _DestinationCardData data;
+  final _ProvinceItem item;
   final bool selected;
   final VoidCallback onTap;
 
@@ -234,41 +272,14 @@ class _DestinationCard extends StatelessWidget {
             child: Stack(
               children: <Widget>[
                 Positioned.fill(
-                  child: data.imageUrl == null
-                      ? Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: <Color>[
-                                Color(0xFFF4F4F6),
-                                Color(0xFFD8D9DD),
-                                Color(0xFF737577),
-                              ],
-                            ),
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.image_outlined,
-                              size: 54,
-                              color: Color(0xFF303236),
-                            ),
-                          ),
-                        )
-                      : Image.network(
-                          data.imageUrl!,
+                  child: item.coverImage != null
+                      ? Image.network(
+                          item.coverImage!,
                           fit: BoxFit.cover,
-                          errorBuilder:
-                              (
-                                BuildContext context,
-                                Object error,
-                                StackTrace? stackTrace,
-                              ) {
-                                return Container(
-                                  color: const Color(0xFFD6D9E0),
-                                );
-                              },
-                        ),
+                          errorBuilder: (context, error, stack) =>
+                              const _PlaceholderBackground(),
+                        )
+                      : const _PlaceholderBackground(),
                 ),
                 Positioned.fill(
                   child: DecoratedBox(
@@ -277,9 +288,8 @@ class _DestinationCard extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: <Color>[
-                          Colors.black.withValues(alpha: 0.02),
-                          Colors.black.withValues(alpha: 0.1),
-                          Colors.black.withValues(alpha: 0.46),
+                          Colors.black.withValues(alpha: 0.0),
+                          Colors.black.withValues(alpha: 0.32),
                         ],
                       ),
                     ),
@@ -294,7 +304,7 @@ class _DestinationCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       Text(
-                        data.name,
+                        removeVietnameseDiacritics(item.name),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -303,20 +313,32 @@ class _DestinationCard extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        data.region,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
+                      if (item.area.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: 2),
+                        Text(
+                          removeVietnameseDiacritics(item.area),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
+                if (selected)
+                  const Positioned(
+                    top: 8,
+                    right: 8,
+                    child: CircleAvatar(
+                      radius: 11,
+                      backgroundColor: Color(0xFF24B8EF),
+                      child: Icon(Icons.check, size: 14, color: Colors.white),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -326,16 +348,44 @@ class _DestinationCard extends StatelessWidget {
   }
 }
 
-class _DestinationCardData {
-  const _DestinationCardData({
-    required this.id,
-    required this.name,
-    required this.region,
-    this.imageUrl,
-  });
+class _PlaceholderBackground extends StatelessWidget {
+  const _PlaceholderBackground();
 
-  final String id;
-  final String name;
-  final String region;
-  final String? imageUrl;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            Color(0xFFE4F4FB),
+            Color(0xFFD0EEF8),
+            Color(0xFFB8E5F4),
+          ],
+        ),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.landscape_outlined,
+          size: 46,
+          color: Color(0xFF6BBFDC),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyView extends StatelessWidget {
+  const _EmptyView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'No destinations available yet.',
+        style: TextStyle(fontSize: 15, color: Color(0xFF8A95A5)),
+      ),
+    );
+  }
 }

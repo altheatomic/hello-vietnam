@@ -23,4 +23,12 @@ class Env {
     'CURRENCY_RATES_FUNCTION',
     defaultValue: 'currency-rates',
   );
+  static const tripPlannerFunction = String.fromEnvironment(
+    'TRIP_PLANNER_FUNCTION',
+    defaultValue: 'trip-planner',
+  );
+  static const recommendFunction = String.fromEnvironment(
+    'RECOMMEND_FUNCTION',
+    defaultValue: 'recommend',
+  );
 }

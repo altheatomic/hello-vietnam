@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -6,16 +7,20 @@ import '../core/auth/auth_repository.dart';
 import 'theme.dart';
 import '../features/item_detail/domain/detail_category.dart';
 import '../features/item_detail/domain/item_detail_models.dart';
+import '../features/profile/data/wishlist_repository.dart';
 
 import '../features/home/presentation/home_page.dart';
 import '../features/planner/presentation/business_location_page.dart';
+import '../features/planner/data/models/trip_plan_response.dart';
+import '../features/planner/data/trip_wizard_data.dart';
 import '../features/planner/presentation/trip_budget_page.dart';
 import '../features/planner/presentation/trip_day_detail_page.dart';
 import '../features/planner/presentation/trip_duration_page.dart';
 import '../features/planner/presentation/trip_interest_page.dart';
 import '../features/planner/presentation/trip_map_page.dart';
+import '../features/planner/presentation/trip_planner_mock_data.dart';
 import '../features/planner/presentation/trip_planner_page.dart';
-import '../features/planner/presentation/trip_result_page.dart';
+import '../features/planner/presentation/widgets/trip_result_loader.dart';
 import '../features/planner/presentation/saved_trips_page.dart';
 import '../features/planner/presentation/trip_location_page.dart';
 import '../features/profile/presentation/profile_page.dart';
@@ -57,10 +62,10 @@ import '../features/get_started/presentation/get_started_page.dart';
 import '../features/translate/presentation/translate_page.dart';
 import '../features/profile/presentation/upgrade_account_page.dart';
 import '../features/profile/presentation/upgrade_payment_page.dart';
-import '../features/recommend/presentation/recommend_page.dart';
 import '../features/recommend/presentation/where/recommend_where_search_page.dart';
 import '../features/recommend/presentation/when/recommend_when_calendar_page.dart';
 import '../features/recommend/presentation/when/recommend_when_results_page.dart';
+import '../features/recommend/presentation/recommended_place_detail_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
@@ -74,11 +79,31 @@ import '../features/admin/presentation/pages/admin_feedback_page.dart';
 import '../features/admin/presentation/pages/admin_food_page.dart';
 import '../features/admin/presentation/pages/admin_content_page.dart';
 import '../features/admin/presentation/pages/admin_popular_app_page.dart';
+import '../features/admin/presentation/pages/admin_cf_retrain_page.dart';
 import '../features/admin/domain/admin_content.dart';
 import '../features/personalization/data/travel_preferences_repository.dart';
 import '../features/personalization/presentation/travel_preferences_onboarding_page.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
+
+String? _pendingAuthReturnTo;
+Object? _pendingTripPlannerExtra;
+
+String? _validTripPlannerReturnTo(String? value) {
+  final String candidate = value?.trim() ?? '';
+  if (candidate.isEmpty) return null;
+  final Uri? uri = Uri.tryParse(candidate);
+  if (uri == null || uri.hasScheme || uri.hasAuthority) return null;
+  return uri.path == AppRoutes.tripPlanner ||
+          uri.path.startsWith('${AppRoutes.tripPlanner}/')
+      ? uri.toString()
+      : null;
+}
+
+String _loginPathWithReturnTo(String returnTo) => Uri(
+  path: AppRoutes.login,
+  queryParameters: <String, String>{'returnTo': returnTo},
+).toString();
 
 ExploreProvince parseExploreSearchResultExtra(Object? extra) {
   if (extra is ExploreProvince) {
@@ -98,6 +123,81 @@ ExploreProvince parseExploreSearchResultExtra(Object? extra) {
     return ExploreProvince.unresolved(extra);
   }
   return ExploreProvince.unresolved('');
+}
+
+TripWizardData? _tripWizardFromExtra(Object? extra) {
+  final Object? value = extra ?? _takePendingTripPlannerExtra();
+  if (value is TripWizardData) return value;
+  if (value is Map<String, dynamic>) return TripWizardData.fromJson(value);
+  if (value is Map) {
+    return TripWizardData.fromJson(Map<String, dynamic>.from(value));
+  }
+  return null;
+}
+
+TripPlanResponse? _tripPlanFromExtra(Object? extra) {
+  final Object? value = extra ?? _takePendingTripPlannerExtra();
+  return value is TripPlanResponse ? value : null;
+}
+
+Object? _takePendingTripPlannerExtra() {
+  final Object? value = _pendingTripPlannerExtra;
+  _pendingTripPlannerExtra = null;
+  return value;
+}
+
+CityDetailRequest _cityDetailRequest(GoRouterState state) {
+  final Map<String, String> query = state.uri.queryParameters;
+  if (query['id'] != null && query['name'] != null) {
+    return CityDetailRequest(
+      id: query['id']!,
+      name: query['name']!,
+      fallbackImages: _stringListFromQuery(query['images']),
+      fallbackImagePath: query['image'],
+      fallbackRating: double.tryParse(query['rating'] ?? ''),
+    );
+  }
+  return state.extra as CityDetailRequest;
+}
+
+ItemDetailRequest _itemDetailRequest(
+  GoRouterState state,
+  DetailCategory category,
+) {
+  final Map<String, String> query = state.uri.queryParameters;
+  if (query['id'] != null && query['name'] != null) {
+    return ItemDetailRequest(
+      id: query['id']!,
+      name: query['name']!,
+      category: category,
+      fallbackImages: _stringListFromQuery(query['images']),
+      fallbackImagePath: query['image'],
+      favoriteType: FavoriteType.tryParse(query['favoriteType'] ?? ''),
+      trackExploreBehavior: query['trackExplore'] == 'true',
+      exploreProvinceId: query['provinceId'],
+    );
+  }
+  return state.extra as ItemDetailRequest;
+}
+
+List<String> _stringListFromQuery(String? value) {
+  if (value == null || value.isEmpty) return const <String>[];
+  final Object? decoded = jsonDecode(value);
+  return decoded is List
+      ? decoded.whereType<String>().toList(growable: false)
+      : const <String>[];
+}
+
+DateTimeRange<DateTime> _dateRange(GoRouterState state) {
+  final String? start = state.uri.queryParameters['start'];
+  final String? end = state.uri.queryParameters['end'];
+  if (start != null && end != null) {
+    return DateTimeRange<DateTime>(
+      start: DateTime.parse(start),
+      end: DateTime.parse(end),
+    );
+  }
+  return state.extra as DateTimeRange<DateTime>;
 }
 
 class AppRoutes {
@@ -136,6 +236,7 @@ class AppRoutes {
   static const exploreSearchResult = '/explore-search-result';
   static const exploreCategory = '/explore-category';
   static const cityDetail = '/details/city';
+  static const recommendedPlaceDetail = '/details/recommended-place';
   static const activityDetail = '/details/activities';
   static const cultureDetail = '/details/culture';
   static const foodDetail = '/details/food';
@@ -183,6 +284,69 @@ class AppRoutes {
     }
   }
 
+  static String cityDetailPath(CityDetailRequest request) => Uri(
+    path: cityDetail,
+    queryParameters: <String, String>{
+      'id': request.id,
+      'name': request.name,
+      if (request.fallbackImages.isNotEmpty)
+        'images': jsonEncode(request.fallbackImages),
+      if (request.fallbackImagePath != null)
+        'image': request.fallbackImagePath!,
+      if (request.fallbackRating != null)
+        'rating': request.fallbackRating!.toString(),
+    },
+  ).toString();
+
+  static String recommendedPlaceDetailPath({
+    required String idProvince,
+    required String idPlace,
+  }) => Uri(
+    path: recommendedPlaceDetail,
+    queryParameters: <String, String>{
+      'idProvince': idProvince,
+      'idPlace': idPlace,
+    },
+  ).toString();
+
+  static String itemDetailPath(ItemDetailRequest request) => Uri(
+    path: detailPathForCategory(request.category),
+    queryParameters: <String, String>{
+      'id': request.id,
+      'name': request.name,
+      if (request.fallbackImages.isNotEmpty)
+        'images': jsonEncode(request.fallbackImages),
+      if (request.fallbackImagePath != null)
+        'image': request.fallbackImagePath!,
+      if (request.favoriteType != null)
+        'favoriteType': request.favoriteType!.dbValue,
+      if (request.trackExploreBehavior) 'trackExplore': 'true',
+      if (request.exploreProvinceId != null)
+        'provinceId': request.exploreProvinceId!,
+    },
+  ).toString();
+
+  static String recommendWhenResultsPath(DateTimeRange<DateTime> range) => Uri(
+    path: recommendWhenResults,
+    queryParameters: <String, String>{
+      'start': range.start.toIso8601String(),
+      'end': range.end.toIso8601String(),
+    },
+  ).toString();
+
+  /// Builds a restorable result location for a persisted plan, or marks the
+  /// location as a process-local draft when [idPlan] is absent.
+  static String tripPlannerResultPath({String? idPlan}) {
+    final String normalizedId = idPlan?.trim() ?? '';
+    return Uri(
+      path: tripPlannerResult,
+      queryParameters: <String, String>{
+        if (normalizedId.isNotEmpty) 'idPlan': normalizedId,
+        if (normalizedId.isEmpty) 'draft': 'true',
+      },
+    ).toString();
+  }
+
   // â”€â”€ Admin routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   static const adminDashboard = '/admin/dashboard';
   static const adminUsers = '/admin/users';
@@ -196,6 +360,7 @@ class AppRoutes {
   static const adminCultures = '/admin/cultures';
   static const adminLocalProducts = '/admin/local-products';
   static const adminPopularApps = '/admin/popular-apps';
+  static const adminCfRetrain = '/admin/cf-retrain';
   static const deleteUserData = '$profile/delete-user-data';
 
   static String forumPostPath(String postId) => '/forum/post/$postId';
@@ -243,6 +408,16 @@ GoRouter buildRouter() {
           location == AppRoutes.login ||
           location == AppRoutes.register ||
           location == AppRoutes.forgotPassword;
+      final bool isTripPlannerRoute =
+          location == AppRoutes.tripPlanner ||
+          location.startsWith('${AppRoutes.tripPlanner}/');
+
+      if (isTripPlannerRoute && !loggedIn) {
+        final String returnTo = state.uri.toString();
+        _pendingAuthReturnTo = returnTo;
+        _pendingTripPlannerExtra = state.extra;
+        return _loginPathWithReturnTo(returnTo);
+      }
 
       // Check if we should navigate to forgot password page (from deep link)
       if (shouldNavigateToForgotPassword()) {
@@ -265,10 +440,19 @@ GoRouter buildRouter() {
       if (loggedIn) {
         final bool needsPreferences =
             !preferencesRepository.hasCompletedCurrentUser;
+        final String? authReturnTo = _validTripPlannerReturnTo(
+          state.uri.queryParameters['returnTo'],
+        );
+        final String? returnTo = authReturnTo ?? _pendingAuthReturnTo;
         if (needsPreferences &&
             !preferencesRepository.hasDeferredCurrentUserOnboarding &&
             location != AppRoutes.travelPreferencesOnboarding) {
-          return AppRoutes.travelPreferencesOnboarding;
+          return AppRoutes.travelPreferencesOnboardingPath(returnTo: returnTo);
+        }
+
+        if (!needsPreferences && returnTo != null) {
+          _pendingAuthReturnTo = null;
+          return returnTo;
         }
 
         if (!needsPreferences &&
@@ -378,32 +562,42 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.cityDetail,
-        builder: (c, s) =>
-            CityDetailPage(request: s.extra as CityDetailRequest),
+        builder: (c, s) => CityDetailPage(request: _cityDetailRequest(s)),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommendedPlaceDetail,
+        builder: (c, s) => RecommendedPlaceDetailPage(
+          idProvince: s.uri.queryParameters['idProvince'] ?? '',
+          idPlace: s.uri.queryParameters['idPlace'] ?? '',
+        ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.activityDetail,
-        builder: (c, s) =>
-            ActivityDetailPage(request: s.extra as ItemDetailRequest),
+        builder: (c, s) => ActivityDetailPage(
+          request: _itemDetailRequest(s, DetailCategory.activities),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.cultureDetail,
-        builder: (c, s) =>
-            CultureDetailPage(request: s.extra as ItemDetailRequest),
+        builder: (c, s) => CultureDetailPage(
+          request: _itemDetailRequest(s, DetailCategory.culture),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.foodDetail,
         builder: (c, s) =>
-            FoodDetailPage(request: s.extra as ItemDetailRequest),
+            FoodDetailPage(request: _itemDetailRequest(s, DetailCategory.food)),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.localProductsDetail,
-        builder: (c, s) =>
-            LocalProductsDetailPage(request: s.extra as ItemDetailRequest),
+        builder: (c, s) => LocalProductsDetailPage(
+          request: _itemDetailRequest(s, DetailCategory.localProducts),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
@@ -527,7 +721,7 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.recommend,
-        builder: (c, s) => const RecommendPage(),
+        redirect: (c, s) => AppRoutes.recommendWhereSearch,
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
@@ -543,8 +737,7 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.recommendWhenResults,
-        builder: (c, s) =>
-            RecommendWhenResultsPage(dateRange: s.extra as DateTimeRange),
+        builder: (c, s) => RecommendWhenResultsPage(dateRange: _dateRange(s)),
       ),
 
       GoRoute(
@@ -652,6 +845,13 @@ GoRouter buildRouter() {
               child: const AdminPopularAppPage(),
             ),
           ),
+          GoRoute(
+            path: AppRoutes.adminCfRetrain,
+            pageBuilder: (c, s) => NoTransitionPage<void>(
+              key: s.pageKey,
+              child: const AdminCfRetrainPage(),
+            ),
+          ),
         ],
       ),
       StatefulShellRoute.indexedStack(
@@ -686,15 +886,21 @@ GoRouter buildRouter() {
                   ),
                   GoRoute(
                     path: 'duration',
-                    builder: (context, state) => const TripDurationPage(),
+                    builder: (context, state) => TripDurationPage(
+                      wizard: _tripWizardFromExtra(state.extra),
+                    ),
                   ),
                   GoRoute(
                     path: 'interest',
-                    builder: (context, state) => const TripInterestPage(),
+                    builder: (context, state) => TripInterestPage(
+                      wizard: _tripWizardFromExtra(state.extra),
+                    ),
                   ),
                   GoRoute(
                     path: 'budget',
-                    builder: (context, state) => const TripBudgetPage(),
+                    builder: (context, state) => TripBudgetPage(
+                      wizard: _tripWizardFromExtra(state.extra),
+                    ),
                   ),
                   GoRoute(
                     path: 'saved',
@@ -702,7 +908,10 @@ GoRouter buildRouter() {
                   ),
                   GoRoute(
                     path: 'result',
-                    builder: (context, state) => const TripResultPage(),
+                    builder: (context, state) => TripResultLoader(
+                      idPlan: state.uri.queryParameters['idPlan'],
+                      draft: _tripPlanFromExtra(state.extra),
+                    ),
                     routes: [
                       GoRoute(
                         path: 'day/:dayIndex',
@@ -712,6 +921,9 @@ GoRouter buildRouter() {
                                 state.pathParameters['dayIndex'] ?? '',
                               ) ??
                               0,
+                          dayData: state.extra is TripPlannerDayData
+                              ? state.extra as TripPlannerDayData
+                              : null,
                         ),
                         routes: [
                           GoRoute(
@@ -727,6 +939,9 @@ GoRouter buildRouter() {
                                     state.pathParameters['activityIndex'] ?? '',
                                   ) ??
                                   0,
+                              activity: state.extra is TripPlannerActivityData
+                                  ? state.extra as TripPlannerActivityData
+                                  : null,
                             ),
                           ),
                         ],

@@ -5,8 +5,10 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
+import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
 import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart';
 import '../../data/recommend_mock_data.dart';
+import '../../data/recommend_repository.dart';
 import '../../domain/recommend_destination.dart';
 
 /// Recommendation 1.1 / 1.2 / 1.3 — single screen that covers:
@@ -26,13 +28,30 @@ class RecommendWhereSearchPage extends StatefulWidget {
 
 class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
   late final TextEditingController _controller;
-  late List<RecommendDestination> _results;
+  List<RecommendDestination> _allDestinations = <RecommendDestination>[];
+  List<RecommendDestination> _results = <RecommendDestination>[];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialQuery);
-    _results = _filter(widget.initialQuery);
+    _loadDestinations();
+  }
+
+  Future<void> _loadDestinations() async {
+    List<RecommendDestination> destinations;
+    try {
+      destinations = await RecommendRepository().getPersonalizedProvinces();
+    } catch (_) {
+      destinations = mockRecommendDestinations;
+    }
+    if (!mounted) return;
+    setState(() {
+      _allDestinations = destinations;
+      _results = _filter(widget.initialQuery);
+      _isLoading = false;
+    });
   }
 
   @override
@@ -42,9 +61,9 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
   }
 
   List<RecommendDestination> _filter(String query) {
-    if (query.trim().isEmpty) return mockRecommendDestinations;
+    if (query.trim().isEmpty) return _allDestinations;
     final q = query.toLowerCase();
-    return mockRecommendDestinations
+    return _allDestinations
         .where((d) => d.name.toLowerCase().contains(q))
         .toList();
   }
@@ -59,26 +78,25 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
   void _openDestination(String destination) {
     if (destination.trim().isEmpty) return;
     RecommendDestination? match;
-    for (final candidate in mockRecommendDestinations) {
+    for (final candidate in _allDestinations) {
       if (candidate.name.toLowerCase() == destination.trim().toLowerCase()) {
         match = candidate;
         break;
       }
     }
 
-    context.push(
-      AppRoutes.cityDetail,
-      extra: CityDetailRequest(
-        id: match?.id ?? destination.trim().toLowerCase().replaceAll(' ', '-'),
-        name: match?.name ?? destination.trim(),
-        fallbackImages: <String>[
-          if (match != null) match.imagePath,
-          if (match != null) ...match.gallery,
-        ],
-        fallbackImagePath: match?.imagePath,
-        fallbackRating: match?.rating,
-      ),
+    final request = CityDetailRequest(
+      id: match?.id ?? destination.trim().toLowerCase().replaceAll(' ', '-'),
+      name: match?.name ?? destination.trim(),
+      fallbackImages: <String>[
+        if (match != null) match.imagePath,
+        if (match != null) ...match.gallery,
+      ],
+      fallbackImagePath: match?.imagePath,
+      fallbackRating: match?.rating,
     );
+
+    context.push(AppRoutes.cityDetailPath(request));
   }
 
   @override
@@ -171,7 +189,9 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
 
           // ── Results list ─────────────────────────────────────────
           Expanded(
-            child: _results.isEmpty
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _results.isEmpty
                 ? EmptyState(
                     icon: Icons.search_off_rounded,
                     message:
@@ -209,7 +229,7 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
                           ),
                         ),
                         title: Text(
-                          dest.name,
+                          removeVietnameseDiacritics(dest.name),
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,

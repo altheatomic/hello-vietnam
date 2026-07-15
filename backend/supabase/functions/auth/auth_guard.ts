@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 
 export class AuthorizationError extends Error {
   constructor(
@@ -19,7 +19,7 @@ export function requireAuthorizationHeader(value: string | null): string {
 }
 
 export async function requireAuthenticatedUserId(
-  client: SupabaseClient,
+  client: ReturnType<typeof createClient> | any,
 ): Promise<string> {
   const {
     data: { user },
@@ -34,7 +34,7 @@ export async function requireAuthenticatedUserId(
 }
 
 export async function requireRole(
-  client: SupabaseClient,
+  client: ReturnType<typeof createClient> | any,
   userId: string,
   role: string,
 ): Promise<void> {

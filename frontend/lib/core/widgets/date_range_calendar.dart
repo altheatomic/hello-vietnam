@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hellovietnam/core/language/app_language.dart';
 
 /// A reusable date-range calendar body.
 ///
@@ -8,19 +7,20 @@ import 'package:hellovietnam/core/language/app_language.dart';
 /// and notifies the parent via [onRangeChanged] whenever the selection
 /// changes (including when it becomes null after a deselection).
 ///
-/// By default this renders its own scrollable month list inside a bounded
-/// height. Set [scrollable] to false when a parent scroll view should move the
-/// year controls, range summary, and month cards together.
+/// Intended to be placed inside a widget that already provides a bounded
+/// height (e.g. wrapped in [Expanded] by the caller), because the month
+/// list is rendered with [ListView.builder] and requires infinite vertical
+/// space otherwise.
 class DateRangeCalendar extends StatefulWidget {
   const DateRangeCalendar({
     super.key,
     this.initialRange,
-    this.scrollable = true,
+    this.firstDate,
     required this.onRangeChanged,
   });
 
   final DateTimeRange? initialRange;
-  final bool scrollable;
+  final DateTime? firstDate;
   final void Function(DateTimeRange?) onRangeChanged;
 
   @override
@@ -71,7 +71,12 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
   bool _isSameDate(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
+  DateTime _dateOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
   void _onDayTap(DateTime day) {
+    final DateTime? firstDate = widget.firstDate;
+    if (firstDate != null && day.isBefore(_dateOnly(firstDate))) return;
     setState(() {
       if (_start == null) {
         _start = day;
@@ -121,77 +126,26 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
     return _end!.difference(_start!).inDays + 1;
   }
 
-  String _monthName(BuildContext context, int month) {
-    return context.l10n.ui(_monthNames[month - 1]);
-  }
+  String _monthShort(int month) => _monthNames[month - 1].substring(0, 3);
 
-  String _monthShort(BuildContext context, int month) {
-    return context.l10n.ui(_monthNames[month - 1].substring(0, 3));
-  }
-
-  String _summaryText(BuildContext context) {
-    if (_start == null) return context.l10n.ui('Select your travel dates');
-    if (_end == null) {
-      return '${_monthShort(context, _start!.month)} ${_start!.day}';
-    }
-    return '${_monthShort(context, _start!.month)} ${_start!.day}'
+  String get _summaryText {
+    if (_start == null) return 'Select your travel dates';
+    if (_end == null) return '${_monthShort(_start!.month)} ${_start!.day}';
+    return '${_monthShort(_start!.month)} ${_start!.day}'
         '  →  '
-        '${_monthShort(context, _end!.month)} ${_end!.day}';
+        '${_monthShort(_end!.month)} ${_end!.day}';
   }
 
-  String _durationText(BuildContext context) {
-    if (!_hasRange) return context.l10n.ui('Choose a start and end date');
-    final String unit = context.l10n.ui(_durationDays == 1 ? 'day' : 'days');
-    return '$_durationDays $unit';
-  }
-
-  Widget _buildMonthList(
-    BuildContext context,
-    List<String> weekdayLabels, {
-    required bool scrollable,
-  }) {
-    Widget buildItem(int index) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 18),
-        child: _MonthCard(
-          year: _year,
-          month: index + 1,
-          monthName: _monthName(context, index + 1),
-          weekdayLabels: weekdayLabels,
-          hasCompletedRange: _hasRange,
-          onDayTap: _onDayTap,
-          isStart: _isStart,
-          isEnd: _isEnd,
-          isInRange: _isInRange,
-        ),
-      );
-    }
-
-    if (!scrollable) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-        child: Column(children: List<Widget>.generate(12, buildItem)),
-      );
-    }
-
-    return Expanded(
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-        itemCount: 12,
-        itemBuilder: (BuildContext context, int index) => buildItem(index),
-      ),
-    );
+  String get _durationText {
+    if (!_hasRange) return 'Choose a start and end date';
+    return '$_durationDays ${_durationDays == 1 ? 'day' : 'days'}';
   }
 
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final List<String> weekdayLabels = _weekdayLabels
-        .map((String label) => context.l10n.ui(label))
-        .toList(growable: false);
 
     return Column(
-      mainAxisSize: widget.scrollable ? MainAxisSize.max : MainAxisSize.min,
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -248,14 +202,35 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
           child: _RangeSummaryCard(
-            summary: _summaryText(context),
-            duration: _durationText(context),
+            summary: _summaryText,
+            duration: _durationText,
             isComplete: _hasRange,
-            pickDatesLabel: context.l10n.ui('Pick dates'),
           ),
         ),
         const SizedBox(height: 12),
-        _buildMonthList(context, weekdayLabels, scrollable: widget.scrollable),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            itemCount: 12,
+            itemBuilder: (BuildContext context, int index) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 18),
+                child: _MonthCard(
+                  year: _year,
+                  month: index + 1,
+                  monthName: _monthNames[index],
+                  weekdayLabels: _weekdayLabels,
+                  hasCompletedRange: _hasRange,
+                  firstDate: widget.firstDate,
+                  onDayTap: _onDayTap,
+                  isStart: _isStart,
+                  isEnd: _isEnd,
+                  isInRange: _isInRange,
+                ),
+              );
+            },
+          ),
+        ),
       ],
     );
   }
@@ -304,13 +279,11 @@ class _RangeSummaryCard extends StatelessWidget {
     required this.summary,
     required this.duration,
     required this.isComplete,
-    required this.pickDatesLabel,
   });
 
   final String summary;
   final String duration;
   final bool isComplete;
-  final String pickDatesLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -376,7 +349,7 @@ class _RangeSummaryCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
-              isComplete ? duration : pickDatesLabel,
+              isComplete ? duration : 'Pick dates',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -397,6 +370,7 @@ class _MonthCard extends StatelessWidget {
     required this.monthName,
     required this.weekdayLabels,
     required this.hasCompletedRange,
+    this.firstDate,
     required this.onDayTap,
     required this.isStart,
     required this.isEnd,
@@ -408,6 +382,7 @@ class _MonthCard extends StatelessWidget {
   final String monthName;
   final List<String> weekdayLabels;
   final bool hasCompletedRange;
+  final DateTime? firstDate;
   final void Function(DateTime) onDayTap;
   final bool Function(DateTime) isStart;
   final bool Function(DateTime) isEnd;
@@ -487,6 +462,10 @@ class _MonthCard extends StatelessWidget {
               if (index < firstWeekday) return const SizedBox();
               final int day = index - firstWeekday + 1;
               final DateTime date = DateTime(year, month, day);
+              final DateTime? minimum = firstDate == null
+                  ? null
+                  : DateTime(firstDate!.year, firstDate!.month, firstDate!.day);
+              final bool disabled = minimum != null && date.isBefore(minimum);
               final bool start = isStart(date);
               final bool end = isEnd(date);
               final bool inRange = isInRange(date);
@@ -503,7 +482,9 @@ class _MonthCard extends StatelessWidget {
               Color? bubbleFillColor;
               Border? border;
 
-              if (start || end) {
+              if (disabled) {
+                textColor = mutedText.withValues(alpha: 0.32);
+              } else if (start || end) {
                 bubbleFillColor = const Color(0xFF2EA7F8);
                 textColor = Colors.white;
               } else if (inRange) {
@@ -515,7 +496,7 @@ class _MonthCard extends StatelessWidget {
               }
 
               return GestureDetector(
-                onTap: () => onDayTap(date),
+                onTap: disabled ? null : () => onDayTap(date),
                 child: Stack(
                   children: <Widget>[
                     if (isRangeDay)

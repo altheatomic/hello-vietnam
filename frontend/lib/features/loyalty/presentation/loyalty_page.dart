@@ -100,7 +100,7 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
       case 'forum_post':
         return AppRoutes.forumCreate;
       case 'review_submit':
-        return AppRoutes.recommend;
+        return AppRoutes.recommendWhereSearch;
       case 'check_in':
         return AppRoutes.explore;
       case 'subscription_purchase':

@@ -4,14 +4,146 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
+import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class TripResultPage extends StatelessWidget {
-  const TripResultPage({super.key});
+class TripResultPage extends StatefulWidget {
+  const TripResultPage({super.key, required this.plan, this.wizard});
+
+  final TripPlanResponse plan;
+  final TripWizardData? wizard;
+
+  @override
+  State<TripResultPage> createState() => _TripResultPageState();
+}
+
+class _TripResultPageState extends State<TripResultPage> {
+  bool _isSaving = false;
+  bool _isSharing = false;
+
+  Future<void> _handleSave() async {
+    final idPlan = widget.plan.idPlan;
+    if (idPlan == null) {
+      _showSnackBar('No plan ID — please generate again.');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      await TripRepository().savePlan(idPlan);
+      if (!mounted) return;
+      _showSnackBar('Trip saved!');
+      context.push(AppRoutes.tripPlannerSaved);
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Could not save trip. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _handleShare() {
+    final plan = widget.plan;
+    if (plan.idPlan == null) {
+      _showSnackBar('Save the trip first before sharing.');
+      return;
+    }
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        title: const Text('Share to Forum'),
+        content: const Text(
+          'Share this trip plan as a forum post? '
+          'Other users can save it to their own trips.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _shareToForum();
+            },
+            child: const Text('Share'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _shareToForum() async {
+    final plan = widget.plan;
+    if (plan.idPlan == null) return;
+
+    setState(() => _isSharing = true);
+    try {
+      final sharedItem = <String, dynamic>{
+        'type': 'trip_plan',
+        'plan_id': plan.idPlan,
+        'n_days': plan.days.length,
+        'province_name': widget.wizard?.provinceName ?? 'Vietnam',
+        'place_count': plan.days.fold<int>(
+          0,
+          (sum, d) =>
+              sum + d.places.where((p) => p.type != 'lunch_break').length,
+        ),
+        'days': plan.days
+            .map((d) => <String, dynamic>{
+                  'day': d.day,
+                  'places': d.places
+                      .where((p) => p.type != 'lunch_break')
+                      .map((p) => p.name)
+                      .toList(),
+                })
+            .toList(),
+      };
+
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) {
+        _showSnackBar('Please sign in to share.');
+        return;
+      }
+
+      await Supabase.instance.client.from('forum_post').insert(<String, dynamic>{
+        'id_author_user': userId,
+        'content':
+            'I created a ${plan.days.length}-day trip plan! '
+            'Check it out and save it to your trips.',
+        'status': 'active',
+        'shared_item': sharedItem,
+      });
+
+      if (!mounted) return;
+      _showSnackBar('Shared to Forum!');
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Could not share. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final days = _convertPlan(widget.plan);
+
+    final totalActivities =
+        days.fold<int>(0, (sum, d) => sum + d.activities.length);
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -56,9 +188,9 @@ class TripResultPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      '3 days • 0 interests • 10,000,000 VND',
-                      style: TextStyle(
+                    Text(
+                      '${days.length} ${days.length == 1 ? 'day' : 'days'} • $totalActivities activities',
+                      style: const TextStyle(
                         fontSize: 14.5,
                         color: Color(0xFF556273),
                         fontWeight: FontWeight.w500,
@@ -69,25 +201,16 @@ class TripResultPage extends StatelessWidget {
                       children: <Widget>[
                         Expanded(
                           child: _ActionButton(
-                            label: 'Save',
-                            onTap: () {
-                              _showToast(context, 'Saved trip');
-                              context.push(AppRoutes.tripPlannerSaved);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _ActionButton(
-                            label: 'Download',
-                            onTap: () =>
-                                _showToast(context, 'Download started'),
+                            label: _isSaving ? 'Saving…' : 'Save',
+                            onTap: _isSaving ? null : _handleSave,
                           ),
                         ),
                         const SizedBox(width: 12),
                         _IconActionButton(
-                          icon: Icons.share_outlined,
-                          onTap: () => _showToast(context, 'Share options'),
+                          icon: _isSharing
+                              ? Icons.hourglass_top_rounded
+                              : Icons.share_outlined,
+                          onTap: _isSharing ? () {} : _handleShare,
                         ),
                       ],
                     ),
@@ -96,41 +219,32 @@ class TripResultPage extends StatelessWidget {
                       onTap: () {
                         TripStore.instance.startTrip(
                           title: 'Your Vietnam Adventure',
-                          days: TripPlannerMockData.tripDays,
+                          days: days,
+                          idPlan: widget.plan.idPlan,
                         );
                         context.go(AppRoutes.home);
                       },
                     ),
-                    const SizedBox(height: 16),
-                    const Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: <Widget>[
-                        _TagChip(label: 'culture'),
-                        _TagChip(label: 'entertainment'),
-                        _TagChip(label: 'adventure'),
-                      ],
-                    ),
                     const SizedBox(height: 24),
-                    const Row(
+                    Row(
                       children: <Widget>[
                         Expanded(
                           child: _StatCard(
                             icon: Icons.calendar_today_outlined,
-                            value: '3',
+                            value: '${days.length}',
                             label: 'Days',
                           ),
                         ),
-                        SizedBox(width: 14),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: _StatCard(
                             icon: Icons.location_on_outlined,
-                            value: '12',
+                            value: '$totalActivities',
                             label: 'Activities',
                           ),
                         ),
-                        SizedBox(width: 14),
-                        Expanded(
+                        const SizedBox(width: 14),
+                        const Expanded(
                           child: _StatCard(
                             icon: Icons.access_time_rounded,
                             value: 'Full',
@@ -149,13 +263,14 @@ class TripResultPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    ...TripPlannerMockData.tripDays.asMap().entries.map(
+                    ...days.asMap().entries.map(
                       (MapEntry<int, TripPlannerDayData> entry) => Padding(
                         padding: const EdgeInsets.only(bottom: 18),
                         child: _DayCard(
                           data: entry.value,
                           onTap: () => context.push(
                             AppRoutes.tripPlannerDayDetailPath(entry.key),
+                            extra: entry.value,
                           ),
                         ),
                       ),
@@ -169,21 +284,108 @@ class TripResultPage extends StatelessWidget {
       ),
     );
   }
+}
 
-  static void _showToast(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+// ── Conversion helpers ────────────────────────────────────────────────────────
+
+List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
+  const gradients = <List<Color>>[
+    <Color>[Color(0xFFE9F0FD), Color(0xFFE7FAFD), Color(0xFFD6F7F6)],
+    <Color>[Color(0xFFF4EAFB), Color(0xFFEBF7FB), Color(0xFFD6F0F7)],
+    <Color>[Color(0xFFFDEFE9), Color(0xFFFAF7E7), Color(0xFFF7F6D6)],
+  ];
+
+  return plan.days.asMap().entries.map((entry) {
+    final int i = entry.key;
+    final TripPlanDay day = entry.value;
+
+    final activities = day.places.map((TripPlanPlace p) {
+      if (p.isLunchBreak) {
+        return TripPlannerActivityData(
+          title: 'Lunch Break',
+          time: p.startTime ?? '12:00',
+          slot: 'Afternoon',
+          tag: 'lunch_break',
+          description: 'Time to rest and eat.',
+          distanceLabel: p.endTime != null ? 'Until ${p.endTime}' : '',
+          tips: const <String>[],
+          nearbyPlaces: const <TripPlannerNearbyPlace>[],
+        );
+      }
+      final String? imageUrl = p.representativeImageUrl;
+      debugPrint(
+        '[TripResultPage._convertPlan] place=${p.name} imageUrl=$imageUrl',
       );
+      return TripPlannerActivityData(
+        title: p.name.isEmpty ? 'Place ${p.order}' : p.name,
+        time: p.startTime ?? _slotToTime(p.slot),
+        slot: _capitalizeSlot(p.slot),
+        tag: 'culture',
+        description: '',
+        distanceLabel: p.estimatedTravelMinutes != null
+            ? '~${p.estimatedTravelMinutes} min travel'
+            : '',
+        tips: const <String>[],
+        nearbyPlaces: const <TripPlannerNearbyPlace>[],
+        lat: p.latitude ?? 0.0,
+        lng: p.longitude ?? 0.0,
+        imageUrl: imageUrl,
+      );
+    }).toList();
+
+    final count = activities.length;
+    final shown = count > 3 ? 3 : count;
+
+    return TripPlannerDayData(
+      dayLabel: 'Day ${day.day}',
+      date: _formatIsoDate(day.date),
+      activityCountLabel: '$count ${count == 1 ? 'activity' : 'activities'} planned',
+      moreActivitiesLabel: count > shown ? '+ ${count - shown} more' : '',
+      gradientColors: gradients[i % gradients.length],
+      activities: activities,
+    );
+  }).toList();
+}
+
+String _slotToTime(String? slot) {
+  switch (slot?.toLowerCase()) {
+    case 'morning':
+      return '08:00';
+    case 'afternoon':
+      return '13:00';
+    case 'evening':
+      return '17:00';
+    default:
+      return '09:00';
   }
 }
+
+String _capitalizeSlot(String? slot) {
+  if (slot == null || slot.isEmpty) return '';
+  return slot[0].toUpperCase() + slot.substring(1);
+}
+
+String _formatIsoDate(String iso) {
+  // 'YYYY-MM-DD' → 'Dec 5, 2025'
+  final parts = iso.split('-');
+  if (parts.length != 3) return iso;
+  const months = <String>[
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  final month = int.tryParse(parts[1]) ?? 0;
+  final day = int.tryParse(parts[2]) ?? 0;
+  if (month < 1 || month > 12) return iso;
+  return '${months[month - 1]} $day, ${parts[0]}';
+}
+
+// ── Widgets ───────────────────────────────────────────────────────────────────
 
 class _ActionButton extends StatelessWidget {
   const _ActionButton({required this.label, required this.onTap});
 
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -305,39 +507,6 @@ class _StartTripButton extends StatelessWidget {
   }
 }
 
-class _TagChip extends StatelessWidget {
-  const _TagChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.84),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF22B7F1), width: 2),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x180F2C4F),
-            blurRadius: 10,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: Color(0xFF22B7F1),
-        ),
-      ),
-    );
-  }
-}
-
 class _StatCard extends StatelessWidget {
   const _StatCard({
     required this.icon,
@@ -442,11 +611,13 @@ class _DayCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: const Color(0xFF2C374C), width: 2),
+              border:
+                  Border.all(color: const Color(0xFF2C374C), width: 2),
             ),
             child: Text(
               data.dayLabel,
@@ -476,12 +647,15 @@ class _DayCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          ...data.activities.map(
-            (TripPlannerActivityData activity) => Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: _TripActivityTile(activity: activity),
-            ),
-          ),
+          ...data.activities
+              .where((a) => a.tag != 'lunch_break')
+              .take(3)
+              .map(
+                (TripPlannerActivityData activity) => Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: _TripActivityTile(activity: activity),
+                ),
+              ),
           Row(
             children: <Widget>[
               Expanded(
@@ -551,17 +725,32 @@ class _TripActivityTile extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFF22B7F1),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.location_on_outlined,
-              color: Colors.white,
-              size: 22,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox(
+              width: 42,
+              height: 42,
+              child: activity.imageUrl != null
+                  ? Builder(
+                      builder: (BuildContext context) {
+                        debugPrint(
+                          '[TripResultPage.Image.network] imageUrl='
+                          '${activity.imageUrl}',
+                        );
+                        return Image.network(
+                          activity.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stack) {
+                            debugPrint(
+                              '[TripResultPage.Image.network] load failed '
+                              'imageUrl=${activity.imageUrl} error=$error',
+                            );
+                            return _ActivityPlaceholderIcon();
+                          },
+                        );
+                      },
+                    )
+                  : _ActivityPlaceholderIcon(),
             ),
           ),
           const SizedBox(width: 12),
@@ -589,6 +778,18 @@ class _TripActivityTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActivityPlaceholderIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: const Color(0xFF22B7F1),
+      child: const Center(
+        child: Icon(Icons.location_on_outlined, color: Colors.white, size: 22),
       ),
     );
   }
