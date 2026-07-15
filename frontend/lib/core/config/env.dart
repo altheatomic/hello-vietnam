@@ -27,4 +27,8 @@ class Env {
     'TRIP_PLANNER_FUNCTION',
     defaultValue: 'trip-planner',
   );
+  static const recommendFunction = String.fromEnvironment(
+    'RECOMMEND_FUNCTION',
+    defaultValue: 'recommend',
+  );
 }
