@@ -161,11 +161,24 @@ class _ActivityDetailCard extends StatelessWidget {
               height: 112,
               width: double.infinity,
               child: activity.imageUrl != null
-                  ? Image.network(
-                      activity.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stack) =>
-                          _ImagePlaceholder(),
+                  ? Builder(
+                      builder: (BuildContext context) {
+                        debugPrint(
+                          '[TripDayDetailPage.Image.network] imageUrl='
+                          '${activity.imageUrl}',
+                        );
+                        return Image.network(
+                          activity.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stack) {
+                            debugPrint(
+                              '[TripDayDetailPage.Image.network] load failed '
+                              'imageUrl=${activity.imageUrl} error=$error',
+                            );
+                            return _ImagePlaceholder();
+                          },
+                        );
+                      },
                     )
                   : _ImagePlaceholder(),
             ),
@@ -190,59 +203,6 @@ class _ActivityDetailCard extends StatelessWidget {
               fontStyle: FontStyle.italic,
               color: Color(0xFF677284),
               height: 1.55,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF7FAFE),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const Text(
-                  'Pro Tips',
-                  style: TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ...activity.tips.map(
-                  (String tip) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Container(
-                          width: 4,
-                          height: 4,
-                          margin: const EdgeInsets.only(top: 8, right: 10),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1CC1EF),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            tip,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontStyle: FontStyle.italic,
-                              color: Color(0xFF677284),
-                              height: 1.45,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
           const SizedBox(height: 18),

@@ -90,6 +90,7 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
     # Fetch localized place names/coords via the VIEW (PostgREST has no FK
     # metadata on VIEWs, so embedded syntax won't work — query separately).
     place_ids = list({str(r["id_place"]) for r in component_rows if r.get("id_place")})
+    print(f"[getPlan] place_query_view=place_localized_en place_ids={place_ids}")
     place_map: dict[str, dict] = {}
     if place_ids:
         places_resp = (
@@ -99,7 +100,12 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
             .in_("id_place", place_ids)
             .execute()
         )
-        for p in (places_resp.data or []):
+        raw_places = places_resp.data or []
+        print(
+            f"[getPlan] raw_first_place="
+            f"{raw_places[0] if raw_places else None}"
+        )
+        for p in raw_places:
             place_map[str(p["id_place"])] = p
 
     start_date = plan_row["start_at"]
@@ -128,6 +134,12 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
             "cover_image": place_data.get("cover_image"),
             "gallery": place_data.get("gallery") or [],
         })
+
+    first_response_place = next(
+        (places[0] for places in days_map.values() if places),
+        None,
+    )
+    print(f"[getPlan] response_first_place={first_response_place}")
 
     return {
         "id_plan": str(plan_row["id_plan"]),

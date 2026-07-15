@@ -193,6 +193,16 @@ async function proxyGet(path: string): Promise<Response> {
 
   const obj = data as JsonObject;
   console.log(`[trip-planner] cf_service_status=${r.status} days=${Array.isArray(obj.days) ? obj.days.length : "N/A"}`);
+  if (path.startsWith("/api/trips/plan/")) {
+    const firstDay = Array.isArray(obj.days) ? obj.days[0] : null;
+    const firstPlace = firstDay && typeof firstDay === "object" &&
+        Array.isArray((firstDay as JsonObject).places)
+      ? ((firstDay as JsonObject).places as unknown[])[0] ?? null
+      : null;
+    console.log(
+      `[trip-planner] getPlan_first_place=${JSON.stringify(firstPlace)}`,
+    );
+  }
   if (!r.ok)
     return jsonResponse(
       { error: strVal(obj.detail) ?? "Request failed." },

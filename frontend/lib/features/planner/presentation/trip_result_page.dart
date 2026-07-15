@@ -312,6 +312,10 @@ List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
           nearbyPlaces: const <TripPlannerNearbyPlace>[],
         );
       }
+      final String? imageUrl = p.representativeImageUrl;
+      debugPrint(
+        '[TripResultPage._convertPlan] place=${p.name} imageUrl=$imageUrl',
+      );
       return TripPlannerActivityData(
         title: p.name.isEmpty ? 'Place ${p.order}' : p.name,
         time: p.startTime ?? _slotToTime(p.slot),
@@ -325,7 +329,7 @@ List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
         nearbyPlaces: const <TripPlannerNearbyPlace>[],
         lat: p.latitude ?? 0.0,
         lng: p.longitude ?? 0.0,
-        imageUrl: p.representativeImageUrl,
+        imageUrl: imageUrl,
       );
     }).toList();
 
@@ -727,10 +731,24 @@ class _TripActivityTile extends StatelessWidget {
               width: 42,
               height: 42,
               child: activity.imageUrl != null
-                  ? Image.network(
-                      activity.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stack) => _ActivityPlaceholderIcon(),
+                  ? Builder(
+                      builder: (BuildContext context) {
+                        debugPrint(
+                          '[TripResultPage.Image.network] imageUrl='
+                          '${activity.imageUrl}',
+                        );
+                        return Image.network(
+                          activity.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stack) {
+                            debugPrint(
+                              '[TripResultPage.Image.network] load failed '
+                              'imageUrl=${activity.imageUrl} error=$error',
+                            );
+                            return _ActivityPlaceholderIcon();
+                          },
+                        );
+                      },
                     )
                   : _ActivityPlaceholderIcon(),
             ),

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Response from `POST /api/trips/plan`.
 ///
 /// Shape returned by cf_service:
@@ -127,7 +129,7 @@ class TripPlanPlace {
             .toList()
         : <Map<String, dynamic>>[];
 
-    return TripPlanPlace(
+    final TripPlanPlace place = TripPlanPlace(
       type:                       json['type'] as String? ?? 'place',
       order:                      (json['order'] as num?)?.toInt() ?? 0,
       idPlace:                    json['id_place'] as String? ?? '',
@@ -146,6 +148,12 @@ class TripPlanPlace {
       cfScore:                    (json['cf_score'] as num?)?.toDouble(),
       finalScore:                 (json['final_score'] as num?)?.toDouble(),
     );
+    debugPrint(
+      '[TripPlanPlace.fromJson] coverImage=${place.coverImage} '
+      'gallery.length=${place.gallery.length} '
+      'representativeImageUrl=${place.representativeImageUrl}',
+    );
+    return place;
   }
 }
 
