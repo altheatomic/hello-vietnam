@@ -14,6 +14,7 @@ from typing import List, Optional
 
 from db.connection import get_db
 from db.supabase_client import get_supabase
+from services.trip_planner import NoTripCandidatesError, TripPlannerService
 
 router = APIRouter()
 
@@ -58,8 +59,6 @@ class SavePlanRequest(BaseModel):
 @router.post("/api/trips/plan")
 async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
     print(f"[DEBUG] plan request: {req.dict()}")
-    from services.trip_planner import TripPlannerService
-
     start_at = (
         datetime.date.fromisoformat(req.start_date)
         if req.start_date
@@ -67,17 +66,20 @@ async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
     )
 
     svc = TripPlannerService(supabase)
-    result = await svc.plan(
-        id_user=req.id_user,
-        id_province=req.id_province,
-        n_days=req.n_days,
-        start_at=start_at,
-        sa_runs=req.sa_runs,
-        save=req.save_plan,
-        interest_option_ids=req.interest_option_ids,
-        target_lat=req.target_lat,
-        target_lng=req.target_lng,
-    )
+    try:
+        result = await svc.plan(
+            id_user=req.id_user,
+            id_province=req.id_province,
+            n_days=req.n_days,
+            start_at=start_at,
+            sa_runs=req.sa_runs,
+            save=req.save_plan,
+            interest_option_ids=req.interest_option_ids,
+            target_lat=req.target_lat,
+            target_lng=req.target_lng,
+        )
+    except NoTripCandidatesError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     # print(f"[DEBUG] response days count: {len(result.get('days', []))}")
     # print(f"[DEBUG] response: {result}")
     return result

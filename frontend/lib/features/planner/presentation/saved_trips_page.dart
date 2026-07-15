@@ -27,13 +27,33 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
   ];
 
   static const List<String> _monthNames = <String>[
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   static const List<String> _shortMonths = <String>[
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   @override
@@ -42,15 +62,8 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
     _loadSavedTrips();
   }
 
-  Future<void> _openItinerary(String idPlan) async {
-    try {
-      final plan = await TripRepository().getPlan(idPlan);
-      if (!mounted) return;
-      context.push(AppRoutes.tripPlannerResult, extra: plan);
-    } catch (_) {
-      if (!mounted) return;
-      _showMessage('Could not load itinerary. Please try again.');
-    }
+  void _openItinerary(String idPlan) {
+    context.push(AppRoutes.tripPlannerResultPath(idPlan: idPlan));
   }
 
   Future<void> _loadSavedTrips() async {
@@ -58,7 +71,9 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
       final items = await TripRepository().listSavedPlans();
       if (!mounted) return;
       setState(() {
-        _trips = items.asMap().entries
+        _trips = items
+            .asMap()
+            .entries
             .map((MapEntry<int, SavedPlanItem> e) => _fromItem(e.key, e.value))
             .toList();
         _isLoading = false;
@@ -80,7 +95,7 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
     final int nDays = int.tryParse(item.duration) ?? 1;
     final String dateLabel = startDate != null
         ? '${startDate.day} ${_shortMonths[startDate.month - 1]} • '
-            '$nDays ${nDays == 1 ? 'day' : 'days'}'
+              '$nDays ${nDays == 1 ? 'day' : 'days'}'
         : '$nDays days';
 
     return _SavedTrip(
@@ -93,13 +108,15 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
 
       accentColors: _palettes[index % _palettes.length],
       stops: item.stops
-          .map((SavedPlanStop s) => _SavedStop(
-                id: s.id,
-                timeLabel: s.timeLabel,
-                title: s.title,
-                note: s.note,
-                isCompleted: false,
-              ))
+          .map(
+            (SavedPlanStop s) => _SavedStop(
+              id: s.id,
+              timeLabel: s.timeLabel,
+              title: s.title,
+              note: s.note,
+              isCompleted: false,
+            ),
+          )
           .toList(),
     );
   }
@@ -150,7 +167,9 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
         <String, List<_SavedTrip>>{};
     if (!_isLoading) {
       for (final _SavedTrip trip in _visibleTrips) {
-        groupedTrips.putIfAbsent(trip.monthLabel, () => <_SavedTrip>[]).add(trip);
+        groupedTrips
+            .putIfAbsent(trip.monthLabel, () => <_SavedTrip>[])
+            .add(trip);
       }
     }
 

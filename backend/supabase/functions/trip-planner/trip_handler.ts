@@ -14,28 +14,36 @@ type JsonObject = Record<string, unknown>;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 // Set via: supabase secrets set CF_SERVICE_URL=https://your-cf-service.run.app
-const CF_SERVICE_URL = Deno.env.get("CF_SERVICE_URL") ?? "http://localhost:8000";
+const CF_SERVICE_URL =
+  Deno.env.get("CF_SERVICE_URL") ?? "http://localhost:8000";
 const HANDLER_VERSION = "trip-planner-2026-06-06-v1";
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error("Missing required Supabase environment variables.");
 }
 
-export async function handleTripPlannerRequest(req: Request): Promise<Response> {
+export async function handleTripPlannerRequest(
+  req: Request,
+): Promise<Response> {
   console.log(`[trip-planner] version=${HANDLER_VERSION} method=${req.method}`);
 
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return jsonResponse({ error: "Method not allowed." }, 405);
+  if (req.method === "OPTIONS")
+    return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST")
+    return jsonResponse({ error: "Method not allowed." }, 405);
 
   try {
-    const authHeader = requireAuthorizationHeader(req.headers.get("Authorization"));
+    const authHeader = requireAuthorizationHeader(
+      req.headers.get("Authorization"),
+    );
     const userClient = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
       global: { headers: { Authorization: authHeader } },
     });
     const userId = await requireAuthenticatedUserId(userClient);
 
     const body = await req.json().catch(() => null);
-    if (!body || typeof body !== "object") return jsonResponse({ error: "Invalid JSON body." }, 400);
+    if (!body || typeof body !== "object")
+      return jsonResponse({ error: "Invalid JSON body." }, 400);
 
     const payload = body as JsonObject;
     const action = strVal(payload.action);
@@ -62,19 +70,23 @@ export async function handleTripPlannerRequest(req: Request): Promise<Response> 
     }
   } catch (err) {
     console.error("[trip-planner] unhandled error", err);
-    if (err instanceof AuthorizationError) return jsonResponse({ error: err.message }, err.statusCode);
-    return jsonResponse({ error: err instanceof Error ? err.message : "Unexpected error." }, 500);
+    if (err instanceof AuthorizationError)
+      return jsonResponse({ error: err.message }, err.statusCode);
+    return jsonResponse(
+      { error: err instanceof Error ? err.message : "Unexpected error." },
+      500,
+    );
   }
 }
 
 async function planTrip(userId: string, p: JsonObject): Promise<Response> {
   const body: JsonObject = {
-    id_user:     userId,
-    n_days:      reqInt(p.nDays, "nDays"),
-    start_date:  strVal(p.startDate),
-    top_n:       intOrDefault(p.topN, 40),
-    sa_runs:     intOrDefault(p.saRuns, 5),
-    save_plan:   boolOrDefault(p.savePlan, true),
+    id_user: userId,
+    n_days: reqInt(p.nDays, "nDays"),
+    start_date: strVal(p.startDate),
+    top_n: intOrDefault(p.topN, 40),
+    sa_runs: intOrDefault(p.saRuns, 5),
+    save_plan: boolOrDefault(p.savePlan, true),
   };
   const idProvince = strVal(p.idProvince);
   if (idProvince) body.id_province = idProvince;
@@ -122,20 +134,32 @@ async function savePlan(userId: string, p: JsonObject): Promise<Response> {
 }
 
 async function proxyPost(path: string, body: unknown): Promise<Response> {
+  console.log(`[trip-planner] cf_service_host=${new URL(CF_SERVICE_URL).host}`);
   const r = await fetch(`${CF_SERVICE_URL}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const data = await r.json() as JsonObject;
-  if (!r.ok) return jsonResponse({ error: strVal(data.detail) ?? "Request failed." }, r.status);
+  const data = (await r.json()) as JsonObject;
+  console.log(`[trip-planner] cf_service_status=${r.status} days=${Array.isArray(data.days) ? data.days.length : "N/A"}`);
+  if (!r.ok)
+    return jsonResponse(
+      { error: strVal(data.detail) ?? "Request failed." },
+      r.status,
+    );
   return jsonResponse(data);
 }
 
 async function proxyGet(path: string): Promise<Response> {
+  console.log(`[trip-planner] cf_service_host=${new URL(CF_SERVICE_URL).host}`);
   const r = await fetch(`${CF_SERVICE_URL}${path}`);
-  const data = await r.json() as JsonObject;
-  if (!r.ok) return jsonResponse({ error: strVal(data.detail) ?? "Request failed." }, r.status);
+  const data = (await r.json()) as JsonObject;
+  console.log(`[trip-planner] cf_service_status=${r.status} days=${Array.isArray(data.days) ? data.days.length : "N/A"}`);
+  if (!r.ok)
+    return jsonResponse(
+      { error: strVal(data.detail) ?? "Request failed." },
+      r.status,
+    );
   return jsonResponse(data);
 }
 
@@ -153,7 +177,8 @@ function reqStr(v: unknown, name: string): string {
 
 function reqInt(v: unknown, name: string): number {
   const n = typeof v === "number" ? v : Number(v);
-  if (!Number.isInteger(n) || n < 1) throw new Error(`${name} must be a positive integer`);
+  if (!Number.isInteger(n) || n < 1)
+    throw new Error(`${name} must be a positive integer`);
   return n;
 }
 

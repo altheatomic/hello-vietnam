@@ -66,19 +66,18 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
       }
     }
 
-    context.push(
-      AppRoutes.cityDetail,
-      extra: CityDetailRequest(
-        id: match?.id ?? destination.trim().toLowerCase().replaceAll(' ', '-'),
-        name: match?.name ?? destination.trim(),
-        fallbackImages: <String>[
-          if (match != null) match.imagePath,
-          if (match != null) ...match.gallery,
-        ],
-        fallbackImagePath: match?.imagePath,
-        fallbackRating: match?.rating,
-      ),
+    final request = CityDetailRequest(
+      id: match?.id ?? destination.trim().toLowerCase().replaceAll(' ', '-'),
+      name: match?.name ?? destination.trim(),
+      fallbackImages: <String>[
+        if (match != null) match.imagePath,
+        if (match != null) ...match.gallery,
+      ],
+      fallbackImagePath: match?.imagePath,
+      fallbackRating: match?.rating,
     );
+
+    context.push(AppRoutes.cityDetailPath(request));
   }
 
   @override

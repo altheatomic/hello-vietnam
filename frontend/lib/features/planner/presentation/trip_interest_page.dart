@@ -69,7 +69,9 @@ class _TripInterestPageState extends State<TripInterestPage> {
     }
     if (isBusinessTrip) {
       if (wizard?.targetLat == null || wizard?.targetLng == null) {
-        _showError('Missing business location. Please go back and enter an address.');
+        _showError(
+          'Missing business location. Please go back and enter an address.',
+        );
         return;
       }
     } else {
@@ -94,7 +96,13 @@ class _TripInterestPageState extends State<TripInterestPage> {
         ),
       );
       if (!mounted) return;
-      context.push(AppRoutes.tripPlannerResult, extra: response);
+      final String? idPlan = response.idPlan?.trim();
+
+      if (idPlan != null && idPlan.isNotEmpty) {
+        context.push(AppRoutes.tripPlannerResultPath(idPlan: idPlan));
+      } else {
+        context.push(AppRoutes.tripPlannerResultPath(), extra: response);
+      }
     } catch (e) {
       if (!mounted) return;
       _showError('Could not generate your trip. Please try again.');
@@ -106,10 +114,9 @@ class _TripInterestPageState extends State<TripInterestPage> {
   void _showError(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ));
+      ..showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
   }
 
   @override

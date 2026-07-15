@@ -97,7 +97,13 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
         ),
       );
       if (!mounted) return;
-      context.push(AppRoutes.tripPlannerResult, extra: response);
+      final String? idPlan = response.idPlan?.trim();
+
+      if (idPlan != null && idPlan.isNotEmpty) {
+        context.push(AppRoutes.tripPlannerResultPath(idPlan: idPlan));
+      } else {
+        context.push(AppRoutes.tripPlannerResultPath(), extra: response);
+      }
     } catch (e) {
       if (!mounted) return;
       _showError('Could not generate your trip. Please try again.');
@@ -109,10 +115,9 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
   void _showError(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ));
+      ..showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
   }
 
   String _formatVndDigits(String digits) {
@@ -319,8 +324,10 @@ class _BudgetInputField extends StatelessWidget {
                   ),
                 ),
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 18,
+          ),
         ),
       ),
     );

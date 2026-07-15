@@ -21,6 +21,7 @@ Trip-level interest (optional):
 """
 
 import datetime
+import json
 
 from db.place_repository import fetch_places_near_point, fetch_places_required_filter
 from db.queries_plan import save_plan
@@ -48,6 +49,10 @@ from services.module1_repository import (
 )
 from services.module2_algorithm import build_module2_result
 from services.module3_optimizer import optimize_day_route
+
+
+class NoTripCandidatesError(Exception):
+    """Raised when a saved trip contains no persistable place."""
 
 
 def _compute_alpha(cf_scores: dict, total_places: int) -> float:
@@ -268,8 +273,27 @@ class TripPlannerService:
                 start_point = best_route[-1]
 
         # ── [Persist] ─────────────────────────────────────────────────────────
+        real_place_count = sum(
+            1
+            for day in days
+            for place in day.get("places", [])
+            if place.get("type") != "lunch_break" and place.get("id_place")
+        )
+        print(json.dumps({
+            "event": "trip_planner_pipeline_counts",
+            "required_count": len(required_places),
+            "filtered_count": len(filtered_places),
+            "ranked_count": len(ranked),
+            "candidate_count": m2_result.get("summary", {}).get("candidate_count", 0),
+            "real_place_count": real_place_count,
+        }, separators=(",", ":")))
+
         id_plan = None
-        if save and days:
+        if save and real_place_count == 0:
+            raise NoTripCandidatesError(
+                "No eligible places were available for this trip."
+            )
+        if save:
             id_plan = save_plan(supabase, id_user, id_province, n_days, start_at, days)
 
         return {

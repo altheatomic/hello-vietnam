@@ -97,8 +97,9 @@ class _RecommendWhenCalendarPageState extends State<RecommendWhenCalendarPage> {
                     child: ElevatedButton(
                       onPressed: _selectedRange != null
                           ? () => context.push(
-                              AppRoutes.recommendWhenResults,
-                              extra: _selectedRange,
+                              AppRoutes.recommendWhenResultsPath(
+                                _selectedRange!,
+                              ),
                             )
                           : null,
                       style: ElevatedButton.styleFrom(
