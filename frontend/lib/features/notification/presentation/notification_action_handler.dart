@@ -50,7 +50,7 @@ class NotificationActionHandler {
         context.push(AppRoutes.forumPostPath(target.entityId ?? ''));
         return;
       case NotificationTargetKind.recommendPage:
-        context.push(AppRoutes.recommend);
+        context.push(AppRoutes.recommendWhereSearch);
         return;
       case NotificationTargetKind.recommendWhenResults:
         final DateTime startDate = target.startDate ?? DateTime.now();

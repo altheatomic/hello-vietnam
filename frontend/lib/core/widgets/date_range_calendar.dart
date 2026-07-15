@@ -15,10 +15,12 @@ class DateRangeCalendar extends StatefulWidget {
   const DateRangeCalendar({
     super.key,
     this.initialRange,
+    this.firstDate,
     required this.onRangeChanged,
   });
 
   final DateTimeRange? initialRange;
+  final DateTime? firstDate;
   final void Function(DateTimeRange?) onRangeChanged;
 
   @override
@@ -69,7 +71,12 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
   bool _isSameDate(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
+  DateTime _dateOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
   void _onDayTap(DateTime day) {
+    final DateTime? firstDate = widget.firstDate;
+    if (firstDate != null && day.isBefore(_dateOnly(firstDate))) return;
     setState(() {
       if (_start == null) {
         _start = day;
@@ -214,6 +221,7 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
                   monthName: _monthNames[index],
                   weekdayLabels: _weekdayLabels,
                   hasCompletedRange: _hasRange,
+                  firstDate: widget.firstDate,
                   onDayTap: _onDayTap,
                   isStart: _isStart,
                   isEnd: _isEnd,
@@ -362,6 +370,7 @@ class _MonthCard extends StatelessWidget {
     required this.monthName,
     required this.weekdayLabels,
     required this.hasCompletedRange,
+    this.firstDate,
     required this.onDayTap,
     required this.isStart,
     required this.isEnd,
@@ -373,6 +382,7 @@ class _MonthCard extends StatelessWidget {
   final String monthName;
   final List<String> weekdayLabels;
   final bool hasCompletedRange;
+  final DateTime? firstDate;
   final void Function(DateTime) onDayTap;
   final bool Function(DateTime) isStart;
   final bool Function(DateTime) isEnd;
@@ -452,6 +462,10 @@ class _MonthCard extends StatelessWidget {
               if (index < firstWeekday) return const SizedBox();
               final int day = index - firstWeekday + 1;
               final DateTime date = DateTime(year, month, day);
+              final DateTime? minimum = firstDate == null
+                  ? null
+                  : DateTime(firstDate!.year, firstDate!.month, firstDate!.day);
+              final bool disabled = minimum != null && date.isBefore(minimum);
               final bool start = isStart(date);
               final bool end = isEnd(date);
               final bool inRange = isInRange(date);
@@ -468,7 +482,9 @@ class _MonthCard extends StatelessWidget {
               Color? bubbleFillColor;
               Border? border;
 
-              if (start || end) {
+              if (disabled) {
+                textColor = mutedText.withValues(alpha: 0.32);
+              } else if (start || end) {
                 bubbleFillColor = const Color(0xFF2EA7F8);
                 textColor = Colors.white;
               } else if (inRange) {
@@ -480,7 +496,7 @@ class _MonthCard extends StatelessWidget {
               }
 
               return GestureDetector(
-                onTap: () => onDayTap(date),
+                onTap: disabled ? null : () => onDayTap(date),
                 child: Stack(
                   children: <Widget>[
                     if (isRangeDay)

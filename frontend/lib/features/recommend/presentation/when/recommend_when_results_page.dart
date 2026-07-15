@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
+import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import '../../data/recommend_mock_data.dart';
@@ -491,7 +492,7 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        dest.name,
+                        removeVietnameseDiacritics(dest.name),
                         style: TextStyle(
                           fontSize: 15.5,
                           fontWeight: FontWeight.w800,

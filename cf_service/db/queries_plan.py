@@ -46,6 +46,8 @@ def save_plan(
                 "id_place": place["id_place"],
                 "visit_order": place.get("order"),
                 "slot": place.get("slot"),
+                "start_time": place.get("start_time"),
+                "end_time": place.get("end_time"),
                 "estimated_travel_minutes": place.get("estimated_travel_minutes"),
                 "cb_score": place.get("tag_match"),   # tag_match stored in cb_score column
                 "cf_score": place.get("cf_score"),
@@ -77,8 +79,8 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
         supabase
         .table("plan_component")
         .select(
-            "day,slot,visit_order,estimated_travel_minutes,cb_score,"
-            "cf_score,final_score,id_place"
+            "day,slot,visit_order,start_time,end_time,estimated_travel_minutes,"
+            "cb_score,cf_score,final_score,id_place"
         )
         .eq("id_plan", id_plan)
         .order("day")
@@ -123,6 +125,8 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
             "order": r.get("visit_order"),
             "visit_order": r.get("visit_order"),
             "slot": r.get("slot"),
+            "start_time": r.get("start_time"),
+            "end_time": r.get("end_time"),
             "estimated_travel_minutes": r.get("estimated_travel_minutes"),
             "tag_match": r.get("cb_score"),
             "cf_score": r.get("cf_score"),

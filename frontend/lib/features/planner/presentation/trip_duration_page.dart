@@ -22,12 +22,10 @@ class _TripDurationPageState extends State<TripDurationPage> {
     final startDate =
         '${range.start.year}-${range.start.month.toString().padLeft(2, '0')}-${range.start.day.toString().padLeft(2, '0')}';
     final nDays = range.duration.inDays + 1;
-    final wizard = widget.wizard?.copyWith(startDate: startDate, nDays: nDays) ??
+    final wizard =
+        widget.wizard?.copyWith(startDate: startDate, nDays: nDays) ??
         TripWizardData(startDate: startDate, nDays: nDays);
-    context.push(
-      AppRoutes.tripPlannerInterest,
-      extra: wizard.toJson(),
-    );
+    context.push(AppRoutes.tripPlannerInterest, extra: wizard.toJson());
   }
 
   @override
@@ -41,6 +39,7 @@ class _TripDurationPageState extends State<TripDurationPage> {
       nextEnabled: _selectedRange != null,
       onNext: _onNext,
       body: DateRangeCalendar(
+        firstDate: DateTime.now(),
         onRangeChanged: (DateTimeRange? range) =>
             setState(() => _selectedRange = range),
       ),

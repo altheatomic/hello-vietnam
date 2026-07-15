@@ -151,6 +151,27 @@ def _simulate_place_step(
         # 3. Buffer
         sim_current = _add(sim_current, buffer)
 
+        # 3.5. Second noon check — catches the case where the previous place
+        #      finished before noon (so check 1 didn't fire) but travel +
+        #      buffer pushes arrival at this place into the lunch window.
+        #      lunch_end is fixed at lunch_start + lunch_dur (not sim_current
+        #      + lunch_dur) so a late arrival inside the window doesn't tack
+        #      on a fresh full-length break — it just finishes out the window.
+        lunch_window_end = _add(lunch_start, lunch_dur)
+        if (
+            not sim_had_lunch
+            and lunch_start <= sim_current < lunch_window_end
+        ):
+            lunch_cost  = _mins(lunch_window_end) - _mins(sim_current)
+            lunch_entry = {
+                "type":       "lunch_break",
+                "start_time": _fmt(sim_current),
+                "end_time":   _fmt(lunch_window_end),
+                "slot":       "afternoon",
+            }
+            sim_had_lunch = True
+            sim_current   = lunch_window_end
+
     # 4. Opening wait
     open_t = _parse_hhmm(place.get("timespan"))
     if open_t and sim_current < open_t:

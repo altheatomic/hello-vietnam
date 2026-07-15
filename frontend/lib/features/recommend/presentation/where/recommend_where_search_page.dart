@@ -5,6 +5,7 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
+import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
 import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart';
 import '../../data/recommend_mock_data.dart';
 import '../../data/recommend_repository.dart';
@@ -228,7 +229,7 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
                           ),
                         ),
                         title: Text(
-                          dest.name,
+                          removeVietnameseDiacritics(dest.name),
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,

@@ -32,7 +32,7 @@ const List<FeatureItem> homeFeatures = [
   FeatureItem(
     title: 'Recommend',
     icon: Icons.recommend_outlined,
-    route: AppRoutes.recommend,
+    route: AppRoutes.recommendWhereSearch,
   ),
   FeatureItem(
     title: 'Explore',

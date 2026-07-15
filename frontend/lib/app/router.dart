@@ -63,10 +63,10 @@ import '../features/get_started/presentation/get_started_page.dart';
 import '../features/translate/presentation/translate_page.dart';
 import '../features/profile/presentation/upgrade_account_page.dart';
 import '../features/profile/presentation/upgrade_payment_page.dart';
-import '../features/recommend/presentation/recommend_page.dart';
 import '../features/recommend/presentation/where/recommend_where_search_page.dart';
 import '../features/recommend/presentation/when/recommend_when_calendar_page.dart';
 import '../features/recommend/presentation/when/recommend_when_results_page.dart';
+import '../features/recommend/presentation/recommended_place_detail_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
@@ -238,6 +238,7 @@ class AppRoutes {
   static const exploreSearchResult = '/explore-search-result';
   static const exploreCategory = '/explore-category';
   static const cityDetail = '/details/city';
+  static const recommendedPlaceDetail = '/details/recommended-place';
   static const activityDetail = '/details/activities';
   static const cultureDetail = '/details/culture';
   static const foodDetail = '/details/food';
@@ -296,6 +297,17 @@ class AppRoutes {
         'image': request.fallbackImagePath!,
       if (request.fallbackRating != null)
         'rating': request.fallbackRating!.toString(),
+    },
+  ).toString();
+
+  static String recommendedPlaceDetailPath({
+    required String idProvince,
+    required String idPlace,
+  }) => Uri(
+    path: recommendedPlaceDetail,
+    queryParameters: <String, String>{
+      'idProvince': idProvince,
+      'idPlace': idPlace,
     },
   ).toString();
 
@@ -561,6 +573,14 @@ GoRouter buildRouter() {
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.recommendedPlaceDetail,
+        builder: (c, s) => RecommendedPlaceDetailPage(
+          idProvince: s.uri.queryParameters['idProvince'] ?? '',
+          idPlace: s.uri.queryParameters['idPlace'] ?? '',
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.activityDetail,
         builder: (c, s) => ActivityDetailPage(
           request: _itemDetailRequest(s, DetailCategory.activities),
@@ -708,7 +728,7 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.recommend,
-        builder: (c, s) => const RecommendPage(),
+        redirect: (c, s) => AppRoutes.recommendWhereSearch,
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,

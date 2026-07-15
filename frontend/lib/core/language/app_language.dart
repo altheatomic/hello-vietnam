@@ -219,6 +219,7 @@ class AppStrings {
       '/translate' => translate,
       '/send-feedback' => sendReport,
       '/recommend' => recommend,
+      '/recommend/where-search' => recommend,
       '/explore' => explore,
       '/popular-apps' => popularApps,
       '/ai-search' => aiSearch,

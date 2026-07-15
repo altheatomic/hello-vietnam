@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 
@@ -547,7 +548,7 @@ class _SavedTripCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            '${trip.destination} • ${trip.tripType}',
+                            '${removeVietnameseDiacritics(trip.destination)} • ${trip.tripType}',
                             style: const TextStyle(
                               fontSize: 14.5,
                               color: Color(0xFF5D6A7E),

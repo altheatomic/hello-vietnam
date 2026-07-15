@@ -4,6 +4,7 @@ import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
 import 'package:hellovietnam/core/data/reference_data_cache_repository.dart';
+import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
 
 class TripLocationPage extends StatefulWidget {
   const TripLocationPage({super.key});
@@ -303,7 +304,7 @@ class _DestinationCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       Text(
-                        item.name,
+                        removeVietnameseDiacritics(item.name),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -315,7 +316,7 @@ class _DestinationCard extends StatelessWidget {
                       if (item.area.isNotEmpty) ...<Widget>[
                         const SizedBox(height: 2),
                         Text(
-                          item.area,
+                          removeVietnameseDiacritics(item.area),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(

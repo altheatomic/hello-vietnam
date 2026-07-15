@@ -31,6 +31,9 @@ class SharedItemDetailPage extends StatefulWidget {
     this.favoriteType,
     this.favoriteRawId,
     this.favoriteName,
+    this.reviewContentType,
+    this.showReviews = true,
+    this.showWhatToExpect = true,
   }) : assert(
          request != null || detail != null,
          'Either request or detail must be provided.',
@@ -44,6 +47,9 @@ class SharedItemDetailPage extends StatefulWidget {
   final FavoriteType? favoriteType;
   final String? favoriteRawId;
   final String? favoriteName;
+  final ReviewContentType? reviewContentType;
+  final bool showReviews;
+  final bool showWhatToExpect;
 
   @override
   State<SharedItemDetailPage> createState() => _SharedItemDetailPageState();
@@ -206,6 +212,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
   }
 
   ReviewContentType? get _reviewContentType {
+    if (widget.reviewContentType != null) return widget.reviewContentType;
     if (!_detail.hasReviewTarget) {
       return null;
     }
@@ -264,41 +271,45 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     const SizedBox(height: 28),
                   ] else
                     const SizedBox(height: 28),
-                  _SectionTitle(title: context.l10n.ui('Reviews')),
-                  const SizedBox(height: 14),
-                  if (reviewContentType != null) ...<Widget>[
-                    ReviewSection(
-                      contentType: reviewContentType,
-                      contentId: _detail.effectiveReviewContentId,
-                      itemTitle: _detail.name,
-                      repository: widget.reviewRepository,
-                    ),
-                    const SizedBox(height: 18),
-                  ] else ...<Widget>[
-                    _ReviewSummary(
-                      rating: _detail.rating,
-                      ratingLabel: _detail.ratingLabel,
-                      reviewCount: _detail.reviewCount,
-                    ),
+                  if (widget.showReviews) ...<Widget>[
+                    _SectionTitle(title: context.l10n.ui('Reviews')),
                     const SizedBox(height: 14),
-                    _ReviewCarousel(
-                      reviews: _detail.reviews,
-                      controller: _reviewPageController,
+                    if (reviewContentType != null) ...<Widget>[
+                      ReviewSection(
+                        contentType: reviewContentType,
+                        contentId: _detail.effectiveReviewContentId,
+                        itemTitle: _detail.name,
+                        repository: widget.reviewRepository,
+                      ),
+                      const SizedBox(height: 18),
+                    ] else ...<Widget>[
+                      _ReviewSummary(
+                        rating: _detail.rating,
+                        ratingLabel: _detail.ratingLabel,
+                        reviewCount: _detail.reviewCount,
+                      ),
+                      const SizedBox(height: 14),
+                      _ReviewCarousel(
+                        reviews: _detail.reviews,
+                        controller: _reviewPageController,
+                      ),
+                      const SizedBox(height: 18),
+                    ],
+                  ],
+                  if (widget.showWhatToExpect) ...<Widget>[
+                    _SectionTitle(title: context.l10n.ui('What to expect')),
+                    const SizedBox(height: 10),
+                    Text(
+                      _detail.whatToExpect,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.7,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      textAlign: TextAlign.justify,
                     ),
                     const SizedBox(height: 18),
                   ],
-                  _SectionTitle(title: context.l10n.ui('What to expect')),
-                  const SizedBox(height: 10),
-                  Text(
-                    _detail.whatToExpect,
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.7,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    textAlign: TextAlign.justify,
-                  ),
-                  const SizedBox(height: 18),
                   ..._detail.images
                       .take(4)
                       .map(
