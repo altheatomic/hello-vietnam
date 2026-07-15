@@ -95,7 +95,7 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
         places_resp = (
             supabase
             .table("place_localized_en")
-            .select("id_place,name,latitude,longitude")
+            .select("id_place,name,latitude,longitude,cover_image,gallery")
             .in_("id_place", place_ids)
             .execute()
         )
@@ -125,6 +125,8 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
             "name": place_data.get("name"),
             "latitude": place_data.get("latitude"),
             "longitude": place_data.get("longitude"),
+            "cover_image": place_data.get("cover_image"),
+            "gallery": place_data.get("gallery") or [],
         })
 
     return {
