@@ -69,3 +69,4 @@ cf_service/__pycache__/
 cf_service/**/__pycache__/
 cf_service/.pytest_cache/
 cf_service/.mypy_cache/
+.claude/

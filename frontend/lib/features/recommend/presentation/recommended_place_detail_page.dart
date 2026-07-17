@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/item_detail/presentation/shared_item_detail_page.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import 'package:hellovietnam/features/reviews/domain/review_models.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/recommend_repository.dart';
 
@@ -30,6 +33,24 @@ class _RecommendedPlaceDetailPageState
   void initState() {
     super.initState();
     _future = _load();
+    unawaited(_logViewDetail());
+  }
+
+  Future<void> _logViewDetail() async {
+    try {
+      final User? currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) return;
+      await Supabase.instance.client.rpc(
+        'log_user_event',
+        params: <String, dynamic>{
+          'p_user_id': currentUser.id,
+          'p_place_id': widget.idPlace,
+          'p_event_type': 'view_detail',
+        },
+      );
+    } catch (error) {
+      debugPrint('log_user_event(view_detail) failed: $error');
+    }
   }
 
   Future<ProvinceTopPlace> _load() async {
@@ -93,6 +114,7 @@ class _RecommendedPlaceDetailPageState
               favoriteRawId: place.idPlace,
               favoriteName: place.name,
               reviewContentType: ReviewContentType.place,
+              showShareAction: true,
             );
           },
     );

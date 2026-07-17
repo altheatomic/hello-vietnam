@@ -11,6 +11,7 @@ import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dar
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 typedef CreatePostCallback =
     Future<String> Function({
@@ -69,6 +70,23 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   bool get _isShareFromExplore => widget.request.sharedExploreItem != null;
 
+  Future<void> _logPlaceShareEvent(String idPlace) async {
+    try {
+      final User? currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) return;
+      await Supabase.instance.client.rpc(
+        'log_user_event',
+        params: <String, dynamic>{
+          'p_user_id': currentUser.id,
+          'p_place_id': idPlace,
+          'p_event_type': 'share',
+        },
+      );
+    } catch (error) {
+      debugPrint('log_user_event(share) failed: $error');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -118,12 +136,16 @@ class _CreatePostPageState extends State<CreatePostPage> {
       );
       final SharedExploreItem? sharedItem = widget.request.sharedExploreItem;
       if (sharedItem != null) {
-        await (widget.exploreTrackingService ?? ExploreTrackingService.instance)
-            .trackShare(
-              contentType: sharedItem.contentType,
-              contentId: sharedItem.contentId,
-              provinceId: sharedItem.provinceId,
-            );
+        if (sharedItem.contentType == 'place') {
+          await _logPlaceShareEvent(sharedItem.contentId);
+        } else {
+          await (widget.exploreTrackingService ?? ExploreTrackingService.instance)
+              .trackShare(
+                contentType: sharedItem.contentType,
+                contentId: sharedItem.contentId,
+                provinceId: sharedItem.provinceId,
+              );
+        }
       }
       if (mounted) {
         context.pop(postId);
@@ -346,7 +368,7 @@ class _SharedExplorePreview extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  item.category.label,
+                  item.labelOverride ?? item.category.label,
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
