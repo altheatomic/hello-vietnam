@@ -16,6 +16,7 @@ class SharedExploreItem {
   final DetailCategory category;
   final String? subtitle;
   final String? provinceName;
+  final String? labelOverride;
 
   const SharedExploreItem({
     required this.contentType,
@@ -26,6 +27,7 @@ class SharedExploreItem {
     required this.category,
     this.subtitle,
     this.provinceName,
+    this.labelOverride,
   });
 
   factory SharedExploreItem.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class SharedExploreItem {
       category: _parseDetailCategory(json['category'] as String?),
       subtitle: (json['subtitle'] as String?)?.trim(),
       provinceName: (json['provinceName'] as String?)?.trim(),
+      labelOverride: (json['labelOverride'] as String?)?.trim(),
     );
   }
 
@@ -51,6 +54,7 @@ class SharedExploreItem {
       'category': category.storageKey,
       'subtitle': subtitle,
       'provinceName': provinceName,
+      'labelOverride': labelOverride,
     };
   }
 

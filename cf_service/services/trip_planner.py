@@ -164,10 +164,19 @@ class TripPlannerService:
         trip_selected_options = None
         trip_option_subcategory_rows = None
 
+        # ── AUDIT LOG (temporary) ─────────────────────────────────────────────
+        print(f"[AUDIT plan] interest_option_ids received = {interest_option_ids}")
+        print(f"[AUDIT plan] baseline user_interest_state (from user_interest_tag) "
+              f"len={len(user_interest_state)} keys={list(user_interest_state.keys())[:5]}")
+
         if interest_option_ids:
             options = fetch_trip_interest_options_by_ids(supabase, interest_option_ids)
             active_options = [o for o in options if o.get("is_active")]
             active_option_ids = [o["id_trip_interest_option"] for o in active_options]
+
+            print(f"[AUDIT plan] fetch_trip_interest_options_by_ids -> "
+                  f"{len(options)} option(s) fetched, {len(active_options)} active: "
+                  f"{[(o.get('id_trip_interest_option'), o.get('option_code'), o.get('is_active')) for o in options]}")
 
             if active_options:
                 # Build synthetic choice rows (no trip_plan FK needed)
@@ -184,10 +193,23 @@ class TripPlannerService:
                 option_tag_rows         = fetch_trip_interest_option_tags(supabase, active_option_ids)
                 option_subcategory_rows = fetch_trip_interest_option_subcategories(supabase, active_option_ids)
 
+                print(f"[AUDIT plan] active_option_ids={active_option_ids} "
+                      f"option_tag_rows fetched={len(option_tag_rows)} "
+                      f"option_subcategory_rows fetched={len(option_subcategory_rows)}")
+                if option_tag_rows:
+                    print(f"[AUDIT plan] option_tag_rows sample: {option_tag_rows[:3]}")
+
                 trip_profile = build_trip_interest_profile(
                     trip_interest_choice_rows, option_tag_rows,
                     id_tag_map=id_tag_map,
                 )
+                print(f"[AUDIT plan] trip_profile.normalized_tag_weights = "
+                      f"{trip_profile['normalized_tag_weights']}")
+                print(f"[AUDIT plan] trip_profile.raw_tag_weights = "
+                      f"{trip_profile['raw_tag_weights']}")
+                print(f"[AUDIT plan] trip_profile.selected_option_codes = "
+                      f"{trip_profile['selected_option_codes']}")
+
                 effective_result = build_effective_interest_state(
                     user_interest_state,
                     trip_profile["normalized_tag_weights"],
@@ -198,6 +220,19 @@ class TripPlannerService:
                 trip_selected_options    = trip_interest_choice_rows
                 trip_option_subcategory_rows = option_subcategory_rows
 
+                print(f"[AUDIT plan] effective_interest_state len={len(user_interest_state)}")
+                for tag_code, info in list(user_interest_state.items())[:5]:
+                    print(
+                        f"[AUDIT plan]   tag={tag_code} "
+                        f"final_weight={info.get('final_weight')} "
+                        f"effective_weight={info.get('effective_weight')} "
+                        f"trip_weight={info.get('trip_weight')}"
+                    )
+            else:
+                print("[AUDIT plan] active_options is EMPTY — "
+                      "no trip-level tag blend applied, weight_field stays 'final_weight' "
+                      "over the (possibly empty) baseline user_interest_state.")
+
         # ── [Rank by tag match] ───────────────────────────────────────────────
         ranked = rank_places_by_tag_match(
             places_with_tags, user_interest_state,
@@ -205,6 +240,17 @@ class TripPlannerService:
             id_tag_map=id_tag_map,
         )
         ranked = [p for p in ranked if str(p["id_place"]) not in already_rated]
+
+        # ── AUDIT LOG (temporary) ─────────────────────────────────────────────
+        nonzero_tag_match = [p for p in ranked if float(p.get("tag_match") or 0.0) > 0.0]
+        print(f"[AUDIT plan] weight_field used = {weight_field!r}")
+        print(f"[AUDIT plan] ranked places total={len(ranked)}, "
+              f"with tag_match > 0: {len(nonzero_tag_match)}")
+        if nonzero_tag_match:
+            top = nonzero_tag_match[0]
+            print(f"[AUDIT plan] top nonzero example: id_place={top.get('id_place')} "
+                  f"name={top.get('name')} tag_match={top.get('tag_match')} "
+                  f"matched_user_tags={top.get('matched_user_tags')}")
 
         # ── [CF Blend] ────────────────────────────────────────────────────────
         cf_scores = fetch_cf_scores_for_user(supabase, id_user, place_ids)

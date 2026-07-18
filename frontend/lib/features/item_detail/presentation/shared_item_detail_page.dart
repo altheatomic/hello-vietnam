@@ -34,6 +34,7 @@ class SharedItemDetailPage extends StatefulWidget {
     this.reviewContentType,
     this.showReviews = true,
     this.showWhatToExpect = true,
+    this.showShareAction,
   }) : assert(
          request != null || detail != null,
          'Either request or detail must be provided.',
@@ -50,6 +51,10 @@ class SharedItemDetailPage extends StatefulWidget {
   final ReviewContentType? reviewContentType;
   final bool showReviews;
   final bool showWhatToExpect;
+  /// Overrides whether the share action is shown, independent of
+  /// [ItemDetailRequest.trackExploreBehavior]. Null falls back to the
+  /// existing `_shouldTrackExploreBehavior` behavior.
+  final bool? showShareAction;
 
   @override
   State<SharedItemDetailPage> createState() => _SharedItemDetailPageState();
@@ -169,16 +174,30 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
       AppRoutes.forumCreate,
       extra: CreateForumPostRequest(
         sharedExploreItem: SharedExploreItem(
-          contentType: _sharedContentTypeForCategory(_detail.category),
+          contentType: _sharedContentType,
           contentId: _detail.id,
           provinceId: _trackingProvinceId,
           title: _detail.name,
           imagePath: _detail.images.isNotEmpty ? _detail.images.first : '',
           category: _detail.category,
+          labelOverride: _sharedLabelOverride,
         ),
       ),
     );
   }
+
+  bool get _effectiveShowShareAction =>
+      widget.showShareAction ?? _shouldTrackExploreBehavior;
+
+  /// `_favoriteType == FavoriteType.place` identifies the Destinations
+  /// (Recommend) place-detail flow, which reuses [DetailCategory.activities]
+  /// for `_detail.category` rather than adding a dedicated enum value.
+  String get _sharedContentType => _favoriteType == FavoriteType.place
+      ? 'place'
+      : _sharedContentTypeForCategory(_detail.category);
+
+  String? get _sharedLabelOverride =>
+      _favoriteType == FavoriteType.place ? 'Destination' : null;
 
   FavoriteType? _favoriteTypeForDetail(ItemDetail detail) {
     switch (detail.category) {
@@ -249,7 +268,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     images: _detail.images,
                     rating: _detail.rating,
                     isFavorite: _isFavorite,
-                    showShareAction: _shouldTrackExploreBehavior,
+                    showShareAction: _effectiveShowShareAction,
                     currentPage: _currentPage,
                     onFavoriteTap: _toggleFavorite,
                     onShareTap: _openShareComposer,

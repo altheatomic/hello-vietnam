@@ -19,6 +19,12 @@ from ml.wals_model import train_wals, compute_cf_scores
 
 
 async def _load_events_from_db(conn) -> dict:
+    fav_rows = await conn.fetch("SELECT id_user, id_place FROM favorite_place")
+    favorites = [
+        {'user_id': str(r['id_user']), 'place_id': str(r['id_place'])}
+        for r in fav_rows
+    ]
+
     rating_rows = await conn.fetch("""
         SELECT id_user, content_id AS place_id, rating
         FROM reviews
@@ -31,73 +37,36 @@ async def _load_events_from_db(conn) -> dict:
         for r in rating_rows
     ]
 
-    fav_rows = await conn.fetch("SELECT id_user, id_place FROM favorite_place")
-    favorites = [
-        {'user_id': str(r['id_user']), 'place_id': str(r['id_place'])}
-        for r in fav_rows
-    ]
-
-    plan_rows = await conn.fetch("""
-        SELECT pc.id_place, p.id_user
-        FROM plan_component pc
-        JOIN plan p ON pc.id_plan = p.id_plan
-        WHERE pc.id_place IS NOT NULL
-    """)
-    plans = [
-        {'user_id': str(r['id_user']), 'place_id': str(r['id_place'])}
-        for r in plan_rows
-    ]
-
-    review_rows = await conn.fetch("""
-        SELECT id_user, content_id AS place_id
-        FROM reviews
-        WHERE content_type = 'place'
-          AND status = 'published'
-          AND comment IS NOT NULL
-          AND btrim(comment) <> ''
-    """)
-    reviews = [
-        {'user_id': str(r['id_user']), 'place_id': str(r['place_id'])}
-        for r in review_rows
-    ]
-
-    event_rows = await conn.fetch("""
-        SELECT id_user, id_place AS place_id, event_type, event_count
+    view_rows = await conn.fetch("""
+        SELECT id_user, id_place
         FROM user_event_log
+        WHERE event_type = 'view_detail'
     """)
-    view_thumbnails = [
-        {'user_id': str(r['id_user']), 'place_id': str(r['place_id']), 'count': r['event_count']}
-        for r in event_rows if r['event_type'] == 'view_thumbnail'
+    views = [
+        {'user_id': str(r['id_user']), 'place_id': str(r['id_place'])}
+        for r in view_rows
     ]
-    view_details = [
-        {'user_id': str(r['id_user']), 'place_id': str(r['place_id']), 'count': r['event_count']}
-        for r in event_rows if r['event_type'] == 'view_detail'
-    ]
-    view_all_photos = [
-        {'user_id': str(r['id_user']), 'place_id': str(r['place_id']), 'count': r['event_count']}
-        for r in event_rows if r['event_type'] == 'view_all_photos'
-    ]
+
+    share_rows = await conn.fetch("""
+        SELECT id_user, id_place
+        FROM user_event_log
+        WHERE event_type = 'share'
+    """)
     shares = [
-        {'user_id': str(r['id_user']), 'place_id': str(r['place_id']), 'count': r['event_count']}
-        for r in event_rows if r['event_type'] == 'share'
+        {'user_id': str(r['id_user']), 'place_id': str(r['id_place'])}
+        for r in share_rows
     ]
 
     print(
-        f"[CF] events loaded — ratings={len(ratings)}, favorites={len(favorites)}, "
-        f"plans={len(plans)}, reviews={len(reviews)}, "
-        f"view_thumbnail={len(view_thumbnails)}, view_detail={len(view_details)}, "
-        f"view_all_photos={len(view_all_photos)}, share={len(shares)}"
+        f"[CF] events loaded — favorites={len(favorites)}, ratings={len(ratings)}, "
+        f"views={len(views)}, shares={len(shares)}"
     )
 
     return {
-        'view_thumbnails':  view_thumbnails,
-        'view_details':     view_details,
-        'view_all_photos':  view_all_photos,
-        'favorites':        favorites,
-        'plans':            plans,
-        'shares':           shares,
-        'ratings':          ratings,
-        'reviews':          reviews,
+        'favorites': favorites,
+        'ratings':   ratings,
+        'views':     views,
+        'shares':    shares,
     }
 
 
