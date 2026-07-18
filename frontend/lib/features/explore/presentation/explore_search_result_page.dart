@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +16,7 @@ import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 
 import 'widgets/explore_floating_back_button.dart';
+import 'widgets/explore_category_filter_bar.dart';
 import 'widgets/explore_preview_widgets.dart';
 
 const List<String> _filterLabels = <String>[
@@ -303,6 +303,7 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
         SliverPersistentHeader(
           pinned: true,
           delegate: _StickyFilterDelegate(
+            topInset: statusBarH,
             selectedIndex: _selectedFilter,
             onTap: (int index) {
               setState(() {
@@ -377,16 +378,21 @@ class _CategoryResults {
 }
 
 class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
-  _StickyFilterDelegate({required this.selectedIndex, required this.onTap});
+  _StickyFilterDelegate({
+    required this.topInset,
+    required this.selectedIndex,
+    required this.onTap,
+  });
 
+  final double topInset;
   final int selectedIndex;
   final ValueChanged<int> onTap;
 
   @override
-  double get minExtent => 90;
+  double get minExtent => topInset + ExploreCategoryFilterBar.height + 8;
 
   @override
-  double get maxExtent => 90;
+  double get maxExtent => minExtent;
 
   @override
   Widget build(
@@ -394,96 +400,26 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final double statusBarH = MediaQuery.of(context).padding.top;
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.only(top: statusBarH > 0 ? statusBarH : 0, bottom: 6),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppConstants.pagePadding,
+    final Color background = Theme.of(context).colorScheme.surface;
+    return ColoredBox(
+      color: background.withValues(alpha: 0.92),
+      child: Padding(
+        padding: EdgeInsets.only(top: topInset, bottom: 8),
+        child: ExploreCategoryFilterBar(
+          labels: _filterLabels
+              .map((String label) => context.l10n.ui(label))
+              .toList(growable: false),
+          selectedIndex: selectedIndex,
+          onSelected: onTap,
         ),
-        itemCount: _filterLabels.length,
-        separatorBuilder: (BuildContext context, int index) =>
-            const SizedBox(width: 6),
-        itemBuilder: (BuildContext context, int index) {
-          final bool isSelected = index == selectedIndex;
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => onTap(index),
-                  borderRadius: BorderRadius.circular(15),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
-                    constraints: const BoxConstraints(minHeight: 20),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: isSelected
-                          ? const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: <Color>[
-                                Color(0xFF7FD3F9),
-                                Color(0xFF52B8F4),
-                              ],
-                            )
-                          : LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: <Color>[
-                                Colors.white.withValues(alpha: 0.78),
-                                const Color(0xFFEAF7FD).withValues(alpha: 0.9),
-                              ],
-                            ),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: isSelected
-                            ? Colors.white.withValues(alpha: 0.35)
-                            : const Color(0xFFD9EDF8),
-                      ),
-                      boxShadow: <BoxShadow>[
-                        BoxShadow(
-                          color: isSelected
-                              ? const Color(0xFF52B8F4).withValues(alpha: 0.22)
-                              : Colors.black.withValues(alpha: 0.04),
-                          blurRadius: isSelected ? 14 : 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      context.l10n.ui(_filterLabels[index]),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
-                        color: isSelected
-                            ? Colors.white
-                            : const Color(0xFF6B7280),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }
 
   @override
   bool shouldRebuild(covariant _StickyFilterDelegate oldDelegate) {
-    return selectedIndex != oldDelegate.selectedIndex;
+    return selectedIndex != oldDelegate.selectedIndex ||
+        topInset != oldDelegate.topInset;
   }
 }
 

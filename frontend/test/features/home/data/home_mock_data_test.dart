@@ -18,4 +18,27 @@ void main() {
       'Diễn đàn',
     );
   });
+
+  test(
+    'recommend home feature shows a localized label instead of its route',
+    () {
+      final FeatureItem recommendFeature = homeFeatures.firstWhere(
+        (FeatureItem item) => item.title == 'Recommend',
+      );
+
+      expect(recommendFeature.route, AppRoutes.recommendWhereSearch);
+      expect(
+        AppStrings.of(
+          AppLanguage.english,
+        ).featureLabelForRoute(recommendFeature.route),
+        'Recommend',
+      );
+      expect(
+        AppStrings.of(
+          AppLanguage.vietnamese,
+        ).featureLabelForRoute(recommendFeature.route),
+        'Gợi ý',
+      );
+    },
+  );
 }
