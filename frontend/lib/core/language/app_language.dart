@@ -936,6 +936,7 @@ class AppStrings {
     'Could not publish your review.': 'Không thể đăng đánh giá của bạn.',
     'Share what stood out for you...': 'Chia sẻ điều khiến bạn ấn tượng...',
     'Traveler': 'Du khách',
+    'See all': 'Xem tất cả',
     'Update wishlist failed': 'Cập nhật yêu thích thất bại',
     'Please choose a valid province or city suggestion.':
         'Vui lòng chọn một gợi ý tỉnh hoặc thành phố hợp lệ.',

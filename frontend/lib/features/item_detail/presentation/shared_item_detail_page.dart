@@ -51,6 +51,7 @@ class SharedItemDetailPage extends StatefulWidget {
   final ReviewContentType? reviewContentType;
   final bool showReviews;
   final bool showWhatToExpect;
+
   /// Overrides whether the share action is shown, independent of
   /// [ItemDetailRequest.trackExploreBehavior]. Null falls back to the
   /// existing `_shouldTrackExploreBehavior` behavior.
@@ -71,11 +72,13 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
   FavoriteType? _favoriteType;
   late final String _favoriteRawId;
   late final String _favoriteName;
+  late double _displayRating;
 
   @override
   void initState() {
     super.initState();
     _detail = widget.detail ?? resolveItemDetail(widget.request!);
+    _displayRating = _detail.rating;
     _favoriteType =
         widget.favoriteType ??
         widget.request?.favoriteType ??
@@ -124,6 +127,14 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
     );
     if (next == _isFavorite) return;
     setState(() => _isFavorite = next);
+  }
+
+  void _syncRatingFromReviews(RatingSummary summary) {
+    final double nextRating = summary.reviewCount > 0
+        ? summary.averageRating
+        : _detail.rating;
+    if (!mounted || nextRating == _displayRating) return;
+    setState(() => _displayRating = nextRating);
   }
 
   Future<void> _toggleFavorite() async {
@@ -266,7 +277,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                   const SizedBox(height: 20),
                   _HeroImageCarousel(
                     images: _detail.images,
-                    rating: _detail.rating,
+                    rating: _displayRating,
                     isFavorite: _isFavorite,
                     showShareAction: _effectiveShowShareAction,
                     currentPage: _currentPage,
@@ -299,6 +310,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                         contentId: _detail.effectiveReviewContentId,
                         itemTitle: _detail.name,
                         repository: widget.reviewRepository,
+                        onSummaryChanged: _syncRatingFromReviews,
                       ),
                       const SizedBox(height: 18),
                     ] else ...<Widget>[

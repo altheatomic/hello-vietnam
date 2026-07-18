@@ -632,11 +632,15 @@ class _ResultCardState extends State<_ResultCard> {
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const <Widget>[
-                            Icon(Icons.star, color: Colors.amber, size: 14),
-                            SizedBox(width: 3),
+                          children: <Widget>[
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 3),
                             Text(
-                              '4.7',
+                              widget.item.rating?.toStringAsFixed(1) ?? '4.7',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,

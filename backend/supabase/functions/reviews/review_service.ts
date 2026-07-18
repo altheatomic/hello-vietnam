@@ -1,8 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import {
-  evaluateModeration,
-} from "./review_types.ts";
+import { evaluateModeration } from "./review_types.ts";
 import {
   CONTENT_REGISTRY,
   type ContentRef,
@@ -21,7 +19,16 @@ type ReviewRow = {
   moderation_result: string;
   created_at: string;
   updated_at: string;
+  user_account?: ReviewUserRow | ReviewUserRow[] | null;
 };
+
+type ReviewUserRow = {
+  full_name?: string | null;
+  username?: string | null;
+};
+
+const REVIEW_SELECT =
+  "id_review, rating, comment, status, moderation_result, created_at, updated_at, user_account(full_name, username)";
 
 export class ReviewService {
   constructor(private readonly client: SupabaseClient) {}
@@ -29,7 +36,9 @@ export class ReviewService {
   async getReviewSummary(payload: ContentRef): Promise<RatingSummaryRecord> {
     const { data, error } = await this.client
       .from("rating_summary")
-      .select("average_rating, review_count, rating_1_count, rating_2_count, rating_3_count, rating_4_count, rating_5_count, last_reviewed_at")
+      .select(
+        "average_rating, review_count, rating_1_count, rating_2_count, rating_3_count, rating_4_count, rating_5_count, last_reviewed_at",
+      )
       .eq("content_type", payload.contentType)
       .eq("content_id", payload.contentId)
       .maybeSingle();
@@ -37,12 +46,14 @@ export class ReviewService {
     return data ?? emptySummary();
   }
 
-  async getReviews(payload: ReviewListPayload): Promise<Record<string, unknown>> {
+  async getReviews(
+    payload: ReviewListPayload,
+  ): Promise<Record<string, unknown>> {
     const from = (payload.page - 1) * payload.pageSize;
     const to = from + payload.pageSize;
     let query = this.client
       .from("reviews")
-      .select("id_review, rating, comment, status, moderation_result, created_at, updated_at")
+      .select(REVIEW_SELECT)
       .eq("content_type", payload.contentType)
       .eq("content_id", payload.contentId)
       .eq("status", "published");
@@ -68,10 +79,13 @@ export class ReviewService {
     };
   }
 
-  async getMyReview(userId: string, payload: ContentRef): Promise<Record<string, unknown> | null> {
+  async getMyReview(
+    userId: string,
+    payload: ContentRef,
+  ): Promise<Record<string, unknown> | null> {
     const { data, error } = await this.client
       .from("reviews")
-      .select("id_review, rating, comment, status, moderation_result, created_at, updated_at")
+      .select(REVIEW_SELECT)
       .eq("id_user", userId)
       .eq("content_type", payload.contentType)
       .eq("content_id", payload.contentId)
@@ -80,9 +94,15 @@ export class ReviewService {
     return data ? mapReviewRow(data) : null;
   }
 
-  async upsertReview(userId: string, payload: UpsertReviewPayload): Promise<Record<string, unknown>> {
+  async upsertReview(
+    userId: string,
+    payload: UpsertReviewPayload,
+  ): Promise<Record<string, unknown>> {
     await this.assertContentExists(payload);
-    const decision = evaluateModeration(payload.comment, await this.getActiveKeywords());
+    const decision = evaluateModeration(
+      payload.comment,
+      await this.getActiveKeywords(),
+    );
     rejectBannedReview(decision);
     const { data, error } = await this.client
       .from("reviews")
@@ -95,10 +115,13 @@ export class ReviewService {
         status: decision.status,
         moderation_result: decision.moderationResult,
       } as never, { onConflict: "id_user,content_type,content_id" })
-      .select("id_review, rating, comment, status, moderation_result, created_at, updated_at")
+      .select(REVIEW_SELECT)
       .single();
     if (error) throw new Error(`reviews: ${error.message}`);
-    const summary = await this.refreshRatingSummary(payload.contentType, payload.contentId);
+    const summary = await this.refreshRatingSummary(
+      payload.contentType,
+      payload.contentId,
+    );
     return { review: mapReviewRow(data), summary };
   }
 
@@ -177,9 +200,18 @@ function mapReviewRow(row: ReviewRow): Record<string, unknown> {
     comment: row.comment,
     status: row.status,
     moderationResult: row.moderation_result,
+    userName: reviewerName(row.user_account),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function reviewerName(value: ReviewRow["user_account"]): string | null {
+  const account = Array.isArray(value) ? value[0] : value;
+  const fullName = account?.full_name?.trim();
+  if (fullName) return fullName;
+  const username = account?.username?.trim();
+  return username || null;
 }
 
 function emptySummary(): RatingSummaryRecord {

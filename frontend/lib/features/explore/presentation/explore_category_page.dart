@@ -577,7 +577,9 @@ class _ExploreResultCardState extends State<ExploreResultCard> {
                             ),
                             const SizedBox(width: 3),
                             Text(
-                              widget.rating?.toStringAsFixed(1) ?? '4.7',
+                              (widget.rating ?? widget.item.rating)
+                                      ?.toStringAsFixed(1) ??
+                                  '4.7',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,

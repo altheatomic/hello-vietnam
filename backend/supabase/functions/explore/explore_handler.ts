@@ -13,6 +13,7 @@ import {
   computeInterestStateUpdate,
   EVENT_SCORES,
 } from "./explore_behavior.ts";
+import { resolveExploreRating } from "./explore_rating.ts";
 
 type JsonObject = Record<string, unknown>;
 type ExploreCategoryKey =
@@ -40,6 +41,8 @@ type ExploreItem = {
   description: string | null;
   provinceId: string | null;
   provinceName: string | null;
+  rating: number | null;
+  reviewCount: number;
   metadata: Record<string, unknown>;
   personalizedScore?: number;
   matchedTags?: string[];
@@ -99,6 +102,11 @@ type PersonalizationResult = {
   isPersonalized: boolean;
   personalizationReason: string | null;
   sortMode: ExploreSortMode;
+};
+
+type OfficialRating = {
+  averageRating: number | null;
+  reviewCount: number;
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -371,7 +379,9 @@ export async function handleExploreRequest(req: Request): Promise<Response> {
     if (error instanceof AuthorizationError) {
       return jsonResponse({ error: error.message }, error.statusCode);
     }
-    const message = error instanceof Error ? error.message : "Unexpected error.";
+    const message = error instanceof Error
+      ? error.message
+      : "Unexpected error.";
     return jsonResponse({ error: message }, 500);
   }
 }
@@ -454,7 +464,9 @@ class ExploreService {
     );
 
     const pagedItems = loaded.items.slice(offset, offset + limit);
-    const nextOffset = offset + limit < loaded.items.length ? offset + limit : null;
+    const nextOffset = offset + limit < loaded.items.length
+      ? offset + limit
+      : null;
 
     return {
       category,
@@ -464,10 +476,9 @@ class ExploreService {
       personalizationReason: loaded.personalizationReason,
       items: pagedItems,
       nextOffset,
-      emptyMessage:
-        pagedItems.length > 0
-          ? null
-          : loaded.emptyMessage ?? emptyMessageForCategory(category, province),
+      emptyMessage: pagedItems.length > 0
+        ? null
+        : loaded.emptyMessage ?? emptyMessageForCategory(category, province),
     };
   }
 
@@ -520,7 +531,10 @@ class ExploreService {
 
     if (insertError) {
       if (isDuplicateKeyError(insertError)) {
-        const duplicate = await this.findExistingEvent(userId, payload.requestId);
+        const duplicate = await this.findExistingEvent(
+          userId,
+          payload.requestId,
+        );
         if (duplicate) {
           return {
             success: true,
@@ -535,7 +549,11 @@ class ExploreService {
 
     let updatedTags = 0;
     for (const tagRow of tagRows) {
-      const didUpdate = await this.applyInterestDelta(userId, tagRow, eventScore);
+      const didUpdate = await this.applyInterestDelta(
+        userId,
+        tagRow,
+        eventScore,
+      );
       if (didUpdate) {
         updatedTags += 1;
       }
@@ -570,10 +588,9 @@ class ExploreService {
     return {
       category,
       items: loaded.items.slice(0, limit),
-      emptyMessage:
-        loaded.items.length > 0
-          ? null
-          : loaded.emptyMessage ?? emptyMessageForCategory(category, province),
+      emptyMessage: loaded.items.length > 0
+        ? null
+        : loaded.emptyMessage ?? emptyMessageForCategory(category, province),
     };
   }
 
@@ -607,27 +624,31 @@ class ExploreService {
       }
 
       const rows = loadedRows.rows;
-      const provinceColumn = pickOptionalColumn(rows, config.provinceCandidates);
+      const provinceColumn = pickOptionalColumn(
+        rows,
+        config.provinceCandidates,
+      );
       const idColumn = pickOptionalColumn(rows, config.idCandidates);
-      const provinceRows =
-        provinceId == null
-          ? rows
-          : provinceColumn == null
-          ? []
-          : rows.filter((row) => stringValue(row[provinceColumn]) === provinceId);
+      const provinceRows = provinceId == null
+        ? rows
+        : provinceColumn == null
+        ? []
+        : rows.filter((row) => stringValue(row[provinceColumn]) === provinceId);
 
-      const [provinceNameMap, translations, personalization] = await Promise.all([
-        this.buildProvinceNameMap(provinceRows, provinceColumn),
-        this.loadTranslations(config, provinceRows, idColumn, language),
-        this.buildPersonalization(
-          config,
-          provinceRows,
-          idColumn,
-          userId,
-          sortMode,
-          provinceId,
-        ),
-      ]);
+      const [provinceNameMap, translations, personalization, officialRatings] =
+        await Promise.all([
+          this.buildProvinceNameMap(provinceRows, provinceColumn),
+          this.loadTranslations(config, provinceRows, idColumn, language),
+          this.buildPersonalization(
+            config,
+            provinceRows,
+            idColumn,
+            userId,
+            sortMode,
+            provinceId,
+          ),
+          this.loadOfficialRatings(config.contentType, provinceRows, idColumn),
+        ]);
 
       const items = provinceRows
         .map((row) =>
@@ -639,7 +660,8 @@ class ExploreService {
             translations,
             language,
             personalization,
-          ),
+            officialRatings,
+          )
         )
         .filter((item): item is ExploreItem => item != null)
         .sort((a, b) =>
@@ -670,6 +692,55 @@ class ExploreService {
         personalizationReason: "category_load_failed",
         sortMode: "default",
       };
+    }
+  }
+
+  private async loadOfficialRatings(
+    contentType: ExploreContentType,
+    rows: JsonObject[],
+    idColumn: string | null,
+  ): Promise<Map<string, OfficialRating>> {
+    if (!idColumn) return new Map<string, OfficialRating>();
+
+    const contentIds = uniqueStrings(
+      rows
+        .map((row) => stringValue(row[idColumn]))
+        .filter((id): id is string => id != null),
+    );
+    if (contentIds.length === 0) return new Map<string, OfficialRating>();
+
+    try {
+      const { data, error } = await this.client
+        .from("rating_summary")
+        .select("content_id, average_rating, review_count")
+        .eq("content_type", contentType)
+        .in("content_id", contentIds);
+      if (error) {
+        console.warn(`[explore] rating_summary unavailable: ${error.message}`);
+        return new Map<string, OfficialRating>();
+      }
+
+      return new Map<string, OfficialRating>(
+        asRows(data)
+          .map((row) => {
+            const contentId = stringValue(row.content_id);
+            if (!contentId) return null;
+            return [
+              contentId,
+              {
+                averageRating: numericValue(row.average_rating),
+                reviewCount: integerValue(row.review_count) ?? 0,
+              },
+            ] as const;
+          })
+          .filter(
+            (entry): entry is readonly [string, OfficialRating] =>
+              entry != null,
+          ),
+      );
+    } catch (error) {
+      console.warn("[explore] rating_summary load failed", error);
+      return new Map<string, OfficialRating>();
     }
   }
 
@@ -796,7 +867,8 @@ class ExploreService {
     const tagLabelMap = new Map<string, string>();
     for (const row of asRows(tagMetadataRows)) {
       const tagId = stringValue(row["id_tag"]);
-      const label = stringValue(row["tag_code"]) ?? stringValue(row["tag_name"]);
+      const label = stringValue(row["tag_code"]) ??
+        stringValue(row["tag_name"]);
       if (tagId && label) {
         tagLabelMap.set(tagId, label);
       }
@@ -825,7 +897,9 @@ class ExploreService {
       }
     }
 
-    const isPersonalized = Array.from(scoreMap.values()).some((value) => value > 0);
+    const isPersonalized = Array.from(scoreMap.values()).some((value) =>
+      value > 0
+    );
     return {
       scores: scoreMap,
       matchedTags,
@@ -970,7 +1044,9 @@ class ExploreService {
       new Set(
         rows
           .map((row) => stringValue(row[provinceColumn]))
-          .filter((value): value is string => value != null && value.length > 0),
+          .filter((value): value is string =>
+            value != null && value.length > 0
+          ),
       ),
     );
     if (ids.length === 0) return output;
@@ -1134,7 +1210,10 @@ function mapProvinceRow(row: JsonObject): ProvinceSummary | null {
   if (!id || !name) return null;
 
   const areaColumn = pickOptionalColumn([row], PROVINCE_AREA_CANDIDATES);
-  const descriptionColumn = pickOptionalColumn([row], PROVINCE_DESCRIPTION_CANDIDATES);
+  const descriptionColumn = pickOptionalColumn(
+    [row],
+    PROVINCE_DESCRIPTION_CANDIDATES,
+  );
 
   return {
     id,
@@ -1152,14 +1231,21 @@ function mapExploreItem(
   translations: Map<string, JsonObject>,
   language: string | null,
   personalization: PersonalizationResult,
+  officialRatings: Map<string, OfficialRating>,
 ): ExploreItem | null {
   const idColumn = pickOptionalColumn([row], config.idCandidates);
   const nameColumn = pickOptionalColumn([row], config.nameCandidates);
   const imageColumn = pickOptionalColumn([row], config.imageCandidates);
   const galleryColumn = pickOptionalColumn([row], config.galleryCandidates);
-  const descriptionColumn = pickOptionalColumn([row], config.descriptionCandidates);
+  const descriptionColumn = pickOptionalColumn(
+    [row],
+    config.descriptionCandidates,
+  );
   const ratingColumn = pickOptionalColumn([row], config.ratingCandidates);
-  const reviewCountColumn = pickOptionalColumn([row], config.reviewCountCandidates);
+  const reviewCountColumn = pickOptionalColumn(
+    [row],
+    config.reviewCountCandidates,
+  );
 
   if (!idColumn || !nameColumn) {
     return null;
@@ -1167,9 +1253,9 @@ function mapExploreItem(
 
   const id = stringValue(row[idColumn]);
   const translation = language ? translations.get(id ?? "") ?? null : null;
-  const name = stringValue(translation?.[nameColumn]) ?? stringValue(row[nameColumn]);
-  const imagePath =
-    (imageColumn ? firstImageToken(row[imageColumn]) : null) ??
+  const name = stringValue(translation?.[nameColumn]) ??
+    stringValue(row[nameColumn]);
+  const imagePath = (imageColumn ? firstImageToken(row[imageColumn]) : null) ??
     firstGalleryToken(galleryColumn ? row[galleryColumn] : null) ??
     "";
   const description =
@@ -1182,9 +1268,20 @@ function mapExploreItem(
   }
 
   const provinceId = stringValue(provinceColumn ? row[provinceColumn] : null);
-  const provinceName = provinceId ? provinceNameMap.get(provinceId) ?? null : null;
+  const provinceName = provinceId
+    ? provinceNameMap.get(provinceId) ?? null
+    : null;
   const personalizedScore = roundScore(personalization.scores.get(id) ?? 0);
   const matchedTags = personalization.matchedTags.get(id) ?? [];
+  const officialRating = officialRatings.get(id);
+  const resolvedRating = resolveExploreRating({
+    storedRating: ratingColumn ? numericValue(row[ratingColumn]) : null,
+    storedReviewCount: reviewCountColumn
+      ? integerValue(row[reviewCountColumn])
+      : null,
+    officialAverageRating: officialRating?.averageRating ?? null,
+    officialReviewCount: officialRating?.reviewCount ?? 0,
+  });
 
   return {
     id,
@@ -1195,12 +1292,12 @@ function mapExploreItem(
     description,
     provinceId,
     provinceName,
+    rating: resolvedRating.rating,
+    reviewCount: resolvedRating.reviewCount,
     metadata: {
       ...extractMetadata(row, config.metadataCandidates),
-      ...(ratingColumn ? { [ratingColumn]: numericValue(row[ratingColumn]) } : {}),
-      ...(reviewCountColumn
-        ? { [reviewCountColumn]: integerValue(row[reviewCountColumn]) }
-        : {}),
+      average_rating: resolvedRating.rating,
+      review_count: resolvedRating.reviewCount,
     },
     personalizedScore,
     matchedTags,
@@ -1509,7 +1606,10 @@ function firstGalleryToken(value: unknown): string | null {
   return null;
 }
 
-function pickOptionalColumn(rows: JsonObject[], candidates: string[]): string | null {
+function pickOptionalColumn(
+  rows: JsonObject[],
+  candidates: string[],
+): string | null {
   if (rows.length === 0) return null;
 
   const keys = new Set<string>();
@@ -1650,7 +1750,8 @@ function pickPreferredTranslations(
     let sameRoot: JsonObject | null = null;
     let english: JsonObject | null = null;
     for (const candidate of candidates) {
-      const candidateLanguage = stringValue(candidate[languageColumn])?.toLowerCase();
+      const candidateLanguage = stringValue(candidate[languageColumn])
+        ?.toLowerCase();
       if (!candidateLanguage) continue;
       if (candidateLanguage === normalized) {
         exact = candidate;
@@ -1703,7 +1804,9 @@ function roundScore(value: number): number {
 async function resolveAuthenticatedUserIdOrNull(
   req: Request,
 ): Promise<string | null> {
-  const authHeader = optionalAuthorizationHeader(req.headers.get("Authorization"));
+  const authHeader = optionalAuthorizationHeader(
+    req.headers.get("Authorization"),
+  );
   if (!authHeader) {
     return null;
   }

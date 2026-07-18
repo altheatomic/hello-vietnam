@@ -35,6 +35,7 @@ class ReviewSection extends StatefulWidget {
     this.upsertReview,
     this.pageSize = 10,
     this.listHeight = 420,
+    this.onSummaryChanged,
   });
 
   final ReviewContentType? contentType;
@@ -47,12 +48,15 @@ class ReviewSection extends StatefulWidget {
   final ReviewUpsertCallback? upsertReview;
   final int pageSize;
   final double listHeight;
+  final ValueChanged<RatingSummary>? onSummaryChanged;
 
   @override
   State<ReviewSection> createState() => _ReviewSectionState();
 }
 
 class _ReviewSectionState extends State<ReviewSection> {
+  static const int _previewCount = 2;
+
   late final ScrollController _scrollController;
   RatingSummary? _summary;
   ReviewEntry? _myReview;
@@ -64,6 +68,7 @@ class _ReviewSectionState extends State<ReviewSection> {
   int _currentPage = 0;
   int? _activeRatingFilter;
   Object? _listError;
+  bool _showAll = false;
 
   ReviewRepository get _repository =>
       widget.repository ?? ReviewRepository.instance;
@@ -107,6 +112,7 @@ class _ReviewSectionState extends State<ReviewSection> {
               ));
       if (!mounted) return;
       setState(() => _summary = summary);
+      widget.onSummaryChanged?.call(summary);
     } catch (_) {
       if (!mounted) return;
     } finally {
@@ -144,6 +150,7 @@ class _ReviewSectionState extends State<ReviewSection> {
       _listError = null;
       _currentPage = 0;
       _hasMore = false;
+      _showAll = false;
       _items.clear();
     });
 
@@ -222,7 +229,10 @@ class _ReviewSectionState extends State<ReviewSection> {
 
   Future<void> _applyRatingFilter(int? ratingFilter) async {
     if (_activeRatingFilter == ratingFilter) return;
-    setState(() => _activeRatingFilter = ratingFilter);
+    setState(() {
+      _activeRatingFilter = ratingFilter;
+      _showAll = false;
+    });
     if (_scrollController.hasClients) {
       _scrollController.jumpTo(0);
     }
@@ -276,7 +286,9 @@ class _ReviewSectionState extends State<ReviewSection> {
       _summary = result.summary;
       _myReview = result.review;
       _activeRatingFilter = null;
+      _showAll = false;
     });
+    widget.onSummaryChanged?.call(result.summary);
 
     if (_scrollController.hasClients) {
       _scrollController.jumpTo(0);
@@ -348,7 +360,7 @@ class _ReviewSectionState extends State<ReviewSection> {
           ),
         ),
         const SizedBox(height: 10),
-        SizedBox(height: widget.listHeight, child: _buildListSurface(theme)),
+        _buildListSurface(theme),
         const SizedBox(height: 10),
         const _ReviewDivider(),
       ],
@@ -357,53 +369,99 @@ class _ReviewSectionState extends State<ReviewSection> {
 
   Widget _buildListSurface(ThemeData theme) {
     if (_isLoadingFirstPage && _items.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_listError != null && _items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text(context.l10n.ui('Could not load reviews right now.')),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: _loadFirstPage,
-              child: Text(context.l10n.retry),
-            ),
-          ],
-        ),
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (_items.isEmpty) {
-      return Center(
-        child: Text(
-          context.l10n.noReviewsYetFor(widget.itemTitle),
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: AppColors.textSecondary,
+    if (_listError != null && _items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(context.l10n.ui('Could not load reviews right now.')),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: _loadFirstPage,
+                child: Text(context.l10n.retry),
+              ),
+            ],
           ),
         ),
       );
     }
 
-    return ListView.builder(
-      key: const ValueKey<String>('review-list'),
-      controller: _scrollController,
-      itemCount: _items.length + (_isLoadingMore ? 1 : 0),
-      itemBuilder: (BuildContext context, int index) {
-        if (index >= _items.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: CircularProgressIndicator()),
+    if (_items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Text(
+            context.l10n.noReviewsYetFor(widget.itemTitle),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final bool canShowAll = _items.length > _previewCount || _hasMore;
+    if (!_showAll) {
+      final List<ReviewEntry> previewItems = _items
+          .take(_previewCount)
+          .toList(growable: false);
+      return Column(
+        key: const ValueKey<String>('review-list-preview'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (int index = 0; index < previewItems.length; index++)
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: index == previewItems.length - 1 ? 0 : 12,
+              ),
+              child: _ReviewListCard(review: previewItems[index]),
+            ),
+          if (canShowAll) ...<Widget>[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                key: const ValueKey<String>('review-see-all'),
+                onPressed: () => setState(() => _showAll = true),
+                child: Text(context.l10n.ui('See all')),
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: widget.listHeight),
+      child: ListView.builder(
+        key: const ValueKey<String>('review-list'),
+        controller: _scrollController,
+        shrinkWrap: true,
+        itemCount: _items.length + (_isLoadingMore ? 1 : 0),
+        itemBuilder: (BuildContext context, int index) {
+          if (index >= _items.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: index == _items.length - 1 ? 0 : 12,
+            ),
+            child: _ReviewListCard(review: _items[index]),
           );
-        }
-        return Padding(
-          padding: EdgeInsets.only(bottom: index == _items.length - 1 ? 0 : 12),
-          child: _ReviewListCard(review: _items[index]),
-        );
-      },
+        },
+      ),
     );
   }
 }
@@ -760,8 +818,7 @@ class _ReviewListCard extends StatelessWidget {
     final String reviewer = review.userName?.trim().isNotEmpty == true
         ? review.userName!
         : context.l10n.ui('Traveler');
-    final String updatedLabel =
-        review.updatedAtLabel ?? review.updatedAt ?? review.createdAt ?? '';
+    final String updatedLabel = _formatReviewTimestamp(context, review);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -835,4 +892,43 @@ class _ReviewListCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatReviewTimestamp(BuildContext context, ReviewEntry review) {
+  final String raw =
+      (review.updatedAtLabel ?? review.updatedAt ?? review.createdAt ?? '')
+          .trim();
+  if (raw.isEmpty) return '';
+
+  final DateTime? parsed = DateTime.tryParse(raw);
+  if (parsed == null) return raw;
+
+  final DateTime local = parsed.toLocal();
+  final String day = local.day.toString().padLeft(2, '0');
+  final String month = local.month.toString().padLeft(2, '0');
+  final String hour = local.hour.toString().padLeft(2, '0');
+  final String minute = local.minute.toString().padLeft(2, '0');
+  final bool hasTime = raw.length > 10;
+
+  if (context.l10n.appLanguage == AppLanguage.vietnamese) {
+    final String date = '$day/$month/${local.year}';
+    return hasTime ? '$date • $hour:$minute' : date;
+  }
+
+  const List<String> months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  final String date = '${months[local.month - 1]} ${local.day}, ${local.year}';
+  return hasTime ? '$date • $hour:$minute' : date;
 }

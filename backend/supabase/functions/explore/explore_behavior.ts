@@ -31,22 +31,24 @@ export function computeInterestStateUpdate(
 ): InterestStateUpdate {
   const delta = eventScore * factor;
   const behaviorScore = current.behaviorScore + delta;
-  const positiveBehaviorCount =
-    current.positiveBehaviorCount + (delta > 0 ? 1 : 0);
-  const negativeBehaviorCount =
-    current.negativeBehaviorCount + (delta < 0 ? 1 : 0);
+  const positiveBehaviorCount = current.positiveBehaviorCount +
+    (delta > 0 ? 1 : 0);
+  const negativeBehaviorCount = current.negativeBehaviorCount +
+    (delta < 0 ? 1 : 0);
   const behaviorCount = current.behaviorCount + 1;
   const behaviorWeight = clampNumber(
     behaviorScore / USER_INTEREST_SCORE_CAP,
     0,
     1,
   );
-  const finalWeight = clampNumber(
-    behaviorCount <= 0
-      ? current.initialWeight
-      : (0.4 * current.initialWeight) + (0.6 * behaviorWeight),
-    0,
-    1,
+  const finalWeight = roundWeight(
+    clampNumber(
+      behaviorCount <= 0
+        ? current.initialWeight
+        : (0.4 * current.initialWeight) + (0.6 * behaviorWeight),
+      0,
+      1,
+    ),
   );
 
   return {
@@ -76,4 +78,8 @@ function deriveInterestSource(
 
 function clampNumber(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+function roundWeight(value: number): number {
+  return Number(value.toFixed(6));
 }

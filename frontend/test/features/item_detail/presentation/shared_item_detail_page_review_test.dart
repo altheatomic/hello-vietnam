@@ -5,8 +5,18 @@ import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/item_detail/presentation/shared_item_detail_page.dart';
 import 'package:hellovietnam/features/reviews/data/review_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    await Supabase.initialize(
+      url: 'https://example.supabase.co',
+      anonKey: 'test-anon-key',
+    );
+  });
+
   testWidgets('shared item detail page renders the live review section', (
     WidgetTester tester,
   ) async {
@@ -14,7 +24,11 @@ void main() {
       functionClient: SupabaseFunctionClient(
         accessTokenProvider: () => 'token',
         invoker:
-            (String functionName, {Map<String, String>? headers, Object? body}) async {
+            (
+              String functionName, {
+              Map<String, String>? headers,
+              Object? body,
+            }) async {
               final Map<String, Object?> payload =
                   (body as Map<Object?, Object?>).map(
                     (Object? key, Object? value) =>
@@ -82,7 +96,15 @@ void main() {
 
     expect(find.text('Reviews'), findsOneWidget);
     expect(find.text('Write a review'), findsOneWidget);
-    expect(find.byKey(const ValueKey<String>('review-summary-average')), findsOneWidget);
-    expect(find.text('Loved the broth and the local atmosphere.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('review-summary-average')),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Loved the broth and the local atmosphere.'),
+      findsOneWidget,
+    );
+    expect(find.text('4.7'), findsNothing);
+    expect(find.text('4.8'), findsWidgets);
   });
 }

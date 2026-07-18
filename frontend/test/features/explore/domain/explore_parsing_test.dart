@@ -22,7 +22,9 @@ void main() {
 
     test('falls back safely for unexpected payload type', () {
       final ExploreProvince province = parseExploreSearchResultExtra(
-        <String, dynamic>{'name': <String, dynamic>{'vi': 'Da Nang'}},
+        <String, dynamic>{
+          'name': <String, dynamic>{'vi': 'Da Nang'},
+        },
       );
 
       expect(province.id, '');
@@ -31,6 +33,22 @@ void main() {
   });
 
   group('ExploreItem.fromJson', () {
+    test('keeps the resolved rating returned by the Explore API', () {
+      final ExploreItem item = ExploreItem.fromJson(<String, dynamic>{
+        'id': 'culture-1',
+        'name': 'Thien Mu Pagoda',
+        'imagePath': 'pagoda.jpg',
+        'category': 'culture',
+        'rating': 5.0,
+        'reviewCount': 1,
+      });
+
+      expect(item.rating, 5.0);
+      expect(item.reviewCount, 1);
+      expect(item.toJson()['rating'], 5.0);
+      expect(item.toJson()['reviewCount'], 1);
+    });
+
     test('tolerates non-string fields without crashing', () {
       final ExploreItem item = ExploreItem.fromJson(<String, dynamic>{
         'id': 'activity-1',
