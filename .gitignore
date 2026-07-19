@@ -58,6 +58,7 @@ tree.txt
 plan.md 
 spec.md
 .merge-worktree/
+.worktrees/
 backend/node_modules/
 backend/supabase/.temp/
 backend/crawldata/.env
