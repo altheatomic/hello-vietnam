@@ -17,7 +17,17 @@
       "Bash(python -m py_compile ml/matrix_a.py jobs/cf_retrain.py services/trip_planner.py routes/trip.py main.py)",
       "Bash(flutter analyze *)",
       "Bash(python -c ' *)",
-      "Bash(python -m compileall -q .)"
+      "Bash(python -m compileall -q .)",
+      "Read(//c/Users/Asus/.pub-cache/hosted/**)",
+      "Read(//c//**)",
+      "Bash(xargs grep -l \"class FunctionException\")",
+      "Read(//c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/functions_client-2.5.0/lib/src/**)",
+      "Read(//c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/functions_client-2.5.0/**)",
+      "Bash(xargs grep -l \"FunctionException\")",
+      "Bash(grep -rn \"FunctionException\" \"/c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/supabase_flutter-\"*/lib/*.dart \"/c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/supabase-\"*/lib/*.dart 2>/dev/null)",
+      "Read(//c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/**)",
+      "Bash(grep -rn \"functions_client\" \"/c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/supabase_flutter-\"*/lib/*.dart \"/c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/supabase-\"*/lib/*.dart 2>/dev/null)",
+      "Bash(grep -n \"^export\" \"/c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/supabase_flutter-\"*/lib/supabase_flutter.dart 2>/dev/null | head -20)"
     ]
   }
 }
