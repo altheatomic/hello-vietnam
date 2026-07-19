@@ -177,11 +177,7 @@ async function proxyPost(path: string, body: unknown): Promise<Response> {
 
   const obj = data as JsonObject;
   console.log(`[trip-planner] cf_service_status=${r.status} days=${Array.isArray(obj.days) ? obj.days.length : "N/A"}`);
-  if (!r.ok)
-    return jsonResponse(
-      { error: strVal(obj.detail) ?? "Request failed." },
-      r.status,
-    );
+  if (!r.ok) return upstreamErrorResponse(obj, r.status);
   return jsonResponse(obj);
 }
 
@@ -203,12 +199,29 @@ async function proxyGet(path: string): Promise<Response> {
       `[trip-planner] getPlan_first_place=${JSON.stringify(firstPlace)}`,
     );
   }
-  if (!r.ok)
-    return jsonResponse(
-      { error: strVal(obj.detail) ?? "Request failed." },
-      r.status,
-    );
+  if (!r.ok) return upstreamErrorResponse(obj, r.status);
   return jsonResponse(obj);
+}
+
+/// Builds the edge-function error response from an upstream cf_service
+/// error body. `detail` is usually a plain string (FastAPI's default
+/// HTTPException shape), but some cf_service routes (e.g. planTrip's
+/// no-candidates case) raise a structured `{error_code, message}` detail
+/// so the client can distinguish failure reasons without string-matching
+/// the message. Both shapes are supported; string stays backward compatible.
+function upstreamErrorResponse(obj: JsonObject, status: number): Response {
+  const detail = obj.detail;
+  if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+    const d = detail as JsonObject;
+    return jsonResponse(
+      {
+        error: strVal(d.message) ?? "Request failed.",
+        error_code: strVal(d.error_code) ?? undefined,
+      },
+      status,
+    );
+  }
+  return jsonResponse({ error: strVal(detail) ?? "Request failed." }, status);
 }
 
 /// Safely parses an upstream cf_service response body as JSON.

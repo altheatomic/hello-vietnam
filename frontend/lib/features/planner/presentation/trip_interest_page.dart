@@ -103,6 +103,12 @@ class _TripInterestPageState extends State<TripInterestPage> {
       } else {
         context.push(AppRoutes.tripPlannerResultPath(), extra: response);
       }
+    } on NoTripCandidatesException {
+      if (!mounted) return;
+      _showError(
+        'Not enough places found for your selection. Try selecting more '
+        'interests (step 4) or fewer days (step 3).',
+      );
     } catch (e) {
       if (!mounted) return;
       _showError('Could not generate your trip. Please try again.');

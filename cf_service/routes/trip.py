@@ -26,7 +26,7 @@ class TripPlanRequest(BaseModel):
     id_province:         Optional[str]       = None
     n_days:              int
     start_date:          Optional[str]       = None   # 'YYYY-MM-DD'; defaults to today
-    sa_runs:             int                 = 5
+    sa_runs:             int                 = 2
     save_plan:           bool                = False
     interest_option_ids: Optional[List[str]] = None   # trip-level interest (UUIDs)
     target_lat:          Optional[float]     = None   # business-trip geocoord
@@ -79,7 +79,10 @@ async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
             target_lng=req.target_lng,
         )
     except NoTripCandidatesError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=422,
+            detail={"error_code": "no_candidates", "message": str(exc)},
+        ) from exc
     # print(f"[DEBUG] response days count: {len(result.get('days', []))}")
     # print(f"[DEBUG] response: {result}")
     return result

@@ -10,10 +10,11 @@ typedef SupabaseFunctionInvoker =
     });
 
 class SupabaseFunctionException implements Exception {
-  const SupabaseFunctionException(this.message, {this.details});
+  const SupabaseFunctionException(this.message, {this.details, this.errorCode});
 
   final String message;
   final Object? details;
+  final String? errorCode;
 
   @override
   String toString() => message;
@@ -53,7 +54,11 @@ class SupabaseFunctionClient {
     final Map<String, dynamic> data = _asMap(rawData);
     final Object? error = data['error'];
     if (error != null) {
-      throw SupabaseFunctionException(error.toString(), details: data);
+      throw SupabaseFunctionException(
+        error.toString(),
+        details: data,
+        errorCode: data['error_code'] as String?,
+      );
     }
     return data;
   }
@@ -76,7 +81,11 @@ class SupabaseFunctionClient {
     final Map<String, dynamic> data = _asMap(rawData);
     final Object? error = data['error'];
     if (error != null) {
-      throw SupabaseFunctionException(error.toString(), details: data);
+      throw SupabaseFunctionException(
+        error.toString(),
+        details: data,
+        errorCode: data['error_code'] as String?,
+      );
     }
   }
 

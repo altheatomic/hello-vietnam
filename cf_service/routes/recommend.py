@@ -31,12 +31,14 @@ async def get_province_detail(
     from db.place_repository import fetch_places_required_filter
     from services.module1_algorithm import (
         build_user_interest_state_from_rows,
+        compute_alpha,
         rank_places_by_tag_match,
     )
     from services.module1_repository import (
         attach_place_tags_to_places,
         build_tag_map,
         fetch_active_tags,
+        fetch_cf_scores_for_user,
         fetch_place_tags_for_places,
         fetch_user_interest_tags,
     )
@@ -83,6 +85,16 @@ async def get_province_detail(
         id_tag_map=id_tag_map,
     )
 
+    # ── CF blend (same pattern as trip_planner.py) ────────────────────────────
+    cf_scores = fetch_cf_scores_for_user(supabase, id_user, place_ids)
+    alpha = compute_alpha(cf_scores, len(places))
+    for place in ranked:
+        tag_match = float(place.get("tag_match") or 0.0)
+        cf = cf_scores.get(str(place["id_place"]), 0.0)
+        place["cf_score"] = round(cf, 6)
+        place["final_score"] = round(alpha * tag_match + (1 - alpha) * cf, 6)
+    ranked.sort(key=lambda p: -p["final_score"])
+
     avg_rating = round(
         sum((p.get("average_rating") or 0.0) for p in places) / len(places), 1
     )
@@ -111,6 +123,8 @@ async def get_province_detail(
             "review_count":   p.get("review_count"),
             "subcategory_name": sub_name,
             "tag_match":      round(float(p.get("tag_match") or 0), 4),
+            "cf_score":       round(float(p.get("cf_score") or 0), 4),
+            "final_score":    round(float(p.get("final_score") or 0), 4),
         })
 
     return {

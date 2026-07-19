@@ -163,6 +163,8 @@ class SavedPlanStop {
     required this.id,
     required this.slot,
     required this.timeLabel,
+    this.startTime,
+    this.endTime,
     required this.title,
     required this.note,
   });
@@ -170,6 +172,8 @@ class SavedPlanStop {
   final String id;
   final String slot;
   final String timeLabel;
+  final String? startTime;
+  final String? endTime;
   final String title;
   final String note;
 
@@ -178,6 +182,8 @@ class SavedPlanStop {
       id:        json['id']         as String? ?? '',
       slot:      json['slot']       as String? ?? '',
       timeLabel: json['time_label'] as String? ?? '',
+      startTime: json['start_time'] as String?,
+      endTime:   json['end_time']   as String?,
       title:     json['title']      as String? ?? '',
       note:      json['note']       as String? ?? '',
     );

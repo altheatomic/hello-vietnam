@@ -205,20 +205,65 @@ def fetch_saved_plans(supabase: Any, id_user: str) -> list:
     stops_resp = (
         supabase
         .table("plan_component")
-        .select("id_component, id_plan, day, slot, visit_order, place(id_place, name)")
+        .select(
+            "id_component,id_plan,day,slot,visit_order,start_time,end_time,id_place"
+        )
         .in_("id_plan", plan_ids)
         .eq("day", 1)
         .order("visit_order")
         .execute()
     )
+
+    stop_rows = stops_resp.data or []
+    place_ids = list({
+        str(s["id_place"])
+        for s in stop_rows
+        if s.get("id_place")
+    })
+    place_map: dict[str, dict] = {}
+    if place_ids:
+        places_resp = (
+            supabase
+            .table("place_localized_en")
+            .select("id_place,name")
+            .in_("id_place", place_ids)
+            .execute()
+        )
+        place_map = {
+            str(place["id_place"]): place
+            for place in (places_resp.data or [])
+        }
+
+    province_ids = list({
+        str(plan["city_province"])
+        for plan in plans
+        if plan.get("city_province")
+    })
+    province_map: dict[str, dict] = {}
+    if province_ids:
+        provinces_resp = (
+            supabase
+            .table("city_province")
+            .select("id_city,name")
+            .in_("id_city", province_ids)
+            .execute()
+        )
+        province_map = {
+            str(province["id_city"]): province
+            for province in (provinces_resp.data or [])
+        }
+
     stops_by_plan: dict = {}
-    for s in (stops_resp.data or []):
+    for s in stop_rows:
         pid = str(s["id_plan"])
-        place_data = s.get("place") or {}
+        place_data = place_map.get(str(s.get("id_place") or ""), {})
+        start_time = s.get("start_time")
         stops_by_plan.setdefault(pid, []).append({
             "id": str(s["id_component"]),
             "slot": s.get("slot") or "",
-            "time_label": _slot_to_time(s.get("slot") or ""),
+            "start_time": start_time,
+            "end_time": s.get("end_time"),
+            "time_label": start_time or _slot_to_time(s.get("slot") or ""),
             "title": place_data.get("name") or "",
             "note": "",
         })
@@ -226,13 +271,14 @@ def fetch_saved_plans(supabase: Any, id_user: str) -> list:
     result = []
     for p in plans:
         pid = str(p["id_plan"])
+        province = province_map.get(str(p.get("city_province") or ""), {})
         result.append({
             "id_plan": pid,
             "custom_title": p.get("custom_title"),
             "duration": p.get("duration") or "",
             "start_at": str(p["start_at"]),
             "end_at": str(p["end_at"]),
-            "province_name": "",  # join not needed for display; can be added later
+            "province_name": province.get("name") or "",
             "created_at": str(p["created_at"]),
             "stops": stops_by_plan.get(pid, []),
         })

@@ -13,7 +13,11 @@
       "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_reviews3.py\")",
       "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_auth.py\")",
       "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_interest.py\")",
-      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_interest2.py\")"
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\44006b47-6c90-4e1c-8462-5b6c562e8916\\\\scratchpad\\\\audit_interest2.py\")",
+      "Bash(python -m py_compile ml/matrix_a.py jobs/cf_retrain.py services/trip_planner.py routes/trip.py main.py)",
+      "Bash(flutter analyze *)",
+      "Bash(python -c ' *)",
+      "Bash(python -m compileall -q .)"
     ]
   }
 }

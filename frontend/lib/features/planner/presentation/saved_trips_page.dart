@@ -94,8 +94,13 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
 
     final DateTime? startDate = DateTime.tryParse(item.startAt);
     final int nDays = int.tryParse(item.duration) ?? 1;
+    final DateTime? endDate = DateTime.tryParse(item.endAt) ??
+        (startDate == null
+            ? null
+            : startDate.add(Duration(days: nDays - 1)));
     final String dateLabel = startDate != null
-        ? '${startDate.day} ${_shortMonths[startDate.month - 1]} • '
+        ? '${startDate.day} ${_shortMonths[startDate.month - 1]}'
+              '${endDate == null ? '' : ' - ${endDate.day} ${_shortMonths[endDate.month - 1]}'} • '
               '$nDays ${nDays == 1 ? 'day' : 'days'}'
         : '$nDays days';
 
@@ -112,7 +117,7 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
           .map(
             (SavedPlanStop s) => _SavedStop(
               id: s.id,
-              timeLabel: s.timeLabel,
+              timeLabel: s.startTime ?? _slotToTime(s.slot),
               title: s.title,
               note: s.note,
               isCompleted: false,
@@ -205,9 +210,11 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
               child: _DecorativeOrb(size: 190, color: Color(0x5556E2D5)),
             ),
             SafeArea(
-              child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: <Widget>[
+              child: RefreshIndicator(
+                onRefresh: _loadSavedTrips,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: <Widget>[
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
@@ -346,13 +353,29 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                         ),
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+String _slotToTime(String? slot) {
+  switch (slot?.toLowerCase()) {
+    case 'morning':
+      return '08:00';
+    case 'afternoon':
+      return '13:00';
+    case 'evening':
+      return '17:00';
+    case 'lunch':
+      return '12:00';
+    default:
+      return '09:00';
   }
 }
 

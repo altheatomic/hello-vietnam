@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
@@ -93,15 +94,6 @@ class _TripResultPageState extends State<TripResultPage> {
           (sum, d) =>
               sum + d.places.where((p) => p.type != 'lunch_break').length,
         ),
-        'days': plan.days
-            .map((d) => <String, dynamic>{
-                  'day': d.day,
-                  'places': d.places
-                      .where((p) => p.type != 'lunch_break')
-                      .map((p) => p.name)
-                      .toList(),
-                })
-            .toList(),
       };
 
       final userId = Supabase.instance.client.auth.currentUser?.id;
@@ -118,6 +110,7 @@ class _TripResultPageState extends State<TripResultPage> {
         'status': 'active',
         'shared_item': sharedItem,
       });
+      await ForumStore.instance.refresh(notifyLoading: false);
 
       if (!mounted) return;
       _showSnackBar('Shared to Forum!');
@@ -143,6 +136,7 @@ class _TripResultPageState extends State<TripResultPage> {
 
     final totalActivities =
         days.fold<int>(0, (sum, d) => sum + d.activities.length);
+    final String dateRange = _tripDateRange(widget.plan.days);
 
     return Scaffold(
       body: Container(
@@ -188,6 +182,17 @@ class _TripResultPageState extends State<TripResultPage> {
                       ),
                     ),
                     const SizedBox(height: 10),
+                    if (dateRange.isNotEmpty) ...<Widget>[
+                      Text(
+                        dateRange,
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          color: Color(0xFF556273),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                     Text(
                       '${days.length} ${days.length == 1 ? 'day' : 'days'} • $totalActivities activities',
                       style: const TextStyle(
@@ -377,6 +382,16 @@ String _formatIsoDate(String iso) {
   final day = int.tryParse(parts[2]) ?? 0;
   if (month < 1 || month > 12) return iso;
   return '${months[month - 1]} $day, ${parts[0]}';
+}
+
+String _tripDateRange(List<TripPlanDay> days) {
+  if (days.isEmpty) return '';
+  final String startDate = days.first.date;
+  final String endDate = days.last.date;
+  if (startDate.isEmpty && endDate.isEmpty) return '';
+  if (endDate.isEmpty || endDate == startDate) return _formatIsoDate(startDate);
+  if (startDate.isEmpty) return _formatIsoDate(endDate);
+  return '${_formatIsoDate(startDate)} - ${_formatIsoDate(endDate)}';
 }
 
 // ── Widgets ───────────────────────────────────────────────────────────────────

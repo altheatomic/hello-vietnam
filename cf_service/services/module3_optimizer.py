@@ -86,7 +86,7 @@ _MOVES = [_move_swap, _move_reverse_segment, _move_insert]
 
 def _simulated_annealing(cost_fn, initial_route,
                           T_initial=1.0, T_min=0.0001,
-                          alpha=0.9, I_multiplier=20, seed=None):
+                          alpha=0.9, I_multiplier=12, seed=None):
     """
     cost_fn(route) → float  — must be pure (no side effects / dict mutations).
     Greedy init and SA moves only shuffle the list; cost_fn reads place dicts.
@@ -126,7 +126,7 @@ def _simulated_annealing(cost_fn, initial_route,
 def optimize_day_route(
     start: dict,
     places: list,
-    sa_runs: int = 5,
+    sa_runs: int = 2,
 ) -> tuple[list, dict]:
     """
     Returns (best_route, schedule_result).
@@ -157,7 +157,7 @@ def optimize_day_route(
         candidate = _simulated_annealing(
             cost_fn, initial_route,
             T_initial=1.0, T_min=0.0001, alpha=0.9,
-            I_multiplier=20, seed=seed,
+            I_multiplier=12, seed=seed,
         )
         cost = cost_fn(candidate)
         if cost < best_cost:

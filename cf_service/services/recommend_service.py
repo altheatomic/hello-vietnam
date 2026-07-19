@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from services.module1_algorithm import (
     build_user_interest_state_from_rows,
+    compute_alpha,
     rank_places_by_tag_match,
 )
 from services.module1_repository import (
@@ -30,16 +31,6 @@ from services.module1_repository import (
 _MAX_PLACES_TOTAL = 3000
 _MIN_PLACES_PER_PROVINCE = 3
 _MAX_SAMPLE_PER_PROVINCE = 200
-
-
-def _compute_alpha(cf_scores: dict, total_places: int) -> float:
-    if total_places == 0:
-        return 1.0
-    coverage = len(cf_scores) / total_places
-    if coverage == 0:   return 1.0
-    if coverage < 0.10: return 0.7
-    if coverage < 0.30: return 0.5
-    return 0.3
 
 
 def _extract_gallery_urls(gallery_raw: list) -> list[str]:
@@ -130,7 +121,7 @@ def recommend_provinces(supabase, id_user: str, limit: int = 20) -> list[dict]:
         cf_subset = {k: v for k, v in cf_scores_all.items() if k in sample_ids_set}
         avg_cf = sum(cf_subset.values()) / len(cf_subset) if cf_subset else 0.0
 
-        alpha = _compute_alpha(cf_subset, len(sample))
+        alpha = compute_alpha(cf_subset, len(sample))
         final_score = alpha * avg_cb + (1 - alpha) * avg_cf
 
         top = ranked[0] if ranked else {}
