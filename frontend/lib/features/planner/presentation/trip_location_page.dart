@@ -84,13 +84,13 @@ class _TripLocationPageState extends State<TripLocationPage> {
   }
 
   List<_ProvinceItem> get _filtered {
-    final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return _provinces;
+    final query = _searchController.text;
+    if (query.trim().isEmpty) return _provinces;
     return _provinces
         .where(
           (p) =>
-              p.name.toLowerCase().contains(query) ||
-              p.area.toLowerCase().contains(query),
+              matchesSearchQuery(query, p.name) ||
+              matchesSearchQuery(query, p.area),
         )
         .toList();
   }

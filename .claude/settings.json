@@ -27,7 +27,37 @@
       "Bash(grep -rn \"FunctionException\" \"/c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/supabase_flutter-\"*/lib/*.dart \"/c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/supabase-\"*/lib/*.dart 2>/dev/null)",
       "Read(//c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/**)",
       "Bash(grep -rn \"functions_client\" \"/c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/supabase_flutter-\"*/lib/*.dart \"/c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/supabase-\"*/lib/*.dart 2>/dev/null)",
-      "Bash(grep -n \"^export\" \"/c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/supabase_flutter-\"*/lib/supabase_flutter.dart 2>/dev/null | head -20)"
+      "Bash(grep -n \"^export\" \"/c/Users/Asus/AppData/Local/Pub/Cache/hosted/pub.dev/supabase_flutter-\"*/lib/supabase_flutter.dart 2>/dev/null | head -20)",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\ef93fc31-3736-4b7e-b4f9-0f81bd17b632\\\\scratchpad\\\\audit_category_distribution.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\ef93fc31-3736-4b7e-b4f9-0f81bd17b632\\\\scratchpad\\\\audit_category_distribution_v2.py\")",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\ef93fc31-3736-4b7e-b4f9-0f81bd17b632\\\\scratchpad\\\\audit_threshold_sensitivity.py\")",
+      "Bash(rm -f /tmp/test_search.dart)",
+      "Bash(python -m py_compile test_performance_eval.py)",
+      "Bash(python -c \"import httpx; print\\('httpx', httpx.__version__\\)\")",
+      "Bash(python -m py_compile test_load_eval.py)",
+      "Bash(python test_load_eval.py --help)",
+      "Bash(python test_performance_eval.py --help)",
+      "Bash(pip show *)",
+      "Read(//c/Users/Asus/AppData/Local/Programs/Python/Python310/lib/site-packages/postgrest/_sync/**)",
+      "Bash(grep -n \"httpx\" \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python310\\\\lib\\\\site-packages\\\\postgrest\\\\_sync\\\\client.py\" \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python310\\\\lib\\\\site-packages\\\\postgrest\\\\_sync\\\\request_builder.py\" 2>/dev/null | head -20)",
+      "Read(//c/Users/Asus/AppData/Local/Programs/Python/Python310/lib/site-packages/postgrest/**)",
+      "Bash(python \"C:\\\\Users\\\\Asus\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Asus-hellovietnam\\\\ef93fc31-3736-4b7e-b4f9-0f81bd17b632\\\\scratchpad\\\\audit_cf_retrain.py\")",
+      "Bash(python -m py_compile test_module2_eval.py)",
+      "Bash(python test_module2_eval.py --help)",
+      "Bash(python -m py_compile test_module1_eval.py)",
+      "Bash(python test_module1_eval.py --help)",
+      "Bash(python -m py_compile test_module3_benchmark.py)",
+      "Bash(python test_module3_benchmark.py --help)",
+      "Bash(python -m py_compile test_module3_scheduling_rules.py)",
+      "Bash(python test_module3_scheduling_rules.py)",
+      "Read(//d/Downloads/**)",
+      "Bash(python -m py_compile test_module1_diversity_eval.py)",
+      "Bash(python test_module1_diversity_eval.py --help)",
+      "Bash(python -m py_compile test_module2_rejection_eval.py)",
+      "Bash(python test_module2_rejection_eval.py)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }

@@ -22,6 +22,7 @@ Trip-level interest (optional):
 
 import datetime
 import json
+import time
 
 from db.place_repository import fetch_places_near_point, fetch_places_required_filter
 from db.queries_plan import save_plan
@@ -117,6 +118,9 @@ class TripPlannerService:
         supabase = self.supabase
         end_date = start_at + datetime.timedelta(days=n_days - 1)
 
+        timing_ms: dict[str, float] = {}
+        _t_start = time.perf_counter()
+
         # ── [Filtering] ───────────────────────────────────────────────────────
         if target_lat is not None and target_lng is not None:
             required_places = fetch_places_near_point(supabase, target_lat, target_lng)
@@ -191,6 +195,9 @@ class TripPlannerService:
                 trip_selected_options    = trip_interest_choice_rows
                 trip_option_subcategory_rows = option_subcategory_rows
 
+        timing_ms["data_fetch"] = round((time.perf_counter() - _t_start) * 1000, 1)
+        _t_scoring0 = time.perf_counter()
+
         # ── [Rank by tag match] ───────────────────────────────────────────────
         ranked = rank_places_by_tag_match(
             places_with_tags, user_interest_state,
@@ -225,6 +232,9 @@ class TripPlannerService:
         )
         top_places = diversity_result["diversified_top_k"]
 
+        timing_ms["scoring"] = round((time.perf_counter() - _t_scoring0) * 1000, 1)
+        _t_m2_0 = time.perf_counter()
+
         # ── [Module 2 – Greedy Repair] ────────────────────────────────────────
         pace_level = (user_profile or {}).get("pace_level")
         m2_result = build_module2_result(
@@ -234,6 +244,9 @@ class TripPlannerService:
             pace_level=pace_level,
         )
         day_clusters = m2_result["day_clusters"]
+
+        timing_ms["module2_kmeans_repair"] = round((time.perf_counter() - _t_m2_0) * 1000, 1)
+        _t_m3_0 = time.perf_counter()
 
         # ── [Module 3 – Route optimization] ───────────────────────────────────
         start_point = _derive_start_point(top_places)
@@ -265,6 +278,9 @@ class TripPlannerService:
             if best_route:
                 start_point = best_route[-1]
 
+        timing_ms["module3_sa_schedule"] = round((time.perf_counter() - _t_m3_0) * 1000, 1)
+        _t_save_0 = time.perf_counter()
+
         # ── [Persist] ─────────────────────────────────────────────────────────
         real_place_count = sum(
             1
@@ -289,6 +305,16 @@ class TripPlannerService:
         if save:
             id_plan = save_plan(supabase, id_user, id_province, n_days, start_at, days)
 
+        timing_ms["save_plan"] = round((time.perf_counter() - _t_save_0) * 1000, 1)
+        timing_ms["total"] = round((time.perf_counter() - _t_start) * 1000, 1)
+
+        print(f"[TIMING] plan() total={timing_ms['total']}ms "
+              f"data_fetch={timing_ms['data_fetch']}ms "
+              f"scoring={timing_ms['scoring']}ms "
+              f"module2={timing_ms['module2_kmeans_repair']}ms "
+              f"module3={timing_ms['module3_sa_schedule']}ms "
+              f"save_plan={timing_ms['save_plan']}ms")
+
         return {
             "id_plan": id_plan,
             "days": days,
@@ -300,5 +326,6 @@ class TripPlannerService:
                 "trip_interest_used": bool(trip_selected_options),
                 "m2_summary":         m2_result.get("summary"),
                 "diversity_summary":  diversity_result.get("summary", {}).get("final_selected_count"),
+                "timing_ms":          timing_ms,
             },
         }

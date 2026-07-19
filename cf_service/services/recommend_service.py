@@ -14,6 +14,9 @@ Pipeline (single-pass, batched):
 
 from __future__ import annotations
 
+import time  # TEMP — perf audit, remove after done
+
+from db.supabase_client import fetch_all_rows
 from services.module1_algorithm import (
     build_user_interest_state_from_rows,
     compute_alpha,
@@ -27,10 +30,6 @@ from services.module1_repository import (
     fetch_place_tags_for_places,
     fetch_user_interest_tags,
 )
-
-_MAX_PLACES_TOTAL = 3000
-_MIN_PLACES_PER_PROVINCE = 3
-_MAX_SAMPLE_PER_PROVINCE = 200
 
 
 def _extract_gallery_urls(gallery_raw: list) -> list[str]:
@@ -46,6 +45,9 @@ def _extract_gallery_urls(gallery_raw: list) -> list[str]:
 
 
 def recommend_provinces(supabase, id_user: str, limit: int = 20) -> list[dict]:
+    # TEMP — perf audit, remove after done
+    _t0 = time.perf_counter()
+
     # ── Step 1: All provinces ─────────────────────────────────────────────────
     prov_resp = supabase.table("old_province").select("id_province, name").execute()
     province_map: dict[str, str] = {
@@ -55,23 +57,24 @@ def recommend_provinces(supabase, id_user: str, limit: int = 20) -> list[dict]:
     if not province_map:
         return []
 
-    # ── Step 2: All eligible places (single query) ────────────────────────────
-    resp = (
-        supabase
-        .table("place_localized_en")
-        .select(
-            "id_place,old_province,name,cover_image,gallery,"
-            "average_rating,review_count,"
-            "place_subcategory!inner(name,place_category,is_itinerary_eligible)"
+    # ── Step 2: All eligible places (paginated past PostgREST max-rows) ───────
+    def _build_places_query(start: int, end: int):
+        return (
+            supabase
+            .table("place_localized_en")
+            .select(
+                "id_place,old_province,name,cover_image,gallery,"
+                "average_rating,review_count,"
+                "place_subcategory!inner(name,place_category,is_itinerary_eligible)"
+            )
+            .eq("status", "active")
+            .eq("place_subcategory.is_itinerary_eligible", True)
+            .filter("latitude", "not.is", "null")
+            .filter("longitude", "not.is", "null")
+            .range(start, end)
         )
-        .eq("status", "active")
-        .eq("place_subcategory.is_itinerary_eligible", True)
-        .filter("latitude", "not.is", "null")
-        .filter("longitude", "not.is", "null")
-        .limit(_MAX_PLACES_TOTAL)
-        .execute()
-    )
-    all_places = resp.data or []
+
+    all_places = fetch_all_rows(_build_places_query)
     if not all_places:
         return []
 
@@ -103,10 +106,7 @@ def recommend_provinces(supabase, id_user: str, limit: int = 20) -> list[dict]:
     # ── Step 5: Score each province ───────────────────────────────────────────
     results: list[dict] = []
     for prov_id, places in by_province.items():
-        if len(places) < _MIN_PLACES_PER_PROVINCE:
-            continue
-
-        sample = places[:_MAX_SAMPLE_PER_PROVINCE]
+        sample = places
         sample_ids_set = {str(p["id_place"]) for p in sample}
 
         enriched = attach_place_tags_to_places(sample, place_tag_rows)
@@ -145,4 +145,12 @@ def recommend_provinces(supabase, id_user: str, limit: int = 20) -> list[dict]:
         })
 
     results.sort(key=lambda x: x["final_score"], reverse=True)
+
+    # TEMP — perf audit, remove after done
+    elapsed_ms = round((time.perf_counter() - _t0) * 1000, 1)
+    print(
+        f"[TIMING] recommend_provinces: elapsed={elapsed_ms}ms "
+        f"total_places={len(all_places)} provinces_scored={len(results)}"
+    )
+
     return results[:limit]
