@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/network/supabase_function_client.dart';
+import 'package:hellovietnam/core/storage/local_storage.dart' as app_storage;
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/item_detail/presentation/shared_item_detail_page.dart';
@@ -11,6 +13,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
+    await app_storage.LocalStorage.instance.initialize();
     await Supabase.initialize(
       url: 'https://example.supabase.co',
       anonKey: 'test-anon-key',
@@ -20,54 +23,7 @@ void main() {
   testWidgets('shared item detail page renders the live review section', (
     WidgetTester tester,
   ) async {
-    final ReviewRepository repository = ReviewRepository(
-      functionClient: SupabaseFunctionClient(
-        accessTokenProvider: () => 'token',
-        invoker:
-            (
-              String functionName, {
-              Map<String, String>? headers,
-              Object? body,
-            }) async {
-              final Map<String, Object?> payload =
-                  (body as Map<Object?, Object?>).map(
-                    (Object? key, Object? value) =>
-                        MapEntry(key.toString(), value),
-                  );
-              switch (payload['action']) {
-                case 'getReviewSummary':
-                  return <String, Object?>{
-                    'average_rating': 4.8,
-                    'review_count': 12,
-                    'rating_1_count': 0,
-                    'rating_2_count': 0,
-                    'rating_3_count': 1,
-                    'rating_4_count': 2,
-                    'rating_5_count': 9,
-                  };
-                case 'getReviews':
-                  return <String, Object?>{
-                    'items': <Map<String, Object?>>[
-                      <String, Object?>{
-                        'id': 'review-1',
-                        'user_name': 'Lan',
-                        'rating': 5,
-                        'comment': 'Loved the broth and the local atmosphere.',
-                        'updated_at': '2026-07-12T10:00:00Z',
-                      },
-                    ],
-                    'page': 1,
-                    'pageSize': 10,
-                    'totalCount': 1,
-                    'hasMore': false,
-                  };
-                case 'getMyReview':
-                  return <String, Object?>{};
-              }
-              return <String, Object?>{};
-            },
-      ),
-    );
+    final ReviewRepository repository = _buildReviewRepository();
 
     const ItemDetail detail = ItemDetail(
       id: 'hf2',
@@ -107,4 +63,106 @@ void main() {
     expect(find.text('4.7'), findsNothing);
     expect(find.text('4.8'), findsWidgets);
   });
+
+  testWidgets('shared detail labels are fully localized in Vietnamese', (
+    WidgetTester tester,
+  ) async {
+    await AppLanguageController.instance.setLanguage(AppLanguage.vietnamese);
+    addTearDown(
+      () => AppLanguageController.instance.setLanguage(AppLanguage.english),
+    );
+
+    const ItemDetail detail = ItemDetail(
+      id: 'hf2',
+      reviewContentId: '55555555-5555-4555-8555-555555555555',
+      name: 'Bún bò Huế',
+      category: DetailCategory.food,
+      images: <String>[''],
+      rating: 4.7,
+      isFavorite: false,
+      reviewCount: 7,
+      ratingLabel: 'Fantastic',
+      description:
+          'Đây là phần mô tả rất dài về món ăn, nguồn gốc, hương vị và cách thưởng thức để nội dung chắc chắn vượt quá ba dòng hiển thị ban đầu trên thẻ thông tin chi tiết của ứng dụng.',
+      whatToExpect: 'Hương vị đậm đà và nhiều loại rau thơm.',
+    );
+
+    await tester.pumpWidget(
+      AppLanguageScope(
+        controller: AppLanguageController.instance,
+        child: MaterialApp(
+          home: SharedItemDetailPage(
+            detail: detail,
+            reviewRepository: _buildReviewRepository(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Khám phá,', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.text('Đánh giá'), findsOneWidget);
+    expect(find.text('Trải nghiệm nổi bật'), findsOneWidget);
+    expect(find.text('Viết đánh giá'), findsOneWidget);
+    expect(find.text('Tất cả'), findsOneWidget);
+    expect(find.text('5 sao'), findsWidgets);
+    expect(find.text('Xem thêm'), findsOneWidget);
+    expect(find.text('Reviews'), findsNothing);
+    expect(find.text('What to expect'), findsNothing);
+    expect(find.text('More'), findsNothing);
+  });
+}
+
+ReviewRepository _buildReviewRepository() {
+  return ReviewRepository(
+    functionClient: SupabaseFunctionClient(
+      accessTokenProvider: () => 'token',
+      invoker:
+          (
+            String functionName, {
+            Map<String, String>? headers,
+            Object? body,
+          }) async {
+            final Map<String, Object?> payload = (body as Map<Object?, Object?>)
+                .map(
+                  (Object? key, Object? value) =>
+                      MapEntry(key.toString(), value),
+                );
+            switch (payload['action']) {
+              case 'getReviewSummary':
+                return <String, Object?>{
+                  'average_rating': 4.8,
+                  'review_count': 12,
+                  'rating_1_count': 0,
+                  'rating_2_count': 0,
+                  'rating_3_count': 1,
+                  'rating_4_count': 2,
+                  'rating_5_count': 9,
+                };
+              case 'getReviews':
+                return <String, Object?>{
+                  'items': <Map<String, Object?>>[
+                    <String, Object?>{
+                      'id': 'review-1',
+                      'user_name': 'Lan',
+                      'rating': 5,
+                      'comment': 'Loved the broth and the local atmosphere.',
+                      'updated_at': '2026-07-12T10:00:00Z',
+                    },
+                  ],
+                  'page': 1,
+                  'pageSize': 10,
+                  'totalCount': 1,
+                  'hasMore': false,
+                };
+              case 'getMyReview':
+                return <String, Object?>{};
+            }
+            return <String, Object?>{};
+          },
+    ),
+  );
 }

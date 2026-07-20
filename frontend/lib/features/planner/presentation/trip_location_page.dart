@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/data/reference_data_cache_repository.dart';
 import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
 
@@ -128,9 +129,9 @@ class _TripLocationPageState extends State<TripLocationPage> {
                 children: <Widget>[
                   _SearchField(controller: _searchController),
                   const SizedBox(height: 18),
-                  const Text(
-                    'Destinations',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.ui('Destinations'),
+                    style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF162235),
@@ -209,20 +210,23 @@ class _SearchField extends StatelessWidget {
           fontWeight: FontWeight.w500,
           color: Color(0xFF162235),
         ),
-        decoration: const InputDecoration(
-          prefixIcon: Icon(
+        decoration: InputDecoration(
+          prefixIcon: const Icon(
             Icons.search_rounded,
             color: Color(0xFF98A2B3),
             size: 24,
           ),
-          hintText: 'Search destination...',
-          hintStyle: TextStyle(
+          hintText: context.l10n.ui('Search destination...'),
+          hintStyle: const TextStyle(
             fontSize: 15.5,
             color: Color(0xFF98A2B3),
             fontWeight: FontWeight.w500,
           ),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 18,
+          ),
         ),
       ),
     );
@@ -381,10 +385,10 @@ class _EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Text(
-        'No destinations available yet.',
-        style: TextStyle(fontSize: 15, color: Color(0xFF8A95A5)),
+        context.l10n.ui('No destinations available yet.'),
+        style: const TextStyle(fontSize: 15, color: Color(0xFF8A95A5)),
       ),
     );
   }

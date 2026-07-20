@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_result_page.dart';
@@ -87,9 +88,7 @@ class _TripResultLoaderState extends State<TripResultLoader> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_error != null) {
@@ -106,8 +105,7 @@ class _TripResultLoaderState extends State<TripResultLoader> {
     }
 
     return _TripResultMessageView(
-      message:
-          'This trip is no longer available. Please generate it again.',
+      message: 'This trip is no longer available. Please generate it again.',
       buttonLabel: 'Back to trip planner',
       onPressed: () => context.go(AppRoutes.tripPlanner),
     );
@@ -142,7 +140,7 @@ class _TripResultMessageView extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  message,
+                  context.l10n.ui(message),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
@@ -150,7 +148,7 @@ class _TripResultMessageView extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: onPressed,
                   icon: const Icon(Icons.arrow_back_rounded),
-                  label: Text(buttonLabel),
+                  label: Text(context.l10n.ui(buttonLabel)),
                 ),
               ],
             ),

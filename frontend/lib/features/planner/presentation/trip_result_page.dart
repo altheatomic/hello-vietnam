@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
@@ -28,7 +29,7 @@ class _TripResultPageState extends State<TripResultPage> {
   Future<void> _handleSave() async {
     final idPlan = widget.plan.idPlan;
     if (idPlan == null) {
-      _showSnackBar('No plan ID — please generate again.');
+      _showSnackBar(context.l10n.ui('No plan ID — please generate again.'));
       return;
     }
 
@@ -36,11 +37,11 @@ class _TripResultPageState extends State<TripResultPage> {
     try {
       await TripRepository().savePlan(idPlan);
       if (!mounted) return;
-      _showSnackBar('Trip saved!');
+      _showSnackBar(context.l10n.ui('Trip saved!'));
       context.push(AppRoutes.tripPlannerSaved);
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar('Could not save trip. Please try again.');
+      _showSnackBar(context.l10n.ui('Could not save trip. Please try again.'));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -49,28 +50,29 @@ class _TripResultPageState extends State<TripResultPage> {
   void _handleShare() {
     final plan = widget.plan;
     if (plan.idPlan == null) {
-      _showSnackBar('Save the trip first before sharing.');
+      _showSnackBar(context.l10n.ui('Save the trip first before sharing.'));
       return;
     }
     showDialog<void>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
-        title: const Text('Share to Forum'),
-        content: const Text(
-          'Share this trip plan as a forum post? '
-          'Other users can save it to their own trips.',
+        title: Text(context.l10n.ui('Share to Forum')),
+        content: Text(
+          context.l10n.ui(
+            'Share this trip plan as a forum post? Other users can save it to their own trips.',
+          ),
         ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.ui('Cancel')),
           ),
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
               await _shareToForum();
             },
-            child: const Text('Share'),
+            child: Text(context.l10n.ui('Share')),
           ),
         ],
       ),
@@ -94,36 +96,40 @@ class _TripResultPageState extends State<TripResultPage> {
               sum + d.places.where((p) => p.type != 'lunch_break').length,
         ),
         'days': plan.days
-            .map((d) => <String, dynamic>{
-                  'day': d.day,
-                  'places': d.places
-                      .where((p) => p.type != 'lunch_break')
-                      .map((p) => p.name)
-                      .toList(),
-                })
+            .map(
+              (d) => <String, dynamic>{
+                'day': d.day,
+                'places': d.places
+                    .where((p) => p.type != 'lunch_break')
+                    .map((p) => p.name)
+                    .toList(),
+              },
+            )
             .toList(),
       };
 
       final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId == null) {
-        _showSnackBar('Please sign in to share.');
+        _showSnackBar(context.l10n.ui('Please sign in to share.'));
         return;
       }
 
-      await Supabase.instance.client.from('forum_post').insert(<String, dynamic>{
-        'id_author_user': userId,
-        'content':
-            'I created a ${plan.days.length}-day trip plan! '
-            'Check it out and save it to your trips.',
-        'status': 'active',
-        'shared_item': sharedItem,
-      });
+      await Supabase.instance.client
+          .from('forum_post')
+          .insert(<String, dynamic>{
+            'id_author_user': userId,
+            'content':
+                'I created a ${plan.days.length}-day trip plan! '
+                'Check it out and save it to your trips.',
+            'status': 'active',
+            'shared_item': sharedItem,
+          });
 
       if (!mounted) return;
-      _showSnackBar('Shared to Forum!');
+      _showSnackBar(context.l10n.ui('Shared to Forum!'));
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar('Could not share. Please try again.');
+      _showSnackBar(context.l10n.ui('Could not share. Please try again.'));
     } finally {
       if (mounted) setState(() => _isSharing = false);
     }
@@ -141,8 +147,10 @@ class _TripResultPageState extends State<TripResultPage> {
   Widget build(BuildContext context) {
     final days = _convertPlan(widget.plan);
 
-    final totalActivities =
-        days.fold<int>(0, (sum, d) => sum + d.activities.length);
+    final totalActivities = days.fold<int>(
+      0,
+      (sum, d) => sum + d.activities.length,
+    );
 
     return Scaffold(
       body: Container(
@@ -178,9 +186,9 @@ class _TripResultPageState extends State<TripResultPage> {
                   children: <Widget>[
                     _BackButtonCircle(onTap: () => context.pop()),
                     const SizedBox(height: 18),
-                    const Text(
-                      'Your Vietnam Adventure',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.ui('Your Vietnam Adventure'),
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
@@ -189,7 +197,7 @@ class _TripResultPageState extends State<TripResultPage> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      '${days.length} ${days.length == 1 ? 'day' : 'days'} • $totalActivities activities',
+                      '${days.length} ${context.l10n.ui(days.length == 1 ? 'day' : 'days')} • $totalActivities ${context.l10n.ui('Activities').toLowerCase()}',
                       style: const TextStyle(
                         fontSize: 14.5,
                         color: Color(0xFF556273),
@@ -201,7 +209,9 @@ class _TripResultPageState extends State<TripResultPage> {
                       children: <Widget>[
                         Expanded(
                           child: _ActionButton(
-                            label: _isSaving ? 'Saving…' : 'Save',
+                            label: context.l10n.ui(
+                              _isSaving ? 'Saving…' : 'Save',
+                            ),
                             onTap: _isSaving ? null : _handleSave,
                           ),
                         ),
@@ -232,7 +242,7 @@ class _TripResultPageState extends State<TripResultPage> {
                           child: _StatCard(
                             icon: Icons.calendar_today_outlined,
                             value: '${days.length}',
-                            label: 'Days',
+                            label: context.l10n.ui('Days'),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -240,23 +250,23 @@ class _TripResultPageState extends State<TripResultPage> {
                           child: _StatCard(
                             icon: Icons.location_on_outlined,
                             value: '$totalActivities',
-                            label: 'Activities',
+                            label: context.l10n.ui('Activities'),
                           ),
                         ),
                         const SizedBox(width: 14),
-                        const Expanded(
+                        Expanded(
                           child: _StatCard(
                             icon: Icons.access_time_rounded,
-                            value: 'Full',
-                            label: 'Schedule',
+                            value: context.l10n.ui('Full'),
+                            label: context.l10n.ui('Schedule'),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 34),
-                    const Text(
-                      'Your Itinerary',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.ui('Your Itinerary'),
+                      style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
@@ -339,7 +349,8 @@ List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
     return TripPlannerDayData(
       dayLabel: 'Day ${day.day}',
       date: _formatIsoDate(day.date),
-      activityCountLabel: '$count ${count == 1 ? 'activity' : 'activities'} planned',
+      activityCountLabel:
+          '$count ${count == 1 ? 'activity' : 'activities'} planned',
       moreActivitiesLabel: count > shown ? '+ ${count - shown} more' : '',
       gradientColors: gradients[i % gradients.length],
       activities: activities,
@@ -370,8 +381,18 @@ String _formatIsoDate(String iso) {
   final parts = iso.split('-');
   if (parts.length != 3) return iso;
   const months = <String>[
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   final month = int.tryParse(parts[1]) ?? 0;
   final day = int.tryParse(parts[2]) ?? 0;
@@ -486,14 +507,18 @@ class _StartTripButton extends StatelessWidget {
               ),
             ],
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
-              SizedBox(width: 8),
+              const Icon(
+                Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
               Text(
-                'Start Trip',
-                style: TextStyle(
+                context.l10n.ui('Start Trip'),
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -611,16 +636,14 @@ class _DayCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(999),
-              border:
-                  Border.all(color: const Color(0xFF2C374C), width: 2),
+              border: Border.all(color: const Color(0xFF2C374C), width: 2),
             ),
             child: Text(
-              data.dayLabel,
+              context.l10n.ui(data.dayLabel),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -639,7 +662,7 @@ class _DayCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            data.activityCountLabel,
+            context.l10n.ui(data.activityCountLabel),
             style: const TextStyle(
               fontSize: 15,
               fontStyle: FontStyle.italic,
@@ -759,7 +782,7 @@ class _TripActivityTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  activity.title,
+                  context.l10n.ui(activity.title),
                   style: const TextStyle(
                     fontSize: 15.5,
                     fontWeight: FontWeight.w700,

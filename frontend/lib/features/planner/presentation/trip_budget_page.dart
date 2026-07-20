@@ -6,6 +6,7 @@ import 'package:hellovietnam/features/planner/data/models/trip_plan_request.dart
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 class TripBudgetPage extends StatefulWidget {
   const TripBudgetPage({super.key, this.wizard});
@@ -155,18 +156,20 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
               const _LoadingBanner(),
               const SizedBox(height: 20),
             ],
-            const Text(
-              'Option 1: Enter daily budget',
-              style: TextStyle(
+            Text(
+              context.l10n.ui('Option 1: Enter daily budget'),
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF162235),
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Use an exact amount per day if you already know your spending limit.',
-              style: TextStyle(
+            Text(
+              context.l10n.ui(
+                'Use an exact amount per day if you already know your spending limit.',
+              ),
+              style: const TextStyle(
                 fontSize: 14.5,
                 fontStyle: FontStyle.italic,
                 color: Color(0xFF6F7B8A),
@@ -181,25 +184,27 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
             ),
             if (_hasTypedBudget) ...<Widget>[
               const SizedBox(height: 10),
-              const _SelectedBudgetHint(
+              _SelectedBudgetHint(
                 label: 'Using exact daily budget. Price range will be ignored.',
               ),
             ],
             const SizedBox(height: 24),
             const _OptionDivider(),
             const SizedBox(height: 24),
-            const Text(
-              'Option 2: Choose price range',
-              style: TextStyle(
+            Text(
+              context.l10n.ui('Option 2: Choose price range'),
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF162235),
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Use a quick preset instead of typing an exact amount.',
-              style: TextStyle(
+            Text(
+              context.l10n.ui(
+                'Use a quick preset instead of typing an exact amount.',
+              ),
+              style: const TextStyle(
                 fontSize: 14.5,
                 fontStyle: FontStyle.italic,
                 color: Color(0xFF6F7B8A),
@@ -213,14 +218,14 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: _BudgetRangeCard(
-                  label: range,
+                  label: context.l10n.ui(range),
                   selected: selected,
                   onTap: () => _selectRange(range),
                 ),
               );
             }),
             if (_selectedRange != null)
-              const _SelectedBudgetHint(
+              _SelectedBudgetHint(
                 label: 'Using price range. Typed daily budget will be ignored.',
               ),
           ],
@@ -242,18 +247,18 @@ class _LoadingBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFB8E9FF)),
       ),
-      child: const Row(
+      child: Row(
         children: <Widget>[
-          SizedBox(
+          const SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(strokeWidth: 2.5),
           ),
-          SizedBox(width: 14),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
-              'Generating your personalised itinerary…',
-              style: TextStyle(
+              context.l10n.ui('Generating your personalised itinerary…'),
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF3B495D),
@@ -307,7 +312,7 @@ class _BudgetInputField extends StatelessWidget {
             color: Color(0xFF9AA3B2),
             size: 22,
           ),
-          hintText: 'e.g. 800,000 VND per day',
+          hintText: context.l10n.ui('e.g. 800,000 VND per day'),
           hintStyle: const TextStyle(
             fontSize: 15.5,
             color: Color(0xFF9AA3B2),
@@ -339,14 +344,16 @@ class _OptionDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: <Widget>[
-        Expanded(child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2)),
+        const Expanded(
+          child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2),
+        ),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text(
-            'OR',
-            style: TextStyle(
+            context.l10n.ui('OR'),
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
               color: Color(0xFF8A95A5),
@@ -354,7 +361,9 @@ class _OptionDivider extends StatelessWidget {
             ),
           ),
         ),
-        Expanded(child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2)),
+        const Expanded(
+          child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2),
+        ),
       ],
     );
   }
@@ -385,7 +394,7 @@ class _SelectedBudgetHint extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              label,
+              context.l10n.ui(label),
               style: const TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,

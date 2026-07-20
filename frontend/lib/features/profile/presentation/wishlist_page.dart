@@ -474,7 +474,7 @@ class _WishlistPageState extends State<WishlistPage> {
   Future<void> _toggleFavorite(WishlistItem item) async {
     final userId = AuthRepository.instance.user?.id;
     if (userId == null) {
-      _showSnackBar('Please sign in to update wishlist.');
+      _showSnackBar(context.l10n.ui('Please sign in to update wishlist.'));
       return;
     }
 
@@ -485,10 +485,10 @@ class _WishlistPageState extends State<WishlistPage> {
         fallbackName: item.title,
       );
       if (!mounted || result != null) return;
-      _showSnackBar('Please sign in to update wishlist.');
+      _showSnackBar(context.l10n.ui('Please sign in to update wishlist.'));
     } catch (error) {
       if (!mounted) return;
-      _showSnackBar('Update wishlist failed: $error');
+      _showSnackBar('${context.l10n.ui('Update wishlist failed')}: $error');
     }
   }
 
@@ -601,7 +601,7 @@ class _WishlistPageState extends State<WishlistPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Wishlist',
+                      context.l10n.wishlist,
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
@@ -624,7 +624,7 @@ class _WishlistPageState extends State<WishlistPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 0, 22, 16),
               child: Text(
-                '${_filteredItems.length} saved ${_filteredItems.length == 1 ? 'item' : 'items'}',
+                context.l10n.wishlistSavedCount(_filteredItems.length),
                 style: TextStyle(
                   color: isDark
                       ? const Color(0xFFA9BCC7)
@@ -636,24 +636,31 @@ class _WishlistPageState extends State<WishlistPage> {
             ),
             Expanded(
               child: _isLoading
-                  ? const AppLoadingScreen(
-                      message: 'Loading wishlist',
+                  ? AppLoadingScreen(
+                      message: context.l10n.ui('Loading wishlist'),
                       compact: true,
                     )
                   : _loadError != null
                   ? _WishlistStatusView(
-                      message: 'Load wishlist failed.\n$_loadError',
-                      actionLabel: 'Retry',
+                      message:
+                          '${context.l10n.loadWishlistFailed}\n$_loadError',
+                      actionLabel: context.l10n.retry,
                       onActionTap: () => _loadWishlist(force: true),
                     )
                   : _filteredItems.isEmpty
                   ? _WishlistStatusView(
                       message: AuthRepository.instance.isLoggedIn
-                          ? 'No ${_selectedType?.label.toLowerCase() ?? 'item'} in wishlist.'
-                          : 'Please sign in to use wishlist.',
+                          ? context.l10n.noItemInWishlist(
+                              _selectedType == null
+                                  ? context.l10n.wishlistTypeLabel('item')
+                                  : context.l10n.wishlistTypeLabel(
+                                      _selectedType!.name,
+                                    ),
+                            )
+                          : context.l10n.pleaseSignInToUseWishlist,
                       actionLabel: AuthRepository.instance.isLoggedIn
                           ? null
-                          : 'Sign in',
+                          : context.l10n.signIn,
                       onActionTap: AuthRepository.instance.isLoggedIn
                           ? null
                           : () => Navigator.of(context).maybePop(),
@@ -885,7 +892,7 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                           children: <Widget>[
                             Expanded(
                               child: Text(
-                                'Images',
+                                context.l10n.ui('Images'),
                                 style: const TextStyle(
                                   fontSize: 34,
                                   fontWeight: FontWeight.w800,
@@ -895,9 +902,9 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                             ),
                             GestureDetector(
                               onTap: () => _openAllImages(context),
-                              child: const Text(
-                                'See all',
-                                style: TextStyle(
+                              child: Text(
+                                context.l10n.ui('See all'),
+                                style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                   color: Color(0xFF6ABFE6),

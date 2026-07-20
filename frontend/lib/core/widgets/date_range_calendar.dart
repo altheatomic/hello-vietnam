@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 /// A reusable date-range calendar body.
 ///
@@ -202,8 +203,8 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
           child: _RangeSummaryCard(
-            summary: _summaryText,
-            duration: _durationText,
+            summary: context.l10n.ui(_summaryText),
+            duration: context.l10n.ui(_durationText),
             isComplete: _hasRange,
           ),
         ),
@@ -218,8 +219,10 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
                 child: _MonthCard(
                   year: _year,
                   month: index + 1,
-                  monthName: _monthNames[index],
-                  weekdayLabels: _weekdayLabels,
+                  monthName: context.l10n.ui(_monthNames[index]),
+                  weekdayLabels: _weekdayLabels
+                      .map(context.l10n.ui)
+                      .toList(growable: false),
                   hasCompletedRange: _hasRange,
                   firstDate: widget.firstDate,
                   onDayTap: _onDayTap,
@@ -349,7 +352,7 @@ class _RangeSummaryCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
-              isComplete ? duration : 'Pick dates',
+              isComplete ? duration : context.l10n.ui('Pick dates'),
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,

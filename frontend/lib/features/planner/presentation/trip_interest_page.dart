@@ -5,6 +5,7 @@ import 'package:hellovietnam/features/planner/data/models/trip_plan_request.dart
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 class TripInterestPage extends StatefulWidget {
   const TripInterestPage({super.key, this.wizard});
@@ -169,18 +170,18 @@ class _LoadingBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFB8E9FF)),
       ),
-      child: const Row(
+      child: Row(
         children: <Widget>[
-          SizedBox(
+          const SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(strokeWidth: 2.5),
           ),
-          SizedBox(width: 14),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
-              'Generating your personalised itinerary…',
-              style: TextStyle(
+              context.l10n.ui('Generating your personalised itinerary…'),
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF3B495D),
@@ -242,7 +243,7 @@ class _InterestCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      option.title,
+                      context.l10n.ui(option.title),
                       style: const TextStyle(
                         fontSize: 16.5,
                         fontWeight: FontWeight.w800,
@@ -251,7 +252,7 @@ class _InterestCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      option.subtitle,
+                      context.l10n.ui(option.subtitle),
                       style: const TextStyle(
                         fontSize: 14,
                         fontStyle: FontStyle.italic,

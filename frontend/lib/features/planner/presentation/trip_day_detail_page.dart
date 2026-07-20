@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/utils/maps_launcher.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 
 void _openDayRoute(List<TripPlannerActivityData> activities) {
@@ -34,7 +35,8 @@ class TripDayDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TripPlannerDayData day = dayData ?? TripPlannerMockData.dayAt(dayIndex);
+    final TripPlannerDayData day =
+        dayData ?? TripPlannerMockData.dayAt(dayIndex);
 
     return Scaffold(
       body: Container(
@@ -70,7 +72,7 @@ class TripDayDetailPage extends StatelessWidget {
                   children: <Widget>[
                     _BackButtonCircle(onTap: () => context.pop()),
                     const SizedBox(height: 20),
-                    _DayPill(label: day.dayLabel),
+                    _DayPill(label: context.l10n.ui(day.dayLabel)),
                     const SizedBox(height: 12),
                     Text(
                       day.date,
@@ -82,7 +84,7 @@ class TripDayDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      day.activityCountLabel,
+                      context.l10n.ui(day.activityCountLabel),
                       style: const TextStyle(
                         fontSize: 16,
                         fontStyle: FontStyle.italic,
@@ -91,7 +93,7 @@ class TripDayDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 22),
                     _GradientActionButton(
-                      label: 'Create Trip on Google Maps',
+                      label: context.l10n.ui('Create Trip on Google Maps'),
                       onTap: () => _openDayRoute(day.activities),
                     ),
                     const SizedBox(height: 22),
@@ -103,16 +105,18 @@ class TripDayDetailPage extends StatelessWidget {
                         .map(
                           (MapEntry<int, TripPlannerActivityData> entry) =>
                               Padding(
-                            padding: const EdgeInsets.only(bottom: 18),
-                            child: _ActivityDetailCard(
-                              activity: entry.value,
-                              onDirections: () => context.push(
-                                AppRoutes.tripPlannerMapPath(
-                                    dayIndex, entry.key),
-                                extra: entry.value,
+                                padding: const EdgeInsets.only(bottom: 18),
+                                child: _ActivityDetailCard(
+                                  activity: entry.value,
+                                  onDirections: () => context.push(
+                                    AppRoutes.tripPlannerMapPath(
+                                      dayIndex,
+                                      entry.key,
+                                    ),
+                                    extra: entry.value,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
                         ),
                   ],
                 ),
@@ -185,7 +189,7 @@ class _ActivityDetailCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            activity.title,
+            context.l10n.ui(activity.title),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
@@ -194,10 +198,10 @@ class _ActivityDetailCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _CategoryChip(label: activity.tag),
+          _CategoryChip(label: context.l10n.ui(activity.tag)),
           const SizedBox(height: 14),
           Text(
-            activity.description,
+            context.l10n.ui(activity.description),
             style: const TextStyle(
               fontSize: 15.5,
               fontStyle: FontStyle.italic,
@@ -206,7 +210,10 @@ class _ActivityDetailCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          _GradientActionButton(label: 'Get Directions', onTap: onDirections),
+          _GradientActionButton(
+            label: context.l10n.ui('Get Directions'),
+            onTap: onDirections,
+          ),
         ],
       ),
     );

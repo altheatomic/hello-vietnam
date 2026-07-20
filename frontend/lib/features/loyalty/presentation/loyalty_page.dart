@@ -126,8 +126,8 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
         SnackBar(
           content: Text(
             transaction == null
-                ? 'Unable to add test loyalty points.'
-                : 'Added ${transaction.pointChange} test loyalty points.',
+                ? context.l10n.ui('Unable to add test loyalty points.')
+                : context.l10n.loyaltyTestPointsAdded(transaction.pointChange),
           ),
         ),
       );
@@ -158,8 +158,10 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
                     _Header(onBack: () => context.pop(), onRefresh: _refresh),
                     Expanded(
                       child: snapshot.connectionState == ConnectionState.waiting
-                          ? const AppLoadingScreen(
-                              message: 'Loading loyalty rewards',
+                          ? AppLoadingScreen(
+                              message: context.l10n.ui(
+                                'Loading loyalty rewards',
+                              ),
                               compact: true,
                             )
                           : snapshot.hasError
@@ -219,9 +221,9 @@ class _Header extends StatelessWidget {
             onPressed: onBack,
             icon: const Icon(Icons.arrow_back_rounded),
           ),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Loyalty Rewards',
+              context.l10n.ui('Loyalty Rewards'),
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
             ),
@@ -333,14 +335,16 @@ class _SummaryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      currentTier?.name ?? account.currentTier,
+                      context.l10n.ui(currentTier?.name ?? account.currentTier),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Text(
-                      'Highest tier: ${account.highestTier}',
+                      context.l10n.loyaltyHighestTier(
+                        context.l10n.ui(account.highestTier),
+                      ),
                       style: const TextStyle(color: Color(0xFF64748B)),
                     ),
                   ],
@@ -352,12 +356,15 @@ class _SummaryCard extends StatelessWidget {
           Row(
             children: <Widget>[
               _Metric(
-                label: 'Available points',
+                label: context.l10n.ui('Available points'),
                 value: account.availablePoints.toString(),
               ),
-              _Metric(label: 'Tokens', value: account.tokenBalance.toString()),
               _Metric(
-                label: 'Lifetime points',
+                label: context.l10n.ui('Tokens'),
+                value: account.tokenBalance.toString(),
+              ),
+              _Metric(
+                label: context.l10n.ui('Lifetime points'),
                 value: account.lifetimePoints.toString(),
               ),
             ],
@@ -389,18 +396,26 @@ class _LoyaltyNotificationSettingsCard extends StatelessWidget {
             const Color(0xFF2EB8EC),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Loyalty notifications',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  context.l10n.ui('Loyalty notifications'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'Only affects points and rewards notifications.',
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                  context.l10n.ui(
+                    'Only affects points and rewards notifications.',
+                  ),
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -439,9 +454,9 @@ class _TierProgressCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Tier progress',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Tier progress'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 10),
           LinearProgressIndicator(
@@ -454,8 +469,12 @@ class _TierProgressCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             nextTier == null
-                ? 'You are at the highest tier.'
-                : '${account.tierPoints}/$nextMin tier points to ${nextTier!.name}',
+                ? context.l10n.loyaltyHighestTierReached
+                : context.l10n.loyaltyTierProgress(
+                    account.tierPoints,
+                    nextMin,
+                    context.l10n.ui(nextTier!.name),
+                  ),
             style: const TextStyle(
               color: Color(0xFF475569),
               fontWeight: FontWeight.w600,
@@ -464,7 +483,9 @@ class _TierProgressCard extends StatelessWidget {
           if (account.tierCycleEndsAt != null) ...<Widget>[
             const SizedBox(height: 6),
             Text(
-              'Cycle ends: ${_formatDate(account.tierCycleEndsAt!)}',
+              context.l10n.loyaltyCycleEnds(
+                _formatDate(account.tierCycleEndsAt!),
+              ),
               style: const TextStyle(color: Color(0xFF64748B)),
             ),
           ],
@@ -500,9 +521,9 @@ class _EarnPointsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Earn points',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Earn points'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           ...earnRules.map((LoyaltyRule rule) {
@@ -511,12 +532,14 @@ class _EarnPointsCard extends StatelessWidget {
               icon: isDailyLogin
                   ? Icons.login_rounded
                   : Icons.arrow_forward_rounded,
-              title: rule.name,
-              subtitle:
-                  '+${rule.pointAmount} points, +${rule.tierPointAmount} tier points'
-                  '${rule.requiresApproval ? ' . Needs review' : ''}'
-                  '${isDailyLogin ? ' . Automatic' : ''}',
-              buttonLabel: isDailyLogin ? 'Auto' : 'Go',
+              title: context.l10n.ui(rule.name),
+              subtitle: context.l10n.loyaltyEarnSummary(
+                rule.pointAmount,
+                rule.tierPointAmount,
+                requiresApproval: rule.requiresApproval,
+                automatic: isDailyLogin,
+              ),
+              buttonLabel: context.l10n.ui(isDailyLogin ? 'Auto' : 'Go'),
               enabled: !busy && !isDailyLogin,
               onTap: () => onEarn(rule),
             );
@@ -539,16 +562,18 @@ class _TestLoyaltyCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Add loyalty for testing',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Add loyalty for testing'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           _ActionRow(
             icon: Icons.bug_report_outlined,
-            title: 'Add 500 test points',
-            subtitle: '+500 points, +500 tier points. Temporary test action.',
-            buttonLabel: 'Add',
+            title: context.l10n.ui('Add 500 test points'),
+            subtitle: context.l10n.ui(
+              '+500 points, +500 tier points. Temporary test action.',
+            ),
+            buttonLabel: context.l10n.ui('Add'),
             enabled: !busy,
             onTap: onAdd,
           ),
@@ -575,24 +600,24 @@ class _ExchangeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Exchange points to tokens',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Exchange points to tokens'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           _ActionRow(
             icon: Icons.token_rounded,
-            title: 'Get 1 token',
-            subtitle: 'Cost: 10 points. Daily limit: 50 tokens.',
-            buttonLabel: 'Redeem',
+            title: context.l10n.ui('Get 1 token'),
+            subtitle: context.l10n.loyaltyTokenCost(10, dailyLimit: 50),
+            buttonLabel: context.l10n.ui('Redeem'),
             enabled: !busy && account.availablePoints >= 10,
             onTap: () => onRedeemTokens(1),
           ),
           _ActionRow(
             icon: Icons.toll_rounded,
-            title: 'Get 5 tokens',
-            subtitle: 'Cost: 50 points.',
-            buttonLabel: 'Redeem',
+            title: context.l10n.ui('Get 5 tokens'),
+            subtitle: context.l10n.loyaltyTokenCost(50),
+            buttonLabel: context.l10n.ui('Redeem'),
             enabled: !busy && account.availablePoints >= 50,
             onTap: () => onRedeemTokens(5),
           ),
@@ -621,24 +646,26 @@ class _VoucherExchangeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Redeem vouchers',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Redeem vouchers'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           if (vouchers.isEmpty)
-            const Text(
-              'No active loyalty vouchers yet.',
-              style: TextStyle(color: Color(0xFF64748B)),
+            Text(
+              context.l10n.ui('No active loyalty vouchers yet.'),
+              style: const TextStyle(color: Color(0xFF64748B)),
             )
           else
             ...vouchers.map(
               (LoyaltyVoucher voucher) => _ActionRow(
                 icon: Icons.confirmation_number_outlined,
-                title: voucher.title,
-                subtitle:
-                    '${voucher.pointsRequired} points . ${voucher.description ?? voucher.code}',
-                buttonLabel: 'Redeem',
+                title: context.l10n.ui(voucher.title),
+                subtitle: context.l10n.loyaltyVoucherRequirement(
+                  voucher.pointsRequired,
+                  context.l10n.ui(voucher.description ?? voucher.code),
+                ),
+                buttonLabel: context.l10n.ui('Redeem'),
                 enabled:
                     !busy && account.availablePoints >= voucher.pointsRequired,
                 onTap: () => onRedeemVoucher(voucher.id),
@@ -661,15 +688,15 @@ class _WalletCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Voucher wallet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Voucher wallet'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           if (wallet.isEmpty)
-            const Text(
-              'Your loyalty voucher wallet is empty.',
-              style: TextStyle(color: Color(0xFF64748B)),
+            Text(
+              context.l10n.ui('Your loyalty voucher wallet is empty.'),
+              style: const TextStyle(color: Color(0xFF64748B)),
             )
           else
             ...wallet
@@ -677,10 +704,12 @@ class _WalletCard extends StatelessWidget {
                 .map(
                   (LoyaltyWalletVoucher item) => _InfoRow(
                     icon: Icons.local_offer_outlined,
-                    title: item.voucher?.title ?? item.walletCode,
+                    title: context.l10n.ui(
+                      item.voucher?.title ?? item.walletCode,
+                    ),
                     subtitle:
-                        '${item.walletCode} . ${item.status}'
-                        '${item.expiresAt == null ? '' : ' . Expires ${_formatDate(item.expiresAt!)}'}',
+                        '${item.walletCode} · ${context.l10n.ui(item.status)}'
+                        '${item.expiresAt == null ? '' : ' · ${context.l10n.loyaltyWalletExpiry(_formatDate(item.expiresAt!))}'}',
                   ),
                 ),
         ],
@@ -700,32 +729,29 @@ class _TransactionsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Transaction history',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Transaction history'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           if (transactions.isEmpty)
-            const Text(
-              'No loyalty transactions yet.',
-              style: TextStyle(color: Color(0xFF64748B)),
+            Text(
+              context.l10n.ui('No loyalty transactions yet.'),
+              style: const TextStyle(color: Color(0xFF64748B)),
             )
           else
             ...transactions.map((LoyaltyTransaction tx) {
-              final String points = tx.pointChange == 0
-                  ? ''
-                  : ' ${tx.pointChange > 0 ? '+' : ''}${tx.pointChange} pts';
-              final String tokens = tx.tokenChange == 0
-                  ? ''
-                  : ' ${tx.tokenChange > 0 ? '+' : ''}${tx.tokenChange} token';
               return _InfoRow(
                 icon: tx.status == 'pending'
                     ? Icons.pending_outlined
                     : Icons.receipt_long_outlined,
-                title: tx.description ?? tx.type,
-                subtitle:
-                    '${tx.status}$points$tokens'
-                    '${tx.createdAt == null ? '' : ' . ${_formatDate(tx.createdAt!)}'}',
+                title: context.l10n.ui(tx.description ?? tx.type),
+                subtitle: context.l10n.loyaltyTransactionSummary(
+                  context.l10n.ui(tx.status),
+                  tx.pointChange,
+                  tx.tokenChange,
+                  tx.createdAt == null ? null : _formatDate(tx.createdAt!),
+                ),
               );
             }),
         ],
@@ -918,9 +944,9 @@ class _ErrorState extends StatelessWidget {
               color: Colors.red,
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Load loyalty failed.',
-              style: TextStyle(fontWeight: FontWeight.w800),
+            Text(
+              context.l10n.ui('Load loyalty failed.'),
+              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 6),
             Text(
@@ -929,7 +955,10 @@ class _ErrorState extends StatelessWidget {
               style: const TextStyle(color: Color(0xFF64748B)),
             ),
             const SizedBox(height: 12),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
+            TextButton(
+              onPressed: onRetry,
+              child: Text(context.l10n.ui('Retry')),
+            ),
           ],
         ),
       ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:http/http.dart' as http;
 
 class BusinessLocationPage extends StatefulWidget {
@@ -17,8 +18,7 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
   final TextEditingController _controller = TextEditingController();
   bool _isGeocoding = false;
 
-  bool get _canContinue =>
-      _controller.text.trim().length >= 3 && !_isGeocoding;
+  bool get _canContinue => _controller.text.trim().length >= 3 && !_isGeocoding;
 
   @override
   void initState() {
@@ -64,8 +64,7 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
         return;
       }
 
-      final List<dynamic> results =
-          jsonDecode(response.body) as List<dynamic>;
+      final List<dynamic> results = jsonDecode(response.body) as List<dynamic>;
 
       if (results.isEmpty) {
         _showError(
@@ -102,10 +101,9 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
   void _showError(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ));
+      ..showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
   }
 
   @override
@@ -121,9 +119,9 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Enter address',
-            style: TextStyle(
+          Text(
+            context.l10n.ui('Enter address'),
+            style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w800,
               color: Color(0xFF162235),
@@ -146,18 +144,17 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
                   SizedBox(width: 12),
                   Text(
                     'Đang tìm địa chỉ…',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6F7B8A),
-                    ),
+                    style: TextStyle(fontSize: 14, color: Color(0xFF6F7B8A)),
                   ),
                 ],
               ),
             ),
-          const Text(
-            'We will suggest activities around your business location\nduring free time',
+          Text(
+            context.l10n.ui(
+              'We will suggest activities around your business location\nduring free time',
+            ),
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               fontStyle: FontStyle.italic,
               color: Color(0xFF6F7B8A),
@@ -198,20 +195,23 @@ class _BusinessAddressField extends StatelessWidget {
           fontWeight: FontWeight.w500,
           color: Color(0xFF162235),
         ),
-        decoration: const InputDecoration(
-          prefixIcon: Icon(
+        decoration: InputDecoration(
+          prefixIcon: const Icon(
             Icons.location_on_outlined,
             color: Color(0xFF9BA3B2),
             size: 22,
           ),
-          hintText: 'e.g. District 1, Ho Chi Minh City',
-          hintStyle: TextStyle(
+          hintText: context.l10n.ui('e.g. District 1, Ho Chi Minh City'),
+          hintStyle: const TextStyle(
             fontSize: 15.5,
             color: Color(0xFF9AA3B2),
             fontWeight: FontWeight.w500,
           ),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 18,
+          ),
         ),
       ),
     );

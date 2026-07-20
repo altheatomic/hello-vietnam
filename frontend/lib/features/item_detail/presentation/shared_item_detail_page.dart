@@ -156,7 +156,11 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
       if (next == null) {
         setState(() => _isFavorite = previous);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please sign in to update wishlist.')),
+          SnackBar(
+            content: Text(
+              context.l10n.ui('Please sign in to update wishlist.'),
+            ),
+          ),
         );
       } else {
         setState(() => _isFavorite = next);
@@ -174,9 +178,11 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _isFavorite = previous);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${context.l10n.ui('Update wishlist failed')}: $error'),
+        ),
+      );
     }
   }
 
@@ -207,8 +213,9 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
       ? 'place'
       : _sharedContentTypeForCategory(_detail.category);
 
-  String? get _sharedLabelOverride =>
-      _favoriteType == FavoriteType.place ? 'Destination' : null;
+  String? get _sharedLabelOverride => _favoriteType == FavoriteType.place
+      ? context.l10n.ui('Destination')
+      : null;
 
   FavoriteType? _favoriteTypeForDetail(ItemDetail detail) {
     switch (detail.category) {
@@ -316,7 +323,6 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     ] else ...<Widget>[
                       _ReviewSummary(
                         rating: _detail.rating,
-                        ratingLabel: _detail.ratingLabel,
                         reviewCount: _detail.reviewCount,
                       ),
                       const SizedBox(height: 14),
@@ -390,7 +396,7 @@ class _DetailHeader extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
           children: <TextSpan>[
-            const TextSpan(text: 'Discover, '),
+            TextSpan(text: '${context.l10n.ui('Discover')}, '),
             TextSpan(
               text: '$title!',
               style: const TextStyle(
@@ -574,7 +580,7 @@ class _QuickInfoCard extends StatelessWidget {
                       GestureDetector(
                         onTap: onToggleExpanded,
                         child: Text(
-                          isExpanded ? 'Less' : 'More',
+                          context.l10n.ui(isExpanded ? 'Less' : 'More'),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -652,14 +658,9 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _ReviewSummary extends StatelessWidget {
-  const _ReviewSummary({
-    required this.rating,
-    required this.ratingLabel,
-    required this.reviewCount,
-  });
+  const _ReviewSummary({required this.rating, required this.reviewCount});
 
   final double rating;
-  final String ratingLabel;
   final int reviewCount;
 
   @override
@@ -702,7 +703,7 @@ class _ReviewSummary extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                ratingLabel,
+                context.l10n.reviewSummaryLabel(rating),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -710,7 +711,7 @@ class _ReviewSummary extends StatelessWidget {
                 ),
               ),
               Text(
-                '$reviewCount reviews',
+                context.l10n.reviewCount(reviewCount),
                 style: TextStyle(fontSize: 13, color: secondaryText),
               ),
             ],
