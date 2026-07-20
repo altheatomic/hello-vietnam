@@ -17,7 +17,7 @@ const List<FeatureItem> homeFeatures = [
   FeatureItem(
     title: 'Forum',
     icon: Icons.forum_outlined,
-    route: AppRoutes.forum,
+    route: AppRoutes.messages,
   ),
   FeatureItem(
     title: 'Translate',

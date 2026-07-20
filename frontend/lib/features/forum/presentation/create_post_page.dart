@@ -180,7 +180,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 title: context.l10n.ui('Create post'),
                 onBack: () => context.pop(),
                 onBookmark: _openImagePicker,
-                onNotification: () {},
                 onAvatarTap: () {},
                 avatarUrl: _currentUserAuthor.avatarUrl,
                 showBookmark: !_isShareFromExplore,

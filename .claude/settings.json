@@ -138,11 +138,19 @@
       "Read(//c/Users/Asus/hellovietnam-remote/frontend/lib/features/item_detail/domain/**)",
       "Bash(cd /c/Users/Asus/hellovietnam *)",
       "Bash(diff -u frontend/lib/features/explore/presentation/explore_page.dart ../hellovietnam-remote/frontend/lib/features/explore/presentation/explore_page.dart | wc -l)",
-      "Bash(diff -u frontend/lib/features/explore/presentation/explore_page.dart ../hellovietnam-remote/frontend/lib/features/explore/presentation/explore_page.dart)"
+      "Bash(diff -u frontend/lib/features/explore/presentation/explore_page.dart ../hellovietnam-remote/frontend/lib/features/explore/presentation/explore_page.dart)",
+      "Bash(cp ../hellovietnam-remote/frontend/lib/features/item_detail/domain/item_detail_models.dart frontend/lib/features/item_detail/domain/item_detail_models.dart)",
+      "Bash(cp ../hellovietnam-remote/frontend/lib/features/explore/presentation/explore_page.dart frontend/lib/features/explore/presentation/explore_page.dart)",
+      "Bash(cp ../hellovietnam-remote/frontend/lib/features/notification/presentation/notification_page.dart frontend/lib/features/notification/presentation/notification_page.dart)",
+      "Bash(cp ../hellovietnam-remote/frontend/lib/features/profile/presentation/language_page.dart frontend/lib/features/profile/presentation/language_page.dart)",
+      "Bash(cp ../hellovietnam-remote/frontend/lib/features/home/data/home_mock_data.dart frontend/lib/features/home/data/home_mock_data.dart)",
+      "Read(//c/Users/Asus/hellovietnam-remote/frontend/lib/features/forum/presentation/**)",
+      "Bash(awk 'NR>=1180 && NR<=1220' frontend/lib/features/forum/presentation/widgets/forum_widgets.dart)"
     ],
     "additionalDirectories": [
       "\\tmp",
-      "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\auth\\presentation"
+      "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\auth\\presentation",
+      "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\item_detail\\presentation"
     ]
   }
 }

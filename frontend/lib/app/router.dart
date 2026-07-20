@@ -37,7 +37,6 @@ import '../features/loyalty/presentation/loyalty_page.dart';
 
 import '../features/forum/presentation/forum_page.dart';
 import '../features/forum/presentation/forum_profile_page.dart';
-import '../features/forum/presentation/forum_notifications_page.dart';
 import '../features/forum/presentation/create_post_page.dart';
 import '../features/forum/domain/create_forum_post_request.dart';
 import '../features/forum/presentation/forum_saved_posts_page.dart';
@@ -222,7 +221,6 @@ class AppRoutes {
   static const forum = '/forum';
   static const forumMe = '/forum/me';
   static const forumProfile = '/forum/profile/:authorId';
-  static const forumNotifications = '/forum/notifications';
   static const forumSaved = '/forum/saved';
   static const forumCreate = '/forum/create';
   static const forumPost = '/forum/post/:postId';
@@ -487,11 +485,6 @@ GoRouter buildRouter() {
         path: AppRoutes.forumProfile,
         builder: (c, s) =>
             ForumProfilePage(authorId: s.pathParameters['authorId'] ?? ''),
-      ),
-      GoRoute(
-        parentNavigatorKey: rootNavigatorKey,
-        path: AppRoutes.forumNotifications,
-        builder: (c, s) => const ForumNotificationsPage(),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,

@@ -76,7 +76,7 @@ class ItemDetail {
     required this.ratingLabel,
     required this.description,
     required this.whatToExpect,
-    required this.reviews,
+    this.reviews = const <ItemReview>[],
   });
 
   String get effectiveReviewContentId => reviewContentId ?? id;

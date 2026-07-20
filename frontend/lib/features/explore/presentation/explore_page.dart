@@ -30,9 +30,13 @@ class ExplorePage extends StatefulWidget {
 class _ExplorePageState extends State<ExplorePage> {
   int _selectedFilter = 0;
   late final PageController _featuredController;
+  late final ScrollController _scrollController;
   ExploreSectionsData? _sectionsData;
   Object? _loadError;
   bool _isLoading = true;
+  bool _isScrollingToSection = false;
+  bool _isScrollSyncScheduled = false;
+  int _sectionCount = 0;
 
   final List<GlobalKey> _sectionKeys = List<GlobalKey>.generate(
     4,
@@ -43,25 +47,73 @@ class _ExplorePageState extends State<ExplorePage> {
   void initState() {
     super.initState();
     _featuredController = PageController(viewportFraction: 0.42);
+    _scrollController = ScrollController()..addListener(_scheduleTabSync);
     unawaited(_loadInitialSections());
   }
 
   @override
   void dispose() {
     _featuredController.dispose();
+    _scrollController
+      ..removeListener(_scheduleTabSync)
+      ..dispose();
     super.dispose();
   }
 
-  void _scrollToSection(int index) {
+  Future<void> _scrollToSection(int index) async {
     setState(() => _selectedFilter = index);
     final BuildContext? keyContext = _sectionKeys[index].currentContext;
     if (keyContext == null) return;
 
-    Scrollable.ensureVisible(
+    _isScrollingToSection = true;
+    await Scrollable.ensureVisible(
       keyContext,
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOut,
     );
+    _isScrollingToSection = false;
+    _scheduleTabSync();
+  }
+
+  void _scheduleTabSync() {
+    if (_isScrollSyncScheduled) return;
+    _isScrollSyncScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isScrollSyncScheduled = false;
+      _syncTabWithScroll();
+    });
+  }
+
+  void _syncTabWithScroll() {
+    if (!mounted || _isScrollingToSection || !_scrollController.hasClients) {
+      return;
+    }
+
+    final int sectionCount = _sectionCount;
+    if (sectionCount == 0) return;
+
+    int visibleIndex = 0;
+    final double activationLine = _StickyFilterDelegate.extent + 12;
+
+    for (int index = 0; index < sectionCount; index++) {
+      final BuildContext? sectionContext = _sectionKeys[index].currentContext;
+      final RenderObject? renderObject = sectionContext?.findRenderObject();
+      if (renderObject is! RenderBox || !renderObject.hasSize) continue;
+
+      final double sectionTop = renderObject.localToGlobal(Offset.zero).dy;
+      if (sectionTop <= activationLine) {
+        visibleIndex = index;
+      } else {
+        break;
+      }
+    }
+
+    if (_scrollController.position.extentAfter <= 1) {
+      visibleIndex = sectionCount - 1;
+    }
+
+    if (visibleIndex == _selectedFilter) return;
+    setState(() => _selectedFilter = visibleIndex);
   }
 
   void _handleBack() {
@@ -138,14 +190,17 @@ class _ExplorePageState extends State<ExplorePage> {
         children: <Widget>[
           Builder(
             builder: (BuildContext context) {
-              final List<ExploreCategory> orderedCategories = _orderedCategories(
-                _sectionsData?.categories ?? const <ExploreCategory>[],
-                preferences,
-              );
+              final List<ExploreCategory> orderedCategories =
+                  _orderedCategories(
+                    _sectionsData?.categories ?? const <ExploreCategory>[],
+                    preferences,
+                  );
               final List<_FeaturedProvinceSuggestion> featuredProvinces =
                   _featuredProvincesFromCategories(orderedCategories);
+              _sectionCount = orderedCategories.length;
 
               return CustomScrollView(
+                controller: _scrollController,
                 slivers: <Widget>[
                   SliverToBoxAdapter(
                     child: Stack(
@@ -191,7 +246,8 @@ class _ExplorePageState extends State<ExplorePage> {
                                 hintText: strings.searchDestinations,
                                 readOnly: true,
                                 showFilterButton: false,
-                                onTap: () => context.push(AppRoutes.exploreSearch),
+                                onTap: () =>
+                                    context.push(AppRoutes.exploreSearch),
                               ),
                             ],
                           ),
@@ -282,7 +338,8 @@ class _ExplorePageState extends State<ExplorePage> {
                                                   : 6,
                                               right:
                                                   index ==
-                                                      featuredProvinces.length - 1
+                                                      featuredProvinces.length -
+                                                          1
                                                   ? AppConstants.pagePadding
                                                   : 6,
                                             ),
@@ -311,7 +368,9 @@ class _ExplorePageState extends State<ExplorePage> {
                             0,
                             orderedCategories.length - 1,
                           ),
-                          onTap: _scrollToSection,
+                          onTap: (int index) {
+                            unawaited(_scrollToSection(index));
+                          },
                         ),
                       ),
                     ...List<Widget>.generate(orderedCategories.length, (int i) {
@@ -347,7 +406,9 @@ class _ExplorePageState extends State<ExplorePage> {
     List<ExploreCategory> categories,
     UserTravelPreferences? preferences,
   ) {
-    final List<ExploreCategory> ordered = List<ExploreCategory>.from(categories);
+    final List<ExploreCategory> ordered = List<ExploreCategory>.from(
+      categories,
+    );
     if (preferences == null) return ordered;
 
     ordered.sort((ExploreCategory left, ExploreCategory right) {
@@ -432,6 +493,8 @@ class _FeaturedProvinceSuggestion {
 }
 
 class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
+  static const double extent = 126;
+
   final List<ExploreCategory> categories;
   final int selectedIndex;
   final ValueChanged<int> onTap;
@@ -443,9 +506,9 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
   });
 
   @override
-  double get minExtent => 126;
+  double get minExtent => extent;
   @override
-  double get maxExtent => 126;
+  double get maxExtent => extent;
 
   @override
   Widget build(
@@ -714,10 +777,7 @@ class _ExploreItemCard extends StatelessWidget {
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,

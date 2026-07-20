@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
@@ -76,8 +77,10 @@ class _ForumReportPostPageState extends State<ForumReportPostPage> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(
-          content: Text('Report submitted. We will review it anonymously.'),
+        SnackBar(
+          content: Text(
+            context.l10n.ui('Report submitted. We will review it anonymously.'),
+          ),
         ),
       );
 
@@ -97,7 +100,7 @@ class _ForumReportPostPageState extends State<ForumReportPostPage> {
               return Center(
                 child: TextButton(
                   onPressed: () => context.pop(),
-                  child: const Text('Post not found'),
+                  child: Text(context.l10n.ui('Post not found')),
                 ),
               );
             }
@@ -107,11 +110,9 @@ class _ForumReportPostPageState extends State<ForumReportPostPage> {
             return Column(
               children: <Widget>[
                 ForumTopBar(
-                  title: 'Report Post',
+                  title: context.l10n.ui('Report Post'),
                   onBack: () => context.pop(),
                   onBookmark: () => context.push(AppRoutes.forumSaved),
-                  onNotification: () =>
-                      context.push(AppRoutes.forumNotifications),
                   onAvatarTap: () => context.push(AppRoutes.forumMe),
                   avatarUrl: _store.currentUserAuthor.avatarUrl,
                   showAvatar: false,

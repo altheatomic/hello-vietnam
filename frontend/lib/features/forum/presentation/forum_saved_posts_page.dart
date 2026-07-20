@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
@@ -66,10 +67,9 @@ class ForumSavedPostsPage extends StatelessWidget {
         body: Column(
           children: <Widget>[
             ForumTopBar(
-              title: 'Saved Posts',
+              title: context.l10n.ui('Saved Posts'),
               onBack: () => context.pop(),
               onBookmark: () {},
-              onNotification: () => context.push(AppRoutes.forumNotifications),
               onAvatarTap: () => context.push(AppRoutes.forumMe),
               avatarUrl: store.currentUserAuthor.avatarUrl,
               showBookmark: false,
@@ -85,16 +85,16 @@ class ForumSavedPostsPage extends StatelessWidget {
                         padding: const EdgeInsets.all(28),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
-                          children: const <Widget>[
-                            Icon(
+                          children: <Widget>[
+                            const Icon(
                               Icons.bookmark_border_rounded,
                               size: 36,
                               color: ForumColors.textMuted,
                             ),
-                            SizedBox(height: 12),
+                            const SizedBox(height: 12),
                             Text(
-                              'No saved posts yet',
-                              style: TextStyle(
+                              context.l10n.ui('No saved posts yet'),
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
                                 color: ForumColors.textPrimary,

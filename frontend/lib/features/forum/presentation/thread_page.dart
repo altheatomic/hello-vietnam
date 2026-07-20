@@ -97,8 +97,8 @@ class ThreadPage extends StatelessWidget {
 
             if (post == null) {
               if (store.isLoading) {
-                return const AppLoadingScreen(
-                  message: 'Loading post',
+                return AppLoadingScreen(
+                  message: context.l10n.ui('Loading post'),
                   compact: true,
                 );
               }
@@ -140,8 +140,6 @@ class ThreadPage extends StatelessWidget {
                   title: context.l10n.ui('Post'),
                   onBack: () => context.pop(),
                   onBookmark: () => context.push(AppRoutes.forumSaved),
-                  onNotification: () =>
-                      context.push(AppRoutes.forumNotifications),
                   onAvatarTap: () => context.push(AppRoutes.forumMe),
                   avatarUrl: store.currentUserAuthor.avatarUrl,
                 ),
@@ -182,7 +180,7 @@ class ThreadPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          'Popular answers',
+                          context.l10n.ui('Popular answers'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,

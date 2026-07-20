@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
@@ -125,16 +126,23 @@ class _ForumPageState extends State<ForumPage>
             child: InkWell(
               onTap: _openCreatePost,
               borderRadius: BorderRadius.circular(999),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Icon(Icons.edit_rounded, color: Colors.white, size: 20),
-                    SizedBox(width: 8),
+                    const Icon(
+                      Icons.edit_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
                     Text(
-                      'Post',
-                      style: TextStyle(
+                      context.l10n.ui('Post'),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),
@@ -148,10 +156,9 @@ class _ForumPageState extends State<ForumPage>
         body: Column(
           children: <Widget>[
             ForumTopBar(
-              title: 'Forum',
+              title: context.l10n.forum,
               onBack: _handleBack,
               onBookmark: () => context.push(AppRoutes.forumSaved),
-              onNotification: () => context.push(AppRoutes.forumNotifications),
               onAvatarTap: () => context.push(AppRoutes.forumMe),
               avatarUrl: _store.currentUserAuthor.avatarUrl,
             ),
