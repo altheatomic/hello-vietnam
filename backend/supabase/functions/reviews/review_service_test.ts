@@ -35,6 +35,10 @@ Deno.test("getReviews infers hasMore without requesting an exact count", async (
               moderation_result: "clean",
               created_at: "2026-07-13T10:00:00Z",
               updated_at: "2026-07-13T10:00:00Z",
+              user_account: {
+                full_name: "Nguyen An",
+                username: "nguyen.an@example.com",
+              },
             },
             {
               id_review: "review-2",
@@ -62,6 +66,10 @@ Deno.test("getReviews infers hasMore without requesting an exact count", async (
   assertEquals(result["hasMore"], true);
   assertEquals((result["items"] as unknown[]).length, 1);
   assertEquals(result["totalCount"], 2);
+  assertEquals(
+    (result["items"] as Array<Record<string, unknown>>)[0]["userName"],
+    "Nguyen An",
+  );
 });
 
 type FakeResponse = {

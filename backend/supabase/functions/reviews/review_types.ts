@@ -12,16 +12,15 @@ export type ContentRegistryEntry = {
   idCandidates: string[];
 };
 
-export const CONTENT_REGISTRY: Record<ReviewContentType, ContentRegistryEntry> =
-  {
-    activity: { table: "activity", idCandidates: ["id"] },
-    culture: { table: "culture", idCandidates: ["id"] },
-    food: { table: "food", idCandidates: ["id_food"] },
-    local_product: { table: "local_products", idCandidates: ["id"] },
-    place: { table: "place", idCandidates: ["id_place"] },
-    province: { table: "province", idCandidates: ["id_province"] },
-    old_province: { table: "old_province", idCandidates: ["id_province"] },
-  };
+export const CONTENT_REGISTRY: Record<ReviewContentType, ContentRegistryEntry> = {
+  activity: { table: "activity", idCandidates: ["id"] },
+  culture: { table: "culture", idCandidates: ["id"] },
+  food: { table: "food", idCandidates: ["id_food"] },
+  local_product: { table: "local_products", idCandidates: ["id"] },
+  place: { table: "place", idCandidates: ["id_place"] },
+  province: { table: "province", idCandidates: ["id_province"] },
+  old_province: { table: "old_province", idCandidates: ["id_province"] },
+};
 
 export type ContentRef = {
   contentType: ReviewContentType;
@@ -100,24 +99,17 @@ export function summarizePublishedReviews(
   let lastReviewedAt: string | null = null;
 
   for (const row of rows) {
-    if (
-      row.status !== "published" || !Number.isInteger(row.rating) ||
-      row.rating < 1 || row.rating > 5
-    ) continue;
+    if (row.status !== "published" || !Number.isInteger(row.rating) || row.rating < 1 || row.rating > 5) continue;
     counts[row.rating] += 1;
     total += row.rating;
     reviewCount += 1;
-    if (
-      row.updated_at && (!lastReviewedAt || row.updated_at > lastReviewedAt)
-    ) {
+    if (row.updated_at && (!lastReviewedAt || row.updated_at > lastReviewedAt)) {
       lastReviewedAt = row.updated_at;
     }
   }
 
   return {
-    average_rating: reviewCount > 0
-      ? Number((total / reviewCount).toFixed(2))
-      : null,
+    average_rating: reviewCount > 0 ? Number((total / reviewCount).toFixed(2)) : null,
     review_count: reviewCount,
     rating_1_count: counts[1],
     rating_2_count: counts[2],
@@ -145,8 +137,6 @@ function matchesKeyword(
   const pattern = normalizeReviewText(keyword.normalized_keyword);
   if (!pattern) return false;
   if (keyword.match_type === "exact") return normalizedComment === pattern;
-  if (keyword.match_type === "contains") {
-    return normalizedComment.includes(pattern);
-  }
+  if (keyword.match_type === "contains") return normalizedComment.includes(pattern);
   return false;
 }

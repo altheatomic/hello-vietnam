@@ -54,32 +54,16 @@ export async function handleReviewsRequest(req: Request): Promise<Response> {
 
     switch (action) {
       case "getReviewSummary":
-        return jsonResponse(
-          await service.getReviewSummary(parseContentRef(payload)),
-        );
+        return jsonResponse(await service.getReviewSummary(parseContentRef(payload)));
       case "getReviews":
-        return jsonResponse(
-          await service.getReviews(parseReviewListPayload(payload)),
-        );
+        return jsonResponse(await service.getReviews(parseReviewListPayload(payload)));
       case "getMyReview": {
-        const userId = await requireAuthenticatedUserIdFromRequest(
-          req,
-          url,
-          anonKey,
-        );
-        return jsonResponse(
-          await service.getMyReview(userId, parseContentRef(payload)),
-        );
+        const userId = await requireAuthenticatedUserIdFromRequest(req, url, anonKey);
+        return jsonResponse(await service.getMyReview(userId, parseContentRef(payload)));
       }
       case "upsertReview": {
-        const userId = await requireAuthenticatedUserIdFromRequest(
-          req,
-          url,
-          anonKey,
-        );
-        return jsonResponse(
-          await service.upsertReview(userId, parseUpsertPayload(payload)),
-        );
+        const userId = await requireAuthenticatedUserIdFromRequest(req, url, anonKey);
+        return jsonResponse(await service.upsertReview(userId, parseUpsertPayload(payload)));
       }
       default:
         return jsonResponse({ error: `Unsupported action: ${action}` }, 400);
@@ -92,9 +76,7 @@ export async function handleReviewsRequest(req: Request): Promise<Response> {
     ) {
       return jsonResponse({ error: error.message }, error.statusCode);
     }
-    const message = error instanceof Error
-      ? error.message
-      : "Unexpected error.";
+    const message = error instanceof Error ? error.message : "Unexpected error.";
     return jsonResponse({ error: message }, 500);
   }
 }
@@ -115,15 +97,11 @@ export function parseUpsertPayload(value: JsonObject): UpsertReviewPayload {
   const content = parseContentRef(value);
   const rating = Number(value.rating);
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    throw new RequestValidationError(
-      "rating must be an integer between 1 and 5.",
-    );
+    throw new RequestValidationError("rating must be an integer between 1 and 5.");
   }
   const comment = requiredString(value.comment, "comment");
   if (comment.length > 2000) {
-    throw new RequestValidationError(
-      "comment must not exceed 2000 characters.",
-    );
+    throw new RequestValidationError("comment must not exceed 2000 characters.");
   }
   return { ...content, rating, comment };
 }
@@ -139,18 +117,12 @@ export function parseReviewListPayload(value: JsonObject): ReviewListPayload {
   };
 }
 
-function requiredEnvironment(): {
-  url: string;
-  anonKey: string;
-  serviceRoleKey: string;
-} {
+function requiredEnvironment(): { url: string; anonKey: string; serviceRoleKey: string } {
   const url = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !anonKey || !serviceRoleKey) {
-    throw new Error(
-      "Missing required Supabase environment variables for reviews function.",
-    );
+    throw new Error("Missing required Supabase environment variables for reviews function.");
   }
   return { url, anonKey, serviceRoleKey };
 }
@@ -160,9 +132,7 @@ async function requireAuthenticatedUserIdFromRequest(
   url: string,
   anonKey: string,
 ): Promise<string> {
-  const authHeader = requireAuthorizationHeader(
-    req.headers.get("Authorization"),
-  );
+  const authHeader = requireAuthorizationHeader(req.headers.get("Authorization"));
   const client = createClient(url, anonKey, {
     global: { headers: { Authorization: authHeader } },
   });
@@ -176,24 +146,16 @@ function requiredString(value: unknown, fieldName: string): string {
   return value.trim();
 }
 
-function boundedPositiveInt(
-  value: unknown,
-  fallback: number,
-  max: number,
-): number {
+function boundedPositiveInt(value: unknown, fallback: number, max: number): number {
   const parsed = typeof value === "number" ? value : Number(value);
-  return Number.isInteger(parsed) && parsed > 0
-    ? Math.min(parsed, max)
-    : fallback;
+  return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, max) : fallback;
 }
 
 function optionalRatingFilter(value: unknown): number | undefined {
   if (value === undefined || value === null) return undefined;
   const parsed = typeof value === "number" ? value : Number(value);
   if (!Number.isInteger(parsed) || parsed < 1 || parsed > 5) {
-    throw new RequestValidationError(
-      "ratingFilter must be an integer between 1 and 5.",
-    );
+    throw new RequestValidationError("ratingFilter must be an integer between 1 and 5.");
   }
   return parsed;
 }
@@ -203,8 +165,7 @@ function isJsonObject(value: unknown): value is JsonObject {
 }
 
 function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-    .test(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 function jsonResponse(body: unknown, status = 200): Response {

@@ -19,7 +19,16 @@ type ReviewRow = {
   moderation_result: string;
   created_at: string;
   updated_at: string;
+  user_account?: ReviewUserRow | ReviewUserRow[] | null;
 };
+
+type ReviewUserRow = {
+  full_name?: string | null;
+  username?: string | null;
+};
+
+const REVIEW_SELECT =
+  "id_review, rating, comment, status, moderation_result, created_at, updated_at, user_account(full_name, username)";
 
 export class ReviewService {
   constructor(private readonly client: SupabaseClient) {}
@@ -44,9 +53,7 @@ export class ReviewService {
     const to = from + payload.pageSize;
     let query = this.client
       .from("reviews")
-      .select(
-        "id_review, rating, comment, status, moderation_result, created_at, updated_at",
-      )
+      .select(REVIEW_SELECT)
       .eq("content_type", payload.contentType)
       .eq("content_id", payload.contentId)
       .eq("status", "published");
@@ -78,9 +85,7 @@ export class ReviewService {
   ): Promise<Record<string, unknown> | null> {
     const { data, error } = await this.client
       .from("reviews")
-      .select(
-        "id_review, rating, comment, status, moderation_result, created_at, updated_at",
-      )
+      .select(REVIEW_SELECT)
       .eq("id_user", userId)
       .eq("content_type", payload.contentType)
       .eq("content_id", payload.contentId)
@@ -110,9 +115,7 @@ export class ReviewService {
         status: decision.status,
         moderation_result: decision.moderationResult,
       } as never, { onConflict: "id_user,content_type,content_id" })
-      .select(
-        "id_review, rating, comment, status, moderation_result, created_at, updated_at",
-      )
+      .select(REVIEW_SELECT)
       .single();
     if (error) throw new Error(`reviews: ${error.message}`);
     const summary = await this.refreshRatingSummary(
@@ -197,9 +200,18 @@ function mapReviewRow(row: ReviewRow): Record<string, unknown> {
     comment: row.comment,
     status: row.status,
     moderationResult: row.moderation_result,
+    userName: reviewerName(row.user_account),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function reviewerName(value: ReviewRow["user_account"]): string | null {
+  const account = Array.isArray(value) ? value[0] : value;
+  const fullName = account?.full_name?.trim();
+  if (fullName) return fullName;
+  const username = account?.username?.trim();
+  return username || null;
 }
 
 function emptySummary(): RatingSummaryRecord {
