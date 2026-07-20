@@ -74,14 +74,13 @@ void main() {
       reviewContentId: '55555555-5555-4555-8555-555555555555',
       name: 'Bun Bo Hue',
       category: DetailCategory.food,
-      images: <String>[],
+      images: <String>[''],
       rating: 4.7,
       isFavorite: false,
       reviewCount: 7,
       ratingLabel: 'Fantastic',
       description: 'A classic Hue noodle dish.',
       whatToExpect: 'Expect a rich broth and plenty of herbs.',
-      reviews: <ItemReview>[],
     );
 
     await tester.pumpWidget(
@@ -95,7 +94,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Reviews'), findsWidgets);
+    expect(find.text('Reviews'), findsOneWidget);
     expect(find.text('Write a review'), findsOneWidget);
     expect(
       find.byKey(const ValueKey<String>('review-summary-average')),
@@ -105,5 +104,7 @@ void main() {
       find.text('Loved the broth and the local atmosphere.'),
       findsOneWidget,
     );
+    expect(find.text('4.7'), findsNothing);
+    expect(find.text('4.8'), findsWidgets);
   });
 }

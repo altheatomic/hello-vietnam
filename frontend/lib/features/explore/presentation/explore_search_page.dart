@@ -73,15 +73,21 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
     if (trimmed.isEmpty) return;
 
     ExploreProvince? selected = _findExactSuggestion(trimmed);
-    selected ??= await ExploreRepository.instance.resolveProvinceByName(trimmed);
+    selected ??= await ExploreRepository.instance.resolveProvinceByName(
+      trimmed,
+    );
     if (!mounted) return;
 
     if (selected == null) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('Please choose a valid province or city suggestion.'),
+          SnackBar(
+            content: Text(
+              context.l10n.ui(
+                'Please choose a valid province or city suggestion.',
+              ),
+            ),
           ),
         );
       return;
@@ -208,10 +214,19 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
           RegExp(r'[Ã Ã¡áº¡áº£Ã£Ã¢áº§áº¥áº­áº©áº«Äƒáº±áº¯áº·áº³áºµ]'),
           (_) => 'a',
         )
-        .replaceAllMapped(RegExp(r'[Ã¨Ã©áº¹áº»áº½Ãªá»áº¿á»‡á»ƒá»…]'), (_) => 'e')
+        .replaceAllMapped(
+          RegExp(r'[Ã¨Ã©áº¹áº»áº½Ãªá»áº¿á»‡á»ƒá»…]'),
+          (_) => 'e',
+        )
         .replaceAllMapped(RegExp(r'[Ã¬Ã­á»‹á»‰Ä©]'), (_) => 'i')
-        .replaceAllMapped(RegExp(r'[Ã²Ã³á»á»ÃµÃ´á»“á»‘á»™á»•á»—Æ¡á»á»›á»£á»Ÿá»¡]'), (_) => 'o')
-        .replaceAllMapped(RegExp(r'[Ã¹Ãºá»¥á»§Å©Æ°á»«á»©á»±á»­á»¯]'), (_) => 'u')
+        .replaceAllMapped(
+          RegExp(r'[Ã²Ã³á»á»ÃµÃ´á»“á»‘á»™á»•á»—Æ¡á»á»›á»£á»Ÿá»¡]'),
+          (_) => 'o',
+        )
+        .replaceAllMapped(
+          RegExp(r'[Ã¹Ãºá»¥á»§Å©Æ°á»«á»©á»±á»­á»¯]'),
+          (_) => 'u',
+        )
         .replaceAllMapped(RegExp(r'[á»³Ã½á»µá»·á»¹]'), (_) => 'y');
   }
 }

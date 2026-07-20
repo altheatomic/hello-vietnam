@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/env.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/explore/data/explore_repository.dart';
@@ -33,27 +34,28 @@ void main() {
   });
 
   group('ExplorePage cache-first', () {
-    testWidgets('renders cached sections immediately before refresh completes', (
-      WidgetTester tester,
-    ) async {
-      final Completer<ExploreSectionsData> refreshCompleter =
-          Completer<ExploreSectionsData>();
-      final _FakeExploreRepository repository = _FakeExploreRepository(
-        cachedSections: _sectionsData('Cached Activity'),
-        freshSectionsFuture: refreshCompleter.future,
-      );
+    testWidgets(
+      'renders cached sections immediately before refresh completes',
+      (WidgetTester tester) async {
+        final Completer<ExploreSectionsData> refreshCompleter =
+            Completer<ExploreSectionsData>();
+        final _FakeExploreRepository repository = _FakeExploreRepository(
+          cachedSections: _sectionsData('Cached Activity'),
+          freshSectionsFuture: refreshCompleter.future,
+        );
 
-      await tester.pumpWidget(_buildTestApp(repository));
-      await tester.pump();
+        await tester.pumpWidget(_buildTestApp(repository));
+        await tester.pump();
 
-      expect(find.text('Cached Activity'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.text('Cached Activity'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
 
-      refreshCompleter.complete(_sectionsData('Fresh Activity'));
-      await tester.pump();
+        refreshCompleter.complete(_sectionsData('Fresh Activity'));
+        await tester.pump();
 
-      expect(find.text('Fresh Activity'), findsOneWidget);
-    });
+        expect(find.text('Fresh Activity'), findsOneWidget);
+      },
+    );
 
     testWidgets('keeps cached content visible when background refresh fails', (
       WidgetTester tester,
@@ -70,6 +72,41 @@ void main() {
       expect(find.text('Cached Activity'), findsOneWidget);
       expect(find.text('Unable to load Explore right now.'), findsNothing);
     });
+  });
+
+  testWidgets('updates the active category tab while scrolling sections', (
+    WidgetTester tester,
+  ) async {
+    final _FakeExploreRepository repository = _FakeExploreRepository(
+      cachedSections: _scrollableSectionsData(),
+    );
+
+    await tester.pumpWidget(_buildTestApp(repository));
+    await tester.pump();
+
+    final Finder scrollView = find.byType(CustomScrollView);
+    final Finder scrollable = find
+        .descendant(of: scrollView, matching: find.byType(Scrollable))
+        .first;
+    final Finder cultureSection = find.text(
+      'Traditional customs, heritage, and cultural practices',
+    );
+
+    await tester.scrollUntilVisible(
+      cultureSection,
+      250,
+      scrollable: scrollable,
+      maxScrolls: 15,
+    );
+    final double cultureTop = tester.getTopLeft(cultureSection).dy;
+    if (cultureTop > 140) {
+      await tester.drag(scrollView, Offset(0, -(cultureTop - 140)));
+      await tester.pumpAndSettle();
+    }
+
+    expect(tester.getTopLeft(cultureSection).dy, lessThanOrEqualTo(150));
+    final Text cultureTab = tester.widget<Text>(find.text('Culture'));
+    expect(cultureTab.style?.color, AppColors.primary);
   });
 }
 
@@ -108,7 +145,8 @@ ExploreSectionsData _sectionsData(String itemName) {
       const ExploreCategory(
         id: 'food',
         title: 'Food',
-        description: 'Local dishes and culinary specialties from different regions',
+        description:
+            'Local dishes and culinary specialties from different regions',
         items: <ExploreItem>[],
       ),
       const ExploreCategory(
@@ -118,6 +156,59 @@ ExploreSectionsData _sectionsData(String itemName) {
         items: <ExploreItem>[],
       ),
     ],
+  );
+}
+
+ExploreSectionsData _scrollableSectionsData() {
+  const List<(String, String, DetailCategory)> categoryData =
+      <(String, String, DetailCategory)>[
+        (
+          'activities',
+          'Hands-on experiences and cultural activities',
+          DetailCategory.activities,
+        ),
+        (
+          'culture',
+          'Traditional customs, heritage, and cultural practices',
+          DetailCategory.culture,
+        ),
+        (
+          'food',
+          'Local dishes and culinary specialties from different regions',
+          DetailCategory.food,
+        ),
+        (
+          'local_products',
+          'Traditional goods and handcrafted regional products',
+          DetailCategory.localProducts,
+        ),
+      ];
+
+  return ExploreSectionsData(
+    province: null,
+    categories: categoryData.indexed
+        .map((entry) {
+          final int categoryIndex = entry.$1;
+          final (String id, String description, DetailCategory category) =
+              entry.$2;
+          return ExploreCategory(
+            id: id,
+            title: id,
+            description: description,
+            items: List<ExploreItem>.generate(
+              8,
+              (int itemIndex) => ExploreItem(
+                id: '$id-$itemIndex',
+                name: '$id item $itemIndex',
+                imagePath: 'assets/images/explore/sample.jpg',
+                category: category,
+                provinceId: 'province-$categoryIndex',
+                provinceName: 'Province $categoryIndex',
+              ),
+            ),
+          );
+        })
+        .toList(growable: false),
   );
 }
 

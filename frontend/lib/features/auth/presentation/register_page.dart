@@ -5,7 +5,9 @@ import 'package:hellovietnam/core/auth/auth_repository.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+  const RegisterPage({super.key, this.googleSignIn});
+
+  final Future<void> Function()? googleSignIn;
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -93,14 +95,24 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  void _onGoogleSignIn() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          context.l10n.ui('Google Sign-In is handled in Login page'),
+  Future<void> _onGoogleSignIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      await (widget.googleSignIn ?? AuthRepository.instance.signInWithGoogle)();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.ui('Google sign in failed')),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
-      ),
-    );
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   void _onLogin() {
@@ -371,7 +383,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return SizedBox(
       height: 52,
       child: OutlinedButton.icon(
-        onPressed: _onGoogleSignIn,
+        onPressed: _isLoading ? null : _onGoogleSignIn,
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFF1A1A2E),
           side: BorderSide(color: Colors.grey.shade300),

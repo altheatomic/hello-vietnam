@@ -105,10 +105,44 @@
       "Bash(cp -v \"../hellovietnam-remote/backend/supabase/functions/explore/explore_rating_test.ts\" \"backend/supabase/functions/explore/explore_rating_test.ts\")",
       "Bash(cp -v \"../hellovietnam-remote/backend/supabase/functions/explore/explore_handler.ts\" \"backend/supabase/functions/explore/explore_handler.ts\")",
       "Bash(cp -v \"../hellovietnam-remote/backend/supabase/functions/explore/explore_behavior.ts\" \"backend/supabase/functions/explore/explore_behavior.ts\")",
-      "Bash(npx -y deno test explore_rating_test.ts)"
+      "Bash(npx -y deno test explore_rating_test.ts)",
+      "Bash(cd \"c:\\\\Users\\\\Asus\\\\hellovietnam\" && diff -u frontend/lib/features/explore/presentation/explore_search_page.dart ../hellovietnam-remote/frontend/lib/features/explore/presentation/explore_search_page.dart)",
+      "Read(//c/Users/Asus/hellovietnam-remote/frontend/lib/features/explore/presentation/**)",
+      "Bash(cd \"c:\\\\Users\\\\Asus\\\\hellovietnam\" && diff -u frontend/lib/features/explore/presentation/explore_category_page.dart ../hellovietnam-remote/frontend/lib/features/explore/presentation/explore_category_page.dart)",
+      "Read(//c/Users/Asus/hellovietnam-remote/frontend/lib/features/explore/domain/**)",
+      "Bash(cd \"c:\\\\Users\\\\Asus\\\\hellovietnam\" && diff -u frontend/lib/features/explore/domain/explore_item.dart ../hellovietnam-remote/frontend/lib/features/explore/domain/explore_item.dart)",
+      "Bash(cd \"c:\\\\Users\\\\Asus\\\\hellovietnam\" && diff -u frontend/lib/features/explore/presentation/explore_search_result_page.dart ../hellovietnam-remote/frontend/lib/features/explore/presentation/explore_search_result_page.dart)",
+      "Bash(cp -v \"../hellovietnam-remote/frontend/lib/features/explore/presentation/explore_search_result_page.dart\" \"frontend/lib/features/explore/presentation/explore_search_result_page.dart\")",
+      "Bash(cp -v \"../hellovietnam-remote/frontend/lib/features/explore/presentation/explore_search_page.dart\" \"frontend/lib/features/explore/presentation/explore_search_page.dart\")",
+      "Bash(cp -v \"../hellovietnam-remote/frontend/lib/features/explore/presentation/explore_category_page.dart\" \"frontend/lib/features/explore/presentation/explore_category_page.dart\")",
+      "Bash(cp -v \"../hellovietnam-remote/frontend/lib/features/explore/domain/explore_item.dart\" \"frontend/lib/features/explore/domain/explore_item.dart\")",
+      "Read(//c/Users/Asus/hellovietnam-remote/frontend/lib/features/auth/presentation/**)",
+      "Bash(cd \"c:\\\\Users\\\\Asus\\\\hellovietnam\" && diff -u frontend/lib/features/auth/presentation/login_page.dart ../hellovietnam-remote/frontend/lib/features/auth/presentation/login_page.dart)",
+      "Bash(diff -u frontend/lib/features/auth/presentation/register_page.dart ../hellovietnam-remote/frontend/lib/features/auth/presentation/register_page.dart)",
+      "Bash(cp ../hellovietnam-remote/frontend/lib/features/auth/presentation/register_page.dart frontend/lib/features/auth/presentation/register_page.dart)",
+      "Bash(cd /c/Users/Asus/hellovietnam-remote/frontend && find test -iname \"app_language_review_test.dart\" -o -iname \"app_language_saved_trips_test.dart\" -o -iname \"date_range_calendar_test.dart\" -o -iname \"login_error_message_test.dart\" -o -iname \"register_page_test.dart\" -o -iname \"explore_parsing_test.dart\" -o -iname \"explore_page_test.dart\" -o -iname \"home_mock_data_test.dart\" -o -iname \"shared_item_detail_page_review_test.dart\" -o -iname \"notification_page_test.dart\" -o -iname \"language_page_test.dart\" -o -iname \"review_repository_test.dart\" -o -iname \"review_section_test.dart\")",
+      "Bash(cp \"../hellovietnam-remote/frontend/test/core/language/app_language_review_test.dart\" \"frontend/test/core/language/app_language_review_test.dart\")",
+      "Bash(cp \"../hellovietnam-remote/frontend/test/core/language/app_language_saved_trips_test.dart\" \"frontend/test/core/language/app_language_saved_trips_test.dart\")",
+      "Bash(cp \"../hellovietnam-remote/frontend/test/core/widgets/date_range_calendar_test.dart\" \"frontend/test/core/widgets/date_range_calendar_test.dart\")",
+      "Bash(cp \"../hellovietnam-remote/frontend/test/features/auth/presentation/login_error_message_test.dart\" \"frontend/test/features/auth/presentation/login_error_message_test.dart\")",
+      "Bash(cp \"../hellovietnam-remote/frontend/test/features/auth/presentation/register_page_test.dart\" \"frontend/test/features/auth/presentation/register_page_test.dart\")",
+      "Bash(flutter test *)",
+      "Bash(grep -n \"\\\\[E\\\\]\\\\|Failed\\\\|Expected:\\\\|Actual:\\\\|^00:.*-[0-9]*:.*$\" /tmp/flutter_test_output.txt)",
+      "Bash(cygpath -w /tmp/flutter_test_output.txt)",
+      "Read(//c/Users/Asus/AppData/Local/Temp/**)",
+      "Read(//c/Users/Asus/hellovietnam-remote/frontend/lib/core/widgets/**)",
+      "Bash(echo \"exit: $?\")",
+      "Read(//c/Users/Asus/hellovietnam-remote/frontend/lib/features/notification/presentation/**)",
+      "Bash(echo \"exit:$?\")",
+      "Read(//c/Users/Asus/hellovietnam-remote/frontend/lib/features/profile/presentation/**)",
+      "Read(//c/Users/Asus/hellovietnam-remote/frontend/lib/features/item_detail/domain/**)",
+      "Bash(cd /c/Users/Asus/hellovietnam *)",
+      "Bash(diff -u frontend/lib/features/explore/presentation/explore_page.dart ../hellovietnam-remote/frontend/lib/features/explore/presentation/explore_page.dart | wc -l)",
+      "Bash(diff -u frontend/lib/features/explore/presentation/explore_page.dart ../hellovietnam-remote/frontend/lib/features/explore/presentation/explore_page.dart)"
     ],
     "additionalDirectories": [
-      "\\tmp"
+      "\\tmp",
+      "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\auth\\presentation"
     ]
   }
 }

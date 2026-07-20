@@ -14,6 +14,7 @@ import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 
 import 'widgets/explore_floating_back_button.dart';
+import 'widgets/explore_category_filter_bar.dart';
 import 'widgets/explore_preview_widgets.dart';
 
 const List<String> _filterLabels = <String>[
@@ -236,6 +237,7 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
         SliverPersistentHeader(
           pinned: true,
           delegate: _StickyFilterDelegate(
+            topInset: statusBarH,
             selectedIndex: _selectedFilter,
             onTap: (int index) {
               setState(() {
@@ -298,16 +300,21 @@ class _CategoryResults {
 }
 
 class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
-  _StickyFilterDelegate({required this.selectedIndex, required this.onTap});
+  _StickyFilterDelegate({
+    required this.topInset,
+    required this.selectedIndex,
+    required this.onTap,
+  });
 
+  final double topInset;
   final int selectedIndex;
   final ValueChanged<int> onTap;
 
   @override
-  double get minExtent => 90;
+  double get minExtent => topInset + ExploreCategoryFilterBar.height + 8;
 
   @override
-  double get maxExtent => 90;
+  double get maxExtent => minExtent;
 
   @override
   Widget build(
@@ -315,52 +322,26 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final double statusBarH = MediaQuery.of(context).padding.top;
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.only(
-        top: statusBarH > 0 ? statusBarH : 0,
-        bottom: 6,
-        left: 0,
-        right: 0,
-      ),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppConstants.pagePadding,
+    final Color background = Theme.of(context).colorScheme.surface;
+    return ColoredBox(
+      color: background.withValues(alpha: 0.92),
+      child: Padding(
+        padding: EdgeInsets.only(top: topInset, bottom: 8),
+        child: ExploreCategoryFilterBar(
+          labels: _filterLabels
+              .map((String label) => context.l10n.ui(label))
+              .toList(growable: false),
+          selectedIndex: selectedIndex,
+          onSelected: onTap,
         ),
-        itemCount: _filterLabels.length,
-        separatorBuilder: (BuildContext context, int index) =>
-            const SizedBox(width: 8),
-        itemBuilder: (BuildContext context, int index) {
-          final bool isSelected = index == selectedIndex;
-          return GestureDetector(
-            onTap: () => onTap(index),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                context.l10n.ui(_filterLabels[index]),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }
 
   @override
   bool shouldRebuild(covariant _StickyFilterDelegate oldDelegate) {
-    return selectedIndex != oldDelegate.selectedIndex;
+    return selectedIndex != oldDelegate.selectedIndex ||
+        topInset != oldDelegate.topInset;
   }
 }
 
@@ -596,7 +577,9 @@ class _ExploreResultCardState extends State<ExploreResultCard> {
                             ),
                             const SizedBox(width: 3),
                             Text(
-                              widget.rating?.toStringAsFixed(1) ?? '4.7',
+                              (widget.rating ?? widget.item.rating)
+                                      ?.toStringAsFixed(1) ??
+                                  '4.7',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
