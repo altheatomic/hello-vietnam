@@ -252,6 +252,7 @@ class ForumRepository {
             likes: likeCountByPostId[postId] ?? 0,
             comments: commentCountByPostId[postId] ?? 0,
             sharedItem: _sharedItemFrom(row['shared_item']),
+            sharedTripPlan: _sharedTripPlanFrom(row['shared_item']),
             isLiked: likedPostIds.contains(postId),
             isBookmarked: bookmarkedPostIds.contains(postId),
             showFollowButton: authorId != currentUserId && !author.isFollowing,
@@ -734,19 +735,33 @@ class ForumRepository {
 
   String _stringValue(Object? value) => value?.toString().trim() ?? '';
 
-  SharedExploreItem? _sharedItemFrom(Object? value) {
+  Map<String, dynamic>? _normalizedSharedItemMap(Object? value) {
     if (value is Map<String, dynamic>) {
-      return SharedExploreItem.fromJson(value);
+      return value;
     }
     if (value is Map) {
-      return SharedExploreItem.fromJson(
-        value.map(
-          (dynamic key, dynamic innerValue) =>
-              MapEntry(key.toString(), innerValue),
-        ),
+      return value.map(
+        (dynamic key, dynamic innerValue) =>
+            MapEntry(key.toString(), innerValue),
       );
     }
     return null;
+  }
+
+  SharedExploreItem? _sharedItemFrom(Object? value) {
+    final Map<String, dynamic>? map = _normalizedSharedItemMap(value);
+    if (map == null || map['type'] == 'trip_plan') {
+      return null;
+    }
+    return SharedExploreItem.fromJson(map);
+  }
+
+  SharedTripPlanItem? _sharedTripPlanFrom(Object? value) {
+    final Map<String, dynamic>? map = _normalizedSharedItemMap(value);
+    if (map == null || map['type'] != 'trip_plan') {
+      return null;
+    }
+    return SharedTripPlanItem.fromJson(map);
   }
 
   String _handleFrom(String value) {

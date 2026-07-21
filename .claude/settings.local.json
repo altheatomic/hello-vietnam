@@ -1,7 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter analyze *)"
+      "Bash(flutter analyze *)",
+      "Bash(git fetch *)",
+      "Bash(git -C ../hellovietnam-remote rev-parse HEAD)",
+      "Bash(flutter --version)",
+      "Bash(flutter devices *)",
+      "Bash(adb devices *)",
+      "Read(//c/Users/Asus/hellovietnam-remote/frontend/**)",
+      "Bash(flutter pub *)",
+      "Bash(flutter run *)",
+      "Bash(tee /tmp/flutter_run.log)",
+      "Bash(cd \"c:\\\\Users\\\\Asus\\\\hellovietnam-remote\\\\frontend\" && grep -n \"supabaseUrl\\\\|supabaseAnonKey\\\\|fromEnvironment\\\\|dotenv\" lib/core/config/env.dart 2>&1 | head -20)"
     ]
   }
 }

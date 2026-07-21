@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/reviews/domain/review_models.dart';
 
 typedef ReviewComposerSubmit =
@@ -34,7 +35,9 @@ class _ReviewComposerSheetState extends State<ReviewComposerSheet> {
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.initialReview?.comment ?? '');
+    _controller = TextEditingController(
+      text: widget.initialReview?.comment ?? '',
+    );
     _selectedRating = widget.initialReview?.rating ?? 5;
   }
 
@@ -64,7 +67,9 @@ class _ReviewComposerSheetState extends State<ReviewComposerSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            message.isEmpty ? 'Could not publish your review.' : message,
+            message.isEmpty
+                ? context.l10n.ui('Could not publish your review.')
+                : message,
           ),
         ),
       );
@@ -89,7 +94,9 @@ class _ReviewComposerSheetState extends State<ReviewComposerSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              widget.initialReview == null ? 'Write a review' : 'Edit your review',
+              widget.initialReview == null
+                  ? context.l10n.ui('Write a review')
+                  : context.l10n.ui('Edit your review'),
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
@@ -123,8 +130,8 @@ class _ReviewComposerSheetState extends State<ReviewComposerSheet> {
               controller: _controller,
               maxLines: 5,
               minLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'Share what stood out for you...',
+              decoration: InputDecoration(
+                hintText: context.l10n.ui('Share what stood out for you...'),
                 border: OutlineInputBorder(),
               ),
             ),
@@ -133,7 +140,11 @@ class _ReviewComposerSheetState extends State<ReviewComposerSheet> {
               width: double.infinity,
               child: FilledButton(
                 onPressed: _isSubmitting ? null : _submit,
-                child: Text(_isSubmitting ? 'Saving...' : widget.submitLabel),
+                child: Text(
+                  _isSubmitting
+                      ? context.l10n.ui('Saving...')
+                      : context.l10n.ui(widget.submitLabel),
+                ),
               ),
             ),
           ],

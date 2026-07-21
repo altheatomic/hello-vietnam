@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 
 class LanguagePage extends StatefulWidget {
@@ -15,8 +14,43 @@ class _LanguagePageState extends State<LanguagePage> {
     AppLanguage.vietnamese,
   ];
 
+  bool _isApplyingLanguage = false;
+  String? _applyingMessage;
+
   Future<void> _onSelectLanguage(AppLanguage language) async {
-    await context.languageController.setLanguage(language);
+    if (_isApplyingLanguage ||
+        language == context.languageController.language) {
+      return;
+    }
+
+    setState(() {
+      _applyingMessage = context.l10n.applyingLanguage;
+      _isApplyingLanguage = true;
+    });
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
+
+    try {
+      await context.languageController.setLanguage(language);
+      if (!mounted) return;
+      final NavigatorState navigator = Navigator.of(context);
+      setState(() {
+        _isApplyingLanguage = false;
+        _applyingMessage = null;
+      });
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isApplyingLanguage = false;
+        _applyingMessage = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.languageUpdateFailed)),
+      );
+    }
   }
 
   @override
@@ -24,83 +58,153 @@ class _LanguagePageState extends State<LanguagePage> {
     final AppStrings strings = context.l10n;
     final AppLanguage selectedLanguage = context.languageController.language;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          child: Column(
-            children: <Widget>[
-              SizedBox(
-                height: 76,
-                child: Stack(
+    return PopScope(
+      canPop: !_isApplyingLanguage,
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Stack(
+          children: <Widget>[
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: Column(
                   children: <Widget>[
-                    Align(
-                      alignment: Alignment.topLeft,
-                      child: IconButton(
-                        onPressed: () => context.pop(),
-                        icon: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          size: 18,
-                          color: Color(0xFF81D4FA),
-                        ),
-                        splashRadius: 20,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                    SizedBox(
+                      height: 76,
+                      child: Stack(
                         children: <Widget>[
-                          Text(
-                            strings.language,
-                            style: const TextStyle(
-                              fontSize: 29,
-                              height: 1.15,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF101828),
+                          Align(
+                            alignment: Alignment.topLeft,
+                            child: IconButton(
+                              onPressed: _isApplyingLanguage
+                                  ? null
+                                  : () => Navigator.of(context).maybePop(),
+                              icon: const Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                size: 18,
+                                color: Color(0xFF81D4FA),
+                              ),
+                              splashRadius: 20,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 7),
-                          Text(
-                            strings.selectPreferredLanguage,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              height: 1.2,
-                              fontWeight: FontWeight.w400,
-                              color: Color(0xFF4A5565),
+                          Align(
+                            alignment: Alignment.center,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Text(
+                                  strings.language,
+                                  style: const TextStyle(
+                                    fontSize: 29,
+                                    height: 1.15,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF101828),
+                                  ),
+                                ),
+                                const SizedBox(height: 7),
+                                Text(
+                                  strings.selectPreferredLanguage,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    height: 1.2,
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xFF4A5565),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(height: 14),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.only(bottom: 28),
+                        itemCount: _languages.length,
+                        separatorBuilder: (BuildContext context, int index) =>
+                            const SizedBox(height: 10),
+                        itemBuilder: (BuildContext context, int index) {
+                          final AppLanguage item = _languages[index];
+                          final bool selected = item == selectedLanguage;
+                          return _LanguageTile(
+                            item: item,
+                            selected: selected,
+                            onTap: _isApplyingLanguage
+                                ? null
+                                : () => _onSelectLanguage(item),
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.only(bottom: 28),
-                  itemCount: _languages.length,
-                  separatorBuilder: (BuildContext context, int index) =>
-                      const SizedBox(height: 10),
-                  itemBuilder: (BuildContext context, int index) {
-                    final AppLanguage item = _languages[index];
-                    final bool selected = item == selectedLanguage;
-                    return _LanguageTile(
-                      item: item,
-                      selected: selected,
-                      onTap: () => _onSelectLanguage(item),
-                    );
-                  },
-                ),
+            ),
+            if (_isApplyingLanguage)
+              _LanguageApplyingOverlay(
+                message: _applyingMessage ?? strings.applyingLanguage,
               ),
-            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguageApplyingOverlay extends StatelessWidget {
+  const _LanguageApplyingOverlay({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: ColoredBox(
+        color: Colors.white.withValues(alpha: 0.86),
+        child: SafeArea(
+          child: Center(
+            child: Container(
+              width: 224,
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const <BoxShadow>[
+                  BoxShadow(
+                    color: Color(0x1F000000),
+                    blurRadius: 24,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const SizedBox(
+                    width: 30,
+                    height: 30,
+                    child: CircularProgressIndicator(strokeWidth: 3),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.25,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF101828),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -117,7 +221,7 @@ class _LanguageTile extends StatelessWidget {
 
   final AppLanguage item;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

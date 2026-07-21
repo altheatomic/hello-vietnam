@@ -16,6 +16,7 @@ class SharedExploreItem {
   final DetailCategory category;
   final String? subtitle;
   final String? provinceName;
+  final String? labelOverride;
 
   const SharedExploreItem({
     required this.contentType,
@@ -26,6 +27,7 @@ class SharedExploreItem {
     required this.category,
     this.subtitle,
     this.provinceName,
+    this.labelOverride,
   });
 
   factory SharedExploreItem.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class SharedExploreItem {
       category: _parseDetailCategory(json['category'] as String?),
       subtitle: (json['subtitle'] as String?)?.trim(),
       provinceName: (json['provinceName'] as String?)?.trim(),
+      labelOverride: (json['labelOverride'] as String?)?.trim(),
     );
   }
 
@@ -51,6 +54,7 @@ class SharedExploreItem {
       'category': category.storageKey,
       'subtitle': subtitle,
       'provinceName': provinceName,
+      'labelOverride': labelOverride,
     };
   }
 
@@ -65,6 +69,32 @@ class SharedExploreItem {
       fallbackImagePath: imagePath.trim().isEmpty ? null : imagePath,
       trackExploreBehavior: trackExploreBehavior,
       exploreProvinceId: provinceId,
+    );
+  }
+}
+
+/// Minimal reference-only model for a shared trip plan post.
+/// Unlike [SharedExploreItem], this intentionally carries no itinerary
+/// text — the full plan is fetched by [planId] when the user opens it.
+class SharedTripPlanItem {
+  final String planId;
+  final String provinceName;
+  final int nDays;
+  final int placeCount;
+
+  const SharedTripPlanItem({
+    required this.planId,
+    required this.provinceName,
+    required this.nDays,
+    required this.placeCount,
+  });
+
+  factory SharedTripPlanItem.fromJson(Map<String, dynamic> json) {
+    return SharedTripPlanItem(
+      planId: (json['plan_id'] as String? ?? '').trim(),
+      provinceName: (json['province_name'] as String? ?? '').trim(),
+      nDays: (json['n_days'] as num?)?.toInt() ?? 0,
+      placeCount: (json['place_count'] as num?)?.toInt() ?? 0,
     );
   }
 }

@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/reviews/data/review_repository.dart';
 import 'package:hellovietnam/features/reviews/domain/review_models.dart';
 import 'package:hellovietnam/features/reviews/presentation/review_composer_sheet.dart';
@@ -33,6 +35,7 @@ class ReviewSection extends StatefulWidget {
     this.upsertReview,
     this.pageSize = 10,
     this.listHeight = 420,
+    this.onSummaryChanged,
   });
 
   final ReviewContentType? contentType;
@@ -45,12 +48,15 @@ class ReviewSection extends StatefulWidget {
   final ReviewUpsertCallback? upsertReview;
   final int pageSize;
   final double listHeight;
+  final ValueChanged<RatingSummary>? onSummaryChanged;
 
   @override
   State<ReviewSection> createState() => _ReviewSectionState();
 }
 
 class _ReviewSectionState extends State<ReviewSection> {
+  static const int _previewCount = 2;
+
   late final ScrollController _scrollController;
   RatingSummary? _summary;
   ReviewEntry? _myReview;
@@ -62,6 +68,7 @@ class _ReviewSectionState extends State<ReviewSection> {
   int _currentPage = 0;
   int? _activeRatingFilter;
   Object? _listError;
+  bool _showAll = false;
 
   ReviewRepository get _repository =>
       widget.repository ?? ReviewRepository.instance;
@@ -105,6 +112,7 @@ class _ReviewSectionState extends State<ReviewSection> {
               ));
       if (!mounted) return;
       setState(() => _summary = summary);
+      widget.onSummaryChanged?.call(summary);
     } catch (_) {
       if (!mounted) return;
     } finally {
@@ -142,6 +150,7 @@ class _ReviewSectionState extends State<ReviewSection> {
       _listError = null;
       _currentPage = 0;
       _hasMore = false;
+      _showAll = false;
       _items.clear();
     });
 
@@ -220,7 +229,10 @@ class _ReviewSectionState extends State<ReviewSection> {
 
   Future<void> _applyRatingFilter(int? ratingFilter) async {
     if (_activeRatingFilter == ratingFilter) return;
-    setState(() => _activeRatingFilter = ratingFilter);
+    setState(() {
+      _activeRatingFilter = ratingFilter;
+      _showAll = false;
+    });
     if (_scrollController.hasClients) {
       _scrollController.jumpTo(0);
     }
@@ -256,11 +268,11 @@ class _ReviewSectionState extends State<ReviewSection> {
             return ReviewComposerSheet(
               itemTitle: widget.itemTitle,
               initialReview: _myReview,
-              submitLabel: _myReview == null ? 'Publish review' : 'Update review',
-              onSubmit: ({
-                required int rating,
-                required String comment,
-              }) => _submitReview(rating: rating, comment: comment),
+              submitLabel: _myReview == null
+                  ? context.l10n.ui('Publish review')
+                  : context.l10n.ui('Update review'),
+              onSubmit: ({required int rating, required String comment}) =>
+                  _submitReview(rating: rating, comment: comment),
             );
           },
         );
@@ -274,7 +286,9 @@ class _ReviewSectionState extends State<ReviewSection> {
       _summary = result.summary;
       _myReview = result.review;
       _activeRatingFilter = null;
+      _showAll = false;
     });
+    widget.onSummaryChanged?.call(result.summary);
 
     if (_scrollController.hasClients) {
       _scrollController.jumpTo(0);
@@ -291,10 +305,9 @@ class _ReviewSectionState extends State<ReviewSection> {
     await _loadFirstPage();
   }
 
-  String get _ctaLabel =>
-      _myReview == null
-          ? 'Write a review'
-          : 'Edit your review';
+  String _ctaLabel(BuildContext context) => _myReview == null
+      ? context.l10n.ui('Write a review')
+      : context.l10n.ui('Edit your review');
 
   @override
   Widget build(BuildContext context) {
@@ -308,97 +321,147 @@ class _ReviewSectionState extends State<ReviewSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        _SectionHeader(
-          summary: summary,
-          isLoading: _isLoadingSummary,
-        ),
+        _SectionHeader(summary: summary, isLoading: _isLoadingSummary),
         const SizedBox(height: 14),
         Align(
           alignment: Alignment.centerLeft,
-          child: FilledButton.tonalIcon(
-            key: const ValueKey<String>('review-cta'),
+          child: _LiquidReviewButton(
             onPressed: _openComposer,
-            icon: const Icon(Icons.rate_review_outlined),
-            label: Text(_ctaLabel),
+            label: _ctaLabel(context),
           ),
         ),
-        const SizedBox(height: 14),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: <Widget>[
-            _RatingFilterChip(
-              label: 'All',
-              selected: _activeRatingFilter == null,
-              onSelected: () => unawaited(_applyRatingFilter(null)),
-            ),
-            for (int star = 5; star >= 1; star -= 1)
-              _RatingFilterChip(
+        const SizedBox(height: 12),
+        const _ReviewDivider(),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 38,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: 6,
+            separatorBuilder: (BuildContext context, int index) =>
+                const SizedBox(width: 8),
+            itemBuilder: (BuildContext context, int index) {
+              if (index == 0) {
+                return _RatingFilterChip(
+                  label: context.l10n.ui('All'),
+                  selected: _activeRatingFilter == null,
+                  onSelected: () => unawaited(_applyRatingFilter(null)),
+                );
+              }
+              final int star = 6 - index;
+              return _RatingFilterChip(
                 key: ValueKey<String>('review-filter-$star'),
-                label: '$star-star',
+                label: context.l10n.reviewRatingFilterLabel(star),
                 selected: _activeRatingFilter == star,
                 onSelected: () => unawaited(_applyRatingFilter(star)),
-              ),
-          ],
+              );
+            },
+          ),
         ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: widget.listHeight,
-          child: _buildListSurface(theme),
-        ),
+        const SizedBox(height: 10),
+        _buildListSurface(theme),
+        const SizedBox(height: 10),
+        const _ReviewDivider(),
       ],
     );
   }
 
   Widget _buildListSurface(ThemeData theme) {
     if (_isLoadingFirstPage && _items.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_listError != null && _items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const Text('Could not load reviews right now.'),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: _loadFirstPage,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (_items.isEmpty) {
-      return Center(
-        child: Text(
-          'No reviews yet for ${widget.itemTitle}.',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: AppColors.textSecondary,
+    if (_listError != null && _items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(context.l10n.ui('Could not load reviews right now.')),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: _loadFirstPage,
+                child: Text(context.l10n.retry),
+              ),
+            ],
           ),
         ),
       );
     }
 
-    return ListView.builder(
-      key: const ValueKey<String>('review-list'),
-      controller: _scrollController,
-      itemCount: _items.length + (_isLoadingMore ? 1 : 0),
-      itemBuilder: (BuildContext context, int index) {
-        if (index >= _items.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: CircularProgressIndicator()),
+    if (_items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Text(
+            context.l10n.noReviewsYetFor(widget.itemTitle),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final bool canShowAll = _items.length > _previewCount || _hasMore;
+    if (!_showAll) {
+      final List<ReviewEntry> previewItems = _items
+          .take(_previewCount)
+          .toList(growable: false);
+      return Column(
+        key: const ValueKey<String>('review-list-preview'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (int index = 0; index < previewItems.length; index++)
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: index == previewItems.length - 1 ? 0 : 12,
+              ),
+              child: _ReviewListCard(review: previewItems[index]),
+            ),
+          if (canShowAll) ...<Widget>[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                key: const ValueKey<String>('review-see-all'),
+                onPressed: () => setState(() => _showAll = true),
+                child: Text(context.l10n.ui('See all')),
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: widget.listHeight),
+      child: ListView.builder(
+        key: const ValueKey<String>('review-list'),
+        controller: _scrollController,
+        shrinkWrap: true,
+        itemCount: _items.length + (_isLoadingMore ? 1 : 0),
+        itemBuilder: (BuildContext context, int index) {
+          if (index >= _items.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: index == _items.length - 1 ? 0 : 12,
+            ),
+            child: _ReviewListCard(review: _items[index]),
           );
-        }
-        return Padding(
-          padding: EdgeInsets.only(bottom: index == _items.length - 1 ? 0 : 12),
-          child: _ReviewListCard(review: _items[index]),
-        );
-      },
+        },
+      ),
     );
   }
 }
@@ -430,7 +493,9 @@ class _SectionHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.35)),
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(alpha: 0.35),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,7 +515,9 @@ class _SectionHeader extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
-                  _summaryLabel(effectiveSummary.averageRating),
+                  context.l10n.reviewSummaryLabel(
+                    effectiveSummary.averageRating,
+                  ),
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w700,
@@ -461,7 +528,7 @@ class _SectionHeader extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${effectiveSummary.reviewCount} reviews',
+            context.l10n.reviewCount(effectiveSummary.reviewCount),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -479,14 +546,6 @@ class _SectionHeader extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _summaryLabel(double rating) {
-    if (rating >= 4.7) return 'Fantastic';
-    if (rating >= 4.3) return 'Great';
-    if (rating >= 3.5) return 'Good';
-    if (rating > 0) return 'Fair';
-    return 'No ratings yet';
   }
 }
 
@@ -510,7 +569,7 @@ class _RatingBreakdownRow extends StatelessWidget {
         SizedBox(
           width: 48,
           child: Text(
-            '$star star',
+            context.l10n.reviewBreakdownStarLabel(star),
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
@@ -522,7 +581,9 @@ class _RatingBreakdownRow extends StatelessWidget {
               value: progress,
               minHeight: 8,
               backgroundColor: AppColors.primaryLight.withValues(alpha: 0.18),
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primary,
+              ),
             ),
           ),
         ),
@@ -554,10 +615,194 @@ class _RatingFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return FilterChip(
       label: Text(label),
       selected: selected,
       onSelected: (_) => onSelected(),
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      selectedColor: AppColors.primaryLight.withValues(alpha: 0.28),
+      backgroundColor: AppColors.surfaceElevated.withValues(alpha: 0.92),
+      checkmarkColor: AppColors.textPrimary,
+      side: BorderSide(color: AppColors.primaryLight.withValues(alpha: 0.48)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      labelStyle: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: AppColors.textPrimary,
+        letterSpacing: 0,
+      ),
+    );
+  }
+}
+
+class _ReviewDivider extends StatelessWidget {
+  const _ReviewDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color lineColor = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : AppColors.primaryDark.withValues(alpha: 0.16);
+
+    return Container(
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: <Color>[
+            lineColor.withValues(alpha: 0),
+            lineColor,
+            lineColor.withValues(alpha: 0),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LiquidReviewButton extends StatefulWidget {
+  const _LiquidReviewButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  State<_LiquidReviewButton> createState() => _LiquidReviewButtonState();
+}
+
+class _LiquidReviewButtonState extends State<_LiquidReviewButton> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final Color foreground = isDark ? Colors.white : AppColors.textOnPrimary;
+    final Color borderColor = Colors.white.withValues(
+      alpha: isDark ? 0.22 : 0.42,
+    );
+
+    return Semantics(
+      button: true,
+      label: widget.label,
+      child: AnimatedScale(
+        scale: _pressed ? 0.98 : 1,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: AppColors.primaryDark.withValues(
+                  alpha: isDark ? 0.28 : 0.24,
+                ),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+              BoxShadow(
+                color: Colors.white.withValues(alpha: isDark ? 0.04 : 0.32),
+                blurRadius: 8,
+                offset: const Offset(-2, -2),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  key: const ValueKey<String>('review-cta'),
+                  onTap: widget.onPressed,
+                  onHighlightChanged: _setPressed,
+                  borderRadius: BorderRadius.circular(999),
+                  splashColor: Colors.white.withValues(alpha: 0.16),
+                  highlightColor: Colors.white.withValues(alpha: 0.08),
+                  child: Ink(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 13,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: <Color>[
+                          AppColors.accent.withValues(
+                            alpha: isDark ? 0.84 : 0.92,
+                          ),
+                          AppColors.primary.withValues(
+                            alpha: isDark ? 0.82 : 0.95,
+                          ),
+                          AppColors.primaryApple.withValues(
+                            alpha: isDark ? 0.72 : 0.78,
+                          ),
+                        ],
+                      ),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: <Widget>[
+                        Positioned.fill(
+                          top: -14,
+                          bottom: 20,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(999),
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: <Color>[
+                                  Colors.white.withValues(
+                                    alpha: isDark ? 0.26 : 0.34,
+                                  ),
+                                  Colors.white.withValues(alpha: 0),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Icon(
+                              Icons.rate_review_outlined,
+                              color: foreground,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              widget.label,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: foreground,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -572,16 +817,17 @@ class _ReviewListCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final String reviewer = review.userName?.trim().isNotEmpty == true
         ? review.userName!
-        : 'Traveler';
-    final String updatedLabel =
-        review.updatedAtLabel ?? review.updatedAt ?? review.createdAt ?? '';
+        : context.l10n.ui('Traveler');
+    final String updatedLabel = _formatReviewTimestamp(context, review);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.25)),
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(alpha: 0.25),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -609,7 +855,10 @@ class _ReviewListCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(999),
@@ -643,4 +892,43 @@ class _ReviewListCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatReviewTimestamp(BuildContext context, ReviewEntry review) {
+  final String raw =
+      (review.updatedAtLabel ?? review.updatedAt ?? review.createdAt ?? '')
+          .trim();
+  if (raw.isEmpty) return '';
+
+  final DateTime? parsed = DateTime.tryParse(raw);
+  if (parsed == null) return raw;
+
+  final DateTime local = parsed.toLocal();
+  final String day = local.day.toString().padLeft(2, '0');
+  final String month = local.month.toString().padLeft(2, '0');
+  final String hour = local.hour.toString().padLeft(2, '0');
+  final String minute = local.minute.toString().padLeft(2, '0');
+  final bool hasTime = raw.length > 10;
+
+  if (context.l10n.appLanguage == AppLanguage.vietnamese) {
+    final String date = '$day/$month/${local.year}';
+    return hasTime ? '$date • $hour:$minute' : date;
+  }
+
+  const List<String> months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  final String date = '${months[local.month - 1]} ${local.day}, ${local.year}';
+  return hasTime ? '$date • $hour:$minute' : date;
 }

@@ -62,6 +62,7 @@ class ItemDetail {
   final String ratingLabel;
   final String description;
   final String whatToExpect;
+  final List<ItemReview> reviews;
 
   const ItemDetail({
     required this.id,
@@ -75,6 +76,7 @@ class ItemDetail {
     required this.ratingLabel,
     required this.description,
     required this.whatToExpect,
+    this.reviews = const <ItemReview>[],
   });
 
   String get effectiveReviewContentId => reviewContentId ?? id;
@@ -95,6 +97,7 @@ class ItemDetail {
     String? ratingLabel,
     String? description,
     String? whatToExpect,
+    List<ItemReview>? reviews,
   }) {
     return ItemDetail(
       id: id ?? this.id,
@@ -108,6 +111,7 @@ class ItemDetail {
       ratingLabel: ratingLabel ?? this.ratingLabel,
       description: description ?? this.description,
       whatToExpect: whatToExpect ?? this.whatToExpect,
+      reviews: reviews ?? this.reviews,
     );
   }
 }

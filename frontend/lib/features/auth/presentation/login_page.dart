@@ -3,6 +3,15 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+String loginErrorMessage(Object error) {
+  if (error is AuthException &&
+      error.message.toLowerCase().contains('invalid login credentials')) {
+    return 'Incorrect email or password';
+  }
+  return 'Failed to sign in. Please try again.';
+}
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -64,9 +73,7 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '${context.l10n.ui('Failed to sign in')}: ${e.toString()}',
-          ),
+          content: Text(loginErrorMessage(e)),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );

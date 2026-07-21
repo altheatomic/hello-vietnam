@@ -1,6 +1,3 @@
-import 'dart:math' as math;
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
@@ -295,12 +292,15 @@ class _InProgressBody extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: SizedBox(
-            width: 96,
-            height: 80,
-            child: CustomPaint(
-              painter: _MapGridPainter(),
-              child: const Center(child: _MapPin()),
-            ),
+            width: 115,
+            height: 105,
+            child: activity.imageUrl?.trim().isNotEmpty == true
+                ? Image.network(
+                    activity.imageUrl!.trim(),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const _ImageFallback(),
+                  )
+                : const _ImageFallback(),
           ),
         ),
         const SizedBox(width: 14),
@@ -537,87 +537,20 @@ class _PrimaryButton extends StatelessWidget {
 
 // ── Map preview ───────────────────────────────────────────────────────────────
 
-class _MapPin extends StatelessWidget {
-  const _MapPin();
+class _ImageFallback extends StatelessWidget {
+  const _ImageFallback();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 28,
-      height: 28,
-      decoration: const BoxDecoration(
-        color: Color(0xFFFF3341),
-        shape: BoxShape.circle,
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Color(0x29FF3341),
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: const Icon(
-        Icons.location_on_rounded,
-        color: Colors.white,
-        size: 16,
+      color: const Color(0xFFEFF8FF),
+      child: const Center(
+        child: Icon(
+          Icons.image_not_supported_outlined,
+          color: Color(0xFFAEC6D4),
+          size: 28,
+        ),
       ),
     );
   }
-}
-
-/// Lightweight map-like background: grid + dashed route curve.
-class _MapGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Paint()..color = const Color(0xFFEFF8FF),
-    );
-
-    final Paint gridPaint = Paint()
-      ..color = const Color(0xFFCBE8F8)
-      ..strokeWidth = 0.8;
-    const int cols = 5;
-    const int rows = 4;
-    for (int i = 0; i <= cols; i++) {
-      final double x = size.width * i / cols;
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
-    }
-    for (int j = 0; j <= rows; j++) {
-      final double y = size.height * j / rows;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
-    }
-
-    final Paint routePaint = Paint()
-      ..color = const Color(0xFF5B8DF8)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
-      ..strokeCap = StrokeCap.round;
-
-    final Path path = Path()
-      ..moveTo(size.width * 0.08, size.height * 0.82)
-      ..quadraticBezierTo(
-        size.width * 0.32,
-        size.height * 0.22,
-        size.width * 0.52,
-        size.height * 0.44,
-      );
-
-    for (final PathMetric metric in path.computeMetrics()) {
-      double distance = 0;
-      const double dashWidth = 5.0;
-      const double dashSpace = 4.0;
-      while (distance < metric.length) {
-        final Path extract = metric.extractPath(
-          distance,
-          math.min(distance + dashWidth, metric.length),
-        );
-        canvas.drawPath(extract, routePaint);
-        distance += dashWidth + dashSpace;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -8,6 +8,8 @@ class ExploreItem {
   final String? subtitle;
   final String? provinceId;
   final String? provinceName;
+  final double? rating;
+  final int reviewCount;
   final DetailCategory category;
 
   const ExploreItem({
@@ -18,6 +20,8 @@ class ExploreItem {
     this.subtitle,
     this.provinceId,
     this.provinceName,
+    this.rating,
+    this.reviewCount = 0,
   });
 
   factory ExploreItem.fromJson(Map<String, dynamic> json) {
@@ -31,6 +35,8 @@ class ExploreItem {
       subtitle: _readNullableString(json['subtitle']),
       provinceId: _readNullableString(json['provinceId']),
       provinceName: _readNullableString(json['provinceName']),
+      rating: _readNullableDouble(json['rating']),
+      reviewCount: _readNullableInt(json['reviewCount']) ?? 0,
     );
   }
 
@@ -43,8 +49,21 @@ class ExploreItem {
       'subtitle': subtitle,
       'provinceId': provinceId,
       'provinceName': provinceName,
+      'rating': rating,
+      'reviewCount': reviewCount,
     };
   }
+}
+
+double? _readNullableDouble(Object? value) {
+  if (value is num) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '');
+}
+
+int? _readNullableInt(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '');
 }
 
 String _readRequiredString(Object? value) {
@@ -110,8 +129,7 @@ class ExploreCategory {
           .map(
             (Map<dynamic, dynamic> item) => ExploreItem.fromJson(
               item.map(
-                (dynamic key, dynamic value) =>
-                    MapEntry(key.toString(), value),
+                (dynamic key, dynamic value) => MapEntry(key.toString(), value),
               ),
             ),
           )

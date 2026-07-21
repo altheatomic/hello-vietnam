@@ -23,6 +23,8 @@ class TripPlannerMockData {
           description:
               "Explore Vietnam's first national university, a beautiful example of traditional Vietnamese architecture and Confucian heritage.",
           distanceLabel: 'Around 800 meters',
+          lat: 21.0285,
+          lng: 105.8357,
           tips: <String>[
             'Arrive early to avoid crowds',
             'Dress modestly for temple visit',
@@ -34,18 +36,24 @@ class TripPlannerMockData {
               subtitle: 'Hospital',
               distance: '140m',
               eta: '2 mins',
+              lat: 21.0287,
+              lng: 105.8340,
             ),
             TripPlannerNearbyPlace(
               title: 'Hospital 2',
               subtitle: 'Hospital',
               distance: '450m',
               eta: '5 mins',
+              lat: 21.0301,
+              lng: 105.8372,
             ),
             TripPlannerNearbyPlace(
               title: 'Long Chau Pharmacy',
               subtitle: 'Pharmacy',
               distance: '680m',
               eta: '8 mins',
+              lat: 21.0265,
+              lng: 105.8390,
             ),
           ],
         ),
@@ -383,6 +391,29 @@ class TripPlannerDayData {
   final String moreActivitiesLabel;
   final List<TripPlannerActivityData> activities;
   final List<Color> gradientColors;
+
+  Map<String, dynamic> toJson() => {
+        'dayLabel': dayLabel,
+        'date': date,
+        'activityCountLabel': activityCountLabel,
+        'moreActivitiesLabel': moreActivitiesLabel,
+        'activities': activities.map((a) => a.toJson()).toList(),
+        'gradientColors': gradientColors.map((c) => c.toARGB32()).toList(),
+      };
+
+  factory TripPlannerDayData.fromJson(Map<String, dynamic> json) =>
+      TripPlannerDayData(
+        dayLabel: json['dayLabel'] as String,
+        date: json['date'] as String,
+        activityCountLabel: json['activityCountLabel'] as String,
+        moreActivitiesLabel: json['moreActivitiesLabel'] as String,
+        activities: (json['activities'] as List)
+            .map((j) => TripPlannerActivityData.fromJson(j as Map<String, dynamic>))
+            .toList(),
+        gradientColors: (json['gradientColors'] as List)
+            .map((v) => Color(v as int))
+            .toList(),
+      );
 }
 
 class TripPlannerActivityData {
@@ -395,6 +426,9 @@ class TripPlannerActivityData {
     required this.distanceLabel,
     required this.tips,
     required this.nearbyPlaces,
+    this.lat = 0.0,
+    this.lng = 0.0,
+    this.imageUrl,
   });
 
   final String title;
@@ -405,6 +439,40 @@ class TripPlannerActivityData {
   final String distanceLabel;
   final List<String> tips;
   final List<TripPlannerNearbyPlace> nearbyPlaces;
+  final double lat;
+  final double lng;
+  final String? imageUrl;
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'time': time,
+        'slot': slot,
+        'tag': tag,
+        'description': description,
+        'distanceLabel': distanceLabel,
+        'tips': tips,
+        'nearbyPlaces': nearbyPlaces.map((p) => p.toJson()).toList(),
+        'lat': lat,
+        'lng': lng,
+        'imageUrl': imageUrl,
+      };
+
+  factory TripPlannerActivityData.fromJson(Map<String, dynamic> json) =>
+      TripPlannerActivityData(
+        title: json['title'] as String,
+        time: json['time'] as String,
+        slot: json['slot'] as String,
+        tag: json['tag'] as String,
+        description: json['description'] as String,
+        distanceLabel: json['distanceLabel'] as String,
+        tips: List<String>.from(json['tips'] as List),
+        nearbyPlaces: (json['nearbyPlaces'] as List)
+            .map((j) => TripPlannerNearbyPlace.fromJson(j as Map<String, dynamic>))
+            .toList(),
+        lat: (json['lat'] as num).toDouble(),
+        lng: (json['lng'] as num).toDouble(),
+        imageUrl: json['imageUrl'] as String?,
+      );
 }
 
 class TripPlannerNearbyPlace {
@@ -413,10 +481,33 @@ class TripPlannerNearbyPlace {
     required this.subtitle,
     required this.distance,
     required this.eta,
+    this.lat = 0.0,
+    this.lng = 0.0,
   });
 
   final String title;
   final String subtitle;
   final String distance;
   final String eta;
+  final double lat;
+  final double lng;
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'subtitle': subtitle,
+        'distance': distance,
+        'eta': eta,
+        'lat': lat,
+        'lng': lng,
+      };
+
+  factory TripPlannerNearbyPlace.fromJson(Map<String, dynamic> json) =>
+      TripPlannerNearbyPlace(
+        title: json['title'] as String,
+        subtitle: json['subtitle'] as String,
+        distance: json['distance'] as String,
+        eta: json['eta'] as String,
+        lat: (json['lat'] as num).toDouble(),
+        lng: (json['lng'] as num).toDouble(),
+      );
 }

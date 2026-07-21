@@ -14,6 +14,7 @@ import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 
 import 'widgets/explore_floating_back_button.dart';
+import 'widgets/explore_category_filter_bar.dart';
 import 'widgets/explore_preview_widgets.dart';
 
 const List<String> _filterLabels = <String>[
@@ -75,14 +76,13 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
     });
 
     try {
-      final List<List<ExploreItem>> results = await Future.wait(
-        <Future<List<ExploreItem>>>[
-          _repository.loadCategoryItems(DetailCategory.activities),
-          _repository.loadCategoryItems(DetailCategory.culture),
-          _repository.loadCategoryItems(DetailCategory.food),
-          _repository.loadCategoryItems(DetailCategory.localProducts),
-        ],
-      );
+      final List<List<ExploreItem>> results =
+          await Future.wait(<Future<List<ExploreItem>>>[
+            _repository.loadCategoryItems(DetailCategory.activities),
+            _repository.loadCategoryItems(DetailCategory.culture),
+            _repository.loadCategoryItems(DetailCategory.food),
+            _repository.loadCategoryItems(DetailCategory.localProducts),
+          ]);
 
       if (!mounted) return;
 
@@ -237,6 +237,7 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
         SliverPersistentHeader(
           pinned: true,
           delegate: _StickyFilterDelegate(
+            topInset: statusBarH,
             selectedIndex: _selectedFilter,
             onTap: (int index) {
               setState(() {
@@ -250,7 +251,8 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
           SliverFillRemaining(
             hasScrollBody: false,
             child: _PageStateMessage(
-              title: 'No ${_filterLabels[_selectedFilter].toLowerCase()} found.',
+              title:
+                  'No ${_filterLabels[_selectedFilter].toLowerCase()} found.',
               subtitle: currentCategory.emptyMessage,
             ),
           )
@@ -264,7 +266,7 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
             ),
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
-                (BuildContext context, int index) => _ResultCard(
+                (BuildContext context, int index) => ExploreResultCard(
                   item: items[index],
                   category: currentCategory.category,
                 ),
@@ -276,9 +278,7 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.only(bottom: 24),
-                child: Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
               ),
             ),
         ],
@@ -300,16 +300,21 @@ class _CategoryResults {
 }
 
 class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
-  _StickyFilterDelegate({required this.selectedIndex, required this.onTap});
+  _StickyFilterDelegate({
+    required this.topInset,
+    required this.selectedIndex,
+    required this.onTap,
+  });
 
+  final double topInset;
   final int selectedIndex;
   final ValueChanged<int> onTap;
 
   @override
-  double get minExtent => 90;
+  double get minExtent => topInset + ExploreCategoryFilterBar.height + 8;
 
   @override
-  double get maxExtent => 90;
+  double get maxExtent => minExtent;
 
   @override
   Widget build(
@@ -317,66 +322,52 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final double statusBarH = MediaQuery.of(context).padding.top;
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.only(
-        top: statusBarH > 0 ? statusBarH : 0,
-        bottom: 6,
-        left: 0,
-        right: 0,
-      ),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppConstants.pagePadding,
+    final Color background = Theme.of(context).colorScheme.surface;
+    return ColoredBox(
+      color: background.withValues(alpha: 0.92),
+      child: Padding(
+        padding: EdgeInsets.only(top: topInset, bottom: 8),
+        child: ExploreCategoryFilterBar(
+          labels: _filterLabels
+              .map((String label) => context.l10n.ui(label))
+              .toList(growable: false),
+          selectedIndex: selectedIndex,
+          onSelected: onTap,
         ),
-        itemCount: _filterLabels.length,
-        separatorBuilder: (BuildContext context, int index) =>
-            const SizedBox(width: 8),
-        itemBuilder: (BuildContext context, int index) {
-          final bool isSelected = index == selectedIndex;
-          return GestureDetector(
-            onTap: () => onTap(index),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                context.l10n.ui(_filterLabels[index]),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }
 
   @override
   bool shouldRebuild(covariant _StickyFilterDelegate oldDelegate) {
-    return selectedIndex != oldDelegate.selectedIndex;
+    return selectedIndex != oldDelegate.selectedIndex ||
+        topInset != oldDelegate.topInset;
   }
 }
 
-class _ResultCard extends StatefulWidget {
-  const _ResultCard({required this.item, required this.category});
+class ExploreResultCard extends StatefulWidget {
+  const ExploreResultCard({
+    super.key,
+    required this.item,
+    required this.category,
+    this.favoriteType,
+    this.onTap,
+    this.rating,
+    this.trackExploreBehavior = true,
+  });
 
   final ExploreItem item;
   final DetailCategory category;
+  final FavoriteType? favoriteType;
+  final VoidCallback? onTap;
+  final double? rating;
+  final bool trackExploreBehavior;
 
   @override
-  State<_ResultCard> createState() => _ResultCardState();
+  State<ExploreResultCard> createState() => _ExploreResultCardState();
 }
 
-class _ResultCardState extends State<_ResultCard> {
+class _ExploreResultCardState extends State<ExploreResultCard> {
   late final PageController _imageController;
   final WishlistController _wishlistController = WishlistController.instance;
   final ExploreTrackingService _trackingService =
@@ -392,20 +383,22 @@ class _ResultCardState extends State<_ResultCard> {
   Future<void> _toggleFavorite() async {
     try {
       final bool? result = await _wishlistController.toggleFavorite(
-        type: _favoriteTypeForCategory(widget.category),
+        type: _favoriteType,
         rawItemId: widget.item.id,
         fallbackName: widget.item.name,
       );
       if (!mounted) return;
       if (result != null) {
-        unawaited(
-          _trackingService.trackFavoriteChanged(
-            category: widget.category,
-            contentId: widget.item.id,
-            provinceId: widget.item.provinceId,
-            isFavorite: result,
-          ),
-        );
+        if (widget.trackExploreBehavior) {
+          unawaited(
+            _trackingService.trackFavoriteChanged(
+              category: widget.category,
+              contentId: widget.item.id,
+              provinceId: widget.item.provinceId,
+              isFavorite: result,
+            ),
+          );
+        }
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
@@ -413,9 +406,9 @@ class _ResultCardState extends State<_ResultCard> {
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Update wishlist failed: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
     }
   }
 
@@ -432,6 +425,9 @@ class _ResultCardState extends State<_ResultCard> {
     }
   }
 
+  FavoriteType get _favoriteType =>
+      widget.favoriteType ?? _favoriteTypeForCategory(widget.category);
+
   @override
   void dispose() {
     _imageController.dispose();
@@ -447,20 +443,22 @@ class _ResultCardState extends State<_ResultCard> {
     final int imageCount = itemImages.length;
 
     return GestureDetector(
-      onTap: () {
-        context.push(
-          AppRoutes.detailPathForCategory(widget.category),
-          extra: ItemDetailRequest(
-            id: widget.item.id,
-            name: widget.item.name,
-            category: widget.category,
-            fallbackImages: itemImages,
-            fallbackImagePath: imageCount == 0 ? null : itemImages.first,
-            trackExploreBehavior: true,
-            exploreProvinceId: widget.item.provinceId,
-          ),
-        );
-      },
+      onTap:
+          widget.onTap ??
+          () {
+            context.push(
+              AppRoutes.detailPathForCategory(widget.category),
+              extra: ItemDetailRequest(
+                id: widget.item.id,
+                name: widget.item.name,
+                category: widget.category,
+                fallbackImages: itemImages,
+                fallbackImagePath: imageCount == 0 ? null : itemImages.first,
+                trackExploreBehavior: true,
+                exploreProvinceId: widget.item.provinceId,
+              ),
+            );
+          },
       child: Padding(
         padding: const EdgeInsets.only(bottom: 20),
         child: Column(
@@ -530,7 +528,7 @@ class _ResultCardState extends State<_ResultCard> {
                         builder: (BuildContext context, Widget? child) {
                           final bool isFavorite = _wishlistController
                               .isFavorite(
-                                type: _favoriteTypeForCategory(widget.category),
+                                type: _favoriteType,
                                 rawItemId: widget.item.id,
                               );
                           return GestureDetector(
@@ -571,12 +569,18 @@ class _ResultCardState extends State<_ResultCard> {
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const <Widget>[
-                            Icon(Icons.star, color: Colors.amber, size: 14),
-                            SizedBox(width: 3),
+                          children: <Widget>[
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 3),
                             Text(
-                              '4.7',
-                              style: TextStyle(
+                              (widget.rating ?? widget.item.rating)
+                                      ?.toStringAsFixed(1) ??
+                                  '4.7',
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,

@@ -39,6 +39,10 @@ class ThreadPage extends StatelessWidget {
       );
     }
 
+    void openSharedTripPlan(SharedTripPlanItem item) {
+      context.push(AppRoutes.tripPlannerResultPath(idPlan: item.planId));
+    }
+
     void openReplyModal({
       required ForumPost post,
       required String replyToHandle,
@@ -93,8 +97,8 @@ class ThreadPage extends StatelessWidget {
 
             if (post == null) {
               if (store.isLoading) {
-                return const AppLoadingScreen(
-                  message: 'Loading post',
+                return AppLoadingScreen(
+                  message: context.l10n.ui('Loading post'),
                   compact: true,
                 );
               }
@@ -136,8 +140,6 @@ class ThreadPage extends StatelessWidget {
                   title: context.l10n.ui('Post'),
                   onBack: () => context.pop(),
                   onBookmark: () => context.push(AppRoutes.forumSaved),
-                  onNotification: () =>
-                      context.push(AppRoutes.forumNotifications),
                   onAvatarTap: () => context.push(AppRoutes.forumMe),
                   avatarUrl: store.currentUserAuthor.avatarUrl,
                 ),
@@ -170,12 +172,15 @@ class ThreadPage extends StatelessWidget {
                           onSharedItemTap: post.sharedItem == null
                               ? null
                               : () => openSharedItem(post.sharedItem!),
+                          onSharedTripPlanTap: post.sharedTripPlan == null
+                              ? null
+                              : () => openSharedTripPlan(post.sharedTripPlan!),
                           showMoreButton: !store.isCurrentUser(post.author.id),
                           showInlineFollow: false,
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          'Popular answers',
+                          context.l10n.ui('Popular answers'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,

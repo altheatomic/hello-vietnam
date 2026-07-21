@@ -61,3 +61,12 @@ spec.md
 backend/node_modules/
 backend/supabase/.temp/
 backend/crawldata/.env
+
+# Python services
+cf_service/.env
+cf_service/.venv/
+cf_service/__pycache__/
+cf_service/**/__pycache__/
+cf_service/.pytest_cache/
+cf_service/.mypy_cache/
+.claude/

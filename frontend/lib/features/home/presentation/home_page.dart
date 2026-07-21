@@ -366,11 +366,14 @@ class _HomePageState extends State<HomePage>
                       ),
                       child: ActiveTripCard(
                         trip: trip,
-                        onViewOrRoute: () => context.push(
-                          AppRoutes.tripPlannerDayDetailPath(
-                            trip.relevantActivity.dayIndex,
-                          ),
-                        ),
+                        onViewOrRoute: () {
+                          final int dayIndex =
+                              trip.relevantActivity.dayIndex;
+                          context.push(
+                            AppRoutes.tripPlannerDayDetailPath(dayIndex),
+                            extra: trip.days[dayIndex],
+                          );
+                        },
                         onEnd: TripStore.instance.endTrip,
                       ),
                     );

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
-import 'package:hellovietnam/core/language/app_language.dart';
 
 class TripPlannerPage extends StatefulWidget {
   const TripPlannerPage({super.key});
@@ -145,7 +144,7 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                             begin: 0.08,
                             end: 0.38,
                             child: Text(
-                              context.l10n.ui('Personalized Itinerary'),
+                              'Personalized Itinerary',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: headerTitleSize,
@@ -161,7 +160,7 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                             begin: 0.16,
                             end: 0.46,
                             child: Text(
-                              context.l10n.ui("Let's create your perfect trip"),
+                              "Let's create your perfect trip",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: headerSubtitleSize,
@@ -198,7 +197,7 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                             begin: 0.36,
                             end: 0.66,
                             child: Text(
-                              context.l10n.ui('Trip Type'),
+                              'Trip Type',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: sectionTitleSize,
@@ -213,9 +212,7 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                             begin: 0.42,
                             end: 0.72,
                             child: Text(
-                              context.l10n.ui(
-                                'What type of trip are you planning?',
-                              ),
+                              'What type of trip are you planning?',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: sectionSubtitleSize,
@@ -236,10 +233,9 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                                     end: 0.84,
                                     offset: const Offset(-0.08, 0),
                                     child: _TripTypeCard(
-                                      title: context.l10n.ui('Leisure Trip'),
-                                      subtitle: context.l10n.ui(
-                                        'Relax, explore, and enjoy\nyour vacation',
-                                      ),
+                                      title: 'Leisure Trip',
+                                      subtitle:
+                                          'Relax, explore, and enjoy\nyour vacation',
                                       icon: Icons.beach_access_rounded,
                                       imageUrl:
                                           'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
@@ -267,10 +263,9 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                                     end: 0.92,
                                     offset: const Offset(-0.08, 0),
                                     child: _TripTypeCard(
-                                      title: context.l10n.ui('Business Trip'),
-                                      subtitle: context.l10n.ui(
-                                        'Meetings, conferences, and\nnetworking',
-                                      ),
+                                      title: 'Business Trip',
+                                      subtitle:
+                                          'Meetings, conferences, and\nnetworking',
                                       icon: Icons.work_outline_rounded,
                                       imageUrl:
                                           'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
@@ -353,7 +348,7 @@ class _ProgressHeader extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(
-          context.l10n.stepOf(1, 5),
+          'Step 1 of 5',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: labelSize,
@@ -639,18 +634,18 @@ class _SavedTripsShortcutButton extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
+          child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const Icon(
+              Icon(
                 Icons.bookmark_added_rounded,
                 size: 18,
                 color: Color(0xFF21B4EB),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
-                context.l10n.ui('Saved Trips'),
-                style: const TextStyle(
+                'Saved Trips',
+                style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF405166),

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
-import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
+import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 
 class SavedTripsPage extends StatefulWidget {
   const SavedTripsPage({super.key});
@@ -14,121 +16,115 @@ class SavedTripsPage extends StatefulWidget {
 }
 
 class _SavedTripsPageState extends State<SavedTripsPage> {
-  final List<_SavedTrip> _trips = <_SavedTrip>[
-    _SavedTrip(
-      id: 'trip-hoian',
-      monthLabel: 'April 2026',
-      title: 'Hoi An Heritage Escape',
-      destination: 'Hoi An',
-      tripType: 'Leisure',
-      dateLabel: '16 Apr • 3 days 2 nights',
-      budgetLabel: '900,000 VND / day',
-      accentColors: const <Color>[
-        Color(0xFFFFD6B5),
-        Color(0xFFFFF1C8),
-        Color(0xFFCFF5F6),
-      ],
-      stops: <_SavedStop>[
-        _SavedStop(
-          id: 'hoian-1',
-          timeLabel: '08:00',
-          title: 'Japanese Covered Bridge',
-          note: 'Architecture and old town walk',
-          isCompleted: true,
-        ),
-        _SavedStop(
-          id: 'hoian-2',
-          timeLabel: '12:30',
-          title: 'Riverside Lunch Market',
-          note: 'Try cao lau and local desserts',
-          isCompleted: false,
-        ),
-        _SavedStop(
-          id: 'hoian-3',
-          timeLabel: '18:30',
-          title: 'Lantern Boat Ride',
-          note: 'Evening activity on Thu Bon River',
-          isCompleted: false,
-        ),
-      ],
-    ),
-    _SavedTrip(
-      id: 'trip-dalat',
-      monthLabel: 'April 2026',
-      title: 'Da Lat Cool Weather Weekend',
-      destination: 'Da Lat',
-      tripType: 'Leisure',
-      dateLabel: '22 Apr • 2 days 1 night',
-      budgetLabel: 'Standard range',
-      accentColors: const <Color>[
-        Color(0xFFE5F7F4),
-        Color(0xFFDDF4FF),
-        Color(0xFFF1ECFF),
-      ],
-      stops: <_SavedStop>[
-        _SavedStop(
-          id: 'dalat-1',
-          timeLabel: '07:30',
-          title: 'Pine Hill Sunrise Spot',
-          note: 'Coffee stop with valley view',
-          isCompleted: false,
-        ),
-        _SavedStop(
-          id: 'dalat-2',
-          timeLabel: '10:00',
-          title: 'Domaine de Marie Church',
-          note: 'Photo stop and short sightseeing',
-          isCompleted: false,
-        ),
-        _SavedStop(
-          id: 'dalat-3',
-          timeLabel: '15:00',
-          title: 'Night Market Walk',
-          note: 'Street food and souvenirs',
-          isCompleted: false,
-        ),
-      ],
-    ),
-    _SavedTrip(
-      id: 'trip-hanoi',
-      monthLabel: 'March 2026',
-      title: 'Hanoi Culture Sprint',
-      destination: 'Hanoi',
-      tripType: 'Business',
-      dateLabel: '28 Mar • 1 day',
-      budgetLabel: '1,200,000 VND / day',
-      accentColors: const <Color>[
-        Color(0xFFDDEBFF),
-        Color(0xFFE3FBFF),
-        Color(0xFFF4F2FF),
-      ],
-      stops: <_SavedStop>[
-        _SavedStop(
-          id: 'hanoi-1',
-          timeLabel: '09:00',
-          title: 'Temple of Literature',
-          note: 'Morning cultural visit',
-          isCompleted: true,
-        ),
-        _SavedStop(
-          id: 'hanoi-2',
-          timeLabel: '13:00',
-          title: 'Old Quarter Food Tour',
-          note: 'Lunch tasting route',
-          isCompleted: true,
-        ),
-        _SavedStop(
-          id: 'hanoi-3',
-          timeLabel: '17:30',
-          title: 'Hoan Kiem Lake',
-          note: 'Late afternoon walk',
-          isCompleted: true,
-        ),
-      ],
-    ),
-  ];
+  List<_SavedTrip> _trips = <_SavedTrip>[];
+  bool _isLoading = true;
 
   _TripFilter _selectedFilter = _TripFilter.all;
+
+  static const List<List<Color>> _palettes = <List<Color>>[
+    <Color>[Color(0xFFFFD6B5), Color(0xFFFFF1C8), Color(0xFFCFF5F6)],
+    <Color>[Color(0xFFE5F7F4), Color(0xFFDDF4FF), Color(0xFFF1ECFF)],
+    <Color>[Color(0xFFDDEBFF), Color(0xFFE3FBFF), Color(0xFFF4F2FF)],
+  ];
+
+  static const List<String> _monthNames = <String>[
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  static const List<String> _shortMonths = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedTrips();
+  }
+
+  void _openItinerary(String idPlan) {
+    context.push(AppRoutes.tripPlannerResultPath(idPlan: idPlan));
+  }
+
+  Future<void> _loadSavedTrips() async {
+    try {
+      final items = await TripRepository().listSavedPlans();
+      if (!mounted) return;
+      setState(() {
+        _trips = items
+            .asMap()
+            .entries
+            .map((MapEntry<int, SavedPlanItem> e) => _fromItem(e.key, e.value))
+            .toList();
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showMessage('Could not load saved trips.');
+    }
+  }
+
+  static _SavedTrip _fromItem(int index, SavedPlanItem item) {
+    final DateTime createdAt =
+        DateTime.tryParse(item.createdAt) ?? DateTime.now();
+    final String monthLabel =
+        '${_monthNames[createdAt.month - 1]} ${createdAt.year}';
+
+    final DateTime? startDate = DateTime.tryParse(item.startAt);
+    final int nDays = int.tryParse(item.duration) ?? 1;
+    final DateTime? endDate =
+        DateTime.tryParse(item.endAt) ??
+        startDate?.add(Duration(days: nDays - 1));
+    final String dateLabel = startDate != null
+        ? '${startDate.day} ${_shortMonths[startDate.month - 1]}'
+              '${endDate == null ? '' : ' - ${endDate.day} ${_shortMonths[endDate.month - 1]}'} • '
+              '$nDays ${nDays == 1 ? 'day' : 'days'}'
+        : '$nDays days';
+
+    return _SavedTrip(
+      id: item.idPlan,
+      monthLabel: monthLabel,
+      title: item.customTitle ?? 'Your Vietnam Adventure',
+      destination: item.provinceName.isEmpty ? 'Vietnam' : item.provinceName,
+      tripType: 'Leisure',
+      dateLabel: dateLabel,
+
+      accentColors: _palettes[index % _palettes.length],
+      stops: item.stops
+          .map(
+            (SavedPlanStop s) => _SavedStop(
+              id: s.id,
+              timeLabel: s.startTime ?? _slotToTime(s.slot),
+              title: s.title,
+              note: s.note,
+              isCompleted: false,
+            ),
+          )
+          .toList(),
+    );
+  }
 
   List<_SavedTrip> get _visibleTrips {
     return _trips.where((_SavedTrip trip) {
@@ -174,8 +170,12 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
   Widget build(BuildContext context) {
     final Map<String, List<_SavedTrip>> groupedTrips =
         <String, List<_SavedTrip>>{};
-    for (final _SavedTrip trip in _visibleTrips) {
-      groupedTrips.putIfAbsent(trip.monthLabel, () => <_SavedTrip>[]).add(trip);
+    if (!_isLoading) {
+      for (final _SavedTrip trip in _visibleTrips) {
+        groupedTrips
+            .putIfAbsent(trip.monthLabel, () => <_SavedTrip>[])
+            .add(trip);
+      }
     }
 
     return Scaffold(
@@ -209,153 +209,174 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
               child: _DecorativeOrb(size: 190, color: Color(0x5556E2D5)),
             ),
             SafeArea(
-              child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: <Widget>[
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Row(
-                            children: <Widget>[
-                              _CircleIconButton(
-                                icon: Icons.arrow_back_rounded,
-                                onTap: () => context.pop(),
-                              ),
-                              const Spacer(),
-                              _CircleIconButton(
-                                icon: Icons.add_rounded,
-                                onTap: () => context.go(AppRoutes.tripPlanner),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 22),
-                          Text(
-                            context.l10n.ui('Saved Trips'),
-                            style: const TextStyle(
-                              fontSize: 31,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.textPrimary,
-                              height: 1.05,
+              child: RefreshIndicator(
+                onRefresh: _loadSavedTrips,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: <Widget>[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Row(
+                              children: <Widget>[
+                                _CircleIconButton(
+                                  icon: Icons.arrow_back_rounded,
+                                  onTap: () => context.pop(),
+                                ),
+                                const Spacer(),
+                                _CircleIconButton(
+                                  icon: Icons.add_rounded,
+                                  onTap: () =>
+                                      context.go(AppRoutes.tripPlanner),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            context.l10n.ui(
+                            const SizedBox(height: 22),
+                            const Text(
+                              'Saved Trips',
+                              style: TextStyle(
+                                fontSize: 31,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.textPrimary,
+                                height: 1.05,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
                               'Pick up where you left off and tick places as you complete them.',
-                            ),
-                            style: const TextStyle(
-                              fontSize: 15,
-                              color: Color(0xFF687384),
-                              height: 1.45,
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          _SummaryCard(
-                            totalTrips: _trips.length,
-                            remainingStops: _remainingStops,
-                          ),
-                          const SizedBox(height: 18),
-                          SizedBox(
-                            height: 48,
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              children: _TripFilter.values.map((
-                                _TripFilter filter,
-                              ) {
-                                final bool selected = filter == _selectedFilter;
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 10),
-                                  child: _FilterChipButton(
-                                    label: filter.label,
-                                    selected: selected,
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedFilter = filter;
-                                      });
-                                    },
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                          const SizedBox(height: 22),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (groupedTrips.isEmpty)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _EmptySavedTripsState(),
-                    )
-                  else
-                    ...groupedTrips.entries.map(
-                      (
-                        MapEntry<String, List<_SavedTrip>> entry,
-                      ) => SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 14),
-                                child: Row(
-                                  children: <Widget>[
-                                    Expanded(
-                                      child: Text(
-                                        entry.key,
-                                        style: const TextStyle(
-                                          fontSize: 23,
-                                          fontWeight: FontWeight.w800,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                    ),
-                                    Text(
-                                      '${entry.value.length} trips',
-                                      style: const TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF738092),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF687384),
+                                height: 1.45,
                               ),
-                              ...entry.value.map(
-                                (_SavedTrip trip) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: _SavedTripCard(
-                                    trip: trip,
-                                    onToggleStop: (String stopId) =>
-                                        _toggleStop(trip.id, stopId),
-                                    onOpenPlan: () => context.push(
-                                      AppRoutes.tripPlannerResult,
+                            ),
+                            const SizedBox(height: 18),
+                            _SummaryCard(
+                              totalTrips: _trips.length,
+                              remainingStops: _remainingStops,
+                            ),
+                            const SizedBox(height: 18),
+                            SizedBox(
+                              height: 48,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: _TripFilter.values.map((
+                                  _TripFilter filter,
+                                ) {
+                                  final bool selected =
+                                      filter == _selectedFilter;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: _FilterChipButton(
+                                      label: filter.label,
+                                      selected: selected,
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedFilter = filter;
+                                        });
+                                      },
                                     ),
-                                    onPlanAgain: () =>
-                                        context.go(AppRoutes.tripPlanner),
-                                    onTripTapped: () => _showMessage(
-                                      context.l10n.savedTripUpdated(trip.title),
-                                    ),
-                                  ),
-                                ),
+                                  );
+                                }).toList(),
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(height: 22),
+                          ],
                         ),
                       ),
                     ),
-                ],
+                    if (_isLoading)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (groupedTrips.isEmpty)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _EmptySavedTripsState(),
+                      )
+                    else
+                      ...groupedTrips.entries.map(
+                        (
+                          MapEntry<String, List<_SavedTrip>> entry,
+                        ) => SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 14),
+                                  child: Row(
+                                    children: <Widget>[
+                                      Expanded(
+                                        child: Text(
+                                          entry.key,
+                                          style: const TextStyle(
+                                            fontSize: 23,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        '${entry.value.length} trips',
+                                        style: const TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF738092),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                ...entry.value.map(
+                                  (_SavedTrip trip) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: _SavedTripCard(
+                                      trip: trip,
+                                      onToggleStop: (String stopId) =>
+                                          _toggleStop(trip.id, stopId),
+                                      onOpenPlan: () => _openItinerary(trip.id),
+                                      onPlanAgain: () =>
+                                          context.go(AppRoutes.tripPlanner),
+                                      onTripTapped: () => _showMessage(
+                                        '${trip.title} updated in Saved Trips',
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+String _slotToTime(String? slot) {
+  switch (slot?.toLowerCase()) {
+    case 'morning':
+      return '08:00';
+    case 'afternoon':
+      return '13:00';
+    case 'evening':
+      return '17:00';
+    case 'lunch':
+      return '12:00';
+    default:
+      return '09:00';
   }
 }
 
@@ -551,7 +572,7 @@ class _SavedTripCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            '${trip.destination} • ${trip.tripType}',
+                            '${removeVietnameseDiacritics(trip.destination)} • ${trip.tripType}',
                             style: const TextStyle(
                               fontSize: 14.5,
                               color: Color(0xFF5D6A7E),
@@ -573,23 +594,10 @@ class _SavedTripCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: _InfoPill(
-                        icon: Icons.account_balance_wallet_outlined,
-                        label: trip.budgetLabel,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _InfoPill(
-                        icon: Icons.checklist_rounded,
-                        label:
-                            '${trip.completedStops}/${trip.stops.length} completed',
-                      ),
-                    ),
-                  ],
+                _InfoPill(
+                  icon: Icons.checklist_rounded,
+                  label:
+                      '${trip.completedStops}/${trip.stops.length} completed',
                 ),
                 const SizedBox(height: 14),
                 ClipRRect(
@@ -1023,7 +1031,6 @@ class _SavedTrip {
     required this.destination,
     required this.tripType,
     required this.dateLabel,
-    required this.budgetLabel,
     required this.accentColors,
     required this.stops,
   });
@@ -1034,7 +1041,6 @@ class _SavedTrip {
   final String destination;
   final String tripType;
   final String dateLabel;
-  final String budgetLabel;
   final List<Color> accentColors;
   final List<_SavedStop> stops;
 
@@ -1077,7 +1083,6 @@ class _SavedTrip {
       destination: destination,
       tripType: tripType,
       dateLabel: dateLabel,
-      budgetLabel: budgetLabel,
       accentColors: accentColors,
       stops: List<_SavedStop>.generate(stops.length, (int index) {
         final _SavedStop stop = stops[index];

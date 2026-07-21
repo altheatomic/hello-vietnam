@@ -96,9 +96,9 @@ class _NotificationPageState extends State<NotificationPage> {
                                             draftFilters.clear();
                                           });
                                         },
-                                        child: const Text(
-                                          'Clear All',
-                                          style: TextStyle(
+                                        child: Text(
+                                          context.l10n.ui('Clear All'),
+                                          style: const TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w600,
                                             color: Color(0xFF7D8594),
@@ -106,10 +106,10 @@ class _NotificationPageState extends State<NotificationPage> {
                                         ),
                                       ),
                                     ),
-                                    const Center(
+                                    Center(
                                       child: Text(
-                                        'Filters',
-                                        style: TextStyle(
+                                        context.l10n.ui('Filters'),
+                                        style: const TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w800,
                                           color: Color(0xFF2B3340),
@@ -136,9 +136,9 @@ class _NotificationPageState extends State<NotificationPage> {
                                 ),
                               ),
                               const SizedBox(height: 26),
-                              const Text(
-                                'Notification type',
-                                style: TextStyle(
+                              Text(
+                                context.l10n.ui('Notification type'),
+                                style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFF4A5566),
@@ -156,7 +156,10 @@ class _NotificationPageState extends State<NotificationPage> {
                                           ? draftFilters.isEmpty
                                           : draftFilters.contains(filter);
                                       return _FilterChip(
-                                        label: filter.label,
+                                        label: _localizedFilterLabel(
+                                          context,
+                                          filter,
+                                        ),
                                         selected: selected,
                                         onTap: () {
                                           setModalState(() {
@@ -211,7 +214,9 @@ class _NotificationPageState extends State<NotificationPage> {
                                       ),
                                     ),
                                     child: Text(
-                                      'Apply Filters (${draftFilters.length})',
+                                      context.l10n.applyFilters(
+                                        draftFilters.length,
+                                      ),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w800,
@@ -285,9 +290,9 @@ class _NotificationPageState extends State<NotificationPage> {
                       ),
                     ),
                     if (_controller.isLoading)
-                      const Expanded(
+                      Expanded(
                         child: AppLoadingScreen(
-                          message: 'Loading notifications',
+                          message: context.l10n.ui('Loading notifications'),
                           compact: true,
                         ),
                       )
@@ -297,7 +302,7 @@ class _NotificationPageState extends State<NotificationPage> {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 32),
                             child: Text(
-                              _controller.errorMessage!,
+                              context.l10n.ui(_controller.errorMessage!),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 15,
@@ -453,10 +458,10 @@ class _NotificationHeader extends StatelessWidget {
               onTap: onBack,
             ),
           ),
-          const Center(
+          Center(
             child: Text(
-              'Notification',
-              style: TextStyle(
+              context.l10n.notification,
+              style: const TextStyle(
                 fontSize: 19,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF2FAAF4),
@@ -570,6 +575,12 @@ class _NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color typeColor = notification.type.accentColor;
     final Color typeBackground = notification.type.backgroundColor;
+    final String title = _localizedNotificationTitle(context, notification);
+    final String description = _localizedNotificationDescription(
+      context,
+      notification,
+    );
+    final String timestamp = context.l10n.ui(notification.timestampLabel);
 
     return GestureDetector(
       onTap: onTap,
@@ -630,7 +641,7 @@ class _NotificationTile extends StatelessWidget {
                     children: <Widget>[
                       Expanded(
                         child: Text(
-                          notification.title,
+                          title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -644,7 +655,7 @@ class _NotificationTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        notification.timestampLabel,
+                        timestamp,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -667,7 +678,7 @@ class _NotificationTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    notification.description,
+                    description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -711,9 +722,9 @@ class _ClearAllButton extends StatelessWidget {
             ),
           ],
         ),
-        child: const Text(
-          'Clear All',
-          style: TextStyle(
+        child: Text(
+          context.l10n.ui('Clear All'),
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: Color(0xFF7A8191),
@@ -846,19 +857,21 @@ class _NotificationEmptyState extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 28),
-              const Text(
-                'No Notifications',
-                style: TextStyle(
+              Text(
+                context.l10n.ui('No Notifications'),
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF374151),
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
-                "We'll let you know when there will be\nsomething to update you.",
+              Text(
+                context.l10n.ui(
+                  "We'll let you know when there will be\nsomething to update you.",
+                ),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14.5,
                   height: 1.45,
                   color: Color(0xFF8B93A1),
@@ -870,4 +883,42 @@ class _NotificationEmptyState extends StatelessWidget {
       ),
     );
   }
+}
+
+String _localizedFilterLabel(BuildContext context, NotificationFilter filter) {
+  return switch (filter) {
+    NotificationFilter.all => context.l10n.ui('ALL'),
+    NotificationFilter.forum => context.l10n.ui('FORUM'),
+    NotificationFilter.voucher => context.l10n.ui('VOUCHER'),
+    NotificationFilter.account => context.l10n.ui('ACCOUNT'),
+    NotificationFilter.trip => context.l10n.ui('TRIP'),
+  };
+}
+
+String _localizedNotificationTitle(
+  BuildContext context,
+  AppNotification notification,
+) {
+  final RegExpMatch? earnedPointsMatch = RegExp(
+    r'^You earned (\d+) loyalty points$',
+  ).firstMatch(notification.title);
+  if (earnedPointsMatch != null) {
+    return context.l10n.earnedLoyaltyPoints(earnedPointsMatch.group(1)!);
+  }
+  return context.l10n.ui(notification.title);
+}
+
+String _localizedNotificationDescription(
+  BuildContext context,
+  AppNotification notification,
+) {
+  final RegExpMatch? rewardHistoryMatch = RegExp(
+    r'^(.+) has been added to your rewards history\.$',
+  ).firstMatch(notification.description);
+  if (rewardHistoryMatch != null) {
+    return context.l10n.rewardHistoryAdded(
+      context.l10n.ui(rewardHistoryMatch.group(1)!),
+    );
+  }
+  return context.l10n.ui(notification.description);
 }

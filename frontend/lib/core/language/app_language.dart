@@ -47,9 +47,9 @@ class AppLanguageController extends ChangeNotifier {
 
   Future<void> setLanguage(AppLanguage language) async {
     if (_language == language) return;
+    await LocalStorage.instance.setString(_storageKey, language.code);
     _language = language;
     notifyListeners();
-    await LocalStorage.instance.setString(_storageKey, language.code);
   }
 }
 
@@ -126,6 +126,13 @@ class AppStrings {
   String get currentLanguage => _vi ? 'Ngôn ngữ hiện tại' : 'Current language';
   String get appInterfaceLanguage =>
       _vi ? 'Ngôn ngữ giao diện ứng dụng' : 'App interface language';
+  String get applyingLanguage =>
+      _vi ? 'Đang áp dụng ngôn ngữ...' : 'Applying language...';
+  String get languageUpdated =>
+      _vi ? 'Đã cập nhật ngôn ngữ' : 'Language updated';
+  String get languageUpdateFailed => _vi
+      ? 'Không thể cập nhật ngôn ngữ. Vui lòng thử lại.'
+      : 'Could not update language. Please try again.';
   String get upcomingTrip => _vi ? 'Sắp đi' : 'Upcoming Trip';
   String get activeTrip => _vi ? 'Đang đi' : 'Active Trip';
   String get tripCompleted => _vi ? 'Đã hoàn tất' : 'Trip Completed';
@@ -143,6 +150,16 @@ class AppStrings {
       _vi ? 'Ngày hết hạn: $date' : 'Expiry date: $date';
   String needMorePoints(String points) =>
       _vi ? 'Bạn cần thêm $points điểm' : 'You need $points more points';
+  String routingTo(String placeTitle) =>
+      _vi ? 'Đang chỉ đường đến $placeTitle' : 'Routing to $placeTitle';
+  String applyFilters(int count) =>
+      _vi ? 'Áp dụng bộ lọc ($count)' : 'Apply Filters ($count)';
+  String earnedLoyaltyPoints(String points) => _vi
+      ? 'Bạn đã nhận được $points điểm thưởng'
+      : 'You earned $points loyalty points';
+  String rewardHistoryAdded(String actionLabel) => _vi
+      ? '$actionLabel đã được thêm vào lịch sử điểm thưởng.'
+      : '$actionLabel has been added to your rewards history.';
   String validForDays(int days) => _vi
       ? 'Có hiệu lực trong $days ngày kể từ ngày đổi'
       : 'Valid for $days days from redemption date';
@@ -155,6 +172,32 @@ class AppStrings {
   String activitiesCompleted(int count, int days) => _vi
       ? '$count hoạt động xong · $days ngày'
       : '$count activities completed · $days days';
+  String savedItinerariesCount(int count) =>
+      _vi ? '$count lịch trình đã lưu' : '$count saved itineraries';
+  String savedPlacesWaiting(int count) => _vi
+      ? '$count điểm vẫn đang chờ đánh dấu hoàn thành.'
+      : '$count places still waiting to be checked off.';
+  String savedTripGroupCount(int count) =>
+      _vi ? '$count chuyến đi' : '$count trips';
+  String savedTripCompletedCount(int completed, int total) =>
+      _vi ? '$completed/$total hoàn thành' : '$completed/$total completed';
+  String savedTripRemainingPlaces(int count) => _vi
+      ? '$count điểm còn lại để hoàn thành chuyến đi này.'
+      : '$count places left to complete on this trip.';
+  String reviewCount(int count) => _vi ? '$count đánh giá' : '$count reviews';
+  String reviewRatingFilterLabel(int star) => _vi ? '$star sao' : '$star-star';
+  String reviewBreakdownStarLabel(int star) => _vi ? '$star sao' : '$star star';
+  String noReviewsYetFor(String title) =>
+      _vi ? 'Chưa có đánh giá nào cho $title.' : 'No reviews yet for $title.';
+  String reviewSummaryLabel(double rating) {
+    if (rating >= 4.7) return _vi ? 'Tuyệt vời' : 'Fantastic';
+    if (rating >= 4.3) return _vi ? 'Rất tốt' : 'Great';
+    if (rating >= 3.5) return _vi ? 'Tốt' : 'Good';
+    if (rating > 0) return _vi ? 'Ổn' : 'Fair';
+    return _vi ? 'Chưa có xếp hạng' : 'No ratings yet';
+  }
+
+  String forumPostsCount(int count) => _vi ? '$count bài viết' : '$count posts';
   String get cancel => _vi ? 'Hủy' : 'Cancel';
   String get viewPlan => _vi ? 'Xem lịch' : 'View Plan';
   String get endTrip => _vi ? 'Kết thúc' : 'End Trip';
@@ -203,9 +246,11 @@ class AppStrings {
     return switch (route) {
       '/trip-planner' => tripPlanner,
       '/forum' => forum,
+      '/messages' => forum,
       '/translate' => translate,
       '/send-feedback' => sendReport,
       '/recommend' => recommend,
+      '/recommend/where-search' => recommend,
       '/explore' => explore,
       '/popular-apps' => popularApps,
       '/ai-search' => aiSearch,
@@ -341,13 +386,65 @@ class AppStrings {
     'Post': 'Bài viết',
     'What do you want to share?': 'Bạn muốn chia sẻ gì?',
     'Saved Posts': 'Bài đã lưu',
+    'Posts': 'Bài viết',
+    'Followers': 'Người theo dõi',
+    'For you': 'Dành cho bạn',
+    'No saved posts yet': 'Chưa có bài đã lưu',
+    'Loading profile': 'Đang tải hồ sơ',
+    'Profile not found': 'Không tìm thấy hồ sơ',
+    'Loading post': 'Đang tải bài viết',
+    'Popular answers': 'Câu trả lời nổi bật',
     'Report Post': 'Báo cáo bài viết',
     'Post not found': 'Không tìm thấy bài viết',
+    'Report submitted. We will review it anonymously.':
+        'Đã gửi báo cáo. Chúng tôi sẽ xem xét ẩn danh.',
     'Go back': 'Quay lại',
     'Follow': 'Theo dõi',
     'Following': 'Đang theo dõi',
     'Type your answer': 'Nhập câu trả lời',
+    'Clear All': 'Xóa tất cả',
+    'Filters': 'Bộ lọc',
+    'Notification type': 'Loại thông báo',
+    'Loading notifications': 'Đang tải thông báo',
+    'Unable to load notifications right now.': 'Hiện chưa tải được thông báo.',
+    'No Notifications': 'Chưa có thông báo',
+    "We'll let you know when there will be\nsomething to update you.":
+        'Chúng tôi sẽ báo cho bạn khi có\nnội dung mới cần cập nhật.',
+    'ALL': 'TẤT CẢ',
+    'TRIP': 'CHUYẾN ĐI',
+    'FORUM': 'DIỄN ĐÀN',
+    'VOUCHER': 'ƯU ĐÃI',
+    'ACCOUNT': 'TÀI KHOẢN',
     'All notifications were cleared': 'Đã xóa tất cả thông báo',
+    "Da Lat's got new festival!": 'Đà Lạt có lễ hội mới!',
+    "Don't miss the chance to go to the Flower Festival.":
+        'Đừng bỏ lỡ cơ hội tham gia Lễ hội Hoa.',
+    'You got new replies': 'Bạn có phản hồi mới',
+    'Brandon has just commented on your post':
+        'Brandon vừa bình luận bài viết của bạn',
+    'Fresh Flavors Unveiled!': 'Hương vị mới đã ra mắt!',
+    'New menu items are in! What will you try next?':
+        'Món mới đã có rồi! Bạn muốn thử món nào tiếp theo?',
+    'How was your trips?': 'Chuyến đi của bạn thế nào?',
+    'Tell us how satisfied you are on your 3-days trips in Ho Chi Minh City!!':
+        'Hãy cho chúng tôi biết mức độ hài lòng của bạn về chuyến đi 3 ngày tại TP. Hồ Chí Minh!',
+    'You got a new voucher!!': 'Bạn có voucher mới!',
+    'Get 10% off on for your premium subscription':
+        'Giảm 10% cho gói Premium của bạn',
+    'Your April getaway is ready': 'Kỳ nghỉ tháng 4 đã sẵn sàng',
+    'We found destination suggestions that fit your travel dates.':
+        'Chúng tôi đã tìm thấy gợi ý điểm đến phù hợp với ngày đi của bạn.',
+    'You are close to Silver rank': 'Bạn sắp đạt hạng Bạc',
+    'Check your benefits to unlock more vouchers and travel perks.':
+        'Kiểm tra quyền lợi để mở thêm voucher và ưu đãi du lịch.',
+    '9 days ago': '9 ngày trước',
+    '13 days ago': '13 ngày trước',
+    '4 days ago': '4 ngày trước',
+    '1 week ago': '1 tuần trước',
+    '11 days ago': '11 ngày trước',
+    '2 days ago': '2 ngày trước',
+    '6 hours ago': '6 giờ trước',
+    'Just now': 'Vừa xong',
     'Dark theme': 'Giao diện tối',
     'Popular Apps': 'Ứng dụng',
     'App not found': 'Không tìm thấy ứng dụng',
@@ -551,6 +648,52 @@ class AppStrings {
     'Saved Trips': 'Chuyến đi đã lưu',
     'Pick up where you left off and tick places as you complete them.':
         'Tiếp tục chuyến đi còn dang dở và đánh dấu các điểm đã hoàn thành.',
+    'All': 'Tất cả',
+    'Upcoming': 'Sắp đi',
+    'In Progress': 'Đang đi',
+    'Completed': 'Hoàn thành',
+    'April 2026': 'Tháng 4 2026',
+    'March 2026': 'Tháng 3 2026',
+    'Leisure': 'Du lịch',
+    '16 Apr • 3 days 2 nights': '16 Thg 4 • 3 ngày 2 đêm',
+    '22 Apr • 2 days 1 night': '22 Thg 4 • 2 ngày 1 đêm',
+    '28 Mar • 1 day': '28 Thg 3 • 1 ngày',
+    '900,000 VND / day': '900.000 VND / ngày',
+    '1,200,000 VND / day': '1.200.000 VND / ngày',
+    'Standard range': 'Mức tiêu chuẩn',
+    'Everything is still planned and ready to go.':
+        'Mọi điểm vẫn đã được lên kế hoạch và sẵn sàng.',
+    'All planned places are marked as completed.':
+        'Tất cả điểm trong lịch trình đã được đánh dấu hoàn thành.',
+    'Open itinerary': 'Mở lịch trình',
+    'Plan again': 'Lên lịch lại',
+    'No trips match this filter yet.': 'Chưa có chuyến đi nào khớp bộ lọc này.',
+    'Try another filter or create a new itinerary from Trip Planner.':
+        'Thử bộ lọc khác hoặc tạo lịch trình mới từ Lịch trình.',
+    'Hoi An Heritage Escape': 'Hành trình di sản Hội An',
+    'Da Lat Cool Weather Weekend': 'Cuối tuần mát lành Đà Lạt',
+    'Hanoi Culture Sprint': 'Chuyến khám phá văn hóa Hà Nội',
+    'Hoi An': 'Hội An',
+    'Da Lat': 'Đà Lạt',
+    'Hanoi': 'Hà Nội',
+    'Japanese Covered Bridge': 'Chùa Cầu Nhật Bản',
+    'Architecture and old town walk': 'Kiến trúc và dạo phố cổ',
+    'Riverside Lunch Market': 'Chợ trưa ven sông',
+    'Try cao lau and local desserts': 'Thử cao lầu và món ngọt địa phương',
+    'Lantern Boat Ride': 'Đi thuyền ngắm đèn lồng',
+    'Evening activity on Thu Bon River': 'Hoạt động buổi tối trên sông Thu Bồn',
+    'Pine Hill Sunrise Spot': 'Điểm ngắm bình minh đồi thông',
+    'Coffee stop with valley view': 'Dừng cà phê ngắm thung lũng',
+    'Domaine de Marie Church': 'Nhà thờ Domaine de Marie',
+    'Photo stop and short sightseeing': 'Chụp ảnh và tham quan nhanh',
+    'Night Market Walk': 'Dạo chợ đêm',
+    'Street food and souvenirs': 'Ẩm thực đường phố và quà lưu niệm',
+    'Temple of Literature': 'Văn Miếu',
+    'Morning cultural visit': 'Tham quan văn hóa buổi sáng',
+    'Old Quarter Food Tour': 'Tour ẩm thực phố cổ',
+    'Lunch tasting route': 'Tuyến ăn trưa trải nghiệm',
+    'Hoan Kiem Lake': 'Hồ Hoàn Kiếm',
+    'Late afternoon walk': 'Dạo bộ cuối chiều',
     'Enter address': 'Nhập địa chỉ',
     'We will suggest activities around your business location\nduring free time':
         'Chúng tôi sẽ gợi ý hoạt động gần nơi làm việc\ntrong thời gian rảnh',
@@ -564,6 +707,42 @@ class AppStrings {
         'Chọn nhanh một mức thay vì nhập số tiền cụ thể.',
     'Using price range. Typed daily budget will be ignored.':
         'Đang dùng mức giá. Ngân sách đã nhập sẽ được bỏ qua.',
+    'OR': 'HOẶC',
+    'Select your travel dates': 'Chọn ngày đi',
+    'Pick dates': 'Chọn ngày',
+    'Choose a start and end date': 'Chọn ngày bắt đầu và kết thúc',
+    'day': 'ngày',
+    'days': 'ngày',
+    'January': 'Tháng 1',
+    'February': 'Tháng 2',
+    'March': 'Tháng 3',
+    'April': 'Tháng 4',
+    'May': 'Tháng 5',
+    'June': 'Tháng 6',
+    'July': 'Tháng 7',
+    'August': 'Tháng 8',
+    'September': 'Tháng 9',
+    'October': 'Tháng 10',
+    'November': 'Tháng 11',
+    'December': 'Tháng 12',
+    'Jan': 'Thg 1',
+    'Feb': 'Thg 2',
+    'Mar': 'Thg 3',
+    'Apr': 'Thg 4',
+    'Jun': 'Thg 6',
+    'Jul': 'Thg 7',
+    'Aug': 'Thg 8',
+    'Sep': 'Thg 9',
+    'Oct': 'Thg 10',
+    'Nov': 'Thg 11',
+    'Dec': 'Thg 12',
+    'Su': 'CN',
+    'Mo': 'T2',
+    'Tu': 'T3',
+    'We': 'T4',
+    'Th': 'T5',
+    'Fr': 'T6',
+    'Sa': 'T7',
     'What kind of trips feel most like you?':
         'Kiểu chuyến đi nào hợp với bạn nhất?',
     'Choose a few directions so we can shape your first suggestions.':
@@ -676,9 +855,18 @@ class AppStrings {
     'Ok': 'OK',
     'Personal Data': 'Dữ liệu cá nhân',
     'All Images': 'Tất cả ảnh',
+    'Images': 'Ảnh',
     'Reviews': 'Đánh giá',
     'What to expect': 'Trải nghiệm nổi bật',
+    'More': 'Xem thêm',
+    'Less': 'Thu gọn',
     'Best time to visit': 'Thời điểm đẹp nhất',
+    'Recommended season': 'Mùa gợi ý',
+    'Location': 'Vị trí',
+    'Ingredients': 'Nguyên liệu',
+    'Flavor': 'Hương vị',
+    'The highlights of a visit': 'Điểm nổi bật khi ghé thăm',
+    'All Category': 'Tất cả danh mục',
     'Map placeholder': 'Bản đồ',
     'Image placeholder': 'Hình ảnh',
     'Please sign in to update wishlist.':
@@ -732,5 +920,45 @@ class AppStrings {
     'Bun bo': 'Bún bò',
     'Conical hats': 'Nón lá',
     'Bat Trang pottery': 'Gốm Bát Tràng',
+    'Choose Avatar': 'Chọn ảnh đại diện',
+    'Choose photo from device': 'Chọn ảnh từ thiết bị',
+    'Remove uploaded avatar': 'Gỡ ảnh đã tải lên',
+    'Avatar updated.': 'Đã cập nhật ảnh đại diện.',
+    'Upload avatar failed': 'Tải ảnh đại diện thất bại',
+    'Uploaded avatar removed.': 'Đã gỡ ảnh đại diện đã tải lên.',
+    'Remove avatar failed': 'Gỡ ảnh đại diện thất bại',
+    'Could not load reviews right now.': 'Hiện chưa tải được đánh giá.',
+    'Write a review': 'Viết đánh giá',
+    'Edit your review': 'Sửa đánh giá của bạn',
+    'Publish review': 'Đăng đánh giá',
+    'Update review': 'Cập nhật đánh giá',
+    'Save review': 'Lưu đánh giá',
+    'Could not publish your review.': 'Không thể đăng đánh giá của bạn.',
+    'Share what stood out for you...': 'Chia sẻ điều khiến bạn ấn tượng...',
+    'Traveler': 'Du khách',
+    'See all': 'Xem tất cả',
+    'Update wishlist failed': 'Cập nhật yêu thích thất bại',
+    'Please choose a valid province or city suggestion.':
+        'Vui lòng chọn một gợi ý tỉnh hoặc thành phố hợp lệ.',
+    'Loyalty Rewards': 'Điểm thưởng thành viên',
+    'Content is being updated.': 'Nội dung đang được cập nhật.',
+    'Explore by city': 'Khám phá theo thành phố',
+    'Feature with issue': 'Tính năng gặp lỗi',
+    'Expired': 'Đã hết hạn',
+    'Expires today': 'Hết hạn hôm nay',
+    'Free account': 'Tài khoản miễn phí',
+    'No active subscription': 'Chưa có gói đang hoạt động',
+    'No payment history yet.': 'Chưa có lịch sử thanh toán.',
+    'Payment history': 'Lịch sử thanh toán',
+    'Premium 1 Month': 'Premium 1 tháng',
+    'Premium 6 Months': 'Premium 6 tháng',
+    'Premium 12 Months': 'Premium 12 tháng',
+    'Premium active': 'Premium đang hoạt động',
+    'Valid until': 'Có hiệu lực đến',
+    'days remaining': 'ngày còn lại',
+    'Loyalty updated successfully.': 'Đã cập nhật điểm thưởng.',
+    'Daily login is awarded automatically.':
+        'Điểm đăng nhập hằng ngày được cộng tự động.',
+    'Could not open image': 'Không mở được ảnh',
   };
 }
