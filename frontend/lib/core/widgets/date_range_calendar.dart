@@ -8,10 +8,9 @@ import 'package:hellovietnam/core/language/app_language.dart';
 /// and notifies the parent via [onRangeChanged] whenever the selection
 /// changes (including when it becomes null after a deselection).
 ///
-/// Intended to be placed inside a widget that already provides a bounded
-/// height (e.g. wrapped in [Expanded] by the caller), because the month
-/// list is rendered with [ListView.builder] and requires infinite vertical
-/// space otherwise.
+/// When the parent provides bounded height, the month list scrolls internally.
+/// Under unbounded height (for example inside a [SliverToBoxAdapter]), the
+/// calendar shrink-wraps and delegates scrolling to its parent.
 class DateRangeCalendar extends StatefulWidget {
   const DateRangeCalendar({
     super.key,
@@ -30,8 +29,11 @@ class DateRangeCalendar extends StatefulWidget {
 
 class _DateRangeCalendarState extends State<DateRangeCalendar> {
   late int _year;
+  late final DateTime _initialVisibleDate;
   DateTime? _start;
   DateTime? _end;
+  final GlobalKey _initialMonthKey = GlobalKey();
+  bool _didScheduleInitialReveal = false;
 
   static const List<String> _monthNames = <String>[
     'January',
@@ -64,7 +66,10 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
     final DateTimeRange? init = widget.initialRange;
     _start = init?.start;
     _end = init?.end;
-    _year = (_start ?? DateTime.now()).year;
+    _initialVisibleDate = _dateOnly(
+      widget.firstDate ?? _start ?? DateTime.now(),
+    );
+    _year = _initialVisibleDate.year;
   }
 
   bool get _hasRange => _start != null && _end != null;
@@ -142,99 +147,128 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
     return '$_durationDays ${_durationDays == 1 ? 'day' : 'days'}';
   }
 
+  void _scheduleInitialMonthReveal() {
+    if (_didScheduleInitialReveal || _year != _initialVisibleDate.year) return;
+    _didScheduleInitialReveal = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final BuildContext? monthContext = _initialMonthKey.currentContext;
+      if (monthContext == null) return;
+      Scrollable.ensureVisible(monthContext, alignment: 0);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Column(
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              _NavCircleButton(
-                icon: Icons.chevron_left_rounded,
-                onTap: () => setState(() => _year--),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool hasBoundedHeight = constraints.hasBoundedHeight;
+        final Widget monthList = ListView(
+          primary: false,
+          shrinkWrap: !hasBoundedHeight,
+          physics: hasBoundedHeight
+              ? const BouncingScrollPhysics()
+              : const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+          children: List<Widget>.generate(12, (int index) {
+            final int month = index + 1;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 18),
+              child: _MonthCard(
+                key:
+                    _year == _initialVisibleDate.year &&
+                        month == _initialVisibleDate.month
+                    ? _initialMonthKey
+                    : null,
+                year: _year,
+                month: month,
+                monthName: context.l10n.ui(_monthNames[index]),
+                weekdayLabels: _weekdayLabels
+                    .map(context.l10n.ui)
+                    .toList(growable: false),
+                hasCompletedRange: _hasRange,
+                firstDate: widget.firstDate,
+                onDayTap: _onDayTap,
+                isStart: _isStart,
+                isEnd: _isEnd,
+                isInRange: _isInRange,
               ),
-              const SizedBox(width: 14),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Theme.of(
-                          context,
-                        ).colorScheme.surface.withValues(alpha: 0.94)
-                      : Colors.white.withValues(alpha: 0.96),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : Colors.transparent,
+            );
+          }),
+        );
+
+        _scheduleInitialMonthReveal();
+
+        return Column(
+          mainAxisSize: hasBoundedHeight ? MainAxisSize.max : MainAxisSize.min,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  _NavCircleButton(
+                    icon: Icons.chevron_left_rounded,
+                    onTap: () => setState(() => _year--),
                   ),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                  const SizedBox(width: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
                     ),
-                  ],
-                ),
-                child: Text(
-                  '$_year',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.surface.withValues(alpha: 0.94)
+                          : Colors.white.withValues(alpha: 0.96),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.transparent,
+                      ),
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      '$_year',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 14),
+                  _NavCircleButton(
+                    icon: Icons.chevron_right_rounded,
+                    onTap: () => setState(() => _year++),
+                  ),
+                ],
               ),
-              const SizedBox(width: 14),
-              _NavCircleButton(
-                icon: Icons.chevron_right_rounded,
-                onTap: () => setState(() => _year++),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: _RangeSummaryCard(
+                summary: context.l10n.ui(_summaryText),
+                duration: context.l10n.ui(_durationText),
+                isComplete: _hasRange,
               ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-          child: _RangeSummaryCard(
-            summary: context.l10n.ui(_summaryText),
-            duration: context.l10n.ui(_durationText),
-            isComplete: _hasRange,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-            itemCount: 12,
-            itemBuilder: (BuildContext context, int index) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 18),
-                child: _MonthCard(
-                  year: _year,
-                  month: index + 1,
-                  monthName: context.l10n.ui(_monthNames[index]),
-                  weekdayLabels: _weekdayLabels
-                      .map(context.l10n.ui)
-                      .toList(growable: false),
-                  hasCompletedRange: _hasRange,
-                  firstDate: widget.firstDate,
-                  onDayTap: _onDayTap,
-                  isStart: _isStart,
-                  isEnd: _isEnd,
-                  isInRange: _isInRange,
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+            ),
+            const SizedBox(height: 12),
+            if (hasBoundedHeight) Expanded(child: monthList) else monthList,
+          ],
+        );
+      },
     );
   }
 }
@@ -368,6 +402,7 @@ class _RangeSummaryCard extends StatelessWidget {
 
 class _MonthCard extends StatelessWidget {
   const _MonthCard({
+    super.key,
     required this.year,
     required this.month,
     required this.monthName,

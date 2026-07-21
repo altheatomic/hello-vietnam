@@ -385,8 +385,9 @@ class _DetailHeader extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(left: 48),
+      padding: const EdgeInsets.symmetric(horizontal: 48),
       child: RichText(
+        textAlign: TextAlign.center,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         text: TextSpan(

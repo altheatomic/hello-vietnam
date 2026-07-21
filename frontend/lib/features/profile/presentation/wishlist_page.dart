@@ -791,7 +791,7 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Stack(
           children: <Widget>[
             SingleChildScrollView(
@@ -1069,7 +1069,7 @@ class WishlistAllImagesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 18),

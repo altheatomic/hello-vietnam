@@ -170,7 +170,7 @@ class _CurrencyPageState extends State<CurrencyPage> {
                         ),
                       ),
                     ),
-                    const Align(
+                    Align(
                       alignment: Alignment.center,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -181,17 +181,19 @@ class _CurrencyPageState extends State<CurrencyPage> {
                               fontSize: 29,
                               height: 1.15,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF101828),
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
-                          SizedBox(height: 7),
+                          const SizedBox(height: 7),
                           Text(
                             'Select your preferred currency',
                             style: TextStyle(
                               fontSize: 14,
                               height: 1.2,
                               fontWeight: FontWeight.w400,
-                              color: Color(0xFF4A5565),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],

@@ -121,30 +121,33 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
         children: <Widget>[
           Text(
             context.l10n.ui('Enter address'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF162235),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 14),
           _BusinessAddressField(controller: _controller),
           const SizedBox(height: 22),
           if (_isGeocoding)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 16),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  SizedBox(
+                  const SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2.5),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Text(
                     'Đang tìm địa chỉ…',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF6F7B8A)),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -154,10 +157,10 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
               'We will suggest activities around your business location\nduring free time',
             ),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontStyle: FontStyle.italic,
-              color: Color(0xFF6F7B8A),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.45,
             ),
           ),
@@ -177,7 +180,7 @@ class _BusinessAddressField extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFC4F4FF), width: 1.6),
         boxShadow: const <BoxShadow>[
@@ -190,10 +193,10 @@ class _BusinessAddressField extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15.5,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF162235),
+          color: Theme.of(context).colorScheme.onSurface,
         ),
         decoration: InputDecoration(
           prefixIcon: const Icon(

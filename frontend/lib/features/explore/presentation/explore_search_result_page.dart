@@ -17,6 +17,7 @@ import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 
 import 'widgets/explore_floating_back_button.dart';
 import 'widgets/explore_category_filter_bar.dart';
+import 'widgets/explore_favorite_icon.dart';
 import 'widgets/explore_preview_widgets.dart';
 
 const List<String> _filterLabels = <String>[
@@ -191,7 +192,7 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
     final double statusBarH = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: <Widget>[
           if (_isLoading)
@@ -596,15 +597,7 @@ class _ResultCardState extends State<_ResultCard> {
                               );
                           return GestureDetector(
                             onTap: _toggleFavorite,
-                            child: Icon(
-                              isFavorite
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              color: isFavorite
-                                  ? AppColors.primary
-                                  : Colors.white,
-                              size: 24,
-                            ),
+                            child: ExploreFavoriteIcon(isFavorite: isFavorite),
                           );
                         },
                       ),

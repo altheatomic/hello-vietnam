@@ -114,6 +114,49 @@ void main() {
     expect(find.text('What to expect'), findsNothing);
     expect(find.text('More'), findsNothing);
   });
+
+  testWidgets('long detail title stays centered with equal side margins', (
+    WidgetTester tester,
+  ) async {
+    const String longTitle =
+        'A Very Long Vietnamese Destination Name That Needs Two Lines';
+    const ItemDetail detail = ItemDetail(
+      id: 'long-title',
+      name: longTitle,
+      category: DetailCategory.activities,
+      images: <String>[''],
+      rating: 4.5,
+      reviewCount: 0,
+      ratingLabel: 'Great',
+      description: 'Description',
+      whatToExpect: 'What to expect',
+    );
+    await tester.binding.setSurfaceSize(const Size(320, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SharedItemDetailPage(
+          detail: detail,
+          showReviews: false,
+          showWhatToExpect: false,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final Finder titleFinder = find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is RichText && widget.text.toPlainText().contains(longTitle),
+    );
+    final RichText title = tester.widget<RichText>(titleFinder);
+    final Rect titleRect = tester.getRect(titleFinder);
+
+    expect(title.textAlign, TextAlign.center);
+    expect(title.maxLines, 2);
+    expect(title.overflow, TextOverflow.ellipsis);
+    expect(titleRect.left, closeTo(320 - titleRect.right, 0.1));
+  });
 }
 
 ReviewRepository _buildReviewRepository() {

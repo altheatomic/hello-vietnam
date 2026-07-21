@@ -185,7 +185,7 @@ class _ExplorePageState extends State<ExplorePage> {
         TravelPreferencesRepository.instance.currentPreferences;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: <Widget>[
           Builder(

@@ -12,37 +12,28 @@ const popularAppsCategories = <String>[
 ];
 
 const Map<String, String> popularAppLogoUrls = <String, String>{
-  'grab':
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Grab_%28application%29_logo.svg/512px-Grab_%28application%29_logo.svg.png',
-  'zalo':
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Icon_of_Zalo.svg/512px-Icon_of_Zalo.svg.png',
-  'shopeefood':
-      'https://seeklogo.com/images/S/shopee-food-logo-DF48CF6BAB-seeklogo.com.png',
-  'gojek':
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Gojek_logo_2019.svg/512px-Gojek_logo_2019.svg.png',
-  'thecoffeehouse':
-      'https://inkythuatso.com/uploads/thumbnails/800/2021/11/logo-the-coffee-house-inkythuatso-01-25-09-21-38.jpg',
-  'tiki':
-      'https://salt.tikicdn.com/ts/upload/e4/49/6c/270be9859abd5f5ec5071da65fab0a94.png',
-  'momo':
-      'https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-MoMo-Square.png',
-  'vinbus': 'https://vinbus.vn/static/media/logo.5c54a8bb.svg',
-  'foody':
-      'https://cdn.haitrieu.com/wp-content/uploads/2022/01/Logo-Foody.vn.png',
-  'vinid':
-      'https://upload.wikimedia.org/wikipedia/vi/thumb/4/47/VinID_logo.svg/1200px-VinID_logo.svg.png',
-  'klook':
-      'https://res.klook.com/image/upload/fl_lossy.progressive/q_85/c_fill,w_400/v1596002708/blog/wg8qzuspkcaxwrgceazn.webp',
+  'grab': 'assets/images/popular_apps/grab.webp',
+  'zalo': 'assets/images/popular_apps/zalo.webp',
+  'shopeefood': 'assets/images/popular_apps/shopeefood.webp',
+  'green_sm': 'assets/images/popular_apps/green_sm.webp',
+  'thecoffeehouse': 'assets/images/popular_apps/thecoffeehouse.webp',
+  'tiki': 'assets/images/popular_apps/tiki.webp',
+  'momo': 'assets/images/popular_apps/momo.webp',
+  'vinbus': 'assets/images/popular_apps/vinbus.webp',
+  'foody': 'assets/images/popular_apps/foody.webp',
+  'oneu': 'assets/images/popular_apps/oneu.webp',
+  'klook': 'assets/images/popular_apps/klook.webp',
 };
 
 final popularAppsItems = <PopularAppsItem>[
+  // Ratings and download bands verified on Google Play on 2026-07-21.
   PopularAppsItem(
     id: 'grab',
     name: 'Grab',
     category: 'Transportation',
     description: 'Ride-hailing, food delivery & more',
-    rating: 4.5,
-    downloads: '50M+',
+    rating: 4.8,
+    downloads: '100M+',
     logoUrl: popularAppLogoUrls['grab']!,
     gradientColors: <Color>[
       Color(0xFF34D399),
@@ -56,7 +47,7 @@ final popularAppsItems = <PopularAppsItem>[
     name: 'Zalo',
     category: 'Communication',
     description: 'Chat, call & connect with locals',
-    rating: 4.3,
+    rating: 2.3,
     downloads: '100M+',
     logoUrl: popularAppLogoUrls['zalo']!,
     gradientColors: <Color>[
@@ -82,13 +73,13 @@ final popularAppsItems = <PopularAppsItem>[
     accentColor: Color(0xFFF97316),
   ),
   PopularAppsItem(
-    id: 'gojek',
-    name: 'Gojek',
+    id: 'green_sm',
+    name: 'Green SM',
     category: 'Transportation',
-    description: 'Ride, food & lifestyle services',
-    rating: 4.2,
-    downloads: '20M+',
-    logoUrl: popularAppLogoUrls['gojek']!,
+    description: 'Electric rides, delivery & more',
+    rating: 4.4,
+    downloads: '10M+',
+    logoUrl: popularAppLogoUrls['green_sm']!,
     gradientColors: <Color>[
       Color(0xFF4ADE80),
       Color(0xFF10B981),
@@ -101,8 +92,8 @@ final popularAppsItems = <PopularAppsItem>[
     name: 'The Coffee House',
     category: 'Food & Drink',
     description: 'Order coffee & find nearby cafes',
-    rating: 4.6,
-    downloads: '5M+',
+    rating: 3.6,
+    downloads: '500K+',
     logoUrl: popularAppLogoUrls['thecoffeehouse']!,
     gradientColors: <Color>[
       Color(0xFFFBBF24),
@@ -116,7 +107,7 @@ final popularAppsItems = <PopularAppsItem>[
     name: 'Tiki',
     category: 'Shopping',
     description: 'Online shopping & quick delivery',
-    rating: 4.3,
+    rating: 4.0,
     downloads: '10M+',
     logoUrl: popularAppLogoUrls['tiki']!,
     gradientColors: <Color>[
@@ -131,8 +122,8 @@ final popularAppsItems = <PopularAppsItem>[
     name: 'MoMo',
     category: 'Payment & Wallet',
     description: 'E-wallet for payments & transfers',
-    rating: 4.5,
-    downloads: '50M+',
+    rating: 4.3,
+    downloads: '10M+',
     logoUrl: popularAppLogoUrls['momo']!,
     gradientColors: <Color>[
       Color(0xFFF472B6),
@@ -146,8 +137,8 @@ final popularAppsItems = <PopularAppsItem>[
     name: 'VinBus',
     category: 'Public Transport',
     description: 'Bus routes & electric bus booking',
-    rating: 4.1,
-    downloads: '1M+',
+    rating: 4.3,
+    downloads: '100K+',
     logoUrl: popularAppLogoUrls['vinbus']!,
     gradientColors: <Color>[
       Color(0xFFC084FC),
@@ -161,8 +152,8 @@ final popularAppsItems = <PopularAppsItem>[
     name: 'Foody',
     category: 'Food Discovery',
     description: 'Find restaurants & read reviews',
-    rating: 4.4,
-    downloads: '10M+',
+    rating: 3.8,
+    downloads: '1M+',
     logoUrl: popularAppLogoUrls['foody']!,
     gradientColors: <Color>[
       Color(0xFFF87171),
@@ -172,13 +163,13 @@ final popularAppsItems = <PopularAppsItem>[
     accentColor: Color(0xFFEF4444),
   ),
   PopularAppsItem(
-    id: 'vinid',
-    name: 'VinID',
+    id: 'oneu',
+    name: 'Techcombank OneU',
     category: 'Loyalty & Rewards',
-    description: 'Rewards program & member benefits',
-    rating: 4.0,
-    downloads: '10M+',
-    logoUrl: popularAppLogoUrls['vinid']!,
+    description: 'U-Point rewards, vouchers & payments',
+    rating: 3.9,
+    downloads: '5M+',
+    logoUrl: popularAppLogoUrls['oneu']!,
     gradientColors: <Color>[
       Color(0xFFA78BFA),
       Color(0xFFA855F7),
@@ -191,7 +182,7 @@ final popularAppsItems = <PopularAppsItem>[
     name: 'Klook',
     category: 'Travel & Activities',
     description: 'Book tours, attractions & experiences',
-    rating: 4.5,
+    rating: 4.4,
     downloads: '10M+',
     logoUrl: popularAppLogoUrls['klook']!,
     gradientColors: <Color>[
@@ -221,7 +212,8 @@ final popularAppsPosts = <String, PopularAppsPost>{
     ],
     logoUrl: popularAppLogoUrls['grab']!,
     accentColor: Color(0xFF10B981),
-    downloadUrl: 'https://www.grab.com/vn/en/download/',
+    downloadUrl:
+        'https://play.google.com/store/apps/details?id=com.grabtaxi.passenger',
     imageUrl:
         'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1000&q=80',
   ),
@@ -241,7 +233,7 @@ final popularAppsPosts = <String, PopularAppsPost>{
     ],
     logoUrl: popularAppLogoUrls['zalo']!,
     accentColor: Color(0xFF0EA5E9),
-    downloadUrl: 'https://zalo.me/',
+    downloadUrl: 'https://play.google.com/store/apps/details?id=com.zing.zalo',
     imageUrl:
         'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1000&q=80',
   ),
@@ -261,27 +253,29 @@ final popularAppsPosts = <String, PopularAppsPost>{
     ],
     logoUrl: popularAppLogoUrls['shopeefood']!,
     accentColor: Color(0xFFF97316),
-    downloadUrl: 'https://shopeefood.vn/',
+    downloadUrl:
+        'https://play.google.com/store/apps/details?id=com.deliverynow',
     imageUrl:
         'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1000&q=80',
   ),
-  'gojek': PopularAppsPost(
-    appId: 'gojek',
-    title: 'Gojek Guide',
-    ctaLabel: 'Open / Download Gojek',
-    summaryTitle: 'What is Gojek?',
+  'green_sm': PopularAppsPost(
+    appId: 'green_sm',
+    title: 'Green SM Guide',
+    ctaLabel: 'Open / Download Green SM',
+    summaryTitle: 'What is Green SM?',
     summaryBody:
-        'Gojek is useful for booking motorbike rides, car rides, food delivery, and daily services in major Vietnamese cities.',
-    stepsTitle: 'How to use Gojek in Vietnam?',
+        'Green SM, formerly Xanh SM in Vietnam, offers electric car and motorbike rides together with delivery and food services.',
+    stepsTitle: 'How to use Green SM in Vietnam?',
     steps: <String>[
-      'Download Gojek and register your account.',
-      'Pick a service such as GoRide, GoCar, or food delivery.',
+      'Download Green SM and register your account.',
+      'Choose a car, motorbike, delivery, or food service.',
       'Enter pickup and destination details.',
       'Confirm the price and wait for the driver or rider.',
     ],
-    logoUrl: popularAppLogoUrls['gojek']!,
+    logoUrl: popularAppLogoUrls['green_sm']!,
     accentColor: Color(0xFF22C55E),
-    downloadUrl: 'https://www.gojek.com/vn/',
+    downloadUrl:
+        'https://play.google.com/store/apps/details?id=com.gsm.customer',
     imageUrl:
         'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=1000&q=80',
   ),
@@ -301,7 +295,8 @@ final popularAppsPosts = <String, PopularAppsPost>{
     ],
     logoUrl: popularAppLogoUrls['thecoffeehouse']!,
     accentColor: Color(0xFFF59E0B),
-    downloadUrl: 'https://thecoffeehouse.com/',
+    downloadUrl:
+        'https://play.google.com/store/apps/details?id=com.thecoffeehouse.guestapp',
     imageUrl:
         'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1000&q=80',
   ),
@@ -321,7 +316,8 @@ final popularAppsPosts = <String, PopularAppsPost>{
     ],
     logoUrl: popularAppLogoUrls['tiki']!,
     accentColor: Color(0xFF3B82F6),
-    downloadUrl: 'https://tiki.vn/',
+    downloadUrl:
+        'https://play.google.com/store/apps/details?id=vn.tiki.app.tikiandroid',
     imageUrl:
         'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1000&q=80',
   ),
@@ -341,7 +337,8 @@ final popularAppsPosts = <String, PopularAppsPost>{
     ],
     logoUrl: popularAppLogoUrls['momo']!,
     accentColor: Color(0xFFEC4899),
-    downloadUrl: 'https://momo.vn/',
+    downloadUrl:
+        'https://play.google.com/store/apps/details?id=com.mservice.momotransfer',
     imageUrl:
         'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=1000&q=80',
   ),
@@ -361,7 +358,8 @@ final popularAppsPosts = <String, PopularAppsPost>{
     ],
     logoUrl: popularAppLogoUrls['vinbus']!,
     accentColor: Color(0xFFA855F7),
-    downloadUrl: 'https://vinbus.vn/',
+    downloadUrl:
+        'https://play.google.com/store/apps/details?id=vn.vinbus.app.prd',
     imageUrl:
         'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=1000&q=80',
   ),
@@ -381,27 +379,29 @@ final popularAppsPosts = <String, PopularAppsPost>{
     ],
     logoUrl: popularAppLogoUrls['foody']!,
     accentColor: Color(0xFFEF4444),
-    downloadUrl: 'https://www.foody.vn/',
+    downloadUrl:
+        'https://play.google.com/store/apps/details?id=com.foody.vn.activity',
     imageUrl:
         'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1000&q=80',
   ),
-  'vinid': PopularAppsPost(
-    appId: 'vinid',
-    title: 'VinID Guide',
-    ctaLabel: 'Open / Download VinID',
-    summaryTitle: 'What is VinID?',
+  'oneu': PopularAppsPost(
+    appId: 'oneu',
+    title: 'Techcombank OneU Guide',
+    ctaLabel: 'Open / Download OneU',
+    summaryTitle: 'What is Techcombank OneU?',
     summaryBody:
-        'VinID is a loyalty and rewards app connected with VinGroup services, shopping, points, and member benefits.',
-    stepsTitle: 'How to use VinID rewards?',
+        'Techcombank OneU is the current version of the former VinID app, combining U-Point rewards, vouchers, payments, and partner benefits.',
+    stepsTitle: 'How to use OneU rewards?',
     steps: <String>[
       'Create an account with your phone number.',
-      'Scan your member code when shopping with partners.',
-      'Check points, vouchers, and promotions.',
-      'Redeem benefits when available.',
+      'Check your U-Point balance and available vouchers.',
+      'Choose a participating partner or benefit.',
+      'Redeem U-Points or pay when the option is available.',
     ],
-    logoUrl: popularAppLogoUrls['vinid']!,
+    logoUrl: popularAppLogoUrls['oneu']!,
     accentColor: Color(0xFF8B5CF6),
-    downloadUrl: 'https://vinid.net/',
+    downloadUrl:
+        'https://play.google.com/store/apps/details?id=com.vingroup.vinid',
     imageUrl:
         'https://images.unsplash.com/photo-1607082349566-187342175e2f?w=1000&q=80',
   ),
@@ -421,7 +421,7 @@ final popularAppsPosts = <String, PopularAppsPost>{
     ],
     logoUrl: popularAppLogoUrls['klook']!,
     accentColor: Color(0xFFFB923C),
-    downloadUrl: 'https://www.klook.com/',
+    downloadUrl: 'https://play.google.com/store/apps/details?id=com.klook',
     imageUrl:
         'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1000&q=80',
   ),

@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/utils/maps_launcher.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
@@ -123,7 +122,9 @@ class _TripMapPageState extends State<TripMapPage> {
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.96),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surface.withValues(alpha: 0.96),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
                               color: const Color(0xFFD8F2FF),
@@ -144,16 +145,18 @@ class _TripMapPageState extends State<TripMapPage> {
                                 context.l10n.ui(_activity.title),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w800,
-                                  color: AppColors.textPrimary,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 3),
                               Text(
                                 context.l10n.ui(_activity.distanceLabel),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 15,
                                   color: Color(0xFF6A7585),
                                 ),
@@ -260,7 +263,7 @@ class _ResultSheet extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.98),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.98),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: const <BoxShadow>[
           BoxShadow(
@@ -278,16 +281,16 @@ class _ResultSheet extends StatelessWidget {
               Expanded(
                 child: Text(
                   context.l10n.ui('Nearby'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
               Text(
                 context.l10n.ui('Sort by: Nearest'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF4F5B6D),
@@ -309,7 +312,7 @@ class _ResultSheet extends StatelessWidget {
                 ? Center(
                     child: Text(
                       context.l10n.ui('No nearby places found.'),
-                      style: const TextStyle(color: Color(0xFF8A95A5)),
+                      style: TextStyle(color: Color(0xFF8A95A5)),
                     ),
                   )
                 : ListView.separated(
@@ -372,7 +375,7 @@ class _NearbyPlaceTile extends StatelessWidget {
             child: Center(
               child: Text(
                 _iconForType(place.subtitle),
-                style: const TextStyle(fontSize: 20),
+                style: TextStyle(fontSize: 20),
               ),
             ),
           ),
@@ -383,19 +386,16 @@ class _NearbyPlaceTile extends StatelessWidget {
               children: <Widget>[
                 Text(
                   context.l10n.ui(place.title),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16.5,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   '${context.l10n.ui(place.subtitle)} • ${place.distance}',
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    color: Color(0xFF707B8B),
-                  ),
+                  style: TextStyle(fontSize: 14.5, color: Color(0xFF707B8B)),
                 ),
               ],
             ),
@@ -410,7 +410,7 @@ class _NearbyPlaceTile extends StatelessWidget {
             ),
             child: Text(
               place.eta,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF286EF0),
@@ -448,7 +448,7 @@ class _NearbyPlaceTile extends StatelessWidget {
                 ),
                 child: Text(
                   context.l10n.ui('Route'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -496,7 +496,7 @@ class _BackButtonCircle extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.92),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x18000000),

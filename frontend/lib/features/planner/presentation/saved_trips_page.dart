@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
-import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
@@ -169,6 +168,8 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     final Map<String, List<_SavedTrip>> groupedTrips =
         <String, List<_SavedTrip>>{};
     if (!_isLoading) {
@@ -178,36 +179,48 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
             .add(trip);
       }
     }
+    final List<Color> pageColors = isDark
+        ? const <Color>[Color(0xFF020B10), Color(0xFF0B1A22), Color(0xFF0B2426)]
+        : const <Color>[
+            Color(0xFFF1F6FE),
+            Color(0xFFDFF5FF),
+            Color(0xFFCCF6F1),
+          ];
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: <Color>[
-              Color(0xFFF1F6FE),
-              Color(0xFFDFF5FF),
-              Color(0xFFCCF6F1),
-            ],
+            colors: pageColors,
           ),
         ),
         child: Stack(
           children: <Widget>[
-            const Positioned(
+            Positioned(
               top: -90,
               right: -60,
-              child: _DecorativeOrb(size: 220, color: Color(0x662BC3FF)),
+              child: _DecorativeOrb(
+                size: 220,
+                color: Color(isDark ? 0x332BC3FF : 0x662BC3FF),
+              ),
             ),
-            const Positioned(
+            Positioned(
               top: 280,
               left: -70,
-              child: _DecorativeOrb(size: 180, color: Color(0x5532D2FF)),
+              child: _DecorativeOrb(
+                size: 180,
+                color: Color(isDark ? 0x2832D2FF : 0x5532D2FF),
+              ),
             ),
-            const Positioned(
+            Positioned(
               bottom: 100,
               right: -40,
-              child: _DecorativeOrb(size: 190, color: Color(0x5556E2D5)),
+              child: _DecorativeOrb(
+                size: 190,
+                color: Color(isDark ? 0x2856E2D5 : 0x5556E2D5),
+              ),
             ),
             SafeArea(
               child: RefreshIndicator(
@@ -238,10 +251,10 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                             const SizedBox(height: 22),
                             Text(
                               context.l10n.ui('Saved Trips'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 31,
                                 fontWeight: FontWeight.w900,
-                                color: AppColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 height: 1.05,
                               ),
                             ),
@@ -250,9 +263,9 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                               context.l10n.ui(
                                 'Pick up where you left off and tick places as you complete them.',
                               ),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
-                                color: Color(0xFF687384),
+                                color: theme.colorScheme.onSurfaceVariant,
                                 height: 1.45,
                               ),
                             ),
@@ -318,10 +331,12 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                                       Expanded(
                                         child: Text(
                                           context.l10n.ui(entry.key),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 23,
                                             fontWeight: FontWeight.w800,
-                                            color: AppColors.textPrimary,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
                                           ),
                                         ),
                                       ),
@@ -329,10 +344,12 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
                                         context.l10n.savedTripGroupCount(
                                           entry.value.length,
                                         ),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 13.5,
                                           fontWeight: FontWeight.w700,
-                                          color: Color(0xFF738092),
+                                          color: theme
+                                              .colorScheme
+                                              .onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -395,16 +412,21 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: const Color(0xFFD7F1FF), width: 1.5),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFD7F1FF),
+          width: 1.5,
+        ),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x180F2C4F),
+            color: isDark ? Colors.black26 : const Color(0x180F2C4F),
             blurRadius: 26,
             offset: Offset(0, 16),
           ),
@@ -434,18 +456,18 @@ class _SummaryCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   context.l10n.savedItinerariesCount(totalTrips),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   context.l10n.savedPlacesWaiting(remainingStops),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF667488),
+                    color: theme.colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),
                 ),
@@ -471,6 +493,8 @@ class _FilterChipButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -481,13 +505,17 @@ class _FilterChipButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           decoration: BoxDecoration(
             color: selected
-                ? const Color(0xFFEEF9FF)
-                : Colors.white.withValues(alpha: 0.88),
+                ? (isDark
+                      ? theme.colorScheme.primary.withValues(alpha: 0.16)
+                      : const Color(0xFFEEF9FF))
+                : theme.colorScheme.surface.withValues(alpha: 0.88),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: selected
                   ? const Color(0xFF22B7F1)
-                  : const Color(0xFFD8EAF3),
+                  : (isDark
+                        ? theme.colorScheme.outline
+                        : const Color(0xFFD8EAF3)),
               width: selected ? 1.8 : 1.2,
             ),
           ),
@@ -498,7 +526,7 @@ class _FilterChipButton extends StatelessWidget {
               fontWeight: FontWeight.w700,
               color: selected
                   ? const Color(0xFF1FAFE6)
-                  : const Color(0xFF5B687B),
+                  : theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -524,14 +552,19 @@ class _SavedTripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFD8EEF7), width: 1.4),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFD8EEF7),
+          width: 1.4,
+        ),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x190F2C4F),
+            color: isDark ? Colors.black26 : const Color(0x190F2C4F),
             blurRadius: 24,
             offset: Offset(0, 14),
           ),
@@ -570,28 +603,28 @@ class _SavedTripCard extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             context.l10n.ui(trip.title),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18.5,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                              color: Theme.of(context).colorScheme.onSurface,
                               height: 1.15,
                             ),
                           ),
                           const SizedBox(height: 5),
                           Text(
                             '${removeVietnameseDiacritics(trip.destination)} • ${context.l10n.ui(trip.tripType)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14.5,
-                              color: Color(0xFF5D6A7E),
+                              color: theme.colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             context.l10n.ui(trip.dateLabel),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13.5,
-                              color: Color(0xFF8391A2),
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -627,9 +660,9 @@ class _SavedTripCard extends StatelessWidget {
                           trip.remainingStops,
                         )
                       : context.l10n.ui(trip.statusMessage),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13.5,
-                    color: Color(0xFF768496),
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -638,7 +671,9 @@ class _SavedTripCard extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.fromLTRB(14, 14, 14, 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FBFE),
+                    color: isDark
+                        ? theme.colorScheme.surfaceContainerHighest
+                        : const Color(0xFFF8FBFE),
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: Column(
@@ -691,6 +726,8 @@ class _SavedStopTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -722,10 +759,10 @@ class _SavedStopTile extends StatelessWidget {
             children: <Widget>[
               Text(
                 stop.timeLabel,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF8895A6),
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 4),
@@ -735,8 +772,8 @@ class _SavedStopTile extends StatelessWidget {
                   fontSize: 15.5,
                   fontWeight: FontWeight.w800,
                   color: stop.isCompleted
-                      ? const Color(0xFF7D8A9A)
-                      : AppColors.textPrimary,
+                      ? theme.colorScheme.onSurfaceVariant
+                      : theme.colorScheme.onSurface,
                   decoration: stop.isCompleted
                       ? TextDecoration.lineThrough
                       : TextDecoration.none,
@@ -745,9 +782,9 @@ class _SavedStopTile extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 context.l10n.ui(stop.note),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13.5,
-                  color: Color(0xFF6E7C8F),
+                  color: theme.colorScheme.onSurfaceVariant,
                   height: 1.35,
                 ),
               ),
@@ -763,11 +800,15 @@ class _SavedStopTile extends StatelessWidget {
             height: 34,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: stop.isCompleted ? const Color(0xFF23B7F1) : Colors.white,
+              color: stop.isCompleted
+                  ? const Color(0xFF23B7F1)
+                  : theme.colorScheme.surface,
               border: Border.all(
                 color: stop.isCompleted
                     ? const Color(0xFF23B7F1)
-                    : const Color(0xFFC8D9E6),
+                    : (isDark
+                          ? theme.colorScheme.outline
+                          : const Color(0xFFC8D9E6)),
                 width: 1.8,
               ),
               boxShadow: const <BoxShadow>[
@@ -803,6 +844,8 @@ class _TripActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -811,10 +854,18 @@ class _TripActionButton extends StatelessWidget {
         child: Ink(
           height: 48,
           decoration: BoxDecoration(
-            color: filled ? const Color(0xFF23B7F1) : const Color(0xFFF1F8FD),
+            color: filled
+                ? const Color(0xFF23B7F1)
+                : (isDark
+                      ? theme.colorScheme.surfaceContainerHighest
+                      : const Color(0xFFF1F8FD)),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: filled ? const Color(0xFF23B7F1) : const Color(0xFFD8EAF3),
+              color: filled
+                  ? const Color(0xFF23B7F1)
+                  : (isDark
+                        ? theme.colorScheme.outline
+                        : const Color(0xFFD8EAF3)),
               width: 1.3,
             ),
           ),
@@ -824,7 +875,7 @@ class _TripActionButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w800,
-                color: filled ? Colors.white : const Color(0xFF4D5D71),
+                color: filled ? Colors.white : theme.colorScheme.onSurface,
               ),
             ),
           ),
@@ -842,10 +893,14 @@ class _InfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       decoration: BoxDecoration(
-        color: const Color(0xFFF6FBFF),
+        color: isDark
+            ? theme.colorScheme.surfaceContainerHighest
+            : const Color(0xFFF6FBFF),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -857,10 +912,10 @@ class _InfoPill extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF54657A),
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -918,6 +973,8 @@ class _CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -927,11 +984,15 @@ class _CircleIconButton extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFD9EEF7)),
+            border: Border.all(
+              color: isDark
+                  ? theme.colorScheme.outline
+                  : const Color(0xFFD9EEF7),
+            ),
           ),
-          child: Icon(icon, color: const Color(0xFF38506A), size: 22),
+          child: Icon(icon, color: theme.colorScheme.onSurface, size: 22),
         ),
       ),
     );
@@ -943,6 +1004,8 @@ class _EmptySavedTripsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Center(
@@ -950,25 +1013,29 @@ class _EmptySavedTripsState extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: const Color(0xFFD7F0F7)),
+            border: Border.all(
+              color: isDark
+                  ? theme.colorScheme.outline
+                  : const Color(0xFFD7F0F7),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const Icon(
+              Icon(
                 Icons.luggage_outlined,
                 size: 42,
-                color: Color(0xFF6F8093),
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               const SizedBox(height: 12),
               Text(
                 context.l10n.ui('No trips match this filter yet.'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 8),
@@ -977,9 +1044,9 @@ class _EmptySavedTripsState extends StatelessWidget {
                   'Try another filter or create a new itinerary from Trip Planner.',
                 ),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14.5,
-                  color: Color(0xFF718093),
+                  color: theme.colorScheme.onSurfaceVariant,
                   height: 1.45,
                 ),
               ),

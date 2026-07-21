@@ -131,10 +131,10 @@ class _TripLocationPageState extends State<TripLocationPage> {
                   const SizedBox(height: 18),
                   Text(
                     context.l10n.ui('Destinations'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF162235),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -190,36 +190,43 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
+        color: theme.colorScheme.surface.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFC4F4FF), width: 1.6),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFC4F4FF),
+          width: isDark ? 1.2 : 1.6,
+        ),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x260F2C4F),
-            blurRadius: 28,
-            offset: Offset(0, 14),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.18)
+                : const Color(0x260F2C4F),
+            blurRadius: isDark ? 18 : 28,
+            offset: Offset(0, isDark ? 8 : 14),
           ),
         ],
       ),
       child: TextField(
         controller: controller,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15.5,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF162235),
+          color: Theme.of(context).colorScheme.onSurface,
         ),
         decoration: InputDecoration(
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.search_rounded,
-            color: Color(0xFF98A2B3),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             size: 24,
           ),
           hintText: context.l10n.ui('Search destination...'),
-          hintStyle: const TextStyle(
+          hintStyle: TextStyle(
             fontSize: 15.5,
-            color: Color(0xFF98A2B3),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w500,
           ),
           border: InputBorder.none,
@@ -311,7 +318,7 @@ class _DestinationCard extends StatelessWidget {
                         removeVietnameseDiacritics(item.name),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
@@ -323,7 +330,7 @@ class _DestinationCard extends StatelessWidget {
                           removeVietnameseDiacritics(item.area),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11.5,
                             color: Colors.white,
                             fontWeight: FontWeight.w500,
@@ -388,7 +395,10 @@ class _EmptyView extends StatelessWidget {
     return Center(
       child: Text(
         context.l10n.ui('No destinations available yet.'),
-        style: const TextStyle(fontSize: 15, color: Color(0xFF8A95A5)),
+        style: TextStyle(
+          fontSize: 15,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }

@@ -175,10 +175,10 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
             ],
             Text(
               context.l10n.ui('Option 1: Enter daily budget'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF162235),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 10),
@@ -186,10 +186,10 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
               context.l10n.ui(
                 'Use an exact amount per day if you already know your spending limit.',
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14.5,
                 fontStyle: FontStyle.italic,
-                color: Color(0xFF6F7B8A),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
                 height: 1.4,
               ),
@@ -210,10 +210,10 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
             const SizedBox(height: 24),
             Text(
               context.l10n.ui('Option 2: Choose price range'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF162235),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 10),
@@ -221,10 +221,10 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
               context.l10n.ui(
                 'Use a quick preset instead of typing an exact amount.',
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14.5,
                 fontStyle: FontStyle.italic,
-                color: Color(0xFF6F7B8A),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
                 height: 1.4,
               ),
@@ -275,10 +275,10 @@ class _LoadingBanner extends StatelessWidget {
           Expanded(
             child: Text(
               context.l10n.ui('Generating your personalised itinerary…'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF3B495D),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -298,7 +298,7 @@ class _BudgetInputField extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: selected ? const Color(0xFF22B7F1) : const Color(0xFFC4F4FF),
@@ -318,10 +318,10 @@ class _BudgetInputField extends StatelessWidget {
         inputFormatters: <TextInputFormatter>[
           FilteringTextInputFormatter.allow(RegExp(r'[0-9, ]')),
         ],
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15.5,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF162235),
+          color: Theme.of(context).colorScheme.onSurface,
         ),
         decoration: InputDecoration(
           prefixIcon: const Icon(
@@ -370,10 +370,10 @@ class _OptionDivider extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text(
             context.l10n.ui('OR'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF8A95A5),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 1.1,
             ),
           ),
@@ -412,7 +412,7 @@ class _SelectedBudgetHint extends StatelessWidget {
           Expanded(
             child: Text(
               context.l10n.ui(label),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF4F6072),
@@ -448,7 +448,9 @@ class _BudgetRangeCard extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           height: 58,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: selected ? 0.98 : 0.95),
+            color: Theme.of(
+              context,
+            ).colorScheme.surface.withValues(alpha: selected ? 0.98 : 0.95),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected
@@ -469,7 +471,7 @@ class _BudgetRangeCard extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15.5,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF22B7F1),

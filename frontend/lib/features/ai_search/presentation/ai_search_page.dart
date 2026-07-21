@@ -19,7 +19,6 @@ class AiSearchPage extends StatefulWidget {
 class _AiSearchPageState extends State<AiSearchPage> {
   static const Color _accent = Color(0xFF29B6F6);
   static const Color _accentDark = Color(0xFF0277BD);
-  static const Color _screenBg = Color(0xFFF7F9FC);
   static const Color _cardShadow1 = Color(0x14000000);
   static const Color _cardShadow2 = Color(0x0A000000);
 
@@ -134,7 +133,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _screenBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 260),
         switchInCurve: Curves.easeOut,
@@ -219,8 +218,8 @@ class _AiSearchPageState extends State<AiSearchPage> {
         ),
         Expanded(
           child: Container(
-            color: const Color(0xFFF4F7FB),
-            child: Padding(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
               child: Column(
                 children: <Widget>[
@@ -274,7 +273,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          const Text(
+                          Text(
                             'Choose from Library',
                             style: TextStyle(
                               color: Color(0xFF0277BD),
@@ -283,10 +282,12 @@ class _AiSearchPageState extends State<AiSearchPage> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
+                          Text(
                             'PNG, JPG supported',
                             style: TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -299,12 +300,14 @@ class _AiSearchPageState extends State<AiSearchPage> {
                   Row(
                     children: <Widget>[
                       Expanded(child: Divider(color: Colors.grey.shade300)),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           'OR',
                           style: TextStyle(
-                            color: Color(0xFF94A3B8),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -451,7 +454,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
       children: <Widget>[
         Positioned.fill(
           child: Container(
-            color: _screenBg,
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: SingleChildScrollView(
               padding: EdgeInsets.only(bottom: bottomSafe + 118),
               child: Column(
@@ -664,9 +667,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
         title: 'BEST TIME TO ENJOY',
         child: Text(
           data.bestTime,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 29 / 2.2,
-            color: Color(0xFF475569),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -677,9 +680,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
         title: 'FOOD NOTE',
         child: Text(
           data.note,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12.5,
-            color: Color(0xFF64748B),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.55,
             fontWeight: FontWeight.w500,
           ),
@@ -691,9 +694,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
         title: 'CULTURAL SIGNIFICANCE',
         child: Text(
           data.cultural,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12.5,
-            color: Color(0xFF64748B),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.55,
             fontWeight: FontWeight.w500,
           ),
@@ -740,9 +743,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
         title: 'PRODUCTION METHOD',
         child: Text(
           data.productionMethod,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12.5,
-            color: Color(0xFF64748B),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.55,
             fontWeight: FontWeight.w500,
           ),
@@ -754,9 +757,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
         title: 'ALTERNATIVE NAMES',
         child: Text(
           data.alternativeNames,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12.5,
-            color: Color(0xFF64748B),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.55,
             fontWeight: FontWeight.w500,
           ),
@@ -794,7 +797,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const <BoxShadow>[
           BoxShadow(color: _cardShadow1, blurRadius: 3, offset: Offset(0, 1)),
@@ -818,8 +821,8 @@ class _AiSearchPageState extends State<AiSearchPage> {
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xFF64748B),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.3,
@@ -839,7 +842,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const <BoxShadow>[
           BoxShadow(color: _cardShadow1, blurRadius: 3, offset: Offset(0, 1)),
@@ -866,10 +869,10 @@ class _AiSearchPageState extends State<AiSearchPage> {
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 '|  AI Recognition Result',
                 style: TextStyle(
-                  color: Color(0xFF94A3B8),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
@@ -879,8 +882,8 @@ class _AiSearchPageState extends State<AiSearchPage> {
           const SizedBox(height: 10),
           Text(
             data.summary,
-            style: const TextStyle(
-              color: Color(0xFF475569),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 15,
               height: 1.55,
               fontWeight: FontWeight.w500,
@@ -929,9 +932,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF475569),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 height: 1.45,
                 fontWeight: FontWeight.w500,
               ),
@@ -964,9 +967,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF334155),
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w500,
                 height: 1.3,
               ),

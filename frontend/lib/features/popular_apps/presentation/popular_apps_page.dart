@@ -30,7 +30,7 @@ class _PopularAppsPageState extends State<PopularAppsPage> {
     final List<PopularAppsItem> items = filteredItems;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEFF6FF),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: <Widget>[
           const Positioned.fill(child: _DecorativeBackground()),
@@ -125,7 +125,7 @@ class _Header extends StatelessWidget {
                   ),
                 ),
                 const Text(
-                  'Essential Apps',
+                  'Popular Apps',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -169,16 +169,23 @@ class _DecorativeBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: <Color>[
-            Color(0xFFEFF6FF),
-            Color(0xFFECFEFF),
-            Color(0xFFF0FDFA),
-          ],
+          colors: isDark
+              ? const <Color>[
+                  Color(0xFF020B10),
+                  Color(0xFF0B1A22),
+                  Color(0xFF0B2426),
+                ]
+              : const <Color>[
+                  Color(0xFFEFF6FF),
+                  Color(0xFFECFEFF),
+                  Color(0xFFF0FDFA),
+                ],
         ),
       ),
       child: Stack(
@@ -264,10 +271,10 @@ class _InfoCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
           ),
-          child: const Row(
+          child: Row(
             children: <Widget>[
-              Text('💡', style: TextStyle(fontSize: 28)),
-              SizedBox(width: 12),
+              const Text('💡', style: TextStyle(fontSize: 28)),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Tip: install your key transport, payment, and communication apps before starting your trip.',
@@ -275,7 +282,7 @@ class _InfoCard extends StatelessWidget {
                     fontSize: 15,
                     height: 1.45,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF334155),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -303,23 +310,26 @@ class _EmptyState extends StatelessWidget {
             color: Colors.white.withValues(alpha: 0.72),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: const Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Text('📱', style: TextStyle(fontSize: 72)),
-              SizedBox(height: 12),
+              const Text('📱', style: TextStyle(fontSize: 72)),
+              const SizedBox(height: 12),
               Text(
                 'No apps found',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF374151),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              SizedBox(height: 6),
+              const SizedBox(height: 6),
               Text(
                 'Try selecting a different category',
-                style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),

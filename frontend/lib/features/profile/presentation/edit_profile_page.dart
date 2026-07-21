@@ -232,11 +232,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final _AvatarPreset avatar = _avatarPresets[_avatarIndex];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: <Widget>[
           Container(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             padding: EdgeInsets.fromLTRB(10, topInset + 8, 10, 10),
             child: SizedBox(
               height: 48,
@@ -244,10 +244,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 children: <Widget>[
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.chevron_left,
                       size: 26,
-                      color: Color(0xFF1C1C1C),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   Expanded(

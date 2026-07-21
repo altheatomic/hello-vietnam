@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
-import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/utils/maps_launcher.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
@@ -76,7 +75,7 @@ class TripDayDetailPage extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       day.date,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: Color(0xFF5B6677),
@@ -85,7 +84,7 @@ class TripDayDetailPage extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       context.l10n.ui(day.activityCountLabel),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontStyle: FontStyle.italic,
                         color: Color(0xFF6B7687),
@@ -143,7 +142,7 @@ class _ActivityDetailCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.97),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.97),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: const Color(0xFFD9EDF7), width: 2),
         boxShadow: const <BoxShadow>[
@@ -190,10 +189,10 @@ class _ActivityDetailCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.ui(activity.title),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               height: 1.2,
             ),
           ),
@@ -202,7 +201,7 @@ class _ActivityDetailCard extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             context.l10n.ui(activity.description),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15.5,
               fontStyle: FontStyle.italic,
               color: Color(0xFF677284),
@@ -267,7 +266,7 @@ class _GradientActionButton extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -297,7 +296,7 @@ class _CategoryChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: Color(0xFF2EBEFB),
@@ -323,7 +322,7 @@ class _TimePill extends StatelessWidget {
       ),
       child: Text(
         time,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w700,
           color: Color(0xFF2EBEFB),
@@ -343,16 +342,16 @@ class _DayPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: const Color(0xFF2C374C), width: 2),
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w800,
-          color: AppColors.textPrimary,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
     );
@@ -369,7 +368,7 @@ class _BackButtonCircle extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.82),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.82),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x18000000),

@@ -198,10 +198,10 @@ class _LoadingBanner extends StatelessWidget {
           Expanded(
             child: Text(
               context.l10n.ui('Generating your personalised itinerary…'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF3B495D),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -233,7 +233,9 @@ class _InterestCard extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: selected ? 0.98 : 0.95),
+            color: Theme.of(
+              context,
+            ).colorScheme.surface.withValues(alpha: selected ? 0.98 : 0.95),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: selected
@@ -253,7 +255,7 @@ class _InterestCard extends StatelessWidget {
           ),
           child: Row(
             children: <Widget>[
-              Text(option.emoji, style: const TextStyle(fontSize: 34)),
+              Text(option.emoji, style: TextStyle(fontSize: 34)),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -261,7 +263,7 @@ class _InterestCard extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       context.l10n.ui(option.title),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16.5,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF22B7F1),
@@ -270,10 +272,10 @@ class _InterestCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       context.l10n.ui(option.subtitle),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontStyle: FontStyle.italic,
-                        color: Color(0xFF5F6B7C),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

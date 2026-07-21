@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/auth/auth_repository.dart';
+import '../core/language/app_language.dart';
 import 'theme.dart';
 import '../features/item_detail/domain/detail_category.dart';
 import '../features/item_detail/domain/item_detail_models.dart';
@@ -1218,7 +1219,7 @@ class _CustomBottomNav extends StatelessWidget {
             ),
             const SizedBox(height: 3),
             Text(
-              item.label,
+              context.l10n.ui(item.label),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

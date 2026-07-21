@@ -1387,23 +1387,34 @@ class _PrivilegesModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.of(context).size.width * 0.9;
+    final bool isDark = _isDark(context);
     return Material(
       color: Colors.transparent,
       child: Container(
         width: width.clamp(0, 448).toDouble(),
         margin: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: <Color>[
-              Color(0xFFCFFAFE),
-              Color(0xFFDDEAFB),
-              Color(0xFFCFFAFE),
-            ],
+            colors: isDark
+                ? const <Color>[
+                    _darkSurfaceHigh,
+                    _darkSurface,
+                    Color(0xFF0B2426),
+                  ]
+                : const <Color>[
+                    Color(0xFFCFFAFE),
+                    Color(0xFFDDEAFB),
+                    Color(0xFFCFFAFE),
+                  ],
           ),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+          border: Border.all(
+            color: isDark
+                ? const Color(0xFF31505E)
+                : Colors.white.withValues(alpha: 0.6),
+          ),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.22),
@@ -1457,17 +1468,19 @@ class _PrivilegesModal extends StatelessWidget {
               top: 16,
               right: 16,
               child: Material(
-                color: Colors.white.withValues(alpha: 0.82),
+                color: isDark
+                    ? _darkSurfaceHigh
+                    : Colors.white.withValues(alpha: 0.82),
                 shape: const CircleBorder(),
                 child: InkWell(
                   onTap: onClose,
                   customBorder: const CircleBorder(),
-                  child: const SizedBox(
+                  child: SizedBox(
                     width: 32,
                     height: 32,
                     child: Icon(
                       Icons.close_rounded,
-                      color: Color(0xFF4B5563),
+                      color: _upgradeText(context),
                       size: 22,
                     ),
                   ),
@@ -1489,6 +1502,7 @@ class _ModalPrivilegeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = _isDark(context);
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),
       duration: Duration(milliseconds: 420 + (index * 80)),
@@ -1507,9 +1521,15 @@ class _ModalPrivilegeCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.9),
+          color: isDark
+              ? _darkSurfaceHigh.withValues(alpha: 0.94)
+              : Colors.white.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+          border: Border.all(
+            color: isDark
+                ? const Color(0xFF31505E)
+                : Colors.white.withValues(alpha: 0.6),
+          ),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
@@ -1541,11 +1561,11 @@ class _ModalPrivilegeCard extends StatelessWidget {
             Expanded(
               child: Text(
                 context.l10n.ui(item.title),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   height: 1.5,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1F2937),
+                  color: _upgradeText(context),
                 ),
               ),
             ),

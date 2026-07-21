@@ -331,6 +331,11 @@ class AppStrings {
   }
 
   static const Map<String, String> _viText = <String, String>{
+    'Home': 'Trang chủ',
+    'Planner': 'Lịch trình',
+    'Saved': 'Đã lưu',
+    'Forum': 'Diễn đàn',
+    'Profile': 'Hồ sơ',
     'Explore Vietnam with': 'Khám phá Việt Nam cùng',
     'Explore local culture, traditional food, and meaningful travel experiences across Vietnam.\nLet us guide you through every journey.':
         'Khám phá văn hóa, ẩm thực và trải nghiệm du lịch khắp Việt Nam.\nĐể chúng tôi đồng hành cùng bạn.',

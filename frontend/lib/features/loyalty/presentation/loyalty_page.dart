@@ -144,7 +144,7 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEAFBFF),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: FutureBuilder<LoyaltyDashboardData>(
           future: _future,
@@ -208,11 +208,14 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: <Color>[Color(0xFFEAFBFF), Color(0xFFD9FFF8)],
+          colors: isDark
+              ? const <Color>[Color(0xFF020B10), Color(0xFF0B2426)]
+              : const <Color>[Color(0xFFEAFBFF), Color(0xFFD9FFF8)],
         ),
       ),
       child: Row(
@@ -345,7 +348,9 @@ class _SummaryCard extends StatelessWidget {
                       context.l10n.loyaltyHighestTier(
                         context.l10n.ui(account.highestTier),
                       ),
-                      style: const TextStyle(color: Color(0xFF64748B)),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -412,8 +417,8 @@ class _LoyaltyNotificationSettingsCard extends StatelessWidget {
                   context.l10n.ui(
                     'Only affects points and rewards notifications.',
                   ),
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 13,
                   ),
                 ),
@@ -475,8 +480,8 @@ class _TierProgressCard extends StatelessWidget {
                     nextMin,
                     context.l10n.ui(nextTier!.name),
                   ),
-            style: const TextStyle(
-              color: Color(0xFF475569),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -486,7 +491,9 @@ class _TierProgressCard extends StatelessWidget {
               context.l10n.loyaltyCycleEnds(
                 _formatDate(account.tierCycleEndsAt!),
               ),
-              style: const TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ],
@@ -654,7 +661,9 @@ class _VoucherExchangeCard extends StatelessWidget {
           if (vouchers.isEmpty)
             Text(
               context.l10n.ui('No active loyalty vouchers yet.'),
-              style: const TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             )
           else
             ...vouchers.map(
@@ -696,7 +705,9 @@ class _WalletCard extends StatelessWidget {
           if (wallet.isEmpty)
             Text(
               context.l10n.ui('Your loyalty voucher wallet is empty.'),
-              style: const TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             )
           else
             ...wallet
@@ -737,7 +748,9 @@ class _TransactionsCard extends StatelessWidget {
           if (transactions.isEmpty)
             Text(
               context.l10n.ui('No loyalty transactions yet.'),
-              style: const TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             )
           else
             ...transactions.map((LoyaltyTransaction tx) {
@@ -815,7 +828,7 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: <Widget>[
-          _CircleIcon(icon, const Color(0xFF94A3B8)),
+          _CircleIcon(icon, Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 10),
           Expanded(
             child: _TwoLine(title: title, subtitle: subtitle),
@@ -844,7 +857,10 @@ class _TwoLine extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           subtitle,
-          style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 13,
+          ),
         ),
       ],
     );
@@ -870,7 +886,10 @@ class _Metric extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -905,12 +924,18 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: theme.colorScheme.surface.withValues(
+          alpha: isDark ? 0.96 : 0.92,
+        ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white),
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : Colors.white,
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: const Color(0xFF0F172A).withValues(alpha: 0.06),
@@ -952,7 +977,9 @@ class _ErrorState extends StatelessWidget {
             Text(
               error,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 12),
             TextButton(
