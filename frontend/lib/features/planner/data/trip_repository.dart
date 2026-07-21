@@ -5,6 +5,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'models/trip_plan_request.dart';
 import 'models/trip_plan_response.dart';
 
+class NoTripCandidatesException implements Exception {
+  const NoTripCandidatesException();
+}
+
 class TripRepository {
   TripRepository({
     SupabaseFunctionClient? functionClient,
@@ -15,20 +19,27 @@ class TripRepository {
   final SupabaseFunctionClient _functionClient;
 
   Future<TripPlanResponse> planTrip(TripPlanRequest request) async {
-    final data = await _invoke(<String, Object?>{
-      'action': 'planTrip',
-      'idProvince': request.idProvince,
-      'targetLat': request.targetLat,
-      'targetLng': request.targetLng,
-      'nDays': request.nDays,
-      'saRuns': request.saRuns,
-      'savePlan': request.savePlan,
-      'startDate': request.startDate,
-      if (request.interestOptionIds != null &&
-          request.interestOptionIds!.isNotEmpty)
-        'interestOptionIds': request.interestOptionIds,
-    });
-    return TripPlanResponse.fromJson(data);
+    try {
+      final data = await _invoke(<String, Object?>{
+        'action': 'planTrip',
+        'idProvince': request.idProvince,
+        'targetLat': request.targetLat,
+        'targetLng': request.targetLng,
+        'nDays': request.nDays,
+        'saRuns': request.saRuns,
+        'savePlan': request.savePlan,
+        'startDate': request.startDate,
+        if (request.interestOptionIds != null &&
+            request.interestOptionIds!.isNotEmpty)
+          'interestOptionIds': request.interestOptionIds,
+      });
+      return TripPlanResponse.fromJson(data);
+    } on SupabaseFunctionException catch (error) {
+      if (error.errorCode == 'no_candidates') {
+        throw const NoTripCandidatesException();
+      }
+      rethrow;
+    }
   }
 
   Future<TripPlanResponse> getPlan(String idPlan) async {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_request.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
@@ -104,6 +105,22 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
         context.push(AppRoutes.tripPlannerResultPath(idPlan: idPlan));
       } else {
         context.push(AppRoutes.tripPlannerResultPath(), extra: response);
+      }
+    } on NoTripCandidatesException {
+      if (!mounted) return;
+      _showError(
+        'Not enough places found for your selection. Try selecting more '
+        'interests (step 4) or fewer days (step 3).',
+      );
+    } on SupabaseFunctionException catch (e) {
+      if (!mounted) return;
+      if (e.errorCode == 'no_candidates') {
+        _showError(
+          'Not enough places found for your selection. Try selecting more '
+          'interests (step 4) or fewer days (step 3).',
+        );
+      } else {
+        _showError('Could not generate your trip. Please try again.');
       }
     } catch (e) {
       if (!mounted) return;

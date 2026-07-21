@@ -95,8 +95,12 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
 
     final DateTime? startDate = DateTime.tryParse(item.startAt);
     final int nDays = int.tryParse(item.duration) ?? 1;
+    final DateTime? endDate =
+        DateTime.tryParse(item.endAt) ??
+        startDate?.add(Duration(days: nDays - 1));
     final String dateLabel = startDate != null
-        ? '${startDate.day} ${_shortMonths[startDate.month - 1]} • '
+        ? '${startDate.day} ${_shortMonths[startDate.month - 1]}'
+              '${endDate == null ? '' : ' - ${endDate.day} ${_shortMonths[endDate.month - 1]}'} • '
               '$nDays ${nDays == 1 ? 'day' : 'days'}'
         : '$nDays days';
 
@@ -113,7 +117,7 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
           .map(
             (SavedPlanStop s) => _SavedStop(
               id: s.id,
-              timeLabel: s.timeLabel,
+              timeLabel: s.startTime ?? _slotToTime(s.slot),
               title: s.title,
               note: s.note,
               isCompleted: false,
@@ -206,162 +210,180 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
               child: _DecorativeOrb(size: 190, color: Color(0x5556E2D5)),
             ),
             SafeArea(
-              child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: <Widget>[
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Row(
-                            children: <Widget>[
-                              _CircleIconButton(
-                                icon: Icons.arrow_back_rounded,
-                                onTap: () => context.pop(),
+              child: RefreshIndicator(
+                onRefresh: _loadSavedTrips,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: <Widget>[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Row(
+                              children: <Widget>[
+                                _CircleIconButton(
+                                  icon: Icons.arrow_back_rounded,
+                                  onTap: () => context.pop(),
+                                ),
+                                const Spacer(),
+                                _CircleIconButton(
+                                  icon: Icons.add_rounded,
+                                  onTap: () =>
+                                      context.go(AppRoutes.tripPlanner),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 22),
+                            Text(
+                              context.l10n.ui('Saved Trips'),
+                              style: const TextStyle(
+                                fontSize: 31,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.textPrimary,
+                                height: 1.05,
                               ),
-                              const Spacer(),
-                              _CircleIconButton(
-                                icon: Icons.add_rounded,
-                                onTap: () => context.go(AppRoutes.tripPlanner),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              context.l10n.ui(
+                                'Pick up where you left off and tick places as you complete them.',
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 22),
-                          Text(
-                            context.l10n.ui('Saved Trips'),
-                            style: const TextStyle(
-                              fontSize: 31,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.textPrimary,
-                              height: 1.05,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF687384),
+                                height: 1.45,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            context.l10n.ui(
-                              'Pick up where you left off and tick places as you complete them.',
+                            const SizedBox(height: 18),
+                            _SummaryCard(
+                              totalTrips: _trips.length,
+                              remainingStops: _remainingStops,
                             ),
-                            style: const TextStyle(
-                              fontSize: 15,
-                              color: Color(0xFF687384),
-                              height: 1.45,
+                            const SizedBox(height: 18),
+                            SizedBox(
+                              height: 48,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: _TripFilter.values.map((
+                                  _TripFilter filter,
+                                ) {
+                                  final bool selected =
+                                      filter == _selectedFilter;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: _FilterChipButton(
+                                      label: context.l10n.ui(filter.label),
+                                      selected: selected,
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedFilter = filter;
+                                        });
+                                      },
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 18),
-                          _SummaryCard(
-                            totalTrips: _trips.length,
-                            remainingStops: _remainingStops,
-                          ),
-                          const SizedBox(height: 18),
-                          SizedBox(
-                            height: 48,
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              children: _TripFilter.values.map((
-                                _TripFilter filter,
-                              ) {
-                                final bool selected = filter == _selectedFilter;
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 10),
-                                  child: _FilterChipButton(
-                                    label: context.l10n.ui(filter.label),
-                                    selected: selected,
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedFilter = filter;
-                                      });
-                                    },
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                          const SizedBox(height: 22),
-                        ],
+                            const SizedBox(height: 22),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  if (_isLoading)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (groupedTrips.isEmpty)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _EmptySavedTripsState(),
-                    )
-                  else
-                    ...groupedTrips.entries.map(
-                      (MapEntry<String, List<_SavedTrip>> entry) =>
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 14),
-                                    child: Row(
-                                      children: <Widget>[
-                                        Expanded(
-                                          child: Text(
-                                            context.l10n.ui(entry.key),
-                                            style: const TextStyle(
-                                              fontSize: 23,
-                                              fontWeight: FontWeight.w800,
-                                              color: AppColors.textPrimary,
-                                            ),
-                                          ),
-                                        ),
-                                        Text(
-                                          context.l10n.savedTripGroupCount(
-                                            entry.value.length,
-                                          ),
+                    if (_isLoading)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (groupedTrips.isEmpty)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _EmptySavedTripsState(),
+                      )
+                    else
+                      ...groupedTrips.entries.map(
+                        (
+                          MapEntry<String, List<_SavedTrip>> entry,
+                        ) => SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 14),
+                                  child: Row(
+                                    children: <Widget>[
+                                      Expanded(
+                                        child: Text(
+                                          context.l10n.ui(entry.key),
                                           style: const TextStyle(
-                                            fontSize: 13.5,
-                                            fontWeight: FontWeight.w700,
-                                            color: Color(0xFF738092),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  ...entry.value.map(
-                                    (_SavedTrip trip) => Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 16,
-                                      ),
-                                      child: _SavedTripCard(
-                                        trip: trip,
-                                        onToggleStop: (String stopId) =>
-                                            _toggleStop(trip.id, stopId),
-                                        onOpenPlan: () =>
-                                            _openItinerary(trip.id),
-                                        onPlanAgain: () =>
-                                            context.go(AppRoutes.tripPlanner),
-                                        onTripTapped: () => _showMessage(
-                                          context.l10n.savedTripUpdated(
-                                            context.l10n.ui(trip.title),
+                                            fontSize: 23,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.textPrimary,
                                           ),
                                         ),
                                       ),
+                                      Text(
+                                        context.l10n.savedTripGroupCount(
+                                          entry.value.length,
+                                        ),
+                                        style: const TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF738092),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                ...entry.value.map(
+                                  (_SavedTrip trip) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: _SavedTripCard(
+                                      trip: trip,
+                                      onToggleStop: (String stopId) =>
+                                          _toggleStop(trip.id, stopId),
+                                      onOpenPlan: () => _openItinerary(trip.id),
+                                      onPlanAgain: () =>
+                                          context.go(AppRoutes.tripPlanner),
+                                      onTripTapped: () => _showMessage(
+                                        context.l10n.savedTripUpdated(
+                                          context.l10n.ui(trip.title),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
-                    ),
-                ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+String _slotToTime(String? slot) {
+  switch (slot?.toLowerCase()) {
+    case 'morning':
+      return '08:00';
+    case 'afternoon':
+      return '13:00';
+    case 'evening':
+      return '17:00';
+    case 'lunch':
+      return '12:00';
+    default:
+      return '09:00';
   }
 }
 

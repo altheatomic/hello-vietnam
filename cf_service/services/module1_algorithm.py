@@ -642,6 +642,20 @@ def build_effective_interest_state(
     }
 
 
+def compute_alpha(cf_scores: dict, total_places: int) -> float:
+    """
+    Dynamic CB/CF blend weight based on CF coverage for this candidate set.
+    Shared by recommend_service.py, trip_planner.py, and routes/recommend.py.
+    """
+    if total_places == 0:
+        return 1.0
+    coverage = len(cf_scores) / total_places
+    if coverage == 0:   return 1.0
+    if coverage < 0.10: return 0.7
+    if coverage < 0.30: return 0.5
+    return 0.3
+
+
 def select_top_k_after_tag_match(
     ranked_places: list[dict],
     total_days: int,

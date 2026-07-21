@@ -22,6 +22,7 @@ Trip-level interest (optional):
 
 import datetime
 import json
+import time
 
 from db.place_repository import fetch_places_near_point, fetch_places_required_filter
 from db.queries_plan import save_plan
@@ -30,6 +31,7 @@ from services.module1_algorithm import (
     build_effective_interest_state,
     build_trip_interest_profile,
     build_user_interest_state_from_rows,
+    compute_alpha,
     rank_places_by_tag_match,
 )
 from services.module1_diversity import apply_diversity_selection
@@ -53,16 +55,6 @@ from services.module3_optimizer import optimize_day_route
 
 class NoTripCandidatesError(Exception):
     """Raised when a saved trip contains no persistable place."""
-
-
-def _compute_alpha(cf_scores: dict, total_places: int) -> float:
-    if total_places == 0:
-        return 1.0
-    coverage = len(cf_scores) / total_places
-    if coverage == 0:    return 1.0
-    if coverage < 0.10:  return 0.7
-    if coverage < 0.30:  return 0.5
-    return 0.3
 
 
 def _derive_start_point(places: list) -> dict:
@@ -117,7 +109,7 @@ class TripPlannerService:
         id_province:         str | None,
         n_days:              int,
         start_at:            datetime.date,
-        sa_runs:             int        = 5,
+        sa_runs:             int        = 2,
         save:                bool       = True,
         interest_option_ids: list[str] | None = None,
         target_lat:          float | None     = None,
@@ -126,6 +118,9 @@ class TripPlannerService:
         supabase = self.supabase
         end_date = start_at + datetime.timedelta(days=n_days - 1)
 
+        timing_ms: dict[str, float] = {}
+        _t_start = time.perf_counter()
+
         # ── [Filtering] ───────────────────────────────────────────────────────
         if target_lat is not None and target_lng is not None:
             required_places = fetch_places_near_point(supabase, target_lat, target_lng)
@@ -133,6 +128,7 @@ class TripPlannerService:
                   f"candidates={len(required_places)}")
         else:
             required_places = fetch_places_required_filter(supabase, id_province)
+
         user_profile = fetch_user_travel_profile(supabase, id_user)
         filtered_places, filter_report = filter_places_with_fallback(
             required_places, user_profile or {}, n_days
@@ -164,19 +160,10 @@ class TripPlannerService:
         trip_selected_options = None
         trip_option_subcategory_rows = None
 
-        # ── AUDIT LOG (temporary) ─────────────────────────────────────────────
-        print(f"[AUDIT plan] interest_option_ids received = {interest_option_ids}")
-        print(f"[AUDIT plan] baseline user_interest_state (from user_interest_tag) "
-              f"len={len(user_interest_state)} keys={list(user_interest_state.keys())[:5]}")
-
         if interest_option_ids:
             options = fetch_trip_interest_options_by_ids(supabase, interest_option_ids)
             active_options = [o for o in options if o.get("is_active")]
             active_option_ids = [o["id_trip_interest_option"] for o in active_options]
-
-            print(f"[AUDIT plan] fetch_trip_interest_options_by_ids -> "
-                  f"{len(options)} option(s) fetched, {len(active_options)} active: "
-                  f"{[(o.get('id_trip_interest_option'), o.get('option_code'), o.get('is_active')) for o in options]}")
 
             if active_options:
                 # Build synthetic choice rows (no trip_plan FK needed)
@@ -193,22 +180,10 @@ class TripPlannerService:
                 option_tag_rows         = fetch_trip_interest_option_tags(supabase, active_option_ids)
                 option_subcategory_rows = fetch_trip_interest_option_subcategories(supabase, active_option_ids)
 
-                print(f"[AUDIT plan] active_option_ids={active_option_ids} "
-                      f"option_tag_rows fetched={len(option_tag_rows)} "
-                      f"option_subcategory_rows fetched={len(option_subcategory_rows)}")
-                if option_tag_rows:
-                    print(f"[AUDIT plan] option_tag_rows sample: {option_tag_rows[:3]}")
-
                 trip_profile = build_trip_interest_profile(
                     trip_interest_choice_rows, option_tag_rows,
                     id_tag_map=id_tag_map,
                 )
-                print(f"[AUDIT plan] trip_profile.normalized_tag_weights = "
-                      f"{trip_profile['normalized_tag_weights']}")
-                print(f"[AUDIT plan] trip_profile.raw_tag_weights = "
-                      f"{trip_profile['raw_tag_weights']}")
-                print(f"[AUDIT plan] trip_profile.selected_option_codes = "
-                      f"{trip_profile['selected_option_codes']}")
 
                 effective_result = build_effective_interest_state(
                     user_interest_state,
@@ -220,18 +195,8 @@ class TripPlannerService:
                 trip_selected_options    = trip_interest_choice_rows
                 trip_option_subcategory_rows = option_subcategory_rows
 
-                print(f"[AUDIT plan] effective_interest_state len={len(user_interest_state)}")
-                for tag_code, info in list(user_interest_state.items())[:5]:
-                    print(
-                        f"[AUDIT plan]   tag={tag_code} "
-                        f"final_weight={info.get('final_weight')} "
-                        f"effective_weight={info.get('effective_weight')} "
-                        f"trip_weight={info.get('trip_weight')}"
-                    )
-            else:
-                print("[AUDIT plan] active_options is EMPTY — "
-                      "no trip-level tag blend applied, weight_field stays 'final_weight' "
-                      "over the (possibly empty) baseline user_interest_state.")
+        timing_ms["data_fetch"] = round((time.perf_counter() - _t_start) * 1000, 1)
+        _t_scoring0 = time.perf_counter()
 
         # ── [Rank by tag match] ───────────────────────────────────────────────
         ranked = rank_places_by_tag_match(
@@ -241,20 +206,9 @@ class TripPlannerService:
         )
         ranked = [p for p in ranked if str(p["id_place"]) not in already_rated]
 
-        # ── AUDIT LOG (temporary) ─────────────────────────────────────────────
-        nonzero_tag_match = [p for p in ranked if float(p.get("tag_match") or 0.0) > 0.0]
-        print(f"[AUDIT plan] weight_field used = {weight_field!r}")
-        print(f"[AUDIT plan] ranked places total={len(ranked)}, "
-              f"with tag_match > 0: {len(nonzero_tag_match)}")
-        if nonzero_tag_match:
-            top = nonzero_tag_match[0]
-            print(f"[AUDIT plan] top nonzero example: id_place={top.get('id_place')} "
-                  f"name={top.get('name')} tag_match={top.get('tag_match')} "
-                  f"matched_user_tags={top.get('matched_user_tags')}")
-
         # ── [CF Blend] ────────────────────────────────────────────────────────
         cf_scores = fetch_cf_scores_for_user(supabase, id_user, place_ids)
-        alpha = _compute_alpha(cf_scores, len(filtered_places))
+        alpha = compute_alpha(cf_scores, len(filtered_places))
 
         for place in ranked:
             tag_match = float(place.get("tag_match") or 0.0)
@@ -278,6 +232,9 @@ class TripPlannerService:
         )
         top_places = diversity_result["diversified_top_k"]
 
+        timing_ms["scoring"] = round((time.perf_counter() - _t_scoring0) * 1000, 1)
+        _t_m2_0 = time.perf_counter()
+
         # ── [Module 2 – Greedy Repair] ────────────────────────────────────────
         pace_level = (user_profile or {}).get("pace_level")
         m2_result = build_module2_result(
@@ -287,6 +244,9 @@ class TripPlannerService:
             pace_level=pace_level,
         )
         day_clusters = m2_result["day_clusters"]
+
+        timing_ms["module2_kmeans_repair"] = round((time.perf_counter() - _t_m2_0) * 1000, 1)
+        _t_m3_0 = time.perf_counter()
 
         # ── [Module 3 – Route optimization] ───────────────────────────────────
         start_point = _derive_start_point(top_places)
@@ -318,6 +278,9 @@ class TripPlannerService:
             if best_route:
                 start_point = best_route[-1]
 
+        timing_ms["module3_sa_schedule"] = round((time.perf_counter() - _t_m3_0) * 1000, 1)
+        _t_save_0 = time.perf_counter()
+
         # ── [Persist] ─────────────────────────────────────────────────────────
         real_place_count = sum(
             1
@@ -342,6 +305,16 @@ class TripPlannerService:
         if save:
             id_plan = save_plan(supabase, id_user, id_province, n_days, start_at, days)
 
+        timing_ms["save_plan"] = round((time.perf_counter() - _t_save_0) * 1000, 1)
+        timing_ms["total"] = round((time.perf_counter() - _t_start) * 1000, 1)
+
+        print(f"[TIMING] plan() total={timing_ms['total']}ms "
+              f"data_fetch={timing_ms['data_fetch']}ms "
+              f"scoring={timing_ms['scoring']}ms "
+              f"module2={timing_ms['module2_kmeans_repair']}ms "
+              f"module3={timing_ms['module3_sa_schedule']}ms "
+              f"save_plan={timing_ms['save_plan']}ms")
+
         return {
             "id_plan": id_plan,
             "days": days,
@@ -353,5 +326,6 @@ class TripPlannerService:
                 "trip_interest_used": bool(trip_selected_options),
                 "m2_summary":         m2_result.get("summary"),
                 "diversity_summary":  diversity_result.get("summary", {}).get("final_selected_count"),
+                "timing_ms":          timing_ms,
             },
         }

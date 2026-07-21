@@ -74,6 +74,7 @@ class ForumPost {
     required this.likes,
     required this.comments,
     this.sharedItem,
+    this.sharedTripPlan,
     this.isLiked = false,
     this.isBookmarked = false,
     this.showFollowButton = false,
@@ -87,6 +88,7 @@ class ForumPost {
   final int likes;
   final int comments;
   final SharedExploreItem? sharedItem;
+  final SharedTripPlanItem? sharedTripPlan;
   final bool isLiked;
   final bool isBookmarked;
   final bool showFollowButton;
@@ -100,6 +102,7 @@ class ForumPost {
     int? likes,
     int? comments,
     SharedExploreItem? sharedItem,
+    SharedTripPlanItem? sharedTripPlan,
     bool? isLiked,
     bool? isBookmarked,
     bool? showFollowButton,
@@ -113,6 +116,7 @@ class ForumPost {
       likes: likes ?? this.likes,
       comments: comments ?? this.comments,
       sharedItem: sharedItem ?? this.sharedItem,
+      sharedTripPlan: sharedTripPlan ?? this.sharedTripPlan,
       isLiked: isLiked ?? this.isLiked,
       isBookmarked: isBookmarked ?? this.isBookmarked,
       showFollowButton: showFollowButton ?? this.showFollowButton,

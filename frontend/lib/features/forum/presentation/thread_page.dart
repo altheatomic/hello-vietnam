@@ -39,6 +39,10 @@ class ThreadPage extends StatelessWidget {
       );
     }
 
+    void openSharedTripPlan(SharedTripPlanItem item) {
+      context.push(AppRoutes.tripPlannerResultPath(idPlan: item.planId));
+    }
+
     void openReplyModal({
       required ForumPost post,
       required String replyToHandle,
@@ -168,6 +172,9 @@ class ThreadPage extends StatelessWidget {
                           onSharedItemTap: post.sharedItem == null
                               ? null
                               : () => openSharedItem(post.sharedItem!),
+                          onSharedTripPlanTap: post.sharedTripPlan == null
+                              ? null
+                              : () => openSharedTripPlan(post.sharedTripPlan!),
                           showMoreButton: !store.isCurrentUser(post.author.id),
                           showInlineFollow: false,
                         ),

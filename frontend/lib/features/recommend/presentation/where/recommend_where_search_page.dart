@@ -62,9 +62,8 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
 
   List<RecommendDestination> _filter(String query) {
     if (query.trim().isEmpty) return _allDestinations;
-    final q = query.toLowerCase();
     return _allDestinations
-        .where((d) => d.name.toLowerCase().contains(q))
+        .where((d) => matchesSearchQuery(query, d.name))
         .toList();
   }
 
@@ -77,9 +76,13 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
 
   void _openDestination(String destination) {
     if (destination.trim().isEmpty) return;
+    final String normalizedDestination = removeVietnameseDiacritics(
+      destination.trim(),
+    ).toLowerCase();
     RecommendDestination? match;
     for (final candidate in _allDestinations) {
-      if (candidate.name.toLowerCase() == destination.trim().toLowerCase()) {
+      if (removeVietnameseDiacritics(candidate.name).toLowerCase() ==
+          normalizedDestination) {
         match = candidate;
         break;
       }

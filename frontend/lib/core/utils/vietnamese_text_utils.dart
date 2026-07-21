@@ -38,3 +38,22 @@ String removeVietnameseDiacritics(String input) {
   }
   return output.toString();
 }
+
+/// Returns true if [candidate] matches [query] once both are normalized to
+/// lowercase, diacritic-free text.
+///
+/// Search inputs need this because display text is normally shown via
+/// [removeVietnameseDiacritics] (e.g. "Da Lat" for "Đà Lạt") — matching the
+/// raw, accented source field would force the user to type the accents back
+/// in to find something the UI never showed them accented in the first
+/// place. An empty [query] always matches.
+bool matchesSearchQuery(String query, String candidate) {
+  final String normalizedQuery = removeVietnameseDiacritics(
+    query.trim(),
+  ).toLowerCase();
+  if (normalizedQuery.isEmpty) return true;
+  final String normalizedCandidate = removeVietnameseDiacritics(
+    candidate,
+  ).toLowerCase();
+  return normalizedCandidate.contains(normalizedQuery);
+}

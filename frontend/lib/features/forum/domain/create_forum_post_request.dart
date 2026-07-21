@@ -73,6 +73,32 @@ class SharedExploreItem {
   }
 }
 
+/// Minimal reference-only model for a shared trip plan post.
+/// Unlike [SharedExploreItem], this intentionally carries no itinerary
+/// text — the full plan is fetched by [planId] when the user opens it.
+class SharedTripPlanItem {
+  final String planId;
+  final String provinceName;
+  final int nDays;
+  final int placeCount;
+
+  const SharedTripPlanItem({
+    required this.planId,
+    required this.provinceName,
+    required this.nDays,
+    required this.placeCount,
+  });
+
+  factory SharedTripPlanItem.fromJson(Map<String, dynamic> json) {
+    return SharedTripPlanItem(
+      planId: (json['plan_id'] as String? ?? '').trim(),
+      provinceName: (json['province_name'] as String? ?? '').trim(),
+      nDays: (json['n_days'] as num?)?.toInt() ?? 0,
+      placeCount: (json['place_count'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
 DetailCategory _parseDetailCategory(String? rawValue) {
   final String raw = (rawValue ?? '').trim().toLowerCase();
   switch (raw) {

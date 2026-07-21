@@ -443,6 +443,7 @@ class ForumPostCard extends StatelessWidget {
     required this.onFollow,
     required this.onMore,
     this.onSharedItemTap,
+    this.onSharedTripPlanTap,
     this.showMoreButton = true,
     this.showInlineFollow = true,
   });
@@ -457,6 +458,7 @@ class ForumPostCard extends StatelessWidget {
   final VoidCallback onFollow;
   final VoidCallback onMore;
   final VoidCallback? onSharedItemTap;
+  final VoidCallback? onSharedTripPlanTap;
   final bool showMoreButton;
   final bool showInlineFollow;
 
@@ -558,7 +560,13 @@ class ForumPostCard extends StatelessWidget {
                     color: textColor,
                   ),
                 ),
-                if (post.sharedItem != null) ...<Widget>[
+                if (post.sharedTripPlan != null) ...<Widget>[
+                  const SizedBox(height: 12),
+                  ForumSharedTripPlanCard(
+                    item: post.sharedTripPlan!,
+                    onTap: onSharedTripPlanTap,
+                  ),
+                ] else if (post.sharedItem != null) ...<Widget>[
                   const SizedBox(height: 12),
                   ForumSharedItemCard(
                     item: post.sharedItem!,
@@ -706,6 +714,96 @@ class ForumSharedItemCard extends StatelessWidget {
       return provinceName;
     }
     return (item.subtitle ?? '').trim();
+  }
+}
+
+/// Generic (no cover image / no highlights) preview card for a shared trip
+/// plan post. Intentionally minimal — see SharedTripPlanItem docstring.
+class ForumSharedTripPlanCard extends StatelessWidget {
+  const ForumSharedTripPlanCard({super.key, required this.item, this.onTap});
+
+  final SharedTripPlanItem item;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final String province = item.provinceName.isNotEmpty
+        ? item.provinceName
+        : 'Vietnam';
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.56),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+          ),
+          child: Row(
+            children: <Widget>[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  width: 68,
+                  height: 68,
+                  color: ForumColors.bluePrimary.withValues(alpha: 0.12),
+                  child: const Icon(
+                    Icons.map_outlined,
+                    color: ForumColors.bluePrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const Text(
+                      'Trip plan',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: ForumColors.bluePrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Trip to $province',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: ForumColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${item.nDays} days · ${item.placeCount} places',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: ForumColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.open_in_new_rounded,
+                size: 18,
+                color: ForumColors.textMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

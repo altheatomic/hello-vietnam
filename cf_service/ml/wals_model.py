@@ -4,7 +4,7 @@ Train WALS (Weighted Alternating Least Squares) on matrix A.
 
 References:
   Hu, Koren, Volinsky (2008) – Collaborative Filtering for Implicit Feedback
-  Rendle et al. (RecSys 2022) – 16-20 iterations is sufficient
+  Rendle et al. (RecSys 2022) – 16 iterations is sufficient
 
 Formula:
   Confidence : C[u][p] = 1 + alpha * A[u][p]
@@ -16,10 +16,10 @@ from scipy.sparse import csr_matrix
 from scipy.special import expit as sigmoid
 from implicit.als import AlternatingLeastSquares
 
-ALPHA      = 100
+ALPHA      = 40
 FACTORS    = 64
 REG        = 0.1
-ITERATIONS = 20
+ITERATIONS = 16
 
 
 def train_wals(A: np.ndarray):
