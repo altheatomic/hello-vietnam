@@ -159,7 +159,9 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
                       decoration: InputDecoration(
                         hintText: context.l10n.ui('Search destination'),
                         hintStyle: TextStyle(
-                          color: AppColors.textSecondary.withValues(alpha: 0.6),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                           fontSize: 14,
                         ),
                         prefixIcon: const Icon(Icons.search_rounded, size: 20),
@@ -169,9 +171,10 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
                                 child: Icon(
                                   Icons.close_rounded,
                                   size: 18,
-                                  color: AppColors.textSecondary.withValues(
-                                    alpha: 0.7,
-                                  ),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant
+                                      .withValues(alpha: 0.7),
                                 ),
                               )
                             : null,
@@ -243,9 +246,10 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
                           dest.tags.join(' · '),
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondary.withValues(
-                              alpha: 0.8,
-                            ),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.8),
                           ),
                         ),
                         onTap: () => _openDestination(dest.name),

@@ -303,10 +303,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               : 'Check your email',
                         ),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1A2E),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -346,10 +346,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             'Please enter your email to receive\npassword reset link',
           ),
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A2E),
+            color: Theme.of(context).colorScheme.onSurface,
             height: 1.5,
           ),
         ),
@@ -381,10 +381,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         Text(
           context.l10n.ui('Check your email'),
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A2E),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -468,10 +468,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         Text(
           context.l10n.ui('Create your new password'),
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A2E),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 24),
@@ -549,10 +549,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         Text(
           context.l10n.ui('Congratulations!'),
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF1A1A2E),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 12),

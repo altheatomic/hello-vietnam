@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
-import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
@@ -201,9 +200,10 @@ class _ForumReportPostPageState extends State<ForumReportPostPage> {
                                   hintText:
                                       'Provide any additional details that might help us understand the issue...',
                                   hintStyle: TextStyle(
-                                    color: AppColors.textSecondary.withValues(
-                                      alpha: 0.8,
-                                    ),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant
+                                        .withValues(alpha: 0.8),
                                   ),
                                   border: InputBorder.none,
                                   contentPadding: const EdgeInsets.all(18),
@@ -258,12 +258,12 @@ class _ForumReportPostPageState extends State<ForumReportPostPage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         "Your report is anonymous. We'll review it and take appropriate action.",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -392,7 +392,7 @@ class _ReportReasonTile extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     option.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: ForumColors.textPrimary,
@@ -401,9 +401,9 @@ class _ReportReasonTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     option.subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -418,7 +418,9 @@ class _ReportReasonTile extends StatelessWidget {
                 border: Border.all(
                   color: isSelected
                       ? ForumColors.cyanPrimary
-                      : AppColors.textSecondary.withValues(alpha: 0.35),
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
                   width: 1.6,
                 ),
               ),

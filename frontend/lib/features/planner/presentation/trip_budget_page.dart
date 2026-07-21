@@ -257,12 +257,18 @@ class _LoadingBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FAFF),
+        color: isDark
+            ? theme.colorScheme.surfaceContainerHighest
+            : const Color(0xFFF0FAFF),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFB8E9FF)),
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFB8E9FF),
+        ),
       ),
       child: Row(
         children: <Widget>[
@@ -393,13 +399,19 @@ class _SelectedBudgetHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF2FBFF),
+        color: isDark
+            ? theme.colorScheme.surfaceContainerHighest
+            : const Color(0xFFF2FBFF),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFCBEFFF)),
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFCBEFFF),
+        ),
       ),
       child: Row(
         children: <Widget>[
@@ -415,7 +427,7 @@ class _SelectedBudgetHint extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF4F6072),
+                color: theme.colorScheme.onSurfaceVariant,
                 height: 1.35,
               ),
             ),

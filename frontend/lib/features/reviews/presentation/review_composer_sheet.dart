@@ -105,7 +105,7 @@ class _ReviewComposerSheetState extends State<ReviewComposerSheet> {
             Text(
               widget.itemTitle,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 18),

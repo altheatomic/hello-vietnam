@@ -89,10 +89,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
             children: <Widget>[
               Text(
                 context.l10n.ui('Choose Avatar'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A1A),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 12),
@@ -254,10 +254,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     child: Text(
                       context.l10n.ui('Edit Profile'),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF121212),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -305,10 +305,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 color: const Color(0xFFDDDDDD),
                               ),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.edit,
                               size: 16,
-                              color: Color(0xFF5F5F5F),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),

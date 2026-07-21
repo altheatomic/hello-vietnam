@@ -1340,10 +1340,10 @@ class _ForumReplyDialogState extends State<ForumReplyDialog> {
                 children: <Widget>[
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close,
                       size: 28,
-                      color: ForumColors.textPrimary,
+                      color: ForumColors.foreground(context),
                     ),
                   ),
                   const Spacer(),
@@ -1380,9 +1380,9 @@ class _ForumReplyDialogState extends State<ForumReplyDialog> {
                       children: <Widget>[
                         RichText(
                           text: TextSpan(
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 17,
-                              color: AppColors.textSecondary,
+                              color: ForumColors.muted(context),
                             ),
                             children: <TextSpan>[
                               const TextSpan(text: 'Replying to '),
@@ -1400,7 +1400,9 @@ class _ForumReplyDialogState extends State<ForumReplyDialog> {
                         Container(
                           constraints: const BoxConstraints(minHeight: 200),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.72),
+                            color: ForumColors.isDark(context)
+                                ? ForumColors.darkSurfaceHigh
+                                : Colors.white.withValues(alpha: 0.72),
                             borderRadius: BorderRadius.circular(28),
                             border: Border.all(
                               color: ForumColors.cyanPrimary.withValues(
@@ -1419,17 +1421,17 @@ class _ForumReplyDialogState extends State<ForumReplyDialog> {
                               hintText: context.l10n.ui('Type your answer'),
                               hintStyle: TextStyle(
                                 fontSize: 18,
-                                color: AppColors.textSecondary.withValues(
-                                  alpha: 0.8,
-                                ),
+                                color: ForumColors.muted(
+                                  context,
+                                ).withValues(alpha: 0.8),
                               ),
                               border: InputBorder.none,
                               contentPadding: const EdgeInsets.all(20),
                             ),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               height: 1.5,
-                              color: ForumColors.textPrimary,
+                              color: ForumColors.foreground(context),
                             ),
                           ),
                         ),

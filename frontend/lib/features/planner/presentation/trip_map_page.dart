@@ -158,7 +158,9 @@ class _TripMapPageState extends State<TripMapPage> {
                                 context.l10n.ui(_activity.distanceLabel),
                                 style: TextStyle(
                                   fontSize: 15,
-                                  color: Color(0xFF6A7585),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -293,14 +295,14 @@ class _ResultSheet extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF4F5B6D),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(width: 6),
-              const Icon(
+              Icon(
                 Icons.swap_vert_rounded,
                 size: 18,
-                color: Color(0xFF4F5B6D),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -312,7 +314,9 @@ class _ResultSheet extends StatelessWidget {
                 ? Center(
                     child: Text(
                       context.l10n.ui('No nearby places found.'),
-                      style: TextStyle(color: Color(0xFF8A95A5)),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   )
                 : ListView.separated(
@@ -395,7 +399,10 @@ class _NearbyPlaceTile extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   '${context.l10n.ui(place.subtitle)} • ${place.distance}',
-                  style: TextStyle(fontSize: 14.5, color: Color(0xFF707B8B)),
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -510,13 +517,13 @@ class _BackButtonCircle extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           customBorder: const CircleBorder(),
-          child: const SizedBox(
+          child: SizedBox(
             width: 42,
             height: 42,
             child: Icon(
               Icons.arrow_back_rounded,
               size: 22,
-              color: Color(0xFF3A465D),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),

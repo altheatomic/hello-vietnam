@@ -13,7 +13,6 @@ enum _DeleteDataStep { selectTrip, reviewData, confirmDeletion, success }
 
 class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
   static const Color _primaryBlue = Color(0xFF81D4FA);
-  static const Color _textDark = Color(0xFF151515);
   static const double _buttonHeight = 52;
 
   static const List<_TripOption> _trips = <_TripOption>[
@@ -221,20 +220,23 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
       key: const ValueKey<String>('trip-selection'),
       padding: const EdgeInsets.fromLTRB(18, 28, 18, 118),
       children: <Widget>[
-        const Text(
+        Text(
           'Trip itinerary and plans',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 25,
             fontWeight: FontWeight.w800,
-            color: _textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           'Choose trips that you want to delete.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: Color(0xFF2B2B2B)),
+          style: TextStyle(
+            fontSize: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 24),
         ..._trips.map((trip) {
@@ -265,23 +267,23 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
       key: const ValueKey<String>('review-data'),
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 118),
       children: <Widget>[
-        const Text(
+        Text(
           'Review Your Trip Data',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 25,
             fontWeight: FontWeight.w800,
-            color: _textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           'Choose what data you want to delete.\n'
           'This will only affect this completed trip.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 16,
-            color: Color(0xFF2B2B2B),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.35,
           ),
         ),
@@ -304,9 +306,9 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
                     item.description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
-                      color: Color(0xFFA5A5A5),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -334,20 +336,24 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
       key: const ValueKey<String>('confirm'),
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 118),
       children: <Widget>[
-        const Text(
+        Text(
           'Confirm Data Deletion',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 25,
             fontWeight: FontWeight.w800,
-            color: _textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           'You are about to delete the selected personal data related\nto this trip.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: Color(0xFF2B2B2B), height: 1.4),
+          style: TextStyle(
+            fontSize: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            height: 1.4,
+          ),
         ),
         const SizedBox(height: 24),
         ...selectedItems.map((item) {
@@ -357,12 +363,15 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
           );
         }),
         if (selectedItems.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 8, bottom: 18),
             child: Text(
               'No data selected yet.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Color(0xFF8E8E8E)),
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         const SizedBox(height: 14),
@@ -400,20 +409,23 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
           ),
         ),
         const SizedBox(height: 26),
-        const Text(
+        Text(
           'Data Deleted Successfully !',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 38,
             fontWeight: FontWeight.w800,
-            color: _textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 14),
-        const Text(
+        Text(
           'Your selected personal data has been deleted.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: Color(0xFF2B2B2B)),
+          style: TextStyle(
+            fontSize: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 26),
         Center(
@@ -461,9 +473,9 @@ class _HeaderBar extends StatelessWidget {
               children: <Widget>[
                 IconButton(
                   onPressed: onBack,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.chevron_left,
-                    color: Color(0xFF1B1B1B),
+                    color: Theme.of(context).colorScheme.onSurface,
                     size: 30,
                   ),
                 ),
@@ -472,13 +484,13 @@ class _HeaderBar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Personal Data',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF121212),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],
@@ -502,6 +514,7 @@ class _SelectableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -510,23 +523,23 @@ class _SelectableRow extends StatelessWidget {
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? const Color(0xFF72C9F2) : const Color(0xFFD8D8D8),
+            color: selected ? const Color(0xFF72C9F2) : colors.outlineVariant,
             width: selected ? 1.6 : 1.0,
           ),
         ),
         child: Row(
           children: <Widget>[
-            Icon(icon, size: 22, color: const Color(0xFF232323)),
+            Icon(icon, size: 22, color: colors.onSurface),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
-                  color: Color(0xFF1F1F1F),
+                  color: colors.onSurface,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -547,23 +560,24 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFD8D8D8)),
+        border: Border.all(color: colors.outlineVariant),
       ),
       child: Row(
         children: <Widget>[
-          Icon(icon, size: 22, color: const Color(0xFF232323)),
+          Icon(icon, size: 22, color: colors.onSurface),
           const SizedBox(width: 14),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
-                color: Color(0xFF1F1F1F),
+                color: colors.onSurface,
                 fontWeight: FontWeight.w500,
               ),
             ),

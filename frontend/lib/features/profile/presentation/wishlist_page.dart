@@ -775,6 +775,7 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
     final double topInset = MediaQuery.of(context).padding.top;
     final double bottomInset = MediaQuery.of(context).padding.bottom;
     final bool isPlace = widget.item.type == WishlistType.place;
@@ -881,10 +882,10 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                         const SizedBox(height: 8),
                         Text(
                           widget.item.detailDescription,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 17,
                             height: 1.45,
-                            color: Color(0xFF222222),
+                            color: colors.onSurface,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -893,10 +894,10 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                             Expanded(
                               child: Text(
                                 context.l10n.ui('Images'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 34,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF0C709D),
+                                  color: colors.primary,
                                 ),
                               ),
                             ),
@@ -942,10 +943,10 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                           const SizedBox(height: 16),
                           Text(
                             context.l10n.ui('Location'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0C709D),
+                              color: colors.primary,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -963,10 +964,10 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                           const SizedBox(height: 16),
                           Text(
                             context.l10n.ui('Ingredients'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0C709D),
+                              color: colors.primary,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -974,10 +975,10 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                           const SizedBox(height: 12),
                           Text(
                             context.l10n.ui('Flavor'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0C709D),
+                              color: colors.primary,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -988,19 +989,19 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                           const SizedBox(height: 16),
                           Text(
                             context.l10n.ui('The highlights of a visit'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 34,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0C709D),
+                              color: colors.primary,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             widget.item.highlightsDescription,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               height: 1.4,
-                              color: Color(0xFF232323),
+                              color: colors.onSurface,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -1089,10 +1090,10 @@ class WishlistAllImagesPage extends StatelessWidget {
                   Expanded(
                     child: Text(
                       '${item.title.replaceFirst('TP. ', '')} ${context.l10n.ui('Images')}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF0C709D),
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -1145,19 +1146,20 @@ class _RatingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final String ratingText = rating.toStringAsFixed(1).replaceAll('.', ',');
     final int filledStars = rating.floor().clamp(0, 5);
+    final ColorScheme colors = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
           children: <Widget>[
-            const Expanded(
+            Expanded(
               child: Text(
                 'Rating',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0C709D),
+                  color: colors.primary,
                 ),
               ),
             ),
@@ -1188,10 +1190,10 @@ class _RatingSection extends StatelessWidget {
                           width: 12,
                           child: Text(
                             '$label',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF202020),
+                              color: colors.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -1220,10 +1222,10 @@ class _RatingSection extends StatelessWidget {
               children: <Widget>[
                 Text(
                   ratingText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 38,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF666666),
+                    color: colors.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1262,10 +1264,10 @@ class _BulletList extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 2),
               child: Text(
                 '• $item',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   height: 1.3,
-                  color: Color(0xFF222222),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -1674,18 +1676,18 @@ class _CircleIconButton extends StatelessWidget {
   const _CircleIconButton({
     required this.icon,
     required this.onTap,
-    this.iconColor = const Color(0xFF2C2C2C),
+    this.iconColor,
   });
 
   final IconData icon;
   final VoidCallback onTap;
-  final Color iconColor;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
     return _WishlistGlassIconButton(
       icon: icon,
-      iconColor: iconColor,
+      iconColor: iconColor ?? Theme.of(context).colorScheme.onSurface,
       onTap: onTap,
     );
   }
@@ -1711,10 +1713,10 @@ class _ReportAssetIconButton extends StatelessWidget {
             fit: BoxFit.contain,
             errorBuilder:
                 (BuildContext context, Object error, StackTrace? stackTrace) =>
-                    const Icon(
+                    Icon(
                       Icons.bug_report_outlined,
                       size: 28,
-                      color: Color(0xFF2C2C2C),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
           ),
         ),

@@ -402,7 +402,7 @@ class _ReviewSectionState extends State<ReviewSection> {
             context.l10n.noReviewsYetFor(widget.itemTitle),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -519,7 +519,7 @@ class _SectionHeader extends StatelessWidget {
                     effectiveSummary.averageRating,
                   ),
                   style: theme.textTheme.titleSmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -530,7 +530,7 @@ class _SectionHeader extends StatelessWidget {
           Text(
             context.l10n.reviewCount(effectiveSummary.reviewCount),
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 16),
@@ -627,12 +627,12 @@ class _RatingFilterChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       selectedColor: AppColors.primaryLight.withValues(alpha: 0.28),
       backgroundColor: AppColors.surfaceElevated.withValues(alpha: 0.92),
-      checkmarkColor: AppColors.textPrimary,
+      checkmarkColor: theme.colorScheme.onSurface,
       side: BorderSide(color: AppColors.primaryLight.withValues(alpha: 0.48)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       labelStyle: theme.textTheme.labelLarge?.copyWith(
         fontWeight: FontWeight.w800,
-        color: AppColors.textPrimary,
+        color: theme.colorScheme.onSurface,
         letterSpacing: 0,
       ),
     );
@@ -848,7 +848,7 @@ class _ReviewListCard extends StatelessWidget {
                       Text(
                         updatedLabel,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                   ],

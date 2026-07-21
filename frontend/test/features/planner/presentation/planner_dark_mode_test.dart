@@ -7,6 +7,7 @@ import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dar
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_page.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_location_page.dart';
+import 'package:hellovietnam/features/planner/presentation/trip_day_detail_page.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_result_page.dart';
 import 'package:hellovietnam/features/planner/presentation/saved_trips_page.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
@@ -190,5 +191,27 @@ void main() {
         (background.decoration! as BoxDecoration).gradient! as LinearGradient;
 
     expect(gradient.colors.first.computeLuminance(), lessThan(0.1));
+  });
+
+  testWidgets('itinerary day review uses a dark background and readable copy', (
+    WidgetTester tester,
+  ) async {
+    final ThemeData darkTheme = buildDarkTheme();
+    await tester.binding.setSurfaceSize(const Size(430, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(theme: darkTheme, home: const TripDayDetailPage(dayIndex: 0)),
+    );
+
+    final Scaffold scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+    final Container background = scaffold.body! as Container;
+    final LinearGradient gradient =
+        (background.decoration! as BoxDecoration).gradient! as LinearGradient;
+    final Text date = tester.widget<Text>(
+      find.text(TripPlannerMockData.tripDays.first.date),
+    );
+
+    expect(gradient.colors.first.computeLuminance(), lessThan(0.1));
+    expect(date.style?.color, darkTheme.colorScheme.onSurfaceVariant);
   });
 }
