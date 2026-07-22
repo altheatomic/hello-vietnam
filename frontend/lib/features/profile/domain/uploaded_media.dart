@@ -89,8 +89,13 @@ class UploadedMediaDeleteResult {
   bool get isRetryable => status == UploadedMediaDeleteStatus.failed;
 
   factory UploadedMediaDeleteResult.fromJson(Map<String, dynamic> row) {
+    final String mediaId = _stringValue(row['mediaId'] ?? row['id_media']);
+    if (mediaId.isEmpty) {
+      throw const FormatException('Invalid uploaded media delete result.');
+    }
+
     return UploadedMediaDeleteResult(
-      mediaId: _stringValue(row['mediaId'] ?? row['id_media']),
+      mediaId: mediaId,
       status: UploadedMediaDeleteStatus.parse(row['status']),
       message: _nullableString(row['message']),
     );
@@ -98,7 +103,8 @@ class UploadedMediaDeleteResult {
 }
 
 class UploadedMediaDeleteSummary {
-  const UploadedMediaDeleteSummary(this.results);
+  UploadedMediaDeleteSummary(Iterable<UploadedMediaDeleteResult> results)
+    : results = List<UploadedMediaDeleteResult>.unmodifiable(results);
 
   final List<UploadedMediaDeleteResult> results;
 

@@ -30,15 +30,18 @@ class UploadedMediaRepositoryImpl implements UploadedMediaRepository {
     final Object? rawItems = data['items'];
     if (rawItems is! List) return const <UploadedMediaItem>[];
 
-    return rawItems
-        .whereType<Map>()
-        .map(
-          (Map row) => UploadedMediaItem.fromJson(
-            Map<String, dynamic>.from(row),
-          ),
-        )
-        .whereType<UploadedMediaItem>()
-        .toList(growable: false);
+    final List<UploadedMediaItem> items = <UploadedMediaItem>[];
+    for (final Object? rawItem in rawItems) {
+      if (rawItem is! Map) continue;
+      try {
+        items.add(
+          UploadedMediaItem.fromJson(Map<String, dynamic>.from(rawItem)),
+        );
+      } on FormatException {
+        continue;
+      }
+    }
+    return List<UploadedMediaItem>.unmodifiable(items);
   }
 
   @override
@@ -56,20 +59,20 @@ class UploadedMediaRepositoryImpl implements UploadedMediaRepository {
     );
     final Object? rawResults = data['results'];
     if (rawResults is! List) {
-      return const UploadedMediaDeleteSummary(
-        <UploadedMediaDeleteResult>[],
-      );
+      return UploadedMediaDeleteSummary(const <UploadedMediaDeleteResult>[]);
     }
 
-    return UploadedMediaDeleteSummary(
-      rawResults
-          .whereType<Map>()
-          .map(
-            (Map row) => UploadedMediaDeleteResult.fromJson(
-              Map<String, dynamic>.from(row),
-            ),
-          )
-          .toList(growable: false),
-    );
+    final List<UploadedMediaDeleteResult> results = <UploadedMediaDeleteResult>[];
+    for (final Object? rawResult in rawResults) {
+      if (rawResult is! Map) continue;
+      try {
+        results.add(
+          UploadedMediaDeleteResult.fromJson(Map<String, dynamic>.from(rawResult)),
+        );
+      } on FormatException {
+        continue;
+      }
+    }
+    return UploadedMediaDeleteSummary(results);
   }
 }

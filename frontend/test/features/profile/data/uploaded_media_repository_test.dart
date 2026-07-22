@@ -67,6 +67,49 @@ void main() {
     expect(items.single.postHasText, isFalse);
   });
 
+  test('keeps an empty current listing empty without fabricating AI media', () async {
+    final UploadedMediaRepository repository = UploadedMediaRepositoryImpl(
+      functionClient: SupabaseFunctionClient(
+        accessTokenProvider: () async => 'test-token',
+        invoker:
+            (String functionName, {Map<String, String>? headers, Object? body}) async =>
+                <String, Object?>{'items': <Object?>[]},
+      ),
+    );
+
+    final List<UploadedMediaItem> items = await repository.loadOwnedMedia();
+
+    expect(items, isEmpty);
+  });
+
+  test('skips malformed media rows while retaining valid rows', () async {
+    final UploadedMediaRepository repository = UploadedMediaRepositoryImpl(
+      functionClient: SupabaseFunctionClient(
+        accessTokenProvider: () async => 'test-token',
+        invoker:
+            (String functionName, {Map<String, String>? headers, Object? body}) async =>
+                <String, Object?>{
+                  'items': <Object?>[
+                    <String, Object?>{
+                      'id_media': 'invalid-date',
+                      'source': 'forum',
+                      'created_at': 'not-a-date',
+                    },
+                    <String, Object?>{
+                      'id_media': 'valid-media',
+                      'source': 'forum',
+                      'created_at': '2026-07-22T10:00:00Z',
+                    },
+                  ],
+                },
+      ),
+    );
+
+    final List<UploadedMediaItem> items = await repository.loadOwnedMedia();
+
+    expect(items.map((UploadedMediaItem item) => item.id), <String>['valid-media']);
+  });
+
   test('returns mixed delete results and retryable failed ids', () async {
     Object? capturedBody;
     final UploadedMediaRepository repository = UploadedMediaRepositoryImpl(
@@ -110,5 +153,54 @@ void main() {
       UploadedMediaDeleteStatus.notFound,
     ]);
     expect(summary.failedMediaIds, <String>['media-2']);
+  });
+
+  test('skips delete results without a media id', () async {
+    final UploadedMediaRepository repository = UploadedMediaRepositoryImpl(
+      functionClient: SupabaseFunctionClient(
+        accessTokenProvider: () async => 'test-token',
+        invoker:
+            (String functionName, {Map<String, String>? headers, Object? body}) async =>
+                <String, Object?>{
+                  'results': <Object?>[
+                    <String, Object?>{'status': 'failed'},
+                    <String, Object?>{
+                      'mediaId': 'media-2',
+                      'status': 'failed',
+                    },
+                  ],
+                },
+      ),
+    );
+
+    final UploadedMediaDeleteSummary summary = await repository.deleteMedia(
+      <String>['media-1', 'media-2'],
+    );
+
+    expect(summary.results.map((result) => result.mediaId), <String>['media-2']);
+    expect(summary.failedMediaIds, <String>['media-2']);
+  });
+
+  test('copies delete results so the summary cannot be mutated', () {
+    final List<UploadedMediaDeleteResult> results = <UploadedMediaDeleteResult>[
+      const UploadedMediaDeleteResult(
+        mediaId: 'media-1',
+        status: UploadedMediaDeleteStatus.deleted,
+      ),
+    ];
+    final UploadedMediaDeleteSummary summary = UploadedMediaDeleteSummary(results);
+
+    results.clear();
+
+    expect(summary.results, hasLength(1));
+    expect(
+      () => summary.results.add(
+        const UploadedMediaDeleteResult(
+          mediaId: 'media-2',
+          status: UploadedMediaDeleteStatus.deleted,
+        ),
+      ),
+      throwsUnsupportedError,
+    );
   });
 }
