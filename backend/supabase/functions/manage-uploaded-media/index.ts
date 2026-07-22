@@ -47,6 +47,7 @@ const R2_BUCKET = Deno.env.get("CLOUDFLARE_R2_BUCKET");
 const R2_PUBLIC_BASE_URL = Deno.env.get("CLOUDFLARE_R2_PUBLIC_BASE_URL");
 const R2_REGION = Deno.env.get("CLOUDFLARE_R2_REGION") ?? "auto";
 const R2_SERVICE = "s3";
+const DELETED_MEDIA_URL = "deleted-media://placeholder";
 
 function createProductionDependencies(): ManageUploadedMediaDependencies {
   if (
@@ -81,6 +82,7 @@ function createProductionDependencies(): ManageUploadedMediaDependencies {
           .from("forum_post_media")
           .select("id_media, id_post, url, created_at, forum_post!inner(id_author_user, title, content)")
           .eq("forum_post.id_author_user", userId)
+          .neq("url", DELETED_MEDIA_URL)
           .order("created_at", { ascending: false });
         if (error) throw error;
         return (data ?? []).map(toOwnedForumMedia);
@@ -91,6 +93,7 @@ function createProductionDependencies(): ManageUploadedMediaDependencies {
           .select("id_media, id_post, url, created_at, forum_post!inner(id_author_user, title, content)")
           .eq("id_media", mediaId)
           .eq("forum_post.id_author_user", userId)
+          .neq("url", DELETED_MEDIA_URL)
           .maybeSingle();
         if (error) throw error;
         return data ? toOwnedForumMedia(data) : null;

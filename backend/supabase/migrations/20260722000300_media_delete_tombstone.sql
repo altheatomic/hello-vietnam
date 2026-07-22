@@ -8,7 +8,7 @@ security definer
 set search_path = public
 as $$
 declare
-    deleted_count integer;
+    updated_count integer;
 begin
     update public.forum_post_media media
     set url = 'deleted-media://placeholder'
@@ -21,8 +21,8 @@ begin
             and post.id_author_user = p_user_id
       );
 
-    get diagnostics deleted_count = row_count;
-    return deleted_count = 1;
+    get diagnostics updated_count = row_count;
+    return updated_count = 1;
 end;
 $$;
 
