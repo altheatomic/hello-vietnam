@@ -18,6 +18,7 @@ type FakeState = {
   media: OwnedForumMedia[];
   deletedKeys: string[];
   deletedMediaIds: string[];
+  events: string[];
   r2Statuses: Map<string, number>;
 };
 
@@ -27,6 +28,7 @@ function createState(overrides: Partial<FakeState> = {}): FakeState {
     media: [],
     deletedKeys: [],
     deletedMediaIds: [],
+    events: [],
     r2Statuses: new Map(),
     ...overrides,
   };
@@ -71,6 +73,7 @@ function createDependencies(state: FakeState): ManageUploadedMediaDependencies {
         );
         if (index < 0) return false;
         state.media.splice(index, 1);
+        state.events.push(`db:${mediaId}`);
         state.deletedMediaIds.push(mediaId);
         return true;
       },
@@ -78,6 +81,7 @@ function createDependencies(state: FakeState): ManageUploadedMediaDependencies {
     r2: {
       async deleteObject(key) {
         state.deletedKeys.push(key);
+        state.events.push(`r2:${key}`);
         return state.r2Statuses.get(key) ?? 204;
       },
     },
@@ -157,6 +161,7 @@ Deno.test("deletes the owned R2 object before removing its database relation", a
   assertEquals(state.deletedKeys, ["forum/owned-media.jpg"]);
   assertEquals(state.deletedMediaIds, [owned.id_media]);
   assertEquals(state.media, []);
+  assertEquals(state.events, ["r2:forum/owned-media.jpg", "db:owned-media"]);
 });
 
 Deno.test("retains the database relation when R2 cleanup fails so deletion can retry", async () => {
@@ -204,4 +209,72 @@ Deno.test("rejects malformed requests with 400", async () => {
 
   assertEquals(missingAction.status, 400);
   assertEquals(invalidDelete.status, 400);
+});
+
+Deno.test("continues with remaining ids when one lookup fails", async () => {
+  const first = forumMedia("lookup-fails", ownerId);
+  const second = forumMedia("deletes", ownerId);
+  const state = createState({ media: [first, second] });
+  const dependencies = createDependencies(state);
+  const originalFind = dependencies.supabase.findOwnedForumMedia;
+  dependencies.supabase.findOwnedForumMedia = async (userId, mediaId) => {
+    if (mediaId === first.id_media) throw new Error("lookup failed");
+    return await originalFind(userId, mediaId);
+  };
+  const handler = createManageUploadedMediaHandler(dependencies);
+
+  const response = await handler(
+    request({ action: "delete", mediaIds: [first.id_media, second.id_media] }),
+  );
+  const body = await json(response);
+
+  assertEquals(response.status, 200);
+  assertEquals(body.results, [
+    {
+      mediaId: first.id_media,
+      status: "failed",
+      message: "Unable to load media item.",
+    },
+    { mediaId: second.id_media, status: "deleted" },
+  ]);
+  assertEquals(state.deletedMediaIds, [second.id_media]);
+});
+
+Deno.test("rejects traversal and cross-origin media URLs before R2 deletion", async () => {
+  const traversal = forumMedia(
+    "traversal",
+    ownerId,
+    `${publicBaseUrl}/forum/../other-owner.jpg`,
+  );
+  const crossOrigin = forumMedia(
+    "cross-origin",
+    ownerId,
+    "https://other.example.test/forum/cross-origin.jpg",
+  );
+  const state = createState({ media: [traversal, crossOrigin] });
+  const handler = createManageUploadedMediaHandler(createDependencies(state));
+
+  const response = await handler(
+    request({
+      action: "delete",
+      mediaIds: [traversal.id_media, crossOrigin.id_media],
+    }),
+  );
+  const body = await json(response);
+
+  assertEquals(response.status, 200);
+  assertEquals(body.results, [
+    {
+      mediaId: traversal.id_media,
+      status: "failed",
+      message: "Media URL is not managed by configured storage.",
+    },
+    {
+      mediaId: crossOrigin.id_media,
+      status: "failed",
+      message: "Media URL is not managed by configured storage.",
+    },
+  ]);
+  assertEquals(state.deletedKeys, []);
+  assertEquals(state.deletedMediaIds, []);
 });

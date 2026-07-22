@@ -96,15 +96,12 @@ function createProductionDependencies(): ManageUploadedMediaDependencies {
         return data ? toOwnedForumMedia(data) : null;
       },
       async deleteOwnedForumMedia(userId, mediaId) {
-        const ownedMedia = await this.findOwnedForumMedia(userId, mediaId);
-        if (!ownedMedia) return false;
-
-        const { error, count } = await adminClient
-          .from("forum_post_media")
-          .delete({ count: "exact" })
-          .eq("id_media", mediaId);
+        const { data, error } = await adminClient.rpc(
+          "delete_owned_forum_media",
+          { p_media_id: mediaId, p_user_id: userId },
+        );
         if (error) throw error;
-        return count === 1;
+        return data === true;
       },
     },
     r2: {
@@ -168,7 +165,15 @@ export function createManageUploadedMediaHandler(
 
       const results = [];
       for (const mediaId of payload.mediaIds) {
-        results.push(await deleteOwnedMedia(dependencies, user.id, mediaId));
+        try {
+          results.push(await deleteOwnedMedia(dependencies, user.id, mediaId));
+        } catch {
+          results.push({
+            mediaId,
+            status: "failed",
+            message: "Unable to manage media item.",
+          });
+        }
       }
       return jsonResponse({ results });
     } catch (error) {
@@ -209,7 +214,12 @@ async function deleteOwnedMedia(
   userId: string,
   mediaId: string,
 ): Promise<Record<string, string>> {
-  const media = await dependencies.supabase.findOwnedForumMedia(userId, mediaId);
+  let media: OwnedForumMedia | null;
+  try {
+    media = await dependencies.supabase.findOwnedForumMedia(userId, mediaId);
+  } catch {
+    return { mediaId, status: "failed", message: "Unable to load media item." };
+  }
   if (!media) return { mediaId, status: "not_found" };
 
   const key = keyFromPublicUrl(media.url, dependencies.publicBaseUrl);
@@ -239,6 +249,16 @@ async function deleteOwnedMedia(
 
 function keyFromPublicUrl(url: string, publicBaseUrl: string): string | null {
   try {
+    const rawPathMatch = url.trim().match(/^[a-z][a-z\d+.-]*:\/\/[^/?#]+([^?#]*)/i);
+    if (!rawPathMatch) return null;
+    const rawSegments = rawPathMatch[1]
+      .split("/")
+      .filter((segment) => segment.length > 0)
+      .map((segment) => decodeURIComponent(segment));
+    if (rawSegments.some((segment) => segment === "." || segment === "..")) {
+      return null;
+    }
+
     const storedUrl = new URL(url);
     const baseUrl = new URL(publicBaseUrl);
     const basePath = baseUrl.pathname.replace(/\/+$/, "");
