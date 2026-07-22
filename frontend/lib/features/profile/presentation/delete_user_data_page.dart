@@ -93,6 +93,18 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
     });
   }
 
+  void _toggleGroup(List<UploadedMediaItem> group) {
+    final Set<String> groupIds = group.map((UploadedMediaItem item) => item.id).toSet();
+    setState(() {
+      if (groupIds.every(_selectedIds.contains)) {
+        _selectedIds.removeAll(groupIds);
+      } else {
+        _selectedIds.addAll(groupIds);
+      }
+      _statusMessage = null;
+    });
+  }
+
   void _openConfirmation() {
     if (_selectedIds.isEmpty) return;
     setState(() {
@@ -135,8 +147,9 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
         _statusMessage = failedIds.isEmpty
             ? 'Media deleted'
             : 'Some media could not be deleted';
+        _errorMessage = null;
       });
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _screen = _MediaScreen.list;
@@ -145,7 +158,7 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
           ..clear()
           ..addAll(ids);
         _statusMessage = 'Some media could not be deleted';
-        _errorMessage = _userFacingError(error);
+        _errorMessage = null;
       });
     }
   }
@@ -271,11 +284,11 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
             ],
           ),
           if (forumItems.isNotEmpty) ...<Widget>[
-            const _GroupHeading('Forum images'),
+            _buildGroupHeading('Forum images', forumItems),
             ...forumItems.map(_buildMediaRow),
           ],
           if (aiItems.isNotEmpty) ...<Widget>[
-            const _GroupHeading('AI images'),
+            _buildGroupHeading('AI images', aiItems),
             ...aiItems.map(_buildMediaRow),
           ],
           if (_failedIds.isNotEmpty) ...<Widget>[
@@ -301,6 +314,21 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
             ),
           ),
         ],
+      ],
+    );
+  }
+
+  Widget _buildGroupHeading(String label, List<UploadedMediaItem> group) {
+    final String keyLabel = label.toLowerCase().replaceAll(' ', '-');
+    final bool selected = group.every((UploadedMediaItem item) => _selectedIds.contains(item.id));
+    return Row(
+      children: <Widget>[
+        Expanded(child: _GroupHeading(label)),
+        TextButton(
+          key: ValueKey<String>('select-all-$keyLabel'),
+          onPressed: () => _toggleGroup(group),
+          child: Text(selected ? 'Clear' : 'Select all'),
+        ),
       ],
     );
   }

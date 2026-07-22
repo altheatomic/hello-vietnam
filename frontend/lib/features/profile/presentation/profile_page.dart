@@ -321,7 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             title: strings.deleteUserData,
                             value: _autoDeleteUserDataEnabled,
                             onChanged: _setAutoDeleteSetting,
-                            onTap: () => context.push(AppRoutes.deleteUserData),
+                            onTap: () => context.push(AppRoutes.manageUploadedMedia),
                           ),
                           _SettingRow(
                             icon: Icons.logout_rounded,
