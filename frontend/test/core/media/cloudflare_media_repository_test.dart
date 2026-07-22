@@ -67,4 +67,49 @@ void main() {
       'keys': <String>['a.jpg', 'b.jpg'],
     });
   });
+
+  test('deleteKeysStrict propagates cleanup failures', () async {
+    final Object failure = StateError('cleanup failed');
+    final CloudflareMediaRepository repository = CloudflareMediaRepository(
+      functionClient: SupabaseFunctionClient(
+        invoker:
+            (
+              String functionName, {
+              Map<String, String>? headers,
+              Object? body,
+            }) async {
+              throw failure;
+            },
+      ),
+    );
+
+    expect(
+      () => repository.deleteKeysStrict(<String>['a.jpg']),
+      throwsA(same(failure)),
+    );
+  });
+
+  test('deleteKeysStrict de-duplicates keys before invoking cleanup', () async {
+    Object? capturedBody;
+    final CloudflareMediaRepository repository = CloudflareMediaRepository(
+      functionClient: SupabaseFunctionClient(
+        invoker:
+            (
+              String functionName, {
+              Map<String, String>? headers,
+              Object? body,
+            }) async {
+              capturedBody = body;
+              return null;
+            },
+      ),
+    );
+
+    await repository.deleteKeysStrict(<String>[' a.jpg ', 'a.jpg', '', 'b.jpg']);
+
+    expect(capturedBody, <String, Object?>{
+      'action': 'delete',
+      'keys': <String>['a.jpg', 'b.jpg'],
+    });
+  });
 }

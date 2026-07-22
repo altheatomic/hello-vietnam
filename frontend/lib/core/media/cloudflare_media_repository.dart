@@ -49,11 +49,7 @@ class CloudflareMediaRepository {
   }
 
   Future<void> deleteKeys(Iterable<String> keys) async {
-    final List<String> uniqueKeys = keys
-        .map((String key) => key.trim())
-        .where((String key) => key.isNotEmpty)
-        .toSet()
-        .toList(growable: false);
+    final List<String> uniqueKeys = _uniqueKeys(keys);
     if (uniqueKeys.isEmpty) return;
 
     try {
@@ -64,6 +60,16 @@ class CloudflareMediaRepository {
     } catch (_) {
       // Media cleanup should never block profile/forum data updates.
     }
+  }
+
+  Future<void> deleteKeysStrict(Iterable<String> keys) async {
+    final List<String> uniqueKeys = _uniqueKeys(keys);
+    if (uniqueKeys.isEmpty) return;
+
+    await _functionClient.invokeVoid(
+      Env.cloudflareMediaUploadFunction,
+      body: <String, dynamic>{'action': 'delete', 'keys': uniqueKeys},
+    );
   }
 
   String? publicUrlForKey(String key) {
@@ -114,5 +120,13 @@ class CloudflareMediaRepository {
         .split('/')
         .map((String segment) => Uri.encodeComponent(segment))
         .join('/');
+  }
+
+  List<String> _uniqueKeys(Iterable<String> keys) {
+    return keys
+        .map((String key) => key.trim())
+        .where((String key) => key.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
   }
 }
