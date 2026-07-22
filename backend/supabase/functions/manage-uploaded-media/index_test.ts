@@ -37,7 +37,7 @@ function createState(overrides: Partial<FakeState> = {}): FakeState {
 function forumMedia(
   idMedia: string,
   authorId: string,
-  url = `${publicBaseUrl}/forum/${idMedia}.jpg`,
+  url = `${publicBaseUrl}/forum/${authorId}/post-${idMedia}/${idMedia}.jpg`,
 ): OwnedForumMedia {
   return {
     id_media: idMedia,
@@ -158,10 +158,13 @@ Deno.test("deletes the owned R2 object before removing its database relation", a
 
   assertEquals(response.status, 200);
   assertEquals(body.results, [{ mediaId: owned.id_media, status: "deleted" }]);
-  assertEquals(state.deletedKeys, ["forum/owned-media.jpg"]);
+  assertEquals(state.deletedKeys, ["forum/owner-user/post-owned-media/owned-media.jpg"]);
   assertEquals(state.deletedMediaIds, [owned.id_media]);
   assertEquals(state.media, []);
-  assertEquals(state.events, ["r2:forum/owned-media.jpg", "db:owned-media"]);
+  assertEquals(state.events, [
+    "r2:forum/owner-user/post-owned-media/owned-media.jpg",
+    "db:owned-media",
+  ]);
 });
 
 Deno.test("retains the database relation when R2 cleanup fails so deletion can retry", async () => {
@@ -298,6 +301,30 @@ Deno.test("rejects encoded slash traversal before R2 deletion", async () => {
     mediaId: encodedTraversal.id_media,
     status: "failed",
     message: "Media URL is not managed by configured storage.",
+  }]);
+  assertEquals(state.deletedKeys, []);
+  assertEquals(state.deletedMediaIds, []);
+});
+
+Deno.test("does not delete an R2 object outside the authenticated post prefix", async () => {
+  const ownedPost = forumMedia(
+    "foreign-object",
+    ownerId,
+    `${publicBaseUrl}/forum/${otherUserId}/post-other/foreign.jpg`,
+  );
+  const state = createState({ media: [ownedPost] });
+  const handler = createManageUploadedMediaHandler(createDependencies(state));
+
+  const response = await handler(
+    request({ action: "delete", mediaIds: [ownedPost.id_media] }),
+  );
+  const body = await json(response);
+
+  assertEquals(response.status, 200);
+  assertEquals(body.results, [{
+    mediaId: ownedPost.id_media,
+    status: "failed",
+    message: "Media storage ownership could not be verified.",
   }]);
   assertEquals(state.deletedKeys, []);
   assertEquals(state.deletedMediaIds, []);

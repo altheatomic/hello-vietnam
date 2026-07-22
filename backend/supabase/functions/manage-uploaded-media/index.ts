@@ -226,6 +226,14 @@ async function deleteOwnedMedia(
   if (!key) {
     return { mediaId, status: "failed", message: "Media URL is not managed by configured storage." };
   }
+  const ownerPostPrefix = `forum/${userId}/${media.id_post}/`;
+  if (!key.startsWith(ownerPostPrefix)) {
+    return {
+      mediaId,
+      status: "failed",
+      message: "Media storage ownership could not be verified.",
+    };
+  }
 
   let r2Status: number;
   try {
