@@ -278,3 +278,27 @@ Deno.test("rejects traversal and cross-origin media URLs before R2 deletion", as
   assertEquals(state.deletedKeys, []);
   assertEquals(state.deletedMediaIds, []);
 });
+
+Deno.test("rejects encoded slash traversal before R2 deletion", async () => {
+  const encodedTraversal = forumMedia(
+    "encoded-traversal",
+    ownerId,
+    `${publicBaseUrl}/forum/%2e%2e%2fother-owner.jpg`,
+  );
+  const state = createState({ media: [encodedTraversal] });
+  const handler = createManageUploadedMediaHandler(createDependencies(state));
+
+  const response = await handler(
+    request({ action: "delete", mediaIds: [encodedTraversal.id_media] }),
+  );
+  const body = await json(response);
+
+  assertEquals(response.status, 200);
+  assertEquals(body.results, [{
+    mediaId: encodedTraversal.id_media,
+    status: "failed",
+    message: "Media URL is not managed by configured storage.",
+  }]);
+  assertEquals(state.deletedKeys, []);
+  assertEquals(state.deletedMediaIds, []);
+});

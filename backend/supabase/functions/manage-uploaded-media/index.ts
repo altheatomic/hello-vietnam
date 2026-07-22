@@ -251,7 +251,8 @@ function keyFromPublicUrl(url: string, publicBaseUrl: string): string | null {
   try {
     const rawPathMatch = url.trim().match(/^[a-z][a-z\d+.-]*:\/\/[^/?#]+([^?#]*)/i);
     if (!rawPathMatch) return null;
-    const rawSegments = rawPathMatch[1]
+    const decodedRawPath = decodeURIComponent(rawPathMatch[1]);
+    const rawSegments = decodedRawPath
       .split("/")
       .filter((segment) => segment.length > 0)
       .map((segment) => decodeURIComponent(segment));
