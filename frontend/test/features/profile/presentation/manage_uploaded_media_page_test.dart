@@ -200,6 +200,29 @@ void main() {
     expect(find.text('Please sign in before using this feature.'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
   });
+
+  testWidgets('reconciles a server deletion when the delete response fails', (
+    WidgetTester tester,
+  ) async {
+    final _FakeUploadedMediaRepository repository = _FakeUploadedMediaRepository(
+      items: <UploadedMediaItem>[
+        _forumMedia('forum-1', postId: 'post-1', postHasText: true),
+      ],
+      deleteError: StateError('response lost after server commit'),
+      removeItemsBeforeDeleteError: true,
+    );
+
+    await _pumpPage(tester, repository);
+    await tester.tap(find.byKey(const ValueKey<String>('media-forum-1')));
+    await tester.pump();
+    await _tapDeleteSelected(tester);
+    await tester.pumpAndSettle();
+    await _tapDeleteMedia(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text('No uploaded media yet'), findsOneWidget);
+    expect(find.text('Some media could not be deleted'), findsNothing);
+  });
 }
 
 Future<void> _pumpPage(
@@ -259,11 +282,15 @@ class _FakeUploadedMediaRepository implements UploadedMediaRepository {
     this.items = const <UploadedMediaItem>[],
     this.deleteSummaries = const <UploadedMediaDeleteSummary>[],
     this.loadError,
+    this.deleteError,
+    this.removeItemsBeforeDeleteError = false,
   });
 
   final List<UploadedMediaItem> items;
   final List<UploadedMediaDeleteSummary> deleteSummaries;
   final Object? loadError;
+  final Object? deleteError;
+  final bool removeItemsBeforeDeleteError;
   final List<List<String>> deleteRequests = <List<String>>[];
   int _deleteIndex = 0;
 
@@ -275,7 +302,14 @@ class _FakeUploadedMediaRepository implements UploadedMediaRepository {
 
   @override
   Future<UploadedMediaDeleteSummary> deleteMedia(Iterable<String> mediaIds) async {
-    deleteRequests.add(List<String>.of(mediaIds));
+    final List<String> ids = List<String>.of(mediaIds);
+    deleteRequests.add(ids);
+    if (deleteError != null) {
+      if (removeItemsBeforeDeleteError) {
+        items.removeWhere((UploadedMediaItem item) => ids.contains(item.id));
+      }
+      throw deleteError!;
+    }
     return deleteSummaries[_deleteIndex++];
   }
 }

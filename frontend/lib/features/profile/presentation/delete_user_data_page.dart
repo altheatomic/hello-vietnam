@@ -151,6 +151,34 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
       });
     } catch (_) {
       if (!mounted) return;
+
+      try {
+        final List<UploadedMediaItem> currentItems =
+            await _repository.loadOwnedMedia();
+        final Set<String> currentIds =
+            currentItems.map((UploadedMediaItem item) => item.id).toSet();
+        final Set<String> reconciledDeletedIds = ids
+            .where((String id) => !currentIds.contains(id))
+            .toSet();
+        if (reconciledDeletedIds.isNotEmpty) {
+          setState(() {
+            _items = currentItems;
+            _selectedIds
+              ..clear()
+              ..addAll(ids.where(currentIds.contains));
+            _failedIds = ids.where(currentIds.contains).toSet();
+            _screen = _MediaScreen.list;
+            _statusMessage = _failedIds.isEmpty
+                ? 'Media deleted'
+                : 'Some media could not be deleted';
+            _errorMessage = null;
+          });
+          return;
+        }
+      } catch (_) {
+        // Keep the retry state below when reconciliation also fails.
+      }
+
       setState(() {
         _screen = _MediaScreen.list;
         _failedIds = ids.toSet();
