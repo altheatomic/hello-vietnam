@@ -100,6 +100,21 @@ class CurrencyRatesException implements Exception {
   String toString() => message;
 }
 
+abstract interface class CurrencyController implements Listenable {
+  bool get isReady;
+  bool get isRefreshing;
+  bool get isSavingSelection;
+  String? get lastError;
+  String get selectedCurrencyCode;
+  CurrencyRatesSnapshot? get snapshot;
+  bool get isUsingCache;
+  List<CurrencyOptionViewModel> get options;
+
+  Future<void> initialize();
+  Future<void> refresh();
+  Future<void> selectCurrency(String currencyCode);
+}
+
 abstract class CurrencyAccountStore {
   Future<String?> loadSelectedCurrency(String userId);
 
@@ -207,7 +222,7 @@ class CurrencyRatesGateway {
   }
 }
 
-class CurrencyRepository extends ChangeNotifier {
+class CurrencyRepository extends ChangeNotifier implements CurrencyController {
   CurrencyRepository({
     CurrencyRatesGateway? gateway,
     CurrencyAccountStore? accountStore,
@@ -360,13 +375,20 @@ class CurrencyRepository extends ChangeNotifier {
   CurrencyRatesSnapshot? _snapshot;
   String? _lastError;
 
+  @override
   bool get isReady => _isReady;
+  @override
   bool get isRefreshing => _isRefreshing;
+  @override
   bool get isSavingSelection => _isSavingSelection;
+  @override
   String? get lastError => _lastError;
+  @override
   String get selectedCurrencyCode =>
       _selectedCurrencyCode ?? _defaultCurrencyCode;
+  @override
   CurrencyRatesSnapshot? get snapshot => _snapshot;
+  @override
   bool get isUsingCache => _lastError != null && _snapshot != null;
 
   CurrencyCatalogEntry catalogEntryFor(String code) {
@@ -376,6 +398,7 @@ class CurrencyRepository extends ChangeNotifier {
     );
   }
 
+  @override
   List<CurrencyOptionViewModel> get options => supportedCurrencies
       .map(
         (CurrencyCatalogEntry entry) => CurrencyOptionViewModel(
@@ -386,6 +409,7 @@ class CurrencyRepository extends ChangeNotifier {
       )
       .toList(growable: false);
 
+  @override
   Future<void> initialize() async {
     if (_isReady) return;
     await app_storage.LocalStorage.instance.initialize();
@@ -395,6 +419,7 @@ class CurrencyRepository extends ChangeNotifier {
     unawaited(refresh());
   }
 
+  @override
   Future<void> refresh() async {
     if (!_isReady || _isRefreshing) return;
     _isRefreshing = true;
@@ -431,6 +456,7 @@ class CurrencyRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  @override
   Future<void> selectCurrency(String currencyCode) async {
     final String? normalizedCode = _normalizeCurrencyCode(currencyCode);
     if (normalizedCode == null) {
@@ -574,7 +600,13 @@ String? _normalizeCurrencyCode(String? value) {
 }
 
 String _formatRate(double value) {
-  if (value >= 1000) return value.toStringAsFixed(0);
+  if (value >= 1000) {
+    final String digits = value.toStringAsFixed(0);
+    return digits.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (Match _) => ',',
+    );
+  }
   if (value >= 100) return value.toStringAsFixed(1);
   if (value >= 1) return value.toStringAsFixed(2);
   if (value >= 0.1) return value.toStringAsFixed(3);

@@ -25,6 +25,20 @@ typedef ExploreCategoryItemsFetcher =
       String? language,
     });
 
+class ExploreCategoryPageData {
+  final List<ExploreItem> items;
+  final int? nextOffset;
+  final String? emptyMessage;
+
+  const ExploreCategoryPageData({
+    required this.items,
+    required this.nextOffset,
+    this.emptyMessage,
+  });
+
+  bool get hasMore => nextOffset != null;
+}
+
 class ExploreSectionsData {
   final ExploreProvince? province;
   final List<ExploreCategory> categories;
@@ -274,16 +288,36 @@ class ExploreRepository {
     int limit = 40,
     int offset = 0,
   }) async {
+    final ExploreCategoryPageData page = await loadCategoryPage(
+      category,
+      province: province,
+      limit: limit,
+      offset: offset,
+    );
+    return page.items;
+  }
+
+  Future<ExploreCategoryPageData> loadCategoryPage(
+    DetailCategory category, {
+    ExploreProvince? province,
+    int limit = 40,
+    int offset = 0,
+    String? query,
+  }) async {
     final String? language = _currentLanguageCode();
     final ExploreCategoryItemsFetcher? categoryItemsFetcher =
         _categoryItemsFetcher;
     if (categoryItemsFetcher != null) {
-      return categoryItemsFetcher(
+      final List<ExploreItem> items = await categoryItemsFetcher(
         category: category,
         province: province,
         limit: limit,
         offset: offset,
         language: language,
+      );
+      return ExploreCategoryPageData(
+        items: items,
+        nextOffset: items.length == limit ? offset + items.length : null,
       );
     }
 
@@ -297,12 +331,18 @@ class ExploreRepository {
             'limit': limit,
             'offset': offset,
             'language': language,
+            if (query != null && query.trim().isNotEmpty) 'query': query.trim(),
           },
         );
 
-    return _asList(payload['items'])
+    final List<ExploreItem> items = _asList(payload['items'])
         .map((Object? row) => ExploreItem.fromJson(_asMap(row)))
         .toList(growable: false);
+    return ExploreCategoryPageData(
+      items: items,
+      nextOffset: _nullableInt(payload['nextOffset']),
+      emptyMessage: _stringValue(payload['emptyMessage']),
+    );
   }
 
   String descriptionForCategory(
@@ -425,6 +465,13 @@ class ExploreRepository {
     if (value is! String) return null;
     final String trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  int? _nullableInt(Object? value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
   }
 
   String? _currentLanguageCode() {

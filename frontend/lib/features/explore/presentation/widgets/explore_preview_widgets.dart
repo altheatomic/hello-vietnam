@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/media/media_url_resolver.dart';
 
 class ExplorePreviewImage extends StatelessWidget {
   final String imagePath;
@@ -16,19 +17,9 @@ class ExplorePreviewImage extends StatelessWidget {
     this.darkBottomOverlay = true,
   });
 
-  String get _normalizedImagePath {
-    String value = imagePath.trim();
-    for (int i = 0; i < 2; i++) {
-      if (value.contains('%')) {
-        value = Uri.decodeFull(value);
-      }
-    }
-    return value;
-  }
+  String get _normalizedImagePath => MediaUrlResolver.resolve(imagePath);
 
-  bool get _isNetworkImage =>
-      _normalizedImagePath.startsWith('http://') ||
-      _normalizedImagePath.startsWith('https://');
+  bool get _isNetworkImage => MediaUrlResolver.isNetwork(_normalizedImagePath);
 
   bool get _isAssetImage => _normalizedImagePath.startsWith('assets/');
 

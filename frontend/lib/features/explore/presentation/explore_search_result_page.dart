@@ -6,6 +6,7 @@ import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/features/explore/data/explore_paged_feed.dart';
 import 'package:hellovietnam/features/explore/data/explore_repository.dart';
 import 'package:hellovietnam/features/explore/data/explore_tracking_service.dart';
 import 'package:hellovietnam/features/explore/domain/explore_item.dart';
@@ -38,23 +39,22 @@ class ExploreSearchResultPage extends StatefulWidget {
 }
 
 class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
-  static const int _pageSize = 2;
+  static const int _pageSize = 12;
 
   final ExploreRepository _repository = ExploreRepository.instance;
 
   int _selectedFilter = 0;
   late final ScrollController _scrollController;
-  int _visibleItemCount = _pageSize;
-
-  bool _isLoading = true;
+  ExploreProvince? _resolvedProvince;
+  List<ExplorePagedFeed>? _feeds;
+  bool _isResolvingProvince = true;
   String? _errorMessage;
-  _LoadedExploreResults? _loadedResults;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_handleScroll);
-    _load();
+    unawaited(_load());
   }
 
   @override
@@ -67,7 +67,7 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
 
   Future<void> _load() async {
     setState(() {
-      _isLoading = true;
+      _isResolvingProvince = true;
       _errorMessage = null;
     });
 
@@ -75,76 +75,37 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
       final ExploreProvince province = await _resolveProvince(
         widget.selectedProvince,
       );
-      final List<List<ExploreItem>> results =
-          await Future.wait(<Future<List<ExploreItem>>>[
-            _repository.loadCategoryItems(
-              DetailCategory.activities,
-              province: province,
-            ),
-            _repository.loadCategoryItems(
-              DetailCategory.culture,
-              province: province,
-            ),
-            _repository.loadCategoryItems(
-              DetailCategory.food,
-              province: province,
-            ),
-            _repository.loadCategoryItems(
-              DetailCategory.localProducts,
-              province: province,
-            ),
-          ]);
-
       if (!mounted) return;
-
-      final _LoadedExploreResults loaded = _LoadedExploreResults(
-        province: province,
-        categories: <_CategoryResults>[
-          _CategoryResults(
-            category: DetailCategory.activities,
-            items: results[0],
-            emptyMessage: _repository.descriptionForCategory(
-              DetailCategory.activities,
-              province: province,
+      final List<ExplorePagedFeed> feeds = DetailCategory.values
+          .map(
+            (DetailCategory category) => ExplorePagedFeed(
+              category: category,
+              pageSize: _pageSize,
+              loader:
+                  ({
+                    required DetailCategory category,
+                    required int limit,
+                    required int offset,
+                  }) => _repository.loadCategoryPage(
+                    category,
+                    province: province,
+                    limit: limit,
+                    offset: offset,
+                  ),
             ),
-          ),
-          _CategoryResults(
-            category: DetailCategory.culture,
-            items: results[1],
-            emptyMessage: _repository.descriptionForCategory(
-              DetailCategory.culture,
-              province: province,
-            ),
-          ),
-          _CategoryResults(
-            category: DetailCategory.food,
-            items: results[2],
-            emptyMessage: _repository.descriptionForCategory(
-              DetailCategory.food,
-              province: province,
-            ),
-          ),
-          _CategoryResults(
-            category: DetailCategory.localProducts,
-            items: results[3],
-            emptyMessage: _repository.descriptionForCategory(
-              DetailCategory.localProducts,
-              province: province,
-            ),
-          ),
-        ],
-      );
-
+          )
+          .toList(growable: false);
       setState(() {
-        _loadedResults = loaded;
-        _isLoading = false;
-        _resetPagination();
+        _resolvedProvince = province;
+        _feeds = feeds;
+        _isResolvingProvince = false;
       });
+      await _loadSelectedInitial();
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _loadedResults = null;
-        _isLoading = false;
+        _feeds = null;
+        _isResolvingProvince = false;
         _errorMessage = error.toString();
       });
     }
@@ -160,31 +121,31 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
   void _handleScroll() {
     if (!_scrollController.hasClients) return;
     if (_scrollController.position.extentAfter > 280) return;
-    _loadMore();
+    unawaited(_loadMore());
   }
 
-  void _loadMore() {
-    final _LoadedExploreResults? loadedResults = _loadedResults;
-    if (loadedResults == null) return;
-
-    final int total = loadedResults.byCategory(_selectedFilter).items.length;
-    if (_visibleItemCount >= total) return;
-
-    setState(() {
-      final int nextCount = _visibleItemCount + _pageSize;
-      _visibleItemCount = nextCount > total ? total : nextCount;
-    });
+  ExplorePagedFeed? get _selectedFeed {
+    final List<ExplorePagedFeed>? feeds = _feeds;
+    if (feeds == null) return null;
+    return feeds[_selectedFilter];
   }
 
-  void _resetPagination() {
-    final _LoadedExploreResults? loadedResults = _loadedResults;
-    if (loadedResults == null) {
-      _visibleItemCount = _pageSize;
-      return;
-    }
+  Future<void> _loadSelectedInitial() async {
+    final ExplorePagedFeed? feed = _selectedFeed;
+    if (feed == null || feed.initialized || feed.isLoading) return;
+    final Future<void> task = feed.loadInitial();
+    setState(() {});
+    await task;
+    if (mounted) setState(() {});
+  }
 
-    final int total = loadedResults.byCategory(_selectedFilter).items.length;
-    _visibleItemCount = total < _pageSize ? total : _pageSize;
+  Future<void> _loadMore() async {
+    final ExplorePagedFeed? feed = _selectedFeed;
+    if (feed == null || feed.isLoading || !feed.hasMore) return;
+    final Future<void> task = feed.loadMore();
+    setState(() {});
+    await task;
+    if (mounted) setState(() {});
   }
 
   @override
@@ -195,11 +156,13 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: <Widget>[
-          if (_isLoading)
+          if (_isResolvingProvince ||
+              (_selectedFeed?.isLoading == true &&
+                  _selectedFeed?.initialized == false))
             const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             )
-          else if (_loadedResults == null)
+          else if (_feeds == null || _resolvedProvince == null)
             _PageStateMessage(
               title: 'Unable to load this destination right now.',
               subtitle: _errorMessage,
@@ -207,7 +170,12 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
               onTap: _load,
             )
           else
-            _buildLoadedState(context, statusBarH, _loadedResults!),
+            _buildLoadedState(
+              context,
+              statusBarH,
+              _resolvedProvince!,
+              _selectedFeed!,
+            ),
           ExploreFloatingBackButton(onTap: () => context.pop()),
         ],
       ),
@@ -217,16 +185,10 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
   Widget _buildLoadedState(
     BuildContext context,
     double statusBarH,
-    _LoadedExploreResults loadedResults,
+    ExploreProvince province,
+    ExplorePagedFeed currentFeed,
   ) {
-    final _CategoryResults currentCategory = loadedResults.byCategory(
-      _selectedFilter,
-    );
-    final List<ExploreItem> items = currentCategory.items;
-    final int visibleCount = items.length < _visibleItemCount
-        ? items.length
-        : _visibleItemCount;
-    final bool hasMore = visibleCount < items.length;
+    final List<ExploreItem> items = currentFeed.items;
 
     return CustomScrollView(
       controller: _scrollController,
@@ -259,7 +221,7 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      loadedResults.province.name,
+                      province.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -293,7 +255,7 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
                 children: <InlineSpan>[
                   TextSpan(text: '${context.l10n.ui('Discover')} '),
                   TextSpan(
-                    text: '${loadedResults.province.name}!',
+                    text: '${province.name}!',
                     style: const TextStyle(color: AppColors.primary),
                   ),
                 ],
@@ -309,8 +271,8 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
             onTap: (int index) {
               setState(() {
                 _selectedFilter = index;
-                _resetPagination();
               });
+              unawaited(_loadSelectedInitial());
             },
           ),
         ),
@@ -320,7 +282,21 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
             child: _PageStateMessage(
               title:
                   'No ${_filterLabels[_selectedFilter].toLowerCase()} found.',
-              subtitle: currentCategory.emptyMessage,
+              subtitle:
+                  currentFeed.error?.toString() ??
+                  _repository.descriptionForCategory(
+                    currentFeed.category,
+                    province: province,
+                  ),
+              actionLabel: currentFeed.error == null ? null : 'Retry',
+              onTap: currentFeed.error == null
+                  ? null
+                  : () async {
+                      final Future<void> task = currentFeed.refresh();
+                      setState(() {});
+                      await task;
+                      if (mounted) setState(() {});
+                    },
             ),
           )
         else ...<Widget>[
@@ -335,13 +311,13 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
               delegate: SliverChildBuilderDelegate(
                 (BuildContext context, int index) => _ResultCard(
                   item: items[index],
-                  category: currentCategory.category,
+                  category: currentFeed.category,
                 ),
-                childCount: visibleCount,
+                childCount: items.length,
               ),
             ),
           ),
-          if (hasMore)
+          if (currentFeed.isLoading)
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.only(bottom: 24),
@@ -352,30 +328,6 @@ class _ExploreSearchResultPageState extends State<ExploreSearchResultPage> {
       ],
     );
   }
-}
-
-class _LoadedExploreResults {
-  const _LoadedExploreResults({
-    required this.province,
-    required this.categories,
-  });
-
-  final ExploreProvince province;
-  final List<_CategoryResults> categories;
-
-  _CategoryResults byCategory(int index) => categories[index];
-}
-
-class _CategoryResults {
-  const _CategoryResults({
-    required this.category,
-    required this.items,
-    this.emptyMessage,
-  });
-
-  final DetailCategory category;
-  final List<ExploreItem> items;
-  final String? emptyMessage;
 }
 
 class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {

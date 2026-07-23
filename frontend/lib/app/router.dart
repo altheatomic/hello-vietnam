@@ -59,6 +59,7 @@ import '../features/explore/presentation/explore_category_page.dart';
 import '../features/explore/domain/explore_province.dart';
 import '../features/ai_search/presentation/ai_search_page.dart';
 import '../features/notification/presentation/notification_page.dart';
+import '../features/notification/presentation/notification_settings_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
 import '../features/translate/presentation/translate_page.dart';
 import '../features/profile/presentation/upgrade_account_page.dart';
@@ -253,6 +254,7 @@ class AppRoutes {
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
   static const notification = '/notification';
+  static const notificationSettings = '/notification/settings';
   static const upgradeAccount = '/upgrade-account';
   static const upgradePayment = '/upgrade-payment';
   static const editProfile = '/edit-profile';
@@ -622,6 +624,11 @@ GoRouter buildRouter() {
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.notificationSettings,
+        builder: (c, s) => const NotificationSettingsPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.travelPreferencesOnboarding,
         builder: (c, s) => TravelPreferencesOnboardingPage(
           returnRoute:
@@ -657,7 +664,7 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.currency,
-        builder: (c, s) => const CurrencyPage(),
+        builder: (c, s) => CurrencyPage(),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,

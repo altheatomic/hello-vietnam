@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -8,7 +9,9 @@ import 'package:hellovietnam/features/notification/presentation/notification_act
 import 'package:hellovietnam/features/notification/presentation/notification_controller.dart';
 
 class NotificationPage extends StatefulWidget {
-  const NotificationPage({super.key});
+  const NotificationPage({super.key, this.controller});
+
+  final NotificationController? controller;
 
   @override
   State<NotificationPage> createState() => _NotificationPageState();
@@ -16,15 +19,31 @@ class NotificationPage extends StatefulWidget {
 
 class _NotificationPageState extends State<NotificationPage> {
   late final NotificationController _controller;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _controller = NotificationController()..load();
+    _controller = widget.controller ?? NotificationController();
+    _scrollController.addListener(_handleScroll);
+    unawaited(_controller.load());
+  }
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients ||
+        _scrollController.position.extentAfter > 320 ||
+        !_controller.hasMore ||
+        _controller.isLoadingMore) {
+      return;
+    }
+    unawaited(_controller.loadMore());
   }
 
   @override
   void dispose() {
+    _scrollController
+      ..removeListener(_handleScroll)
+      ..dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -306,7 +325,8 @@ class _NotificationPageState extends State<NotificationPage> {
                           compact: true,
                         ),
                       )
-                    else if (_controller.errorMessage != null)
+                    else if (_controller.errorMessage != null &&
+                        notifications.isEmpty)
                       Expanded(
                         child: Center(
                           child: Padding(
@@ -328,40 +348,71 @@ class _NotificationPageState extends State<NotificationPage> {
                       const Expanded(child: _NotificationEmptyState())
                     else
                       Expanded(
-                        child: ListView.separated(
-                          physics: const BouncingScrollPhysics(),
-                          padding: EdgeInsets.fromLTRB(
-                            16,
-                            10,
-                            16,
-                            topInset + 28,
-                          ),
-                          itemCount: notifications.length + 1,
-                          separatorBuilder: (BuildContext context, int index) =>
-                              const SizedBox(height: 14),
-                          itemBuilder: (BuildContext context, int index) {
-                            if (index == notifications.length) {
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Center(
-                                  child: _ClearAllButton(
-                                    onTap: _clearAllNotifications,
+                        child: RefreshIndicator(
+                          onRefresh: _controller.refresh,
+                          child: ListView.separated(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(
+                              parent: BouncingScrollPhysics(),
+                            ),
+                            padding: EdgeInsets.fromLTRB(
+                              16,
+                              10,
+                              16,
+                              topInset + 28,
+                            ),
+                            itemCount: notifications.length + 2,
+                            separatorBuilder:
+                                (BuildContext context, int index) =>
+                                    const SizedBox(height: 14),
+                            itemBuilder: (BuildContext context, int index) {
+                              if (index == notifications.length) {
+                                if (_controller.isLoadingMore) {
+                                  return const Center(
+                                    child: SizedBox.square(
+                                      dimension: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  );
+                                }
+                                if (_controller.hasMore) {
+                                  return Center(
+                                    child: TextButton.icon(
+                                      onPressed: _controller.loadMore,
+                                      icon: const Icon(
+                                        Icons.expand_more_rounded,
+                                      ),
+                                      label: Text(context.l10n.ui('Load more')),
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              }
+                              if (index == notifications.length + 1) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Center(
+                                    child: _ClearAllButton(
+                                      onTap: _clearAllNotifications,
+                                    ),
                                   ),
+                                );
+                              }
+
+                              final AppNotification notification =
+                                  notifications[index];
+                              return _AnimatedNotificationTile(
+                                index: index,
+                                child: _NotificationTile(
+                                  notification: notification,
+                                  onTap: () =>
+                                      _handleNotificationTap(notification),
                                 ),
                               );
-                            }
-
-                            final AppNotification notification =
-                                notifications[index];
-                            return _AnimatedNotificationTile(
-                              index: index,
-                              child: _NotificationTile(
-                                notification: notification,
-                                onTap: () =>
-                                    _handleNotificationTap(notification),
-                              ),
-                            );
-                          },
+                            },
+                          ),
                         ),
                       ),
                   ],
@@ -942,6 +993,7 @@ class _NotificationEmptyState extends StatelessWidget {
 String _localizedFilterLabel(BuildContext context, NotificationFilter filter) {
   return switch (filter) {
     NotificationFilter.all => context.l10n.ui('ALL'),
+    NotificationFilter.loyalty => context.l10n.ui('LOYALTY'),
     NotificationFilter.forum => context.l10n.ui('FORUM'),
     NotificationFilter.voucher => context.l10n.ui('VOUCHER'),
     NotificationFilter.account => context.l10n.ui('ACCOUNT'),

@@ -6,6 +6,7 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/explore/data/explore_repository.dart';
+import 'package:hellovietnam/features/explore/data/explore_paged_feed.dart';
 import 'package:hellovietnam/features/explore/data/explore_tracking_service.dart';
 import 'package:hellovietnam/features/explore/domain/explore_item.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
@@ -35,17 +36,13 @@ class ExploreCategoryPage extends StatefulWidget {
 }
 
 class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
-  static const int _pageSize = 2;
+  static const int _pageSize = 12;
 
   final ExploreRepository _repository = ExploreRepository.instance;
 
   late int _selectedFilter;
   late final ScrollController _scrollController;
-  int _visibleItemCount = _pageSize;
-
-  bool _isLoading = true;
-  String? _errorMessage;
-  List<_CategoryResults> _categories = const <_CategoryResults>[];
+  late final List<ExplorePagedFeed> _feeds;
 
   @override
   void initState() {
@@ -58,8 +55,26 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
     } else {
       _selectedFilter = widget.initialTab;
     }
+    _feeds = DetailCategory.values
+        .map(
+          (DetailCategory category) => ExplorePagedFeed(
+            category: category,
+            pageSize: _pageSize,
+            loader:
+                ({
+                  required DetailCategory category,
+                  required int limit,
+                  required int offset,
+                }) => _repository.loadCategoryPage(
+                  category,
+                  limit: limit,
+                  offset: offset,
+                ),
+          ),
+        )
+        .toList(growable: false);
     _scrollController = ScrollController()..addListener(_handleScroll);
-    _load();
+    _loadSelectedInitial();
   }
 
   @override
@@ -70,92 +85,29 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
     super.dispose();
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  ExplorePagedFeed get _selectedFeed => _feeds[_selectedFilter];
 
-    try {
-      final List<List<ExploreItem>> results =
-          await Future.wait(<Future<List<ExploreItem>>>[
-            _repository.loadCategoryItems(DetailCategory.activities),
-            _repository.loadCategoryItems(DetailCategory.culture),
-            _repository.loadCategoryItems(DetailCategory.food),
-            _repository.loadCategoryItems(DetailCategory.localProducts),
-          ]);
-
-      if (!mounted) return;
-
-      setState(() {
-        _categories = <_CategoryResults>[
-          _CategoryResults(
-            category: DetailCategory.activities,
-            items: results[0],
-            emptyMessage: _repository.descriptionForCategory(
-              DetailCategory.activities,
-            ),
-          ),
-          _CategoryResults(
-            category: DetailCategory.culture,
-            items: results[1],
-            emptyMessage: _repository.descriptionForCategory(
-              DetailCategory.culture,
-            ),
-          ),
-          _CategoryResults(
-            category: DetailCategory.food,
-            items: results[2],
-            emptyMessage: _repository.descriptionForCategory(
-              DetailCategory.food,
-            ),
-          ),
-          _CategoryResults(
-            category: DetailCategory.localProducts,
-            items: results[3],
-            emptyMessage: _repository.descriptionForCategory(
-              DetailCategory.localProducts,
-            ),
-          ),
-        ];
-        _isLoading = false;
-        _resetPagination();
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _categories = const <_CategoryResults>[];
-        _isLoading = false;
-        _errorMessage = error.toString();
-      });
-    }
+  Future<void> _loadSelectedInitial() async {
+    if (_selectedFeed.initialized || _selectedFeed.isLoading) return;
+    final Future<void> task = _selectedFeed.loadInitial();
+    setState(() {});
+    await task;
+    if (mounted) setState(() {});
   }
 
   void _handleScroll() {
     if (!_scrollController.hasClients) return;
     if (_scrollController.position.extentAfter > 280) return;
-    _loadMore();
+    unawaited(_loadMore());
   }
 
-  void _loadMore() {
-    if (_categories.isEmpty) return;
-    final int total = _categories[_selectedFilter].items.length;
-    if (_visibleItemCount >= total) return;
-
-    setState(() {
-      final int nextCount = _visibleItemCount + _pageSize;
-      _visibleItemCount = nextCount > total ? total : nextCount;
-    });
-  }
-
-  void _resetPagination() {
-    if (_categories.isEmpty) {
-      _visibleItemCount = _pageSize;
-      return;
-    }
-
-    final int total = _categories[_selectedFilter].items.length;
-    _visibleItemCount = total < _pageSize ? total : _pageSize;
+  Future<void> _loadMore() async {
+    final ExplorePagedFeed feed = _selectedFeed;
+    if (feed.isLoading || !feed.hasMore) return;
+    final Future<void> task = feed.loadMore();
+    setState(() {});
+    await task;
+    if (mounted) setState(() {});
   }
 
   @override
@@ -166,16 +118,20 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: <Widget>[
-          if (_isLoading)
+          if (!_selectedFeed.initialized && _selectedFeed.isLoading)
             const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             )
-          else if (_categories.isEmpty)
+          else if (_selectedFeed.items.isEmpty && _selectedFeed.error != null)
             _PageStateMessage(
               title: 'Unable to load Explore right now.',
-              subtitle: _errorMessage,
+              subtitle: _selectedFeed.error.toString(),
               actionLabel: 'Retry',
-              onTap: _load,
+              onTap: () async {
+                setState(() {});
+                await _selectedFeed.refresh();
+                if (mounted) setState(() {});
+              },
             )
           else
             _buildLoadedState(context, statusBarH),
@@ -186,12 +142,8 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
   }
 
   Widget _buildLoadedState(BuildContext context, double statusBarH) {
-    final _CategoryResults currentCategory = _categories[_selectedFilter];
-    final List<ExploreItem> items = currentCategory.items;
-    final int visibleCount = items.length < _visibleItemCount
-        ? items.length
-        : _visibleItemCount;
-    final bool hasMore = visibleCount < items.length;
+    final ExplorePagedFeed currentFeed = _selectedFeed;
+    final List<ExploreItem> items = currentFeed.items;
 
     return CustomScrollView(
       controller: _scrollController,
@@ -243,8 +195,8 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
             onTap: (int index) {
               setState(() {
                 _selectedFilter = index;
-                _resetPagination();
               });
+              unawaited(_loadSelectedInitial());
             },
           ),
         ),
@@ -254,7 +206,9 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
             child: _PageStateMessage(
               title:
                   'No ${_filterLabels[_selectedFilter].toLowerCase()} found.',
-              subtitle: currentCategory.emptyMessage,
+              subtitle: _repository.descriptionForCategory(
+                currentFeed.category,
+              ),
             ),
           )
         else ...<Widget>[
@@ -269,35 +223,32 @@ class _ExploreCategoryPageState extends State<ExploreCategoryPage> {
               delegate: SliverChildBuilderDelegate(
                 (BuildContext context, int index) => ExploreResultCard(
                   item: items[index],
-                  category: currentCategory.category,
+                  category: currentFeed.category,
                 ),
-                childCount: visibleCount,
+                childCount: items.length,
               ),
             ),
           ),
-          if (hasMore)
+          if (currentFeed.isLoading)
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.only(bottom: 24),
                 child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
               ),
             ),
+          if (currentFeed.error != null && items.isNotEmpty)
+            SliverToBoxAdapter(
+              child: _PageStateMessage(
+                title: 'Could not load more items.',
+                subtitle: currentFeed.error.toString(),
+                actionLabel: 'Retry',
+                onTap: _loadMore,
+              ),
+            ),
         ],
       ],
     );
   }
-}
-
-class _CategoryResults {
-  const _CategoryResults({
-    required this.category,
-    required this.items,
-    this.emptyMessage,
-  });
-
-  final DetailCategory category;
-  final List<ExploreItem> items;
-  final String? emptyMessage;
 }
 
 class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {

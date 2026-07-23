@@ -223,5 +223,54 @@ void main() {
       });
       expect(items.single.name, 'Dragon Bridge Walk');
     });
+
+    test('returns backend cursor and forwards a search query', () async {
+      Object? capturedBody;
+      final ExploreRepository repository = ExploreRepository(
+        languageCodeProvider: () => 'en',
+        functionClient: SupabaseFunctionClient(
+          invoker:
+              (
+                String functionName, {
+                Map<String, String>? headers,
+                Object? body,
+              }) async {
+                capturedBody = body;
+                return <String, dynamic>{
+                  'items': <Map<String, dynamic>>[
+                    <String, dynamic>{
+                      'id': 'food-1',
+                      'name': 'Bun bo Hue',
+                      'imagePath': 'food/bun-bo.jpg',
+                      'category': 'food',
+                    },
+                  ],
+                  'nextOffset': 36,
+                  'emptyMessage': null,
+                };
+              },
+        ),
+      );
+
+      final ExploreCategoryPageData page = await repository.loadCategoryPage(
+        DetailCategory.food,
+        limit: 12,
+        offset: 24,
+        query: 'bun bo',
+      );
+
+      expect(capturedBody, <String, Object?>{
+        'action': 'getExploreCategoryItems',
+        'category': 'food',
+        'provinceId': null,
+        'limit': 12,
+        'offset': 24,
+        'language': 'en',
+        'query': 'bun bo',
+      });
+      expect(page.nextOffset, 36);
+      expect(page.hasMore, isTrue);
+      expect(page.items.single.id, 'food-1');
+    });
   });
 }

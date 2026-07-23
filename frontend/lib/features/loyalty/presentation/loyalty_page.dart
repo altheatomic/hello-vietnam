@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hellovietnam/features/notification/application/notification_preferences_controller.dart';
+import 'package:hellovietnam/features/notification/domain/notification_preference.dart';
 
 import '../data/loyalty_award_service.dart';
 import '../data/loyalty_models.dart';
@@ -17,34 +20,58 @@ class LoyaltyPage extends StatefulWidget {
 }
 
 class _LoyaltyPageState extends State<LoyaltyPage> {
-  static const String _loyaltyNotificationsKey =
-      'loyalty_rewards_notifications_enabled';
-
   final LoyaltyRepository _repository = LoyaltyRepository();
+  final NotificationPreferencesController _notificationPreferences =
+      NotificationPreferencesController.instance;
   late Future<LoyaltyDashboardData> _future;
   bool _busy = false;
-  bool _loyaltyNotificationsEnabled = true;
+
+  bool get _loyaltyNotificationsEnabled => _notificationPreferences
+      .preference(NotificationPreferenceType.loyalty)
+      .pushEnabled;
 
   @override
   void initState() {
     super.initState();
     _future = _repository.loadDashboard();
-    _loadNotificationPreference();
+    _notificationPreferences.addListener(_onNotificationPreferenceChanged);
+    unawaited(_loadNotificationPreference());
   }
 
   Future<void> _loadNotificationPreference() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _loyaltyNotificationsEnabled =
-          prefs.getBool(_loyaltyNotificationsKey) ?? true;
-    });
+    try {
+      await _notificationPreferences.load();
+    } catch (_) {
+      // Loyalty data can still be used when preference loading is unavailable.
+    }
   }
 
   Future<void> _setNotificationPreference(bool value) async {
-    setState(() => _loyaltyNotificationsEnabled = value);
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_loyaltyNotificationsKey, value);
+    try {
+      await _notificationPreferences.setPushEnabled(
+        NotificationPreferenceType.loyalty,
+        value,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.l10n.ui('Could not update notification settings.'),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _onNotificationPreferenceChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _notificationPreferences.removeListener(_onNotificationPreferenceChanged);
+    super.dispose();
   }
 
   void _refresh() {

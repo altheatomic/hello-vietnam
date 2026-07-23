@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
@@ -5,6 +7,7 @@ import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/core/storage/local_storage.dart' as app_storage;
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
+import 'package:hellovietnam/features/item_detail/data/item_detail_repository.dart';
 import 'package:hellovietnam/features/item_detail/presentation/shared_item_detail_page.dart';
 import 'package:hellovietnam/features/reviews/data/review_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -157,6 +160,66 @@ void main() {
     expect(title.overflow, TextOverflow.ellipsis);
     expect(titleRect.left, closeTo(320 - titleRect.right, 0.1));
   });
+
+  testWidgets('request-backed detail loads the live backend item', (
+    WidgetTester tester,
+  ) async {
+    final Completer<ItemDetail> completer = Completer<ItemDetail>();
+    final _FakeItemDetailRepository repository = _FakeItemDetailRepository(
+      completer.future,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SharedItemDetailPage(
+          request: const ItemDetailRequest(
+            id: '55555555-5555-4555-8555-555555555555',
+            name: 'Fallback item',
+            category: DetailCategory.food,
+          ),
+          itemDetailRepository: repository,
+          showReviews: false,
+          showWhatToExpect: false,
+        ),
+      ),
+    );
+
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+    completer.complete(
+      const ItemDetail(
+        id: '55555555-5555-4555-8555-555555555555',
+        name: 'Live Bun Bo Hue',
+        category: DetailCategory.food,
+        images: <String>[],
+        rating: 4.9,
+        reviewCount: 20,
+        ratingLabel: 'Excellent',
+        description: 'Live description from Supabase.',
+        whatToExpect: 'Live expectation from Supabase.',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Live Bun Bo Hue', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.text('Live description from Supabase.'), findsOneWidget);
+    expect(
+      find.textContaining('Fallback item', findRichText: true),
+      findsNothing,
+    );
+  });
+}
+
+class _FakeItemDetailRepository extends ItemDetailRepository {
+  _FakeItemDetailRepository(this.result);
+
+  final Future<ItemDetail> result;
+
+  @override
+  Future<ItemDetail> load(ItemDetailRequest request) => result;
 }
 
 ReviewRepository _buildReviewRepository() {

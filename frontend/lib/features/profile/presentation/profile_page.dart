@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,9 @@ import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme_controller.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/features/notification/application/notification_preferences_controller.dart';
+import 'package:hellovietnam/features/notification/application/push_notification_service.dart';
+import 'package:hellovietnam/features/notification/domain/notification_preference.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -40,7 +44,6 @@ class _ProfilePageState extends State<ProfilePage> {
     ),
   ];
 
-  bool _notificationEnabled = false;
   bool _autoDeleteUserDataEnabled = false;
   static const String _autoDeleteUserDataKey = 'auto_delete_user_data_enabled';
   String _username = 'abc';
@@ -53,6 +56,38 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     _loadAutoDeleteSetting();
     _loadCurrentUserProfile();
+    unawaited(_loadNotificationPreferences());
+  }
+
+  Future<void> _loadNotificationPreferences() async {
+    try {
+      await NotificationPreferencesController.instance.load();
+    } catch (_) {
+      // The profile remains usable while notification settings are offline.
+    }
+  }
+
+  Future<void> _setMasterNotificationPreference(bool value) async {
+    try {
+      await NotificationPreferencesController.instance.setPushEnabled(
+        NotificationPreferenceType.all,
+        value,
+      );
+      if (value) {
+        await PushNotificationService.instance.syncCurrentDevice();
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              context.l10n.ui('Could not update notification settings.'),
+            ),
+          ),
+        );
+    }
   }
 
   Future<void> _loadAutoDeleteSetting() async {
@@ -306,14 +341,22 @@ class _ProfilePageState extends State<ProfilePage> {
                               );
                             },
                           ),
-                          _SettingSwitchRow(
-                            icon: Icons.notifications_none_rounded,
-                            title: strings.notification,
-                            value: _notificationEnabled,
-                            onChanged: (bool value) {
-                              setState(() {
-                                _notificationEnabled = value;
-                              });
+                          AnimatedBuilder(
+                            animation:
+                                NotificationPreferencesController.instance,
+                            builder: (BuildContext context, Widget? child) {
+                              return _SettingSwitchRow(
+                                icon: Icons.notifications_none_rounded,
+                                title: strings.notification,
+                                value: NotificationPreferencesController
+                                    .instance
+                                    .preference(NotificationPreferenceType.all)
+                                    .pushEnabled,
+                                onChanged: _setMasterNotificationPreference,
+                                onTap: () => context.push(
+                                  AppRoutes.notificationSettings,
+                                ),
+                              );
                             },
                           ),
                           _SettingSwitchRow(

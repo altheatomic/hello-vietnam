@@ -7,6 +7,8 @@ import '../core/language/app_language.dart';
 import '../core/storage/local_storage.dart' as app_storage;
 import '../core/widgets/app_loading_screen.dart';
 import '../features/forum/data/forum_store.dart';
+import '../features/notification/application/notification_inbox_controller.dart';
+import '../features/notification/application/push_notification_service.dart';
 import '../features/personalization/data/travel_preferences_repository.dart';
 import '../features/planner/data/trip_store.dart';
 import 'app_mobile.dart';
@@ -47,6 +49,18 @@ class _AppBootstrapState extends State<AppBootstrap> {
       await ForumStore.instance.init(preload: false);
       await initDeepLinks();
       await ReferenceDataCacheRepository.instance.refreshStaleInBackground();
+      try {
+        await PushNotificationService.instance.initialize();
+      } catch (error) {
+        debugPrint('Push notification initialization skipped: $error');
+      }
+      if (Supabase.instance.client.auth.currentUser != null) {
+        try {
+          await NotificationInboxController.instance.loadInitial();
+        } catch (error) {
+          debugPrint('Notification inbox preload skipped: $error');
+        }
+      }
 
       if (!mounted) return;
       setState(() => _ready = true);

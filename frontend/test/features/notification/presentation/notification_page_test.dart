@@ -3,6 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/storage/local_storage.dart';
+import 'package:hellovietnam/features/notification/application/notification_inbox_controller.dart';
+import 'package:hellovietnam/features/notification/data/notification_repository.dart';
+import 'package:hellovietnam/features/notification/domain/app_notification.dart';
+import 'package:hellovietnam/features/notification/domain/notification_preference.dart';
+import 'package:hellovietnam/features/notification/presentation/notification_controller.dart';
 import 'package:hellovietnam/features/notification/presentation/notification_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,36 +15,80 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     await LocalStorage.instance.initialize();
-    await AppLanguageController.instance.setLanguage(AppLanguage.vietnamese);
+    await AppLanguageController.instance.setLanguage(AppLanguage.english);
   });
 
-  testWidgets('shows notification UI and sample content in Vietnamese', (
+  testWidgets('shows notifications supplied by the production controller', (
     WidgetTester tester,
   ) async {
+    final NotificationController controller = _controllerWithPages(
+      <NotificationPageResult>[
+        NotificationPageResult(
+          items: <AppNotification>[_notification('first')],
+        ),
+      ],
+    );
     await tester.pumpWidget(
       AppLanguageScope(
         controller: AppLanguageController.instance,
-        child: const MaterialApp(home: NotificationPage()),
+        child: MaterialApp(home: NotificationPage(controller: controller)),
       ),
     );
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Thông báo'), findsOneWidget);
-    expect(find.text('Đà Lạt có lễ hội mới!'), findsOneWidget);
-    expect(find.text('Đừng bỏ lỡ cơ hội tham gia Lễ hội Hoa.'), findsOneWidget);
-    expect(find.text('9 ngày trước'), findsOneWidget);
+    expect(find.text('first'), findsWidgets);
+  });
+
+  testWidgets('loads the next page when scrolling near the end', (
+    WidgetTester tester,
+  ) async {
+    final NotificationController controller = _controllerWithPages(
+      <NotificationPageResult>[
+        NotificationPageResult(
+          items: List<AppNotification>.generate(
+            16,
+            (int index) => _notification('item-$index'),
+          ),
+          nextCursor: 'next-page',
+        ),
+        NotificationPageResult(
+          items: <AppNotification>[_notification('loaded-later')],
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      AppLanguageScope(
+        controller: AppLanguageController.instance,
+        child: MaterialApp(home: NotificationPage(controller: controller)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.fling(
+      find.byType(ListView).last,
+      const Offset(0, -2400),
+      1600,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('loaded-later'), findsWidgets);
   });
 
   testWidgets('uses a dark background gradient in dark mode', (
     WidgetTester tester,
   ) async {
+    final NotificationController controller = _controllerWithPages(
+      <NotificationPageResult>[
+        NotificationPageResult(items: <AppNotification>[_notification('dark')]),
+      ],
+    );
     await tester.pumpWidget(
       AppLanguageScope(
         controller: AppLanguageController.instance,
         child: MaterialApp(
           theme: buildDarkTheme(),
-          home: const NotificationPage(),
+          home: NotificationPage(controller: controller),
         ),
       ),
     );
@@ -57,4 +106,134 @@ void main() {
         });
     expect(darkBackgrounds, isNotEmpty);
   });
+
+  testWidgets('keeps loaded notifications visible when load more fails', (
+    WidgetTester tester,
+  ) async {
+    final NotificationController controller = NotificationController(
+      inbox: NotificationInboxController(
+        repository: _FailingLoadMoreNotificationRepository(),
+      ),
+    );
+    await tester.pumpWidget(
+      AppLanguageScope(
+        controller: AppLanguageController.instance,
+        child: MaterialApp(home: NotificationPage(controller: controller)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await controller.loadMore();
+    await tester.pumpAndSettle();
+
+    expect(find.text('already-loaded'), findsWidgets);
+    expect(find.textContaining('next page failed'), findsNothing);
+  });
+}
+
+NotificationController _controllerWithPages(
+  List<NotificationPageResult> pages,
+) {
+  return NotificationController(
+    inbox: NotificationInboxController(
+      repository: _FakeNotificationRepository(pages),
+    ),
+  );
+}
+
+AppNotification _notification(String id) => AppNotification(
+  id: id,
+  type: AppNotificationType.account,
+  icon: AppNotificationIcon.badge,
+  title: id,
+  description: 'description-$id',
+  timestampLabel: 'now',
+  target: const NotificationTarget(kind: NotificationTargetKind.upgradeAccount),
+);
+
+class _FakeNotificationRepository implements NotificationRepository {
+  _FakeNotificationRepository(this.pages);
+
+  final List<NotificationPageResult> pages;
+  int _pageIndex = 0;
+
+  @override
+  Future<NotificationPageResult> fetchPage({
+    int limit = 20,
+    String? cursor,
+  }) async => pages[_pageIndex++];
+
+  @override
+  Future<int> fetchUnreadCount() async => 0;
+
+  @override
+  Future<List<NotificationPreference>> fetchPreferences() async =>
+      const <NotificationPreference>[];
+
+  @override
+  Future<void> markAllRead() async {}
+
+  @override
+  Future<void> markRead(String id) async {}
+
+  @override
+  Future<void> registerDevice({
+    required String fcmToken,
+    required String installationId,
+    required String platform,
+  }) async {}
+
+  @override
+  Future<void> unregisterDevice(String installationId) async {}
+
+  @override
+  Future<NotificationPreference> updatePreference(
+    NotificationPreference preference,
+  ) async => preference;
+}
+
+class _FailingLoadMoreNotificationRepository implements NotificationRepository {
+  int _fetchCount = 0;
+
+  @override
+  Future<NotificationPageResult> fetchPage({
+    int limit = 20,
+    String? cursor,
+  }) async {
+    if (_fetchCount++ == 0) {
+      return NotificationPageResult(
+        items: <AppNotification>[_notification('already-loaded')],
+        nextCursor: 'next-page',
+      );
+    }
+    throw StateError('next page failed');
+  }
+
+  @override
+  Future<int> fetchUnreadCount() async => 0;
+
+  @override
+  Future<List<NotificationPreference>> fetchPreferences() async =>
+      const <NotificationPreference>[];
+
+  @override
+  Future<void> markAllRead() async {}
+
+  @override
+  Future<void> markRead(String id) async {}
+
+  @override
+  Future<void> registerDevice({
+    required String fcmToken,
+    required String installationId,
+    required String platform,
+  }) async {}
+
+  @override
+  Future<void> unregisterDevice(String installationId) async {}
+
+  @override
+  Future<NotificationPreference> updatePreference(
+    NotificationPreference preference,
+  ) async => preference;
 }

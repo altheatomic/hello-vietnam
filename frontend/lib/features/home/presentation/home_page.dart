@@ -12,7 +12,7 @@ import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/location/presentation/quick_location_flow.dart';
-import 'package:hellovietnam/features/notification/data/notification_repository.dart';
+import 'package:hellovietnam/features/notification/application/notification_inbox_controller.dart';
 import 'package:hellovietnam/features/personalization/data/travel_preferences_repository.dart';
 import 'package:hellovietnam/features/personalization/data/travel_recommendation_service.dart';
 import 'package:hellovietnam/features/personalization/domain/travel_preferences.dart';
@@ -256,10 +256,10 @@ class _HomePageState extends State<HomePage>
                                 const SizedBox(width: 12),
                                 ListenableBuilder(
                                   listenable:
-                                      MockNotificationRepository.instance,
+                                      NotificationInboxController.instance,
                                   builder: (BuildContext context, Widget? child) {
                                     final int unreadCount =
-                                        MockNotificationRepository
+                                        NotificationInboxController
                                             .instance
                                             .unreadCount;
 
@@ -385,8 +385,7 @@ class _HomePageState extends State<HomePage>
                       child: ActiveTripCard(
                         trip: trip,
                         onViewOrRoute: () {
-                          final int dayIndex =
-                              trip.relevantActivity.dayIndex;
+                          final int dayIndex = trip.relevantActivity.dayIndex;
                           context.push(
                             AppRoutes.tripPlannerDayDetailPath(dayIndex),
                             extra: trip.days[dayIndex],

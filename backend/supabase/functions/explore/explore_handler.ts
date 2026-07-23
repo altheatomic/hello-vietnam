@@ -354,6 +354,7 @@ export async function handleExploreRequest(req: Request): Promise<Response> {
           MAX_CATEGORY_LIMIT,
         );
         const offset = clampNonNegativeInt(payload.offset, 0, 5000);
+        const query = nullableString(payload.query);
         return jsonResponse(
           await service.getExploreCategoryItems(
             category,
@@ -363,7 +364,16 @@ export async function handleExploreRequest(req: Request): Promise<Response> {
             language,
             userId,
             sortMode,
+            query,
           ),
+        );
+      }
+      case "getExploreItemDetail": {
+        const category = parseCategory(payload.category);
+        const id = requiredString(payload.id, "id");
+        const language = normalizedLanguage(payload.language);
+        return jsonResponse(
+          await service.getExploreItemDetail(category, id, language),
         );
       }
       case "recordExploreEvent": {
@@ -451,9 +461,11 @@ class ExploreService {
     language: string | null,
     userId: string | null,
     sortMode: ExploreSortMode,
+    query: string | null,
   ): Promise<JsonObject> {
     const province = await this.resolveProvinceOrNull(requestedProvinceId);
     const provinceId = province?.id ?? null;
+    const normalizedQuery = normalizeSearch(query);
     const loaded = await this.loadCategoryItems(
       CATEGORY_CONFIGS[category],
       province,
@@ -461,10 +473,20 @@ class ExploreService {
       language,
       userId,
       sortMode,
+      normalizedQuery ? null : { offset, limit },
     );
 
-    const pagedItems = loaded.items.slice(offset, offset + limit);
-    const nextOffset = offset + limit < loaded.items.length
+    const filteredItems = normalizedQuery
+      ? loaded.items.filter((item) =>
+        matchesExploreQuery(item, normalizedQuery)
+      )
+      : loaded.items;
+    const pagedItems = normalizedQuery
+      ? filteredItems.slice(offset, offset + limit)
+      : filteredItems;
+    const nextOffset = normalizedQuery
+      ? offset + limit < filteredItems.length ? offset + limit : null
+      : loaded.hasMore
       ? offset + limit
       : null;
 
@@ -479,6 +501,87 @@ class ExploreService {
       emptyMessage: pagedItems.length > 0
         ? null
         : loaded.emptyMessage ?? emptyMessageForCategory(category, province),
+    };
+  }
+
+  async getExploreItemDetail(
+    category: ExploreCategoryKey,
+    id: string,
+    language: string | null,
+  ): Promise<JsonObject> {
+    const config = CATEGORY_CONFIGS[category];
+    const loadedRows = await this.loadRowByIdFromCandidateTables(
+      config.tables,
+      config.idCandidates,
+      id,
+    );
+    if (!loadedRows) {
+      throw new Error(`Content table not found for category=${category}.`);
+    }
+
+    const idColumn = loadedRows.idColumn;
+    const row = loadedRows.row;
+
+    const statusColumn = pickOptionalColumn([row], config.statusCandidates);
+    if (statusColumn && !isRenderableStatus(row[statusColumn])) {
+      throw new Error(`Explore item is not available: ${category}:${id}.`);
+    }
+
+    const provinceColumn = pickOptionalColumn([row], config.provinceCandidates);
+    const [provinceNameMap, translations, officialRatings] = await Promise.all([
+      this.buildProvinceNameMap([row], provinceColumn),
+      this.loadTranslations(config, [row], idColumn, language),
+      this.loadOfficialRatings(config.contentType, [row], idColumn),
+    ]);
+    const translation = language ? translations.get(id) ?? null : null;
+    const item = mapExploreItem(
+      row,
+      config,
+      provinceNameMap,
+      provinceColumn,
+      translations,
+      language,
+      {
+        scores: new Map<string, number>(),
+        matchedTags: new Map<string, string[]>(),
+        isPersonalized: false,
+        personalizationReason: null,
+        sortMode: "default",
+      },
+      officialRatings,
+    );
+    if (!item) {
+      throw new Error(`Explore item is invalid: ${category}:${id}.`);
+    }
+
+    const images = collectItemImages(row, config);
+    const description = translatedCandidateString(
+      row,
+      translation,
+      ["detailed_description", ...config.descriptionCandidates],
+    ) ?? item.description ?? "";
+    const whatToExpect = translatedCandidateString(
+      row,
+      translation,
+      expectationCandidates(category),
+    ) ?? description;
+
+    return {
+      item: {
+        id: item.id,
+        reviewContentId: item.id,
+        name: item.name,
+        category,
+        images,
+        rating: item.rating ?? 0,
+        reviewCount: item.reviewCount,
+        ratingLabel: ratingLabel(item.rating),
+        description,
+        whatToExpect,
+        provinceId: item.provinceId,
+        provinceName: item.provinceName,
+        metadata: item.metadata,
+      },
     };
   }
 
@@ -583,6 +686,7 @@ class ExploreService {
       language,
       userId,
       "personalized",
+      { offset: 0, limit: Math.max(limit * 4, limit) },
     );
 
     return {
@@ -601,15 +705,24 @@ class ExploreService {
     language: string | null,
     userId: string | null,
     sortMode: ExploreSortMode,
+    page: { offset: number; limit: number } | null = null,
   ): Promise<{
     items: ExploreItem[];
     emptyMessage: string | null;
     isPersonalized: boolean;
     personalizationReason: string | null;
     sortMode: ExploreSortMode;
+    hasMore: boolean;
   }> {
     try {
-      const loadedRows = await this.loadRowsFromCandidateTables(config.tables);
+      const loadedRows = page
+        ? await this.loadRowsPageFromCandidateTables(
+          config,
+          provinceId,
+          page.offset,
+          page.limit,
+        )
+        : await this.loadRowsFromCandidateTables(config.tables);
       if (!loadedRows) {
         console.warn(
           `[explore] no content table found for category=${config.responseKey}`,
@@ -620,6 +733,7 @@ class ExploreService {
           isPersonalized: false,
           personalizationReason: "missing_content_table",
           sortMode: "default",
+          hasMore: false,
         };
       }
 
@@ -629,7 +743,7 @@ class ExploreService {
         config.provinceCandidates,
       );
       const idColumn = pickOptionalColumn(rows, config.idCandidates);
-      const provinceRows = provinceId == null
+      const provinceRows = page != null || provinceId == null
         ? rows
         : provinceColumn == null
         ? []
@@ -679,6 +793,7 @@ class ExploreService {
         isPersonalized: personalization.isPersonalized,
         personalizationReason: personalization.personalizationReason,
         sortMode: personalization.sortMode,
+        hasMore: "hasMore" in loadedRows && loadedRows.hasMore === true,
       };
     } catch (error) {
       console.error(
@@ -691,6 +806,7 @@ class ExploreService {
         isPersonalized: false,
         personalizationReason: "category_load_failed",
         sortMode: "default",
+        hasMore: false,
       };
     }
   }
@@ -1172,6 +1288,106 @@ class ExploreService {
     return null;
   }
 
+  private async loadRowsPageFromCandidateTables(
+    config: CategoryConfig,
+    provinceId: string | null,
+    offset: number,
+    limit: number,
+  ): Promise<
+    {
+      tableName: string;
+      rows: JsonObject[];
+      hasMore: boolean;
+    } | null
+  > {
+    for (const table of config.tables) {
+      try {
+        const { data: sampleData, error: sampleError } = await this.client
+          .from(table)
+          .select("*")
+          .limit(1);
+        if (sampleError) {
+          if (isMissingTableError(sampleError)) continue;
+          throw new Error(`${table}: ${sampleError.message}`);
+        }
+
+        const sampleRows = asRows(sampleData);
+        if (sampleRows.length === 0) {
+          return { tableName: table, rows: [], hasMore: false };
+        }
+        const provinceColumn = pickOptionalColumn(
+          sampleRows,
+          config.provinceCandidates,
+        );
+        if (provinceId && !provinceColumn) {
+          return { tableName: table, rows: [], hasMore: false };
+        }
+        const idColumn = pickOptionalColumn(sampleRows, config.idCandidates);
+        let query = this.client.from(table).select("*");
+        if (provinceId && provinceColumn) {
+          query = query.eq(provinceColumn, provinceId);
+        }
+        if (idColumn) {
+          query = query.order(idColumn, { ascending: true });
+        }
+        const { data, error } = await query.range(offset, offset + limit);
+        if (error) throw new Error(`${table}: ${error.message}`);
+        const rows = asRows(data);
+        return {
+          tableName: table,
+          rows: rows.slice(0, limit),
+          hasMore: rows.length > limit,
+        };
+      } catch (error) {
+        if (isMissingTableError(error)) continue;
+        throw error;
+      }
+    }
+    return null;
+  }
+
+  private async loadRowByIdFromCandidateTables(
+    tables: string[],
+    idCandidates: string[],
+    id: string,
+  ): Promise<
+    {
+      tableName: string;
+      idColumn: string;
+      row: JsonObject;
+    } | null
+  > {
+    for (const table of tables) {
+      try {
+        const { data: sampleData, error: sampleError } = await this.client
+          .from(table)
+          .select("*")
+          .limit(1);
+        if (sampleError) {
+          if (isMissingTableError(sampleError)) continue;
+          throw new Error(`${table}: ${sampleError.message}`);
+        }
+        const sampleRows = asRows(sampleData);
+        if (sampleRows.length === 0) continue;
+        const idColumn = pickOptionalColumn(sampleRows, idCandidates);
+        if (!idColumn) continue;
+
+        const { data, error } = await this.client
+          .from(table)
+          .select("*")
+          .eq(idColumn, id)
+          .maybeSingle();
+        if (error) throw new Error(`${table}: ${error.message}`);
+        if (!isPlainObject(data)) continue;
+        return { tableName: table, idColumn, row: data };
+      } catch (error) {
+        if (isMissingTableError(error)) continue;
+        throw error;
+      }
+    }
+    return null;
+  }
+
   private async loadRowsFromCandidateTables(
     tables: string[],
   ): Promise<{ tableName: string; rows: JsonObject[] } | null> {
@@ -1302,6 +1518,123 @@ function mapExploreItem(
     personalizedScore,
     matchedTags,
   };
+}
+
+function matchesExploreQuery(
+  item: ExploreItem,
+  normalizedQuery: string,
+): boolean {
+  const metadata = Object.values(item.metadata)
+    .map((value) => typeof value === "string" ? value : "")
+    .join(" ");
+  return [
+    item.name,
+    item.subtitle,
+    item.description,
+    item.provinceName,
+    metadata,
+  ].some((value) => normalizeSearch(value).includes(normalizedQuery));
+}
+
+function collectItemImages(row: JsonObject, config: CategoryConfig): string[] {
+  const images: string[] = [];
+  for (const key of config.imageCandidates) {
+    if (key in row) images.push(...imageTokens(row[key]));
+  }
+  for (const key of config.galleryCandidates) {
+    if (key in row) images.push(...imageTokens(row[key]));
+  }
+  return uniqueStrings(images);
+}
+
+function imageTokens(value: unknown): string[] {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    if (
+      (trimmed.startsWith("[") && trimmed.endsWith("]")) ||
+      (trimmed.startsWith("{") && trimmed.endsWith("}"))
+    ) {
+      try {
+        return imageTokens(JSON.parse(trimmed));
+      } catch {
+        return [trimmed];
+      }
+    }
+    return [trimmed];
+  }
+  if (Array.isArray(value)) {
+    return uniqueStrings(value.flatMap((item) => imageTokens(item)));
+  }
+  if (value && typeof value === "object") {
+    const objectValue = value as Record<string, unknown>;
+    for (const candidate of ["url", "path", "src", "image", "imagePath"]) {
+      const token = stringValue(objectValue[candidate]);
+      if (token) return [token];
+    }
+    return uniqueStrings(
+      ["images", "items", "gallery", "data"]
+        .flatMap((candidate) => imageTokens(objectValue[candidate])),
+    );
+  }
+  return [];
+}
+
+function translatedCandidateString(
+  row: JsonObject,
+  translation: JsonObject | null,
+  candidates: string[],
+): string | null {
+  for (const key of uniqueStrings(candidates)) {
+    const translated = stringValue(translation?.[key]);
+    if (translated) return translated;
+    const original = stringValue(row[key]);
+    if (original) return original;
+  }
+  return null;
+}
+
+function expectationCandidates(category: ExploreCategoryKey): string[] {
+  switch (category) {
+    case "activities":
+      return [
+        "safety_notes",
+        "opening_hours",
+        "price_range",
+        "detailed_description",
+        "short_description",
+      ];
+    case "culture":
+      return [
+        "cultural_significance",
+        "etiquette",
+        "event_time",
+        "origin_history",
+        "detailed_description",
+      ];
+    case "food":
+      return [
+        "taste_profile",
+        "ingredients",
+        "detailed_description",
+        "description",
+      ];
+    case "local_products":
+      return [
+        "storage_transport",
+        "trusted_places",
+        "price_range",
+        "detailed_description",
+      ];
+  }
+}
+
+function ratingLabel(rating: number | null): string {
+  if (rating == null || rating <= 0) return "";
+  if (rating >= 4.7) return "Excellent";
+  if (rating >= 4.3) return "Great";
+  if (rating >= 3.8) return "Good";
+  return "Rated";
 }
 
 function compareExploreItems(

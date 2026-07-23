@@ -38,10 +38,22 @@ class ForumStore extends ChangeNotifier {
   bool _isLoading = false;
   bool _isInitialized = false;
   bool _hasLoadedSnapshot = false;
+  bool _isLoadingMoreForYou = false;
+  bool _isLoadingMoreFollowing = false;
+  bool _hasMoreForYou = false;
+  bool _hasMoreFollowing = false;
+  String? _nextForYouCursor;
+  String? _nextFollowingCursor;
   String? _errorMessage;
   Future<void>? _loadFuture;
+  Future<void>? _loadMoreForYouFuture;
+  Future<void>? _loadMoreFollowingFuture;
 
   bool get isLoading => _isLoading;
+  bool get isLoadingMoreForYou => _isLoadingMoreForYou;
+  bool get isLoadingMoreFollowing => _isLoadingMoreFollowing;
+  bool get hasMoreForYou => _hasMoreForYou;
+  bool get hasMoreFollowing => _hasMoreFollowing;
   String? get errorMessage => _errorMessage;
 
   String get currentUserId => _currentUserId;
@@ -140,6 +152,74 @@ class ForumStore extends ChangeNotifier {
     }
   }
 
+  Future<void> loadMoreForYou() {
+    if (!_hasLoadedSnapshot) {
+      return ensureLoaded();
+    }
+    if (_isLoadingMoreForYou || !_hasMoreForYou) {
+      return _loadMoreForYouFuture ?? Future<void>.value();
+    }
+
+    _isLoadingMoreForYou = true;
+    notifyListeners();
+    final Future<void> load = _repository
+        .loadSnapshot(
+          beforeForYouCursor: _nextForYouCursor,
+          limit: 20,
+          loadFollowingPage: false,
+          includeNotifications: false,
+        )
+        .then((ForumRepositorySnapshot snapshot) {
+          _mergeSnapshot(snapshot, appendForYou: true, appendFollowing: false);
+          _errorMessage = null;
+        })
+        .catchError((Object error) {
+          _errorMessage = error.toString();
+          debugPrint('Load more forum data error: $error');
+        })
+        .whenComplete(() {
+          _isLoadingMoreForYou = false;
+          _loadMoreForYouFuture = null;
+          notifyListeners();
+        });
+    _loadMoreForYouFuture = load;
+    return load;
+  }
+
+  Future<void> loadMoreFollowing() {
+    if (!_hasLoadedSnapshot) {
+      return ensureLoaded();
+    }
+    if (_isLoadingMoreFollowing || !_hasMoreFollowing) {
+      return _loadMoreFollowingFuture ?? Future<void>.value();
+    }
+
+    _isLoadingMoreFollowing = true;
+    notifyListeners();
+    final Future<void> load = _repository
+        .loadSnapshot(
+          beforeFollowingCursor: _nextFollowingCursor,
+          limit: 20,
+          loadForYouPage: false,
+          includeNotifications: false,
+        )
+        .then((ForumRepositorySnapshot snapshot) {
+          _mergeSnapshot(snapshot, appendForYou: false, appendFollowing: true);
+          _errorMessage = null;
+        })
+        .catchError((Object error) {
+          _errorMessage = error.toString();
+          debugPrint('Load more following forum data error: $error');
+        })
+        .whenComplete(() {
+          _isLoadingMoreFollowing = false;
+          _loadMoreFollowingFuture = null;
+          notifyListeners();
+        });
+    _loadMoreFollowingFuture = load;
+    return load;
+  }
+
   ForumPost? postById(String postId) {
     final ForumPost? post = _postsById[postId];
     if (post == null || _blockedAuthorIds.contains(post.author.id)) {
@@ -194,7 +274,7 @@ class ForumStore extends ChangeNotifier {
     notifyListeners();
 
     unawaited(
-      _persistAndRefresh(
+      _persist(
         () => _repository.setPostLiked(postId: postId, liked: shouldLike),
       ),
     );
@@ -209,7 +289,7 @@ class ForumStore extends ChangeNotifier {
     notifyListeners();
 
     unawaited(
-      _persistAndRefresh(
+      _persist(
         () => _repository.setBookmarked(
           postId: postId,
           bookmarked: shouldBookmark,
@@ -232,7 +312,7 @@ class ForumStore extends ChangeNotifier {
     notifyListeners();
 
     unawaited(
-      _persistAndRefresh(
+      _persist(
         () => _repository.setFollowing(
           authorId: authorId,
           following: shouldFollow,
@@ -256,7 +336,7 @@ class ForumStore extends ChangeNotifier {
     notifyListeners();
 
     unawaited(
-      _persistAndRefresh(
+      _persist(
         () => _repository.setBlocked(authorId: authorId, blocked: shouldBlock),
       ),
     );
@@ -273,7 +353,7 @@ class ForumStore extends ChangeNotifier {
     notifyListeners();
 
     unawaited(
-      _persistAndRefresh(
+      _persist(
         () => _repository.submitReport(
           postId: postId,
           reason: reason,
@@ -300,7 +380,7 @@ class ForumStore extends ChangeNotifier {
     notifyListeners();
 
     unawaited(
-      _persistAndRefresh(
+      _persist(
         () => _repository.setCommentLiked(
           commentId: commentId,
           liked: shouldLike,
@@ -339,9 +419,7 @@ class ForumStore extends ChangeNotifier {
     notifyListeners();
 
     unawaited(
-      _persistAndRefresh(
-        () => _repository.addReply(postId: postId, content: content),
-      ),
+      _persist(() => _repository.addReply(postId: postId, content: content)),
     );
   }
 
@@ -419,6 +497,53 @@ class ForumStore extends ChangeNotifier {
       ..clear()
       ..addAll(snapshot.reportedPostIds);
     _notifications = List<ForumNotificationItem>.from(snapshot.notifications);
+    _nextForYouCursor = snapshot.nextForYouCursor;
+    _nextFollowingCursor = snapshot.nextFollowingCursor;
+    _hasMoreForYou = snapshot.hasMoreForYou;
+    _hasMoreFollowing = snapshot.hasMoreFollowing;
+  }
+
+  void _mergeSnapshot(
+    ForumRepositorySnapshot snapshot, {
+    required bool appendForYou,
+    required bool appendFollowing,
+  }) {
+    if (_currentUserId.isEmpty) {
+      _currentUserId = snapshot.currentUserId;
+    }
+    _currentUserProfile ??= snapshot.currentUserProfile;
+    _profilesById.addAll(snapshot.profilesById);
+    for (final ForumPost post in snapshot.posts) {
+      _postsById[post.id] = post;
+    }
+    snapshot.commentsByPostId.forEach((
+      String postId,
+      List<ForumComment> comments,
+    ) {
+      _commentsByPostId[postId] = List<ForumComment>.from(comments);
+    });
+    _blockedAuthorIds.addAll(snapshot.blockedAuthorIds);
+    _reportedPostIds.addAll(snapshot.reportedPostIds);
+
+    if (appendForYou) {
+      _appendUnique(_forYouFeedIds, snapshot.forYouFeedIds);
+      _nextForYouCursor = snapshot.nextForYouCursor;
+      _hasMoreForYou = snapshot.hasMoreForYou;
+    }
+    if (appendFollowing) {
+      _appendUnique(_followingFeedIds, snapshot.followingFeedIds);
+      _nextFollowingCursor = snapshot.nextFollowingCursor;
+      _hasMoreFollowing = snapshot.hasMoreFollowing;
+    }
+  }
+
+  void _appendUnique(List<String> target, List<String> incoming) {
+    final Set<String> existing = target.toSet();
+    for (final String id in incoming) {
+      if (existing.add(id)) {
+        target.add(id);
+      }
+    }
   }
 
   void _clear() {
@@ -433,6 +558,14 @@ class ForumStore extends ChangeNotifier {
     _reportedPostIds.clear();
     _notifications = <ForumNotificationItem>[];
     _hasLoadedSnapshot = false;
+    _isLoadingMoreForYou = false;
+    _isLoadingMoreFollowing = false;
+    _hasMoreForYou = false;
+    _hasMoreFollowing = false;
+    _nextForYouCursor = null;
+    _nextFollowingCursor = null;
+    _loadMoreForYouFuture = null;
+    _loadMoreFollowingFuture = null;
     _errorMessage = null;
     _isLoading = false;
   }
@@ -510,14 +643,13 @@ class ForumStore extends ChangeNotifier {
     );
   }
 
-  Future<void> _persistAndRefresh(Future<void> Function() action) async {
+  Future<void> _persist(Future<void> Function() action) async {
     try {
       await action();
-      await refresh(notifyLoading: false);
     } catch (error) {
       _errorMessage = error.toString();
       debugPrint('Save forum data error: $error');
-      await refresh(notifyLoading: false);
+      notifyListeners();
     }
   }
 }

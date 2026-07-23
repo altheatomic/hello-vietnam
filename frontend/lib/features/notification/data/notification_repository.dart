@@ -1,203 +1,147 @@
-import 'package:flutter/foundation.dart';
-import 'package:hellovietnam/features/home/data/home_mock_data.dart';
-import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
+import 'package:hellovietnam/features/notification/data/notification_api.dart';
 import 'package:hellovietnam/features/notification/domain/app_notification.dart';
-import 'package:hellovietnam/features/recommend/data/recommend_mock_data.dart';
+import 'package:hellovietnam/features/notification/domain/notification_preference.dart';
 
-abstract interface class NotificationRepository {
-  Future<List<AppNotification>> fetchNotifications();
+class NotificationPageResult {
+  const NotificationPageResult({required this.items, this.nextCursor});
 
-  Future<List<AppNotification>> markAsRead(String id);
-
-  Future<List<AppNotification>> clearAll();
+  final List<AppNotification> items;
+  final String? nextCursor;
 }
 
-class MockNotificationRepository extends ChangeNotifier
-    implements NotificationRepository {
-  MockNotificationRepository._();
+abstract interface class NotificationRepository {
+  Future<NotificationPageResult> fetchPage({int limit = 20, String? cursor});
+  Future<int> fetchUnreadCount();
+  Future<void> markRead(String id);
+  Future<void> markAllRead();
+  Future<void> registerDevice({
+    required String fcmToken,
+    required String installationId,
+    required String platform,
+  });
+  Future<void> unregisterDevice(String installationId);
+  Future<List<NotificationPreference>> fetchPreferences();
+  Future<NotificationPreference> updatePreference(
+    NotificationPreference preference,
+  );
+}
 
-  static final MockNotificationRepository instance =
-      MockNotificationRepository._();
+class SupabaseNotificationRepository implements NotificationRepository {
+  SupabaseNotificationRepository({NotificationApi? api})
+    : _api = api ?? SupabaseNotificationApi();
 
-  static final String _dalatImage = mockRecommendDestinations
-      .firstWhere((destination) => destination.id == 'dalat')
-      .imagePath;
+  static final SupabaseNotificationRepository instance =
+      SupabaseNotificationRepository();
 
-  static final String _banhMiImage = mockDishes
-      .firstWhere((dish) => dish.name == 'Banh Mi')
-      .imagePath;
+  final NotificationApi _api;
 
-  final List<AppNotification> _items = <AppNotification>[
-    AppNotification(
-      id: 'notif-dalat-festival',
-      type: AppNotificationType.trip,
-      icon: AppNotificationIcon.megaphone,
-      title: "Da Lat's got new festival!",
-      description: "Don't miss the chance to go to the Flower Festival.",
-      timestampLabel: '9 days ago',
-      target: NotificationTarget(
-        kind: NotificationTargetKind.itemDetail,
-        entityId: 'dalat-flower-festival',
-        entityName: 'Da Lat Flower Festival',
-        detailCategory: DetailCategory.activities,
-        imagePath: _dalatImage,
-        metadata: <String, String>{
-          'cityId': 'dalat',
-          'cityName': 'Da Lat',
-          'source': 'seasonal_campaign',
-        },
-      ),
-    ),
-    AppNotification(
-      id: 'notif-forum-reply',
-      type: AppNotificationType.forum,
-      icon: AppNotificationIcon.comment,
-      title: 'You got new replies',
-      description: 'Brandon has just commented on your post',
-      timestampLabel: '13 days ago',
-      target: NotificationTarget(
-        kind: NotificationTargetKind.forumPost,
-        entityId: 'post-bun-mam',
-        metadata: <String, String>{
-          'trigger': 'reply',
-          'actorId': 'legacy-forum-user',
-        },
-      ),
-    ),
-    AppNotification(
-      id: 'notif-new-dish',
-      type: AppNotificationType.trip,
-      icon: AppNotificationIcon.dining,
-      title: 'Fresh Flavors Unveiled!',
-      description: 'New menu items are in! What will you try next?',
-      timestampLabel: '4 days ago',
-      target: NotificationTarget(
-        kind: NotificationTargetKind.itemDetail,
-        entityId: 'food-special-banh-mi',
-        entityName: 'Banh Mi',
-        detailCategory: DetailCategory.food,
-        imagePath: _banhMiImage,
-        metadata: <String, String>{'campaign': 'seasonal_food'},
-      ),
-    ),
-    AppNotification(
-      id: 'notif-trip-review',
-      type: AppNotificationType.trip,
-      icon: AppNotificationIcon.star,
-      title: 'How was your trips?',
-      description:
-          'Tell us how satisfied you are on your 3-days trips in Ho Chi Minh City!!',
-      timestampLabel: '1 week ago',
-      target: const NotificationTarget(
-        kind: NotificationTargetKind.tripPlannerResult,
-        metadata: <String, String>{
-          'tripId': 'trip-review-hcmc',
-          'intent': 'review_trip',
-        },
-      ),
-    ),
-    AppNotification(
-      id: 'notif-voucher',
-      type: AppNotificationType.voucher,
-      icon: AppNotificationIcon.gift,
-      title: 'You got a new voucher!!',
-      description: 'Get 10% off on for your premium subscription',
-      timestampLabel: '11 days ago',
-      target: const NotificationTarget(
-        kind: NotificationTargetKind.voucherCenter,
-        metadata: <String, String>{'voucherCode': 'PREMIUM10'},
-      ),
-    ),
-    AppNotification(
-      id: 'notif-recommend-dates',
-      type: AppNotificationType.trip,
-      icon: AppNotificationIcon.calendar,
-      title: 'Your April getaway is ready',
-      description:
-          'We found destination suggestions that fit your travel dates.',
-      timestampLabel: '2 days ago',
-      isRead: true,
-      target: NotificationTarget(
-        kind: NotificationTargetKind.recommendWhenResults,
-        startDate: DateTime(2026, 4, 18),
-        endDate: DateTime(2026, 4, 21),
-        metadata: const <String, String>{'origin': 'recommend_when'},
-      ),
-    ),
-    AppNotification(
-      id: 'notif-rank-benefits',
-      type: AppNotificationType.account,
-      icon: AppNotificationIcon.badge,
-      title: 'You are close to Silver rank',
-      description:
-          'Check your benefits to unlock more vouchers and travel perks.',
-      timestampLabel: '6 hours ago',
-      isRead: true,
-      target: const NotificationTarget(
-        kind: NotificationTargetKind.rankBenefits,
-        metadata: <String, String>{'origin': 'loyalty_system'},
-      ),
-    ),
-  ];
-
-  int get unreadCount => _items.where((item) => !item.isRead).length;
-
-  void addLoyaltyPointsNotification({
-    required int points,
-    required String actionLabel,
-  }) {
-    if (points <= 0) return;
-
-    _items.insert(
-      0,
-      AppNotification(
-        id: 'loyalty-${DateTime.now().microsecondsSinceEpoch}',
-        type: AppNotificationType.account,
-        icon: AppNotificationIcon.badge,
-        title: 'You earned $points loyalty points',
-        description: '$actionLabel has been added to your rewards history.',
-        timestampLabel: 'Just now',
-        target: const NotificationTarget(
-          kind: NotificationTargetKind.loyaltyRewards,
-          metadata: <String, String>{'origin': 'loyalty_system'},
-        ),
-      ),
+  @override
+  Future<NotificationPageResult> fetchPage({
+    int limit = 20,
+    String? cursor,
+  }) async {
+    final Map<String, dynamic> response = await _api.invoke(
+      'list',
+      body: <String, Object?>{
+        'limit': limit,
+        'cursor': ?cursor,
+      },
     );
-    notifyListeners();
-  }
-
-  @override
-  Future<List<AppNotification>> fetchNotifications() async {
-    return _cloneItems();
-  }
-
-  @override
-  Future<List<AppNotification>> markAsRead(String id) async {
-    final int index = _items.indexWhere((item) => item.id == id);
-    if (index != -1 && !_items[index].isRead) {
-      _items[index] = _items[index].copyWith(isRead: true);
-      notifyListeners();
-    }
-    return _cloneItems();
-  }
-
-  @override
-  Future<List<AppNotification>> clearAll() async {
-    _items.clear();
-    notifyListeners();
-    return _cloneItems();
-  }
-
-  List<AppNotification> _cloneItems() {
-    return _items
-        .map(
-          (item) => item.copyWith(
-            target: item.target.copyWith(
-              metadata: Map<String, String>.from(item.target.metadata),
+    final List<dynamic> rawItems =
+        response['items'] as List<dynamic>? ?? const [];
+    return NotificationPageResult(
+      items: rawItems
+          .whereType<Map>()
+          .map(
+            (Map<dynamic, dynamic> row) => AppNotification.fromJson(
+              row.map(
+                (dynamic key, dynamic value) => MapEntry(key.toString(), value),
+              ),
             ),
-            metadata: Map<String, String>.from(item.metadata),
+          )
+          .toList(growable: false),
+      nextCursor: response['nextCursor']?.toString(),
+    );
+  }
+
+  @override
+  Future<int> fetchUnreadCount() async {
+    final Map<String, dynamic> response = await _api.invoke('unread-count');
+    return (response['count'] as num?)?.toInt() ?? 0;
+  }
+
+  @override
+  Future<void> markRead(String id) async {
+    await _api.invoke(
+      'mark-read',
+      body: <String, Object?>{'notificationId': id},
+    );
+  }
+
+  @override
+  Future<void> markAllRead() async {
+    await _api.invoke('mark-all-read');
+  }
+
+  @override
+  Future<void> registerDevice({
+    required String fcmToken,
+    required String installationId,
+    required String platform,
+  }) async {
+    await _api.invoke(
+      'register-device',
+      body: <String, Object?>{
+        'fcmToken': fcmToken,
+        'installationId': installationId,
+        'platform': platform,
+      },
+    );
+  }
+
+  @override
+  Future<void> unregisterDevice(String installationId) async {
+    await _api.invoke(
+      'unregister-device',
+      body: <String, Object?>{'installationId': installationId},
+    );
+  }
+
+  @override
+  Future<List<NotificationPreference>> fetchPreferences() async {
+    final Map<String, dynamic> response = await _api.invoke('get-preferences');
+    final List<dynamic> rows =
+        response['preferences'] as List<dynamic>? ?? const [];
+    return rows
+        .whereType<Map>()
+        .map(
+          (Map<dynamic, dynamic> row) => NotificationPreference.fromJson(
+            row.map(
+              (dynamic key, dynamic value) => MapEntry(key.toString(), value),
+            ),
           ),
         )
         .toList(growable: false);
+  }
+
+  @override
+  Future<NotificationPreference> updatePreference(
+    NotificationPreference preference,
+  ) async {
+    final Map<String, dynamic> response = await _api.invoke(
+      'update-preference',
+      body: <String, Object?>{
+        'notificationType': preference.type.name,
+        'pushEnabled': preference.pushEnabled,
+        'inAppEnabled': preference.inAppEnabled,
+      },
+    );
+    final dynamic raw = response['preference'];
+    if (raw is! Map) {
+      throw StateError('Notification preference response is invalid.');
+    }
+    return NotificationPreference.fromJson(
+      raw.map((dynamic key, dynamic value) => MapEntry(key.toString(), value)),
+    );
   }
 }
