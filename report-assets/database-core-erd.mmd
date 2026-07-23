@@ -1,0 +1,89 @@
+erDiagram
+  USER_ACCOUNT {
+    uuid id_user PK
+    text full_name
+    text role
+    timestamptz created_at
+  }
+  USER_TRAVEL_PROFILE {
+    uuid id_user PK,FK
+    text companion_style
+    text budget_level
+    text pace_level
+  }
+  PROVINCE {
+    uuid id_province PK
+    text name
+    text region_code FK
+  }
+  PLACE_SUBCATEGORY {
+    uuid id_place_subcategory PK
+    text name
+    text place_category
+  }
+  PLACE {
+    uuid id_place PK
+    uuid id_province FK
+    uuid id_place_subcategory FK
+    text name
+    float latitude
+    float longitude
+  }
+  TAG {
+    uuid id_tag PK
+    text name
+    text category
+  }
+  PLACE_TAG {
+    uuid id_place PK,FK
+    uuid id_tag PK,FK
+    numeric confidence_score
+  }
+  USER_INTEREST_TAG {
+    uuid id_user PK,FK
+    uuid id_tag PK,FK
+    numeric final_weight
+  }
+  USER_EVENT_LOG {
+    uuid id_event PK
+    uuid id_user FK
+    uuid id_place FK
+    text event_type
+    timestamptz created_at
+  }
+  PLAN {
+    uuid id_plan PK
+    uuid id_user FK
+    uuid id_province FK
+    date start_at
+    date end_at
+    text status
+  }
+  PLAN_COMPONENT {
+    uuid id_component PK
+    uuid id_plan FK
+    uuid id_place FK
+    int day
+    int visit_order
+  }
+  FAVORITE_PLACE {
+    uuid id_user PK,FK
+    uuid id_place PK,FK
+    timestamptz created_at
+  }
+
+  USER_ACCOUNT ||--|| USER_TRAVEL_PROFILE : "travel profile"
+  USER_ACCOUNT ||--o{ USER_INTEREST_TAG : "interests"
+  TAG ||--o{ USER_INTEREST_TAG : "weighted by"
+  PROVINCE ||--o{ PLACE : "contains"
+  PLACE_SUBCATEGORY ||--o{ PLACE : "classifies"
+  PLACE ||--o{ PLACE_TAG : "tagged with"
+  TAG ||--o{ PLACE_TAG : "describes"
+  USER_ACCOUNT ||--o{ USER_EVENT_LOG : "generates"
+  PLACE ||--o{ USER_EVENT_LOG : "receives events"
+  USER_ACCOUNT ||--o{ PLAN : "creates"
+  PROVINCE ||--o{ PLAN : "destination"
+  PLAN ||--o{ PLAN_COMPONENT : "contains"
+  PLACE ||--o{ PLAN_COMPONENT : "scheduled in"
+  USER_ACCOUNT ||--o{ FAVORITE_PLACE : "saves"
+  PLACE ||--o{ FAVORITE_PLACE : "is saved"

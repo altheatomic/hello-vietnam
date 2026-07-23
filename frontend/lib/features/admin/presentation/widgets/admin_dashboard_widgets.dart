@@ -101,9 +101,9 @@ class AdminDashboardOverview extends StatelessWidget {
             items: snapshot.trendingPlaces,
           ),
           right: _SearchInsightsCard(
-            title: 'Growth Opportunity Signals',
+            title: 'Content Coverage Signals',
             subtitle:
-                'Demand clusters where adding content, guides, or promotion can lift customer acquisition and conversion.',
+                'Inventory share and recent additions across managed content types.',
             items: snapshot.growthOpportunities,
           ),
         ),
@@ -144,7 +144,7 @@ class AdminDashboardOverview extends StatelessWidget {
               _HealthChecksCard(
                 title: 'Reports And System Signals',
                 subtitle:
-                    'Current report volume, request issues, user growth, and response-time health.',
+                    'Current report volume, user growth, content inventory, and active subscriptions.',
                 items: snapshot.reportInsights,
               ),
               const SizedBox(height: 24),
@@ -1187,7 +1187,9 @@ class _SearchInsightRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final barValue = item.searches / maxSearches;
-    final resultColor = item.resultRate >= 0.9
+    final resultColor = item.volumeLabel == 'records'
+        ? AppColors.primary
+        : item.resultRate >= 0.9
         ? const Color(0xFF1F9D72)
         : item.resultRate >= 0.75
         ? const Color(0xFFDAA520)
@@ -1216,15 +1218,15 @@ class _SearchInsightRow extends StatelessWidget {
                     spacing: 10,
                     runSpacing: 6,
                     children: <Widget>[
-                      _MetaPill(label: '${item.searches} searches'),
+                      _MetaPill(label: '${item.searches} ${item.volumeLabel}'),
                       _MetaPill(
                         label:
-                            '${(item.resultRate * 100).toStringAsFixed(0)}% result rate',
+                            '${(item.resultRate * 100).toStringAsFixed(0)}% ${item.resultRateLabel}',
                         color: resultColor,
                       ),
                       _MetaPill(
                         label:
-                            '${(item.conversionRate * 100).toStringAsFixed(0)}% conversion',
+                            '${(item.conversionRate * 100).toStringAsFixed(0)}% ${item.conversionRateLabel}',
                       ),
                     ],
                   ),
@@ -1275,9 +1277,9 @@ class _PriorityQueueCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const _SectionHead(
-            title: 'Request And Task Queue',
+            title: 'Report Queue',
             subtitle:
-                'Pending requests, reports, account reviews, and guide refresh tasks ordered by urgency.',
+                'Pending and reviewing reports ordered by current workflow state.',
           ),
           const SizedBox(height: 10),
           ...items.map(
