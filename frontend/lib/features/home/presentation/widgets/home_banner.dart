@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 
-/// Travel-themed banner that displays a looping GIF from local assets.
+/// Travel-themed banner using a memory-efficient static image.
 class HomeBanner extends StatelessWidget {
   const HomeBanner({super.key});
 
@@ -44,10 +44,12 @@ class HomeBanner extends StatelessWidget {
 
   Widget _buildContent() {
     return Image.asset(
-      AppConstants.bannerGifAsset,
+      AppConstants.bannerStaticAsset,
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
+      cacheWidth: 1080,
+      filterQuality: FilterQuality.medium,
       errorBuilder: (_, _, _) => _fallbackWidget(),
     );
   }

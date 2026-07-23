@@ -433,6 +433,139 @@ class ForumRepository {
     return postId;
   }
 
+  Future<List<String>> updatePost({
+    required String postId,
+    required String content,
+    required List<String> retainedImageUrls,
+    List<XFile> imageFiles = const <XFile>[],
+  }) async {
+    final String userId = await _requireForumUser();
+    final List<dynamic> mediaRows = await _client
+        .from('forum_post_media')
+        .select('id_media, url, position')
+        .eq('id_post', postId)
+        .order('position');
+    final Map<String, Map<String, dynamic>> mediaByUrl =
+        <String, Map<String, dynamic>>{
+          for (final dynamic rawRow in mediaRows)
+            if (rawRow is Map)
+              _stringValue(rawRow['url']): rawRow.map(
+                (dynamic key, dynamic value) =>
+                    MapEntry<String, dynamic>(key.toString(), value),
+              ),
+        }..remove('');
+
+    final List<String> retainedUrls = retainedImageUrls
+        .map((String url) => url.trim())
+        .where(mediaByUrl.containsKey)
+        .toSet()
+        .take(6)
+        .toList(growable: false);
+    final List<XFile> newImages = imageFiles
+        .take(6 - retainedUrls.length)
+        .toList(growable: false);
+
+    final List<dynamic> updatedRows = await _client
+        .from('forum_post')
+        .update(<String, dynamic>{
+          'content': content.trim(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id_post', postId)
+        .eq('id_author_user', userId)
+        .select('id_post');
+    if (updatedRows.isEmpty) {
+      throw StateError('Post not found or you cannot edit this post.');
+    }
+
+    for (int index = 0; index < retainedUrls.length; index++) {
+      final String mediaId = _stringValue(
+        mediaByUrl[retainedUrls[index]]?['id_media'],
+      );
+      if (mediaId.isEmpty) continue;
+      await _client
+          .from('forum_post_media')
+          .update(<String, dynamic>{'position': index})
+          .eq('id_media', mediaId)
+          .eq('id_post', postId);
+    }
+
+    final List<String> removedUrls = mediaByUrl.keys
+        .where((String url) => !retainedUrls.contains(url))
+        .toList(growable: false);
+    if (removedUrls.isNotEmpty) {
+      final List<String> removedIds = removedUrls
+          .map((String url) => _stringValue(mediaByUrl[url]?['id_media']))
+          .where((String id) => id.isNotEmpty)
+          .toList(growable: false);
+      if (removedIds.isNotEmpty) {
+        await _client
+            .from('forum_post_media')
+            .delete()
+            .eq('id_post', postId)
+            .inFilter('id_media', removedIds);
+      }
+    }
+
+    List<String> uploadedUrls = const <String>[];
+    if (newImages.isNotEmpty) {
+      uploadedUrls = await _uploadPostImages(
+        userId: userId,
+        postId: postId,
+        imageFiles: newImages,
+      );
+      try {
+        await _client.from('forum_post_media').insert(<Map<String, dynamic>>[
+          for (int index = 0; index < uploadedUrls.length; index++)
+            <String, dynamic>{
+              'id_post': postId,
+              'url': uploadedUrls[index],
+              'position': retainedUrls.length + index,
+            },
+        ]);
+      } catch (_) {
+        await _deleteMediaUrls(uploadedUrls);
+        rethrow;
+      }
+    }
+
+    await _deleteMediaUrls(removedUrls);
+    return <String>[...retainedUrls, ...uploadedUrls];
+  }
+
+  Future<void> deletePost(String postId) async {
+    final String userId = await _requireForumUser();
+    final List<dynamic> mediaRows = await _client
+        .from('forum_post_media')
+        .select('url')
+        .eq('id_post', postId);
+    final List<String> mediaUrls = mediaRows
+        .whereType<Map>()
+        .map((Map<dynamic, dynamic> row) => _stringValue(row['url']))
+        .where((String url) => url.isNotEmpty)
+        .toList(growable: false);
+
+    final List<dynamic> deletedRows = await _client
+        .from('forum_post')
+        .delete()
+        .eq('id_post', postId)
+        .eq('id_author_user', userId)
+        .select('id_post');
+    if (deletedRows.isEmpty) {
+      throw StateError('Post not found or you cannot delete this post.');
+    }
+
+    await _deleteMediaUrls(mediaUrls);
+  }
+
+  Future<void> _deleteMediaUrls(Iterable<String> urls) async {
+    final List<String> keys = urls
+        .map(_mediaUploader.keyFromUrlOrPath)
+        .whereType<String>()
+        .toList(growable: false);
+    await _mediaUploader.deleteKeys(keys);
+  }
+
   Future<List<String>> _uploadPostImages({
     required String userId,
     required String postId,

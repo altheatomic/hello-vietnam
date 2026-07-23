@@ -13,8 +13,8 @@ class AppConstants {
   static const Duration defaultAnimation = Duration(milliseconds: 300);
 
   // ── Homepage assets ─────────────────────────────────────
-  static const String bannerGifAsset =
-      'assets/images/homepage/gif_background.gif';
+  static const String bannerStaticAsset =
+      'assets/images/homepage/banner_static.jpg';
   static const String destinationBgAsset =
       'assets/images/homepage/bestdestination_bg.jpeg';
   static const String dishesBgAsset =

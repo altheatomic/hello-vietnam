@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hellovietnam/features/forum/data/forum_repository.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
@@ -72,6 +73,82 @@ void main() {
     expect(store.postById('post-1')?.likes, 1);
     await repository.dispose();
   });
+
+  test('updatePost updates an owned post without reloading the feed', () async {
+    final _FakeForumRepository repository = _FakeForumRepository(
+      seededPages: <String?, ForumRepositorySnapshot>{
+        null: _snapshot(
+          posts: <ForumPost>[_post('post-1', authorId: 'user-1')],
+          forYouFeedIds: const <String>['post-1'],
+          followingFeedIds: const <String>['post-1'],
+        ),
+      },
+    );
+    final ForumStore store = ForumStore.test(repository: repository);
+
+    await store.ensureLoaded();
+    await store.updatePost(
+      postId: 'post-1',
+      content: 'Updated content',
+      retainedImageUrls: const <String>[],
+    );
+
+    expect(repository.updatePostCalls, 1);
+    expect(repository.loadSnapshotCalls, 1);
+    expect(store.postById('post-1')?.content, 'Updated content');
+    expect(store.postById('post-1')?.imageUrls, <String>['new-image.jpg']);
+    await repository.dispose();
+  });
+
+  test('updatePost rejects posts owned by another user', () async {
+    final _FakeForumRepository repository = _FakeForumRepository(
+      seededPages: <String?, ForumRepositorySnapshot>{
+        null: _snapshot(
+          posts: <ForumPost>[_post('post-1', authorId: 'user-2')],
+          forYouFeedIds: const <String>['post-1'],
+        ),
+      },
+    );
+    final ForumStore store = ForumStore.test(repository: repository);
+
+    await store.ensureLoaded();
+
+    expect(
+      () => store.updatePost(
+        postId: 'post-1',
+        content: 'Not allowed',
+        retainedImageUrls: const <String>[],
+      ),
+      throwsA(isA<StateError>()),
+    );
+    expect(repository.updatePostCalls, 0);
+    await repository.dispose();
+  });
+
+  test('deletePost removes an owned post from every local view', () async {
+    final _FakeForumRepository repository = _FakeForumRepository(
+      seededPages: <String?, ForumRepositorySnapshot>{
+        null: _snapshot(
+          posts: <ForumPost>[
+            _post('post-1', authorId: 'user-1', isBookmarked: true),
+          ],
+          forYouFeedIds: const <String>['post-1'],
+          followingFeedIds: const <String>['post-1'],
+        ),
+      },
+    );
+    final ForumStore store = ForumStore.test(repository: repository);
+
+    await store.ensureLoaded();
+    await store.deletePost('post-1');
+
+    expect(repository.deletePostCalls, 1);
+    expect(store.postById('post-1'), isNull);
+    expect(store.forYouPosts, isEmpty);
+    expect(store.followingPosts, isEmpty);
+    expect(store.savedPosts, isEmpty);
+    await repository.dispose();
+  });
 }
 
 class _FakeForumRepository extends ForumRepository {
@@ -88,6 +165,8 @@ class _FakeForumRepository extends ForumRepository {
   late final Map<String?, ForumRepositorySnapshot> pagesByCursor;
   int loadSnapshotCalls = 0;
   int setPostLikedCalls = 0;
+  int updatePostCalls = 0;
+  int deletePostCalls = 0;
   final List<String?> requestedForYouCursors = <String?>[];
 
   @override
@@ -113,6 +192,22 @@ class _FakeForumRepository extends ForumRepository {
     required bool liked,
   }) async {
     setPostLikedCalls += 1;
+  }
+
+  @override
+  Future<List<String>> updatePost({
+    required String postId,
+    required String content,
+    required List<String> retainedImageUrls,
+    List<XFile> imageFiles = const <XFile>[],
+  }) async {
+    updatePostCalls += 1;
+    return const <String>['new-image.jpg'];
+  }
+
+  @override
+  Future<void> deletePost(String postId) async {
+    deletePostCalls += 1;
   }
 
   Future<void> dispose() => _authStateController.close();
@@ -150,7 +245,11 @@ ForumRepositorySnapshot _snapshot({
   );
 }
 
-ForumPost _post(String id, {required String authorId}) {
+ForumPost _post(
+  String id, {
+  required String authorId,
+  bool isBookmarked = false,
+}) {
   return ForumPost(
     id: id,
     author: _profile(authorId, isCurrentUser: false).author,
@@ -159,6 +258,7 @@ ForumPost _post(String id, {required String authorId}) {
     timeAgo: 'now',
     likes: 0,
     comments: 0,
+    isBookmarked: isBookmarked,
     showFollowButton: true,
   );
 }

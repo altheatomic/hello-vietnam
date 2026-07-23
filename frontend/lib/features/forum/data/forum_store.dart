@@ -452,6 +452,55 @@ class ForumStore extends ChangeNotifier {
     return postId;
   }
 
+  Future<void> updatePost({
+    required String postId,
+    required String content,
+    required List<String> retainedImageUrls,
+    List<XFile> imageFiles = const <XFile>[],
+  }) async {
+    final ForumPost? post = _postsById[postId];
+    if (post == null) {
+      throw StateError('Post not found.');
+    }
+    if (!isCurrentUser(post.author.id)) {
+      throw StateError('You can only edit your own posts.');
+    }
+
+    final String trimmed = content.trim();
+    if (trimmed.isEmpty &&
+        post.sharedItem == null &&
+        post.sharedTripPlan == null) {
+      throw ArgumentError('Post content cannot be empty');
+    }
+
+    final List<String> imageUrls = await _repository.updatePost(
+      postId: postId,
+      content: trimmed,
+      retainedImageUrls: retainedImageUrls,
+      imageFiles: imageFiles,
+    );
+    _postsById[postId] = post.copyWith(content: trimmed, imageUrls: imageUrls);
+    notifyListeners();
+  }
+
+  Future<void> deletePost(String postId) async {
+    final ForumPost? post = _postsById[postId];
+    if (post == null) {
+      throw StateError('Post not found.');
+    }
+    if (!isCurrentUser(post.author.id)) {
+      throw StateError('You can only delete your own posts.');
+    }
+
+    await _repository.deletePost(postId);
+    _postsById.remove(postId);
+    _commentsByPostId.remove(postId);
+    _forYouFeedIds.remove(postId);
+    _followingFeedIds.remove(postId);
+    _reportedPostIds.remove(postId);
+    notifyListeners();
+  }
+
   List<ForumPost> _orderedPosts(List<String> ids) {
     return ids
         .map((String id) => _postsById[id])

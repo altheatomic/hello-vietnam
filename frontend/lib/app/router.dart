@@ -39,7 +39,9 @@ import '../features/loyalty/presentation/loyalty_page.dart';
 import '../features/forum/presentation/forum_page.dart';
 import '../features/forum/presentation/forum_profile_page.dart';
 import '../features/forum/presentation/create_post_page.dart';
+import '../features/forum/data/forum_store.dart';
 import '../features/forum/domain/create_forum_post_request.dart';
+import '../features/forum/domain/forum_models.dart';
 import '../features/forum/presentation/forum_saved_posts_page.dart';
 import '../features/forum/presentation/forum_report_post_page.dart';
 import '../features/forum/presentation/thread_page.dart';
@@ -57,6 +59,8 @@ import '../features/explore/presentation/explore_search_page.dart';
 import '../features/explore/presentation/explore_search_result_page.dart';
 import '../features/explore/presentation/explore_category_page.dart';
 import '../features/explore/domain/explore_province.dart';
+import '../features/ai_search/data/ai_recognition_history_repository.dart';
+import '../features/ai_search/presentation/ai_recognition_history_page.dart';
 import '../features/ai_search/presentation/ai_search_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/notification/presentation/notification_settings_page.dart';
@@ -226,6 +230,7 @@ class AppRoutes {
   static const forumSaved = '/forum/saved';
   static const forumCreate = '/forum/create';
   static const forumPost = '/forum/post/:postId';
+  static const forumEdit = '/forum/post/:postId/edit';
   static const forumReport = '/forum/report/:postId';
   static const translate = '/translate';
   static const feedback = '/send-feedback';
@@ -245,6 +250,7 @@ class AppRoutes {
   static const localProductsDetail = '/details/local-products';
   static const popularApps = '/popular-apps';
   static const aiSearch = '/ai-search';
+  static const aiSearchHistory = '/ai-search/history';
   static const wishlist = '/wishlist';
   static const voucher = '/voucher';
   static const loyalty = '/loyalty';
@@ -367,6 +373,7 @@ class AppRoutes {
   static const deleteUserData = '$profile/delete-user-data';
 
   static String forumPostPath(String postId) => '/forum/post/$postId';
+  static String forumEditPath(String postId) => '/forum/post/$postId/edit';
   static String forumProfilePath(String authorId) => '/forum/profile/$authorId';
   static String forumReportPath(String postId) => '/forum/report/$postId';
   static String tripPlannerDayDetailPath(int dayIndex) =>
@@ -512,6 +519,20 @@ GoRouter buildRouter() {
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.forumEdit,
+        builder: (BuildContext context, GoRouterState state) {
+          final String postId = state.pathParameters['postId'] ?? '';
+          final ForumPost? post = state.extra is ForumPost
+              ? state.extra as ForumPost
+              : ForumStore.instance.postById(postId);
+          if (post == null) {
+            return ThreadPage(postId: postId);
+          }
+          return CreatePostPage(editingPost: post);
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.forumReport,
         builder: (c, s) =>
             ForumReportPostPage(postId: s.pathParameters['postId'] ?? ''),
@@ -544,7 +565,16 @@ GoRouter buildRouter() {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.aiSearch,
-        builder: (c, s) => const AiSearchPage(),
+        builder: (c, s) => AiSearchPage(
+          initialHistoryEntry: s.extra is AiRecognitionHistoryEntry
+              ? s.extra! as AiRecognitionHistoryEntry
+              : null,
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.aiSearchHistory,
+        builder: (c, s) => const AiRecognitionHistoryPage(),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,

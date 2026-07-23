@@ -807,7 +807,7 @@ class ForumSharedTripPlanCard extends StatelessWidget {
   }
 }
 
-enum ForumPostMoreAction { follow, block, report }
+enum ForumPostMoreAction { edit, delete, follow, block, report }
 
 class ForumPostMoreMenu {
   ForumPostMoreMenu._();
@@ -816,6 +816,7 @@ class ForumPostMoreMenu {
     BuildContext context, {
     required ForumAuthor author,
     required bool isFollowing,
+    required bool isOwner,
   }) {
     return showGeneralDialog<ForumPostMoreAction>(
       context: context,
@@ -846,44 +847,68 @@ class ForumPostMoreMenu {
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          _ForumPostMoreMenuTile(
-                            icon: isFollowing
-                                ? Icons.person_remove_alt_1_outlined
-                                : Icons.person_add_alt_1_rounded,
-                            label:
-                                '${isFollowing ? 'Unfollow' : 'Follow'} ${author.handle}',
-                            onTap: () => Navigator.of(
-                              context,
-                            ).pop(ForumPostMoreAction.follow),
-                          ),
-                          Divider(
-                            height: 1,
-                            indent: 24,
-                            endIndent: 24,
-                            color: Colors.white.withValues(alpha: 0.7),
-                          ),
-                          _ForumPostMoreMenuTile(
-                            icon: Icons.block_outlined,
-                            label: 'Block ${author.handle}',
-                            onTap: () => Navigator.of(
-                              context,
-                            ).pop(ForumPostMoreAction.block),
-                          ),
-                          Divider(
-                            height: 1,
-                            indent: 24,
-                            endIndent: 24,
-                            color: Colors.white.withValues(alpha: 0.7),
-                          ),
-                          _ForumPostMoreMenuTile(
-                            icon: Icons.outlined_flag_rounded,
-                            label: 'Report this post',
-                            onTap: () => Navigator.of(
-                              context,
-                            ).pop(ForumPostMoreAction.report),
-                          ),
-                        ],
+                        children: isOwner
+                            ? <Widget>[
+                                _ForumPostMoreMenuTile(
+                                  icon: Icons.edit_outlined,
+                                  label: 'Edit post',
+                                  onTap: () => Navigator.of(
+                                    context,
+                                  ).pop(ForumPostMoreAction.edit),
+                                ),
+                                Divider(
+                                  height: 1,
+                                  indent: 24,
+                                  endIndent: 24,
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                ),
+                                _ForumPostMoreMenuTile(
+                                  icon: Icons.delete_outline_rounded,
+                                  label: 'Delete post',
+                                  foregroundColor: Colors.red.shade600,
+                                  onTap: () => Navigator.of(
+                                    context,
+                                  ).pop(ForumPostMoreAction.delete),
+                                ),
+                              ]
+                            : <Widget>[
+                                _ForumPostMoreMenuTile(
+                                  icon: isFollowing
+                                      ? Icons.person_remove_alt_1_outlined
+                                      : Icons.person_add_alt_1_rounded,
+                                  label:
+                                      '${isFollowing ? 'Unfollow' : 'Follow'} ${author.handle}',
+                                  onTap: () => Navigator.of(
+                                    context,
+                                  ).pop(ForumPostMoreAction.follow),
+                                ),
+                                Divider(
+                                  height: 1,
+                                  indent: 24,
+                                  endIndent: 24,
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                ),
+                                _ForumPostMoreMenuTile(
+                                  icon: Icons.block_outlined,
+                                  label: 'Block ${author.handle}',
+                                  onTap: () => Navigator.of(
+                                    context,
+                                  ).pop(ForumPostMoreAction.block),
+                                ),
+                                Divider(
+                                  height: 1,
+                                  indent: 24,
+                                  endIndent: 24,
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                ),
+                                _ForumPostMoreMenuTile(
+                                  icon: Icons.outlined_flag_rounded,
+                                  label: 'Report this post',
+                                  onTap: () => Navigator.of(
+                                    context,
+                                  ).pop(ForumPostMoreAction.report),
+                                ),
+                              ],
                       ),
                     ),
                   ),
@@ -923,15 +948,17 @@ class _ForumPostMoreMenuTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.foregroundColor,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color? foregroundColor;
 
   @override
   Widget build(BuildContext context) {
-    final Color foreground = ForumColors.foreground(context);
+    final Color foreground = foregroundColor ?? ForumColors.foreground(context);
 
     return InkWell(
       onTap: onTap,

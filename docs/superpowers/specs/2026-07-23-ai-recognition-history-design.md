@@ -9,7 +9,7 @@ results without uploading their history to the backend.
 
 - Store history in `SharedPreferences` through a dedicated repository.
 - Persist at most 30 entries, newest first.
-- Save a compact JPEG thumbnail instead of the original image.
+- Save a compact resized PNG thumbnail instead of the original image.
 - Treat malformed or outdated stored entries as recoverable data and skip them.
 - Do not store failed or cancelled recognition attempts.
 

@@ -133,6 +133,17 @@ create policy "Users can create forum posts"
 on forum_post for insert
 with check (auth.uid() = id_author_user);
 
+drop policy if exists "Users can update own forum posts" on forum_post;
+create policy "Users can update own forum posts"
+on forum_post for update
+using (auth.uid() = id_author_user)
+with check (auth.uid() = id_author_user);
+
+drop policy if exists "Users can delete own forum posts" on forum_post;
+create policy "Users can delete own forum posts"
+on forum_post for delete
+using (auth.uid() = id_author_user);
+
 drop policy if exists "Forum comments are readable" on forum_comment;
 create policy "Forum comments are readable"
 on forum_comment for select
@@ -152,6 +163,38 @@ drop policy if exists "Users can add media to own posts" on forum_post_media;
 create policy "Users can add media to own posts"
 on forum_post_media for insert
 with check (
+    exists (
+        select 1
+        from forum_post
+        where forum_post.id_post = forum_post_media.id_post
+          and forum_post.id_author_user = auth.uid()
+    )
+);
+
+drop policy if exists "Users can update media on own posts" on forum_post_media;
+create policy "Users can update media on own posts"
+on forum_post_media for update
+using (
+    exists (
+        select 1
+        from forum_post
+        where forum_post.id_post = forum_post_media.id_post
+          and forum_post.id_author_user = auth.uid()
+    )
+)
+with check (
+    exists (
+        select 1
+        from forum_post
+        where forum_post.id_post = forum_post_media.id_post
+          and forum_post.id_author_user = auth.uid()
+    )
+);
+
+drop policy if exists "Users can delete media from own posts" on forum_post_media;
+create policy "Users can delete media from own posts"
+on forum_post_media for delete
+using (
     exists (
         select 1
         from forum_post

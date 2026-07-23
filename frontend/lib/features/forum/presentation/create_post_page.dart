@@ -21,18 +21,30 @@ typedef CreatePostCallback =
       SharedExploreItem? sharedExploreItem,
     });
 
+typedef UpdatePostCallback =
+    Future<void> Function({
+      required String postId,
+      required String content,
+      required List<String> retainedImageUrls,
+      List<XFile> imageFiles,
+    });
+
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({
     super.key,
     this.request = const CreateForumPostRequest(),
+    this.editingPost,
     this.currentUserAuthor,
     this.createPost,
+    this.updatePost,
     this.exploreTrackingService,
   });
 
   final CreateForumPostRequest request;
+  final ForumPost? editingPost;
   final ForumAuthor? currentUserAuthor;
   final CreatePostCallback? createPost;
+  final UpdatePostCallback? updatePost;
   final ExploreTrackingService? exploreTrackingService;
 
   @override
@@ -43,11 +55,19 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final ForumStore _store = ForumStore.instance;
   late final TextEditingController _controller;
   final ImagePicker _imagePicker = ImagePicker();
+  final List<String> _existingImageUrls = <String>[];
   final List<XFile> _selectedImages = <XFile>[];
   bool _isSubmitting = false;
 
   ForumAuthor get _currentUserAuthor =>
-      widget.currentUserAuthor ?? _store.currentUserAuthor;
+      widget.currentUserAuthor ??
+      widget.editingPost?.author ??
+      _store.currentUserAuthor;
+
+  bool get _isEditing => widget.editingPost != null;
+
+  SharedExploreItem? get _sharedExploreItem =>
+      widget.editingPost?.sharedItem ?? widget.request.sharedExploreItem;
 
   Future<String> _createPost({
     required String content,
@@ -68,7 +88,29 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
   }
 
-  bool get _isShareFromExplore => widget.request.sharedExploreItem != null;
+  Future<void> _updatePost({
+    required String content,
+    required List<XFile> imageFiles,
+  }) {
+    final ForumPost post = widget.editingPost!;
+    final UpdatePostCallback? updatePost = widget.updatePost;
+    if (updatePost != null) {
+      return updatePost(
+        postId: post.id,
+        content: content,
+        retainedImageUrls: List<String>.unmodifiable(_existingImageUrls),
+        imageFiles: imageFiles,
+      );
+    }
+    return _store.updatePost(
+      postId: post.id,
+      content: content,
+      retainedImageUrls: List<String>.unmodifiable(_existingImageUrls),
+      imageFiles: imageFiles,
+    );
+  }
+
+  bool get _isShareFromExplore => _sharedExploreItem != null;
 
   Future<void> _logPlaceShareEvent(String idPlace) async {
     try {
@@ -90,7 +132,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
+    _controller = TextEditingController(
+      text: widget.editingPost?.content ?? '',
+    );
+    _existingImageUrls.addAll(
+      widget.editingPost?.imageUrls ?? const <String>[],
+    );
   }
 
   @override
@@ -107,9 +154,11 @@ class _CreatePostPageState extends State<CreatePostPage> {
       if (!mounted || images.isEmpty) return;
 
       setState(() {
-        _selectedImages
-          ..clear()
-          ..addAll(images.take(6));
+        final int available =
+            6 - _existingImageUrls.length - _selectedImages.length;
+        if (available > 0) {
+          _selectedImages.addAll(images.take(available));
+        }
       });
     } catch (error) {
       if (!mounted) return;
@@ -130,21 +179,28 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     setState(() => _isSubmitting = true);
     try {
-      final String postId = await _createPost(
-        content: content,
-        imageFiles: _selectedImages,
-      );
-      final SharedExploreItem? sharedItem = widget.request.sharedExploreItem;
-      if (sharedItem != null) {
-        if (sharedItem.contentType == 'place') {
-          await _logPlaceShareEvent(sharedItem.contentId);
-        } else {
-          await (widget.exploreTrackingService ?? ExploreTrackingService.instance)
-              .trackShare(
-                contentType: sharedItem.contentType,
-                contentId: sharedItem.contentId,
-                provinceId: sharedItem.provinceId,
-              );
+      late final String postId;
+      if (_isEditing) {
+        postId = widget.editingPost!.id;
+        await _updatePost(content: content, imageFiles: _selectedImages);
+      } else {
+        postId = await _createPost(
+          content: content,
+          imageFiles: _selectedImages,
+        );
+        final SharedExploreItem? sharedItem = _sharedExploreItem;
+        if (sharedItem != null) {
+          if (sharedItem.contentType == 'place') {
+            await _logPlaceShareEvent(sharedItem.contentId);
+          } else {
+            await (widget.exploreTrackingService ??
+                    ExploreTrackingService.instance)
+                .trackShare(
+                  contentType: sharedItem.contentType,
+                  contentId: sharedItem.contentId,
+                  provinceId: sharedItem.provinceId,
+                );
+          }
         }
       }
       if (mounted) {
@@ -177,7 +233,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
           child: Column(
             children: <Widget>[
               ForumTopBar(
-                title: context.l10n.ui('Create post'),
+                title: context.l10n.ui(
+                  _isEditing ? 'Edit post' : 'Create post',
+                ),
                 onBack: () => context.pop(),
                 onBookmark: _openImagePicker,
                 onAvatarTap: () {},
@@ -220,15 +278,16 @@ class _CreatePostPageState extends State<CreatePostPage> {
                                   ),
                                 ),
                               ),
-                              _PostButton(enabled: canSubmit, onTap: _submit),
+                              _PostButton(
+                                enabled: canSubmit,
+                                onTap: _submit,
+                                label: _isEditing ? 'Save' : 'Post',
+                              ),
                             ],
                           ),
-                          if (widget.request.sharedExploreItem !=
-                              null) ...<Widget>[
+                          if (_sharedExploreItem != null) ...<Widget>[
                             const SizedBox(height: 18),
-                            _SharedExplorePreview(
-                              item: widget.request.sharedExploreItem!,
-                            ),
+                            _SharedExplorePreview(item: _sharedExploreItem!),
                           ],
                           const SizedBox(height: 18),
                           TextField(
@@ -248,17 +307,24 @@ class _CreatePostPageState extends State<CreatePostPage> {
                               color: ForumColors.textPrimary,
                             ),
                           ),
-                          if (_selectedImages.isNotEmpty &&
+                          if ((_existingImageUrls.isNotEmpty ||
+                                  _selectedImages.isNotEmpty) &&
                               !_isShareFromExplore) ...<Widget>[
                             const SizedBox(height: 12),
                             SizedBox(
                               height: 100,
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                itemCount: _selectedImages.length,
+                                itemCount:
+                                    _existingImageUrls.length +
+                                    _selectedImages.length,
                                 separatorBuilder: (_, _) =>
                                     const SizedBox(width: 10),
                                 itemBuilder: (BuildContext context, int index) {
+                                  final bool isExisting =
+                                      index < _existingImageUrls.length;
+                                  final int selectedIndex =
+                                      index - _existingImageUrls.length;
                                   return Stack(
                                     children: <Widget>[
                                       ClipRRect(
@@ -266,9 +332,15 @@ class _CreatePostPageState extends State<CreatePostPage> {
                                         child: SizedBox(
                                           width: 100,
                                           height: 100,
-                                          child: _ComposerImage(
-                                            image: _selectedImages[index],
-                                          ),
+                                          child: isExisting
+                                              ? _ExistingComposerImage(
+                                                  imageUrl:
+                                                      _existingImageUrls[index],
+                                                )
+                                              : _ComposerImage(
+                                                  image:
+                                                      _selectedImages[selectedIndex],
+                                                ),
                                         ),
                                       ),
                                       Positioned(
@@ -277,7 +349,15 @@ class _CreatePostPageState extends State<CreatePostPage> {
                                         child: GestureDetector(
                                           onTap: () {
                                             setState(() {
-                                              _selectedImages.removeAt(index);
+                                              if (isExisting) {
+                                                _existingImageUrls.removeAt(
+                                                  index,
+                                                );
+                                              } else {
+                                                _selectedImages.removeAt(
+                                                  selectedIndex,
+                                                );
+                                              }
                                             });
                                           },
                                           child: Container(
@@ -318,9 +398,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
                                 Icons.add_photo_alternate_outlined,
                               ),
                               label: Text(
-                                _selectedImages.isEmpty
+                                _selectedImages.isEmpty &&
+                                        _existingImageUrls.isEmpty
                                     ? 'Add photos'
-                                    : 'Edit photos (${_selectedImages.length})',
+                                    : 'Edit photos (${_existingImageUrls.length + _selectedImages.length})',
                               ),
                             ),
                           ],
@@ -441,10 +522,15 @@ class _SharedPreviewImage extends StatelessWidget {
 }
 
 class _PostButton extends StatelessWidget {
-  const _PostButton({required this.enabled, required this.onTap});
+  const _PostButton({
+    required this.enabled,
+    required this.onTap,
+    required this.label,
+  });
 
   final bool enabled;
   final VoidCallback onTap;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -462,7 +548,7 @@ class _PostButton extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             child: Text(
-              context.l10n.ui('Post'),
+              context.l10n.ui(label),
               style: TextStyle(
                 color: enabled
                     ? Colors.white
@@ -473,6 +559,21 @@ class _PostButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ExistingComposerImage extends StatelessWidget {
+  const _ExistingComposerImage({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => const ColoredBox(color: Color(0xFFEAF4F8)),
     );
   }
 }
