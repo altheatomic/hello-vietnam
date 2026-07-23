@@ -254,12 +254,6 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 36),
       children: <Widget>[
         const Text(
-          'Manage uploaded media',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800, color: _textDark),
-        ),
-        const SizedBox(height: 12),
-        const Text(
           'Review and permanently delete images and media you uploaded. This does not delete forum posts or other personal data.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 16, color: Color(0xFF2B2B2B), height: 1.35),
@@ -341,7 +335,43 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
         item: item,
         selected: _selectedIds.contains(item.id),
         onTap: () => _toggleSelection(item.id),
+        onImageTap: () => _showImagePreview(item),
       ),
+    );
+  }
+
+  Future<void> _showImagePreview(UploadedMediaItem item) async {
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          key: const ValueKey<String>('media-preview-dialog'),
+          backgroundColor: Colors.black,
+          insetPadding: const EdgeInsets.all(18),
+          child: InteractiveViewer(
+            minScale: 0.8,
+            maxScale: 4,
+            child: item.url == null
+                ? const SizedBox(
+                    height: 280,
+                    child: Center(
+                      child: Icon(Icons.image_outlined, color: Colors.white, size: 72),
+                    ),
+                  )
+                : Image.network(
+                    key: const ValueKey<String>('media-preview-image'),
+                    item.url!,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => const SizedBox(
+                      height: 280,
+                      child: Center(
+                        child: Icon(Icons.broken_image_outlined, color: Colors.white, size: 72),
+                      ),
+                    ),
+                  ),
+          ),
+        );
+      },
     );
   }
 
@@ -463,11 +493,18 @@ class _GroupHeading extends StatelessWidget {
 }
 
 class _MediaRow extends StatelessWidget {
-  const _MediaRow({super.key, required this.item, required this.selected, required this.onTap});
+  const _MediaRow({
+    super.key,
+    required this.item,
+    required this.selected,
+    required this.onTap,
+    required this.onImageTap,
+  });
 
   final UploadedMediaItem item;
   final bool selected;
   final VoidCallback onTap;
+  final VoidCallback onImageTap;
 
   @override
   Widget build(BuildContext context) {
@@ -487,19 +524,23 @@ class _MediaRow extends StatelessWidget {
           children: <Widget>[
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                width: 52,
-                height: 52,
-                child: item.url == null
-                    ? const ColoredBox(color: Color(0xFFE5F5FC), child: Icon(Icons.image_outlined))
-                    : Image.network(
-                        item.url!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const ColoredBox(
-                          color: Color(0xFFE5F5FC),
-                          child: Icon(Icons.image_outlined),
+              child: GestureDetector(
+                key: ValueKey<String>('media-image-${item.id}'),
+                onTap: onImageTap,
+                child: SizedBox(
+                  width: 52,
+                  height: 52,
+                  child: item.url == null
+                      ? const ColoredBox(color: Color(0xFFE5F5FC), child: Icon(Icons.image_outlined))
+                      : Image.network(
+                          item.url!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const ColoredBox(
+                            color: Color(0xFFE5F5FC),
+                            child: Icon(Icons.image_outlined),
+                          ),
                         ),
-                      ),
+                ),
               ),
             ),
             const SizedBox(width: 12),

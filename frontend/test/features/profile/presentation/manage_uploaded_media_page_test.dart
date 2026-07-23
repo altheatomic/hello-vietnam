@@ -16,13 +16,32 @@ void main() {
 
     await _pumpPage(tester, repository);
 
-    expect(find.text('Manage uploaded media'), findsWidgets);
+    expect(find.text('Manage uploaded media'), findsOneWidget);
     expect(find.text('Forum images'), findsOneWidget);
     expect(find.text('AI images'), findsNothing);
     expect(find.text('Trip 1'), findsNothing);
     expect(find.textContaining('itinerary'), findsNothing);
     expect(find.textContaining('preferences'), findsNothing);
     expect(find.text('Post includes text'), findsOneWidget);
+  });
+
+  testWidgets('opens a larger image preview popup without selecting the media', (
+    WidgetTester tester,
+  ) async {
+    final _FakeUploadedMediaRepository repository = _FakeUploadedMediaRepository(
+      items: <UploadedMediaItem>[
+        _forumMedia('forum-1', postId: 'post-1', postHasText: true),
+      ],
+    );
+
+    await _pumpPage(tester, repository);
+
+    await tester.tap(find.byKey(const ValueKey<String>('media-image-forum-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey<String>('media-preview-dialog')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('media-preview-image')), findsOneWidget);
+    expect(find.text('0 selected'), findsOneWidget);
   });
 
   testWidgets('selects one or all media before requiring irreversible confirmation', (
