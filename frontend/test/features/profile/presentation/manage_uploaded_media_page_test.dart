@@ -225,6 +225,9 @@ void main() {
 
     expect(find.text('No uploaded media yet'), findsOneWidget);
     expect(find.text('Some media could not be deleted'), findsNothing);
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Media deleted'), findsNothing);
   });
 
   testWidgets('reconciles an item marked failed when it is already gone on reload', (

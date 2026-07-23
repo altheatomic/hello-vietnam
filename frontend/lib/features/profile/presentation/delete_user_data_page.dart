@@ -122,6 +122,14 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
     });
   }
 
+  void _scheduleSuccessDismissal() {
+    _statusTimer?.cancel();
+    _statusTimer = Timer(const Duration(seconds: 1), () {
+      if (!mounted || _statusMessage != 'Media deleted') return;
+      setState(() => _statusMessage = null);
+    });
+  }
+
   Future<void> _deleteSelected() async {
     final List<String> ids = _selectedIds.toList(growable: false);
     if (ids.isEmpty) return;
@@ -182,11 +190,7 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
         _errorMessage = null;
       });
       if (failedIds.isEmpty) {
-        _statusTimer?.cancel();
-        _statusTimer = Timer(const Duration(seconds: 1), () {
-          if (!mounted || _statusMessage != 'Media deleted') return;
-          setState(() => _statusMessage = null);
-        });
+        _scheduleSuccessDismissal();
       }
     } catch (_) {
       if (!mounted) return;
@@ -212,6 +216,7 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
                 : 'Some media could not be deleted';
             _errorMessage = null;
           });
+          if (_failedIds.isEmpty) _scheduleSuccessDismissal();
           return;
         }
       } catch (_) {
