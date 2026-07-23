@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../data/uploaded_media_repository.dart';
@@ -30,11 +32,18 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
   _MediaScreen _screen = _MediaScreen.loading;
   String? _errorMessage;
   String? _statusMessage;
+  Timer? _statusTimer;
 
   @override
   void initState() {
     super.initState();
     _loadMedia();
+  }
+
+  @override
+  void dispose() {
+    _statusTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadMedia() async {
@@ -172,6 +181,13 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
             : 'Some media could not be deleted';
         _errorMessage = null;
       });
+      if (failedIds.isEmpty) {
+        _statusTimer?.cancel();
+        _statusTimer = Timer(const Duration(seconds: 1), () {
+          if (!mounted || _statusMessage != 'Media deleted') return;
+          setState(() => _statusMessage = null);
+        });
+      }
     } catch (_) {
       if (!mounted) return;
 

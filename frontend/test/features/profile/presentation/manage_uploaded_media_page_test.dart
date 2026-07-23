@@ -134,6 +134,9 @@ void main() {
     expect(find.byKey(const ValueKey<String>('media-forum-1')), findsNothing);
     expect(find.byKey(const ValueKey<String>('media-forum-2')), findsOneWidget);
     expect(find.text('Media deleted'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Media deleted'), findsNothing);
   });
 
   testWidgets('retains failed media and retries only the failed ids', (
