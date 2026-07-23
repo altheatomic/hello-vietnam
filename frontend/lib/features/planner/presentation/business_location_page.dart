@@ -17,8 +17,7 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
   final TextEditingController _controller = TextEditingController();
   bool _isGeocoding = false;
 
-  bool get _canContinue =>
-      _controller.text.trim().length >= 3 && !_isGeocoding;
+  bool get _canContinue => _controller.text.trim().length >= 3 && !_isGeocoding;
 
   @override
   void initState() {
@@ -64,8 +63,7 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
         return;
       }
 
-      final List<dynamic> results =
-          jsonDecode(response.body) as List<dynamic>;
+      final List<dynamic> results = jsonDecode(response.body) as List<dynamic>;
 
       if (results.isEmpty) {
         _showError(
@@ -102,10 +100,9 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
   void _showError(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ));
+      ..showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
   }
 
   @override
@@ -145,11 +142,8 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
                   ),
                   SizedBox(width: 12),
                   Text(
-                    'Đang tìm địa chỉ…',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6F7B8A),
-                    ),
+                    'Searching location…',
+                    style: TextStyle(fontSize: 14, color: Color(0xFF6F7B8A)),
                   ),
                 ],
               ),

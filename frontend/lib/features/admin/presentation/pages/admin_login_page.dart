@@ -430,7 +430,7 @@ class _RightPanel extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Wanderly',
+                      'Hello Vietnam',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.smooch(
                         fontSize: 96,
