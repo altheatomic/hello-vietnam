@@ -74,6 +74,7 @@ void main() {
     );
 
     expect(find.text('Confirm media deletion'), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('media-page-title')), findsOneWidget);
     expect(find.textContaining('cannot be undone'), findsOneWidget);
     expect(repository.deleteRequests, isEmpty);
   });

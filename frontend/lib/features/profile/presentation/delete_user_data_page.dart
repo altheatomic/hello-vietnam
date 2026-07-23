@@ -198,7 +198,12 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
         body: SafeArea(
           child: Column(
             children: <Widget>[
-              _HeaderBar(onBack: _handleBack),
+              _HeaderBar(
+                onBack: _handleBack,
+                title: _screen == _MediaScreen.confirming
+                    ? 'Confirm media deletion'
+                    : 'Manage uploaded media',
+              ),
               Expanded(child: _buildBody()),
             ],
           ),
@@ -385,12 +390,6 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 36),
       children: <Widget>[
         const Text(
-          'Confirm media deletion',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800, color: _textDark),
-        ),
-        const SizedBox(height: 12),
-        const Text(
           'Selected uploaded media will be permanently deleted and cannot be undone.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 16, color: Color(0xFF2B2B2B), height: 1.35),
@@ -444,9 +443,10 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
 }
 
 class _HeaderBar extends StatelessWidget {
-  const _HeaderBar({required this.onBack});
+  const _HeaderBar({required this.onBack, required this.title});
 
   final VoidCallback onBack;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -467,8 +467,9 @@ class _HeaderBar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Manage uploaded media',
+          Text(
+            title,
+            key: const ValueKey<String>('media-page-title'),
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: Color(0xFF121212)),
           ),
