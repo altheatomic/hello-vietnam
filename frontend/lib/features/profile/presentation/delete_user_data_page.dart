@@ -136,9 +136,32 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
         ...summary.failedMediaIds,
         ...ids.where((String id) => !deletedIds.contains(id) && !summary.failedMediaIds.contains(id)),
       };
+      List<UploadedMediaItem>? reconciledItems;
+      if (failedIds.isNotEmpty) {
+        try {
+          final List<UploadedMediaItem> currentItems =
+              await _repository.loadOwnedMedia();
+          final Set<String> currentIds =
+              currentItems.map((UploadedMediaItem item) => item.id).toSet();
+          final Set<String> alreadyDeleted = failedIds
+              .where((String id) => !currentIds.contains(id))
+              .toSet();
+          if (alreadyDeleted.isNotEmpty) {
+            deletedIds.addAll(alreadyDeleted);
+            failedIds.removeAll(alreadyDeleted);
+            reconciledItems = currentItems;
+          }
+        } catch (_) {
+          // Keep the server response as the source of truth when reload fails.
+        }
+      }
 
       setState(() {
-        _items.removeWhere((UploadedMediaItem item) => deletedIds.contains(item.id));
+        if (reconciledItems != null) {
+          _items = reconciledItems;
+        } else {
+          _items.removeWhere((UploadedMediaItem item) => deletedIds.contains(item.id));
+        }
         _selectedIds
           ..clear()
           ..addAll(failedIds);

@@ -223,6 +223,37 @@ void main() {
     expect(find.text('No uploaded media yet'), findsOneWidget);
     expect(find.text('Some media could not be deleted'), findsNothing);
   });
+
+  testWidgets('reconciles an item marked failed when it is already gone on reload', (
+    WidgetTester tester,
+  ) async {
+    final _FakeUploadedMediaRepository repository = _FakeUploadedMediaRepository(
+      items: <UploadedMediaItem>[
+        _forumMedia('forum-1', postId: 'post-1', postHasText: true),
+      ],
+      deleteSummaries: <UploadedMediaDeleteSummary>[
+        UploadedMediaDeleteSummary(<UploadedMediaDeleteResult>[
+          const UploadedMediaDeleteResult(
+            mediaId: 'forum-1',
+            status: UploadedMediaDeleteStatus.failed,
+          ),
+        ]),
+      ],
+      removeItemsBeforeDeleteResult: true,
+    );
+
+    await _pumpPage(tester, repository);
+    await tester.tap(find.byKey(const ValueKey<String>('media-forum-1')));
+    await tester.pump();
+    await _tapDeleteSelected(tester);
+    await tester.pumpAndSettle();
+    await _tapDeleteMedia(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text('No uploaded media yet'), findsOneWidget);
+    expect(find.text('Some media could not be deleted'), findsNothing);
+    expect(find.text('Retry failed media'), findsNothing);
+  });
 }
 
 Future<void> _pumpPage(
@@ -284,6 +315,7 @@ class _FakeUploadedMediaRepository implements UploadedMediaRepository {
     this.loadError,
     this.deleteError,
     this.removeItemsBeforeDeleteError = false,
+    this.removeItemsBeforeDeleteResult = false,
   });
 
   final List<UploadedMediaItem> items;
@@ -291,6 +323,7 @@ class _FakeUploadedMediaRepository implements UploadedMediaRepository {
   final Object? loadError;
   final Object? deleteError;
   final bool removeItemsBeforeDeleteError;
+  final bool removeItemsBeforeDeleteResult;
   final List<List<String>> deleteRequests = <List<String>>[];
   int _deleteIndex = 0;
 
@@ -310,6 +343,15 @@ class _FakeUploadedMediaRepository implements UploadedMediaRepository {
       }
       throw deleteError!;
     }
-    return deleteSummaries[_deleteIndex++];
+    final UploadedMediaDeleteSummary summary = deleteSummaries[_deleteIndex++];
+    if (removeItemsBeforeDeleteResult) {
+      final Set<String> successfulIds = summary.results
+          .where((UploadedMediaDeleteResult result) =>
+              result.status == UploadedMediaDeleteStatus.failed)
+          .map((UploadedMediaDeleteResult result) => result.mediaId)
+          .toSet();
+      items.removeWhere((UploadedMediaItem item) => successfulIds.contains(item.id));
+    }
+    return summary;
   }
 }
