@@ -1,11 +1,34 @@
 import '../domain/ai_chat_models.dart';
 import 'ai_chat_api.dart';
 
-class AiChatRepository {
+abstract interface class AiChatRepositoryContract {
+  Future<AiChatSendResult> sendMessage({
+    String? conversationId,
+    required String requestId,
+    required String content,
+  });
+
+  Future<AiChatConversationPage> listConversations({String? cursor});
+
+  Future<AiChatMessagePage> listMessages({
+    required String conversationId,
+    String? cursor,
+  });
+
+  Future<void> deleteConversation(String conversationId);
+
+  Future<String> synthesizeSpeech({
+    required String text,
+    required String languageCode,
+  });
+}
+
+class AiChatRepository implements AiChatRepositoryContract {
   AiChatRepository({AiChatApi? api}) : _api = api ?? SupabaseAiChatApi();
 
   final AiChatApi _api;
 
+  @override
   Future<AiChatSendResult> sendMessage({
     String? conversationId,
     required String requestId,
@@ -21,6 +44,7 @@ class AiChatRepository {
     return AiChatSendResult.fromJson(await _api.invoke(body));
   }
 
+  @override
   Future<AiChatConversationPage> listConversations({String? cursor}) async {
     return AiChatConversationPage.fromJson(
       await _api.invoke(<String, Object?>{
@@ -30,6 +54,7 @@ class AiChatRepository {
     );
   }
 
+  @override
   Future<AiChatMessagePage> listMessages({
     required String conversationId,
     String? cursor,
@@ -43,6 +68,7 @@ class AiChatRepository {
     );
   }
 
+  @override
   Future<void> deleteConversation(String conversationId) async {
     await _api.invoke(<String, Object?>{
       'action': 'delete_conversation',
@@ -50,6 +76,7 @@ class AiChatRepository {
     });
   }
 
+  @override
   Future<String> synthesizeSpeech({
     required String text,
     required String languageCode,
