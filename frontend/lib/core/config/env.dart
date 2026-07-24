@@ -31,4 +31,8 @@ class Env {
     'RECOMMEND_FUNCTION',
     defaultValue: 'recommend',
   );
+  static const manageUploadedMediaFunction = String.fromEnvironment(
+    'MANAGE_UPLOADED_MEDIA_FUNCTION',
+    defaultValue: 'manage-uploaded-media',
+  );
 }

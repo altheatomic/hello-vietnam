@@ -118,7 +118,7 @@ class AppStrings {
   String get currency => _vi ? 'Tiền tệ' : 'Currency';
   String get notification => _vi ? 'Thông báo' : 'Notification';
   String get deleteUserData =>
-      _vi ? 'Xóa dữ liệu người dùng' : 'Delete user data';
+      _vi ? 'Quản lý media đã tải lên' : 'Manage uploaded media';
   String get logOut => _vi ? 'Đăng xuất' : 'Log out';
 
   String get selectPreferredLanguage =>

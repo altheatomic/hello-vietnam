@@ -8,7 +8,12 @@
       "cwd": "frontend",
       "deviceId": "chrome",
       "program": "lib/main_admin.dart",
-      "args": ["--web-hostname", "localhost", "--web-port", "3000"]
+      "args": [
+        "--web-hostname",
+        "localhost",
+        "--web-port",
+        "3000"
+      ]
     },
     {
       "name": "User",
@@ -17,7 +22,12 @@
       "cwd": "frontend",
       "deviceId": "chrome",
       "program": "lib/main.dart",
-      "args": ["--web-hostname", "localhost", "--web-port", "3000"]
+      "args": [
+        "--web-hostname",
+        "localhost",
+        "--web-port",
+        "3000"
+      ]
     },
     {
       "name": "User Mobile",

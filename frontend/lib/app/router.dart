@@ -370,6 +370,7 @@ class AppRoutes {
   static const adminLocalProducts = '/admin/local-products';
   static const adminPopularApps = '/admin/popular-apps';
   static const adminCfRetrain = '/admin/cf-retrain';
+  static const manageUploadedMedia = '$profile/manage-uploaded-media';
   static const deleteUserData = '$profile/delete-user-data';
 
   static String forumPostPath(String postId) => '/forum/post/$postId';
@@ -1004,6 +1005,10 @@ GoRouter buildRouter() {
                 path: AppRoutes.profile,
                 builder: (context, state) => const ProfilePage(),
                 routes: [
+                  GoRoute(
+                    path: 'manage-uploaded-media',
+                    builder: (context, state) => const DeleteUserDataPage(),
+                  ),
                   GoRoute(
                     path: 'delete-user-data',
                     builder: (context, state) => const DeleteUserDataPage(),

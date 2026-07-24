@@ -1872,6 +1872,13 @@ class _ForumImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (imageUrl == 'deleted-media://placeholder') {
+      return Container(
+        color: const Color(0xFFF1F1F1),
+        alignment: Alignment.center,
+        child: const Text('Image deleted', textAlign: TextAlign.center),
+      );
+    }
     if (_isAsset) {
       return Image.asset(imageUrl, fit: fit);
     }
