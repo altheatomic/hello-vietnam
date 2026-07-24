@@ -8,6 +8,7 @@ import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/search_bar_widget.dart';
+import 'package:hellovietnam/features/ai_chat/presentation/widgets/ai_chat_home_launcher.dart';
 import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
@@ -560,6 +561,7 @@ class _HomePageState extends State<HomePage>
               ],
             ),
           ),
+          const Positioned.fill(child: AiChatHomeLauncher()),
         ],
       ),
     );
