@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
 import 'package:hellovietnam/features/explore/data/explore_tracking_service.dart';
@@ -253,7 +252,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
                       opacity: 0.54,
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.68),
+                        color: ForumColors.glassBorder(
+                          context,
+                          lightAlpha: 0.68,
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,19 +264,23 @@ class _CreatePostPageState extends State<CreatePostPage> {
                             children: <Widget>[
                               ForumAvatar(
                                 imageUrl: _currentUserAuthor.avatarUrl,
-                                size: 48,
+                                size: 42,
                                 borderColor: Colors.white.withValues(
-                                  alpha: 0.76,
+                                  alpha: ForumColors.isDark(context)
+                                      ? 0.18
+                                      : 0.76,
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
                                   _currentUserAuthor.name,
-                                  style: const TextStyle(
-                                    fontSize: 18,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w700,
-                                    color: ForumColors.textPrimary,
+                                    color: ForumColors.foreground(context),
                                   ),
                                 ),
                               ),
@@ -289,22 +295,29 @@ class _CreatePostPageState extends State<CreatePostPage> {
                             const SizedBox(height: 18),
                             _SharedExplorePreview(item: _sharedExploreItem!),
                           ],
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 14),
                           TextField(
                             controller: _controller,
-                            maxLines: 8,
-                            minLines: 6,
+                            maxLines: 6,
+                            minLines: 4,
                             onChanged: (_) => setState(() {}),
                             decoration: InputDecoration(
                               hintText: context.l10n.ui(
                                 'What do you want to share?',
                               ),
+                              hintStyle: TextStyle(
+                                color: ForumColors.muted(context),
+                              ),
+                              filled: false,
                               border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
                             ),
-                            style: const TextStyle(
-                              fontSize: 17,
-                              height: 1.5,
-                              color: ForumColors.textPrimary,
+                            style: TextStyle(
+                              fontSize: 15,
+                              height: 1.4,
+                              color: ForumColors.foreground(context),
                             ),
                           ),
                           if ((_existingImageUrls.isNotEmpty ||
@@ -426,12 +439,15 @@ class _SharedExplorePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color foreground = ForumColors.foreground(context);
+    final Color muted = ForumColors.muted(context);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.52),
+        color: ForumColors.embeddedSurface(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+        border: Border.all(color: ForumColors.glassBorder(context)),
       ),
       child: Row(
         children: <Widget>[
@@ -459,20 +475,17 @@ class _SharedExplorePreview extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   item.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: ForumColors.textPrimary,
+                    color: foreground,
                   ),
                 ),
                 if (_secondaryText(item).isNotEmpty) ...<Widget>[
                   const SizedBox(height: 4),
                   Text(
                     _secondaryText(item),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: ForumColors.textMuted,
-                    ),
+                    style: TextStyle(fontSize: 12, color: muted),
                   ),
                 ],
               ],
@@ -537,7 +550,7 @@ class _PostButton extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: enabled ? ForumColors.primaryGradient : null,
-        color: enabled ? null : Colors.white.withValues(alpha: 0.5),
+        color: enabled ? null : ForumColors.embeddedSurface(context),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Material(
@@ -550,9 +563,7 @@ class _PostButton extends StatelessWidget {
             child: Text(
               context.l10n.ui(label),
               style: TextStyle(
-                color: enabled
-                    ? Colors.white
-                    : AppColors.textSecondary.withValues(alpha: 0.6),
+                color: enabled ? Colors.white : ForumColors.muted(context),
                 fontWeight: FontWeight.w700,
               ),
             ),

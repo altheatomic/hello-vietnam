@@ -47,6 +47,10 @@ class ForumColors {
       isDark(context)
       ? Colors.white.withValues(alpha: 0.10)
       : Colors.white.withValues(alpha: lightAlpha);
+
+  static Color embeddedSurface(BuildContext context) => isDark(context)
+      ? darkSurfaceHigh.withValues(alpha: 0.92)
+      : Colors.white.withValues(alpha: 0.62);
 }
 
 String formatCompactNumber(int value) {
@@ -268,9 +272,9 @@ class ForumProfileTopBar extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.fromLTRB(
             AppConstants.pagePadding,
-            topInset + 8,
+            topInset + 4,
             AppConstants.pagePadding,
-            12,
+            8,
           ),
           decoration: BoxDecoration(
             color: isDark
@@ -292,67 +296,69 @@ class ForumProfileTopBar extends StatelessWidget {
             ],
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: IconButton(
-                  onPressed: onBack,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(
-                    width: 32,
-                    height: 32,
-                  ),
-                  icon: Icon(Icons.arrow_back, color: foreground, size: 22),
+              IconButton(
+                onPressed: onBack,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(
+                  width: 44,
+                  height: 44,
                 ),
+                icon: Icon(Icons.arrow_back, color: foreground, size: 21),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Text(
                       title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        height: 1.15,
+                        fontWeight: FontWeight.w700,
                         color: foreground,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     Text(
                       subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 13,
                         color: ForumColors.muted(context),
                       ),
                     ),
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Row(
-                  children: <Widget>[
-                    _HeaderIconButton(
-                      icon: Icons.bookmark_border_rounded,
-                      onTap: onBookmark,
-                    ),
-                    if (showCurrentAvatar) ...<Widget>[
-                      const SizedBox(width: 12),
-                      GestureDetector(
-                        onTap: onAvatarTap,
-                        child: ForumAvatar(
-                          imageUrl: avatarUrl,
-                          size: 44,
-                          borderColor: Colors.white.withValues(
-                            alpha: isDark ? 0.18 : 0.72,
-                          ),
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  _HeaderIconButton(
+                    icon: Icons.bookmark_border_rounded,
+                    onTap: onBookmark,
+                  ),
+                  if (showCurrentAvatar) ...<Widget>[
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: onAvatarTap,
+                      child: ForumAvatar(
+                        imageUrl: avatarUrl,
+                        size: 34,
+                        borderColor: Colors.white.withValues(
+                          alpha: isDark ? 0.18 : 0.72,
                         ),
                       ),
-                    ],
+                    ),
                   ],
-                ),
+                ],
               ),
             ],
           ),
@@ -469,10 +475,10 @@ class ForumPostCard extends StatelessWidget {
     final Color actionColor = ForumColors.action(context);
 
     return GlassCard(
-      borderRadius: 26,
+      borderRadius: 22,
       blur: 14,
       opacity: 0.58,
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
       border: Border.all(color: ForumColors.glassBorder(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,7 +497,7 @@ class ForumPostCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                       child: ForumAvatar(
                         imageUrl: post.author.avatarUrl,
-                        size: 46,
+                        size: 40,
                         borderColor: Colors.white.withValues(
                           alpha: ForumColors.isDark(context) ? 0.18 : 0.75,
                         ),
@@ -631,6 +637,8 @@ class ForumSharedItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String secondaryText = _secondaryText(item);
+    final Color foreground = ForumColors.foreground(context);
+    final Color muted = ForumColors.muted(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -639,17 +647,17 @@ class ForumSharedItemCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.56),
+            color: ForumColors.embeddedSurface(context),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+            border: Border.all(color: ForumColors.glassBorder(context)),
           ),
           child: Row(
             children: <Widget>[
               ClipRRect(
                 borderRadius: BorderRadius.circular(14),
                 child: SizedBox(
-                  width: 68,
-                  height: 68,
+                  width: 60,
+                  height: 60,
                   child: _ForumImage(
                     imageUrl: item.imagePath,
                     fit: BoxFit.cover,
@@ -674,10 +682,10 @@ class ForumSharedItemCard extends StatelessWidget {
                       item.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: ForumColors.textPrimary,
+                        color: foreground,
                       ),
                     ),
                     if (secondaryText.isNotEmpty) ...<Widget>[
@@ -686,21 +694,14 @@ class ForumSharedItemCard extends StatelessWidget {
                         secondaryText,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: ForumColors.textMuted,
-                        ),
+                        style: TextStyle(fontSize: 12, color: muted),
                       ),
                     ],
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(
-                Icons.open_in_new_rounded,
-                size: 18,
-                color: ForumColors.textMuted,
-              ),
+              Icon(Icons.open_in_new_rounded, size: 18, color: muted),
             ],
           ),
         ),
@@ -730,6 +731,8 @@ class ForumSharedTripPlanCard extends StatelessWidget {
     final String province = item.provinceName.isNotEmpty
         ? item.provinceName
         : 'Vietnam';
+    final Color foreground = ForumColors.foreground(context);
+    final Color muted = ForumColors.muted(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -738,17 +741,17 @@ class ForumSharedTripPlanCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.56),
+            color: ForumColors.embeddedSurface(context),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+            border: Border.all(color: ForumColors.glassBorder(context)),
           ),
           child: Row(
             children: <Widget>[
               ClipRRect(
                 borderRadius: BorderRadius.circular(14),
                 child: Container(
-                  width: 68,
-                  height: 68,
+                  width: 60,
+                  height: 60,
                   color: ForumColors.bluePrimary.withValues(alpha: 0.12),
                   child: const Icon(
                     Icons.map_outlined,
@@ -774,10 +777,10 @@ class ForumSharedTripPlanCard extends StatelessWidget {
                       'Trip to $province',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: ForumColors.textPrimary,
+                        color: foreground,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -785,20 +788,13 @@ class ForumSharedTripPlanCard extends StatelessWidget {
                       '${item.nDays} days · ${item.placeCount} places',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: ForumColors.textMuted,
-                      ),
+                      style: TextStyle(fontSize: 12, color: muted),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(
-                Icons.open_in_new_rounded,
-                size: 18,
-                color: ForumColors.textMuted,
-              ),
+              Icon(Icons.open_in_new_rounded, size: 18, color: muted),
             ],
           ),
         ),
@@ -1105,98 +1101,115 @@ class ForumProfileHeaderCard extends StatelessWidget {
     final Color textColor = ForumColors.foreground(context);
     final Color mutedColor = ForumColors.muted(context);
 
-    return GlassCard(
-      borderRadius: 30,
-      blur: 16,
-      opacity: 0.52,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-      border: Border.all(
-        color: ForumColors.glassBorder(context, lightAlpha: 0.68),
-      ),
-      child: Column(
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = constraints.maxWidth < 360;
+        final double avatarSize = compact ? 60 : 68;
+
+        return GlassCard(
+          borderRadius: 24,
+          blur: 14,
+          opacity: 0.52,
+          padding: EdgeInsets.all(compact ? 12 : 14),
+          border: Border.all(
+            color: ForumColors.glassBorder(context, lightAlpha: 0.68),
+          ),
+          child: Column(
             children: <Widget>[
-              ForumAvatar(
-                imageUrl: profile.author.avatarUrl,
-                size: 92,
-                borderColor: Colors.white.withValues(
-                  alpha: isDark ? 0.18 : 0.8,
-                ),
-              ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  ForumAvatar(
+                    imageUrl: profile.author.avatarUrl,
+                    size: avatarSize,
+                    borderColor: Colors.white.withValues(
+                      alpha: isDark ? 0.18 : 0.8,
+                    ),
+                  ),
+                  SizedBox(width: compact ? 10 : 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Flexible(
-                          child: Text(
-                            profile.author.name,
-                            style: TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.w800,
-                              color: textColor,
+                        Row(
+                          children: <Widget>[
+                            Flexible(
+                              child: Text(
+                                profile.author.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: compact ? 19 : 21,
+                                  height: 1.15,
+                                  fontWeight: FontWeight.w800,
+                                  color: textColor,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (profile.author.isVerified) ...<Widget>[
+                              const SizedBox(width: 6),
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: _VerifiedBadge(),
+                              ),
+                            ],
+                          ],
                         ),
-                        if (profile.author.isVerified) ...<Widget>[
-                          const SizedBox(width: 10),
-                          const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: _VerifiedBadge(),
-                          ),
-                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          profile.author.handle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 14, color: mutedColor),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      profile.author.handle,
-                      style: TextStyle(fontSize: 17, color: mutedColor),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              if (!profile.isCurrentUser)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
+              if (!profile.isCurrentUser) ...<Widget>[
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
                   child: ForumFollowButton(
                     isFollowing: profile.author.isFollowing,
                     onTap: onToggleFollow,
-                    large: true,
                   ),
                 ),
+              ],
+              const SizedBox(height: 14),
+              Divider(
+                height: 1,
+                color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.64),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: _ProfileMetric(
+                      value: '$postsCount',
+                      label: context.l10n.ui('Posts'),
+                    ),
+                  ),
+                  Expanded(
+                    child: _ProfileMetric(
+                      value: formatCompactNumber(profile.followersCount),
+                      label: context.l10n.ui('Followers'),
+                    ),
+                  ),
+                  Expanded(
+                    child: _ProfileMetric(
+                      value: '${profile.followingCount}',
+                      label: context.l10n.ui('Following'),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 22),
-          Divider(
-            height: 1,
-            color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.64),
-          ),
-          const SizedBox(height: 22),
-          Row(
-            children: <Widget>[
-              _ProfileMetric(
-                value: '$postsCount',
-                label: context.l10n.ui('Posts'),
-              ),
-              const SizedBox(width: 26),
-              _ProfileMetric(
-                value: formatCompactNumber(profile.followersCount),
-                label: context.l10n.ui('Followers'),
-              ),
-              const SizedBox(width: 26),
-              _ProfileMetric(
-                value: '${profile.followingCount}',
-                label: context.l10n.ui('Following'),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -1348,126 +1361,149 @@ class _ForumReplyDialogState extends State<ForumReplyDialog> {
   @override
   Widget build(BuildContext context) {
     final bool canSubmit = _controller.text.trim().isNotEmpty;
+    final MediaQueryData media = MediaQuery.of(context);
+    final double availableHeight =
+        media.size.height - media.viewInsets.bottom - 24;
+    final bool compact = media.size.width < 380 || availableHeight < 560;
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(24),
-      child: GlassCard(
-        borderRadius: 32,
-        blur: 18,
-        opacity: 0.78,
-        padding: EdgeInsets.zero,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.78)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(
-                      Icons.close,
-                      size: 28,
-                      color: ForumColors.foreground(context),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 20,
+        vertical: 12,
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 520,
+          maxHeight: availableHeight.clamp(280, 680),
+        ),
+        child: GlassCard(
+          borderRadius: 32,
+          blur: 18,
+          opacity: 0.78,
+          padding: EdgeInsets.zero,
+          border: Border.all(color: ForumColors.glassBorder(context)),
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.fromLTRB(
+              compact ? 12 : 18,
+              compact ? 10 : 18,
+              compact ? 12 : 18,
+              compact ? 12 : 20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icon(
+                        Icons.close,
+                        size: 28,
+                        color: ForumColors.foreground(context),
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  ForumReplyPrimaryButton(
-                    enabled: canSubmit,
-                    onTap: () {
-                      if (!canSubmit) {
-                        return;
-                      }
-                      widget.onSubmit(_controller.text.trim());
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              ),
-              Divider(height: 1, color: Colors.white.withValues(alpha: 0.64)),
-              const SizedBox(height: 18),
-              _ReplyPostPreview(post: widget.post),
-              const SizedBox(height: 16),
-              Divider(height: 1, color: Colors.white.withValues(alpha: 0.64)),
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  ForumAvatar(
-                    imageUrl: widget.currentUser.avatarUrl,
-                    size: 44,
-                    borderColor: Colors.white.withValues(alpha: 0.76),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        RichText(
-                          text: TextSpan(
-                            style: TextStyle(
-                              fontSize: 17,
-                              color: ForumColors.muted(context),
-                            ),
-                            children: <TextSpan>[
-                              const TextSpan(text: 'Replying to '),
-                              TextSpan(
-                                text: widget.replyingToHandle,
-                                style: const TextStyle(
-                                  color: ForumColors.cyanPrimary,
-                                  fontWeight: FontWeight.w600,
+                    const Spacer(),
+                    ForumReplyPrimaryButton(
+                      enabled: canSubmit,
+                      onTap: () {
+                        if (!canSubmit) {
+                          return;
+                        }
+                        widget.onSubmit(_controller.text.trim());
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                ),
+                Divider(height: 1, color: Colors.white.withValues(alpha: 0.64)),
+                const SizedBox(height: 18),
+                _ReplyPostPreview(post: widget.post),
+                const SizedBox(height: 16),
+                Divider(height: 1, color: Colors.white.withValues(alpha: 0.64)),
+                const SizedBox(height: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    ForumAvatar(
+                      imageUrl: widget.currentUser.avatarUrl,
+                      size: compact ? 36 : 40,
+                      borderColor: ForumColors.glassBorder(context),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: compact ? 14 : 15,
+                                color: ForumColors.muted(context),
+                              ),
+                              children: <TextSpan>[
+                                const TextSpan(text: 'Replying to '),
+                                TextSpan(
+                                  text: widget.replyingToHandle,
+                                  style: const TextStyle(
+                                    color: ForumColors.cyanPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          constraints: const BoxConstraints(minHeight: 200),
-                          decoration: BoxDecoration(
-                            color: ForumColors.isDark(context)
-                                ? ForumColors.darkSurfaceHigh
-                                : Colors.white.withValues(alpha: 0.72),
-                            borderRadius: BorderRadius.circular(28),
-                            border: Border.all(
-                              color: ForumColors.cyanPrimary.withValues(
-                                alpha: 0.5,
-                              ),
-                              width: 1.6,
+                              ],
                             ),
                           ),
-                          child: TextField(
-                            controller: _controller,
-                            maxLines: 8,
-                            minLines: 6,
-                            enableInteractiveSelection: false,
-                            onChanged: (_) => setState(() {}),
-                            decoration: InputDecoration(
-                              hintText: context.l10n.ui('Type your answer'),
-                              hintStyle: TextStyle(
-                                fontSize: 18,
-                                color: ForumColors.muted(
-                                  context,
-                                ).withValues(alpha: 0.8),
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.all(20),
+                          const SizedBox(height: 8),
+                          Container(
+                            constraints: BoxConstraints(
+                              minHeight: compact ? 112 : 144,
+                              maxHeight: compact ? 144 : 180,
                             ),
-                            style: TextStyle(
-                              fontSize: 16,
-                              height: 1.5,
-                              color: ForumColors.foreground(context),
+                            decoration: BoxDecoration(
+                              color: ForumColors.embeddedSurface(context),
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: ForumColors.cyanPrimary.withValues(
+                                  alpha: 0.5,
+                                ),
+                                width: 1.6,
+                              ),
+                            ),
+                            child: TextField(
+                              controller: _controller,
+                              maxLines: compact ? 4 : 6,
+                              minLines: compact ? 3 : 4,
+                              onChanged: (_) => setState(() {}),
+                              decoration: InputDecoration(
+                                hintText: context.l10n.ui('Type your answer'),
+                                hintStyle: TextStyle(
+                                  fontSize: 15,
+                                  color: ForumColors.muted(
+                                    context,
+                                  ).withValues(alpha: 0.8),
+                                ),
+                                filled: false,
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                contentPadding: const EdgeInsets.all(14),
+                              ),
+                              style: TextStyle(
+                                fontSize: 15,
+                                height: 1.4,
+                                color: ForumColors.foreground(context),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1487,12 +1523,15 @@ class ForumReplyPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = ForumColors.isDark(context);
     final Color background = enabled
-        ? Colors.white.withValues(alpha: 0.88)
-        : Colors.white.withValues(alpha: 0.56);
+        ? (isDark
+              ? ForumColors.cyanPrimary
+              : Colors.white.withValues(alpha: 0.88))
+        : ForumColors.embeddedSurface(context);
     final Color foreground = enabled
-        ? AppColors.textSecondary
-        : AppColors.textSecondary.withValues(alpha: 0.55);
+        ? (isDark ? Colors.white : AppColors.textSecondary)
+        : ForumColors.muted(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -1505,11 +1544,11 @@ class ForumReplyPrimaryButton extends StatelessWidget {
           onTap: enabled ? onTap : null,
           borderRadius: BorderRadius.circular(999),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
             child: Text(
               'Reply',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: foreground,
               ),
@@ -1528,15 +1567,17 @@ class _ReplyPostPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color foreground = ForumColors.foreground(context);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         ForumAvatar(
           imageUrl: post.author.avatarUrl,
-          size: 44,
-          borderColor: Colors.white.withValues(alpha: 0.76),
+          size: 38,
+          borderColor: ForumColors.glassBorder(context),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1546,10 +1587,10 @@ class _ReplyPostPreview extends StatelessWidget {
                   Flexible(
                     child: Text(
                       post.author.name,
-                      style: const TextStyle(
-                        fontSize: 17,
+                      style: TextStyle(
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: ForumColors.textPrimary,
+                        color: foreground,
                       ),
                     ),
                   ),
@@ -1562,11 +1603,9 @@ class _ReplyPostPreview extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 post.content,
-                style: const TextStyle(
-                  fontSize: 16,
-                  height: 1.45,
-                  color: ForumColors.textPrimary,
-                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 14, height: 1.4, color: foreground),
               ),
             ],
           ),
@@ -1787,9 +1826,10 @@ class _HeaderIconButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Icon(icon, size: 24, color: color),
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Icon(icon, size: 22, color: color),
       ),
     );
   }
@@ -1845,18 +1885,24 @@ class _ProfileMetric extends StatelessWidget {
     final Color mutedColor = ForumColors.muted(context);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         Text(
           value,
           style: TextStyle(
-            fontSize: 28,
+            fontSize: 21,
             fontWeight: FontWeight.w800,
             color: textColor,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 16, color: mutedColor)),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12.5, color: mutedColor),
+        ),
       ],
     );
   }

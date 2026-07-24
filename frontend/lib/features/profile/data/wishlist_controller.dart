@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/loyalty/data/loyalty_award_service.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 
@@ -127,7 +128,7 @@ class WishlistController extends ChangeNotifier {
 
     try {
       final List<WishlistRepositoryItem> items = await _repository
-          .fetchWishlist();
+          .fetchWishlist(language: AppLanguageController.instance.languageCode);
       _items = items;
       _favoriteKeys
         ..clear()

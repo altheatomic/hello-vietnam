@@ -2,9 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
-import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:http/http.dart' as http;
 
 class BusinessLocationPage extends StatefulWidget {
@@ -90,7 +91,7 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
       );
 
       if (!mounted) return;
-      context.push('/trip-planner/duration', extra: wizard.toJson());
+      context.push(AppRoutes.tripPlannerDuration, extra: wizard.toJson());
     } catch (_) {
       if (mounted) _showError('Không thể kết nối, thử lại sau.');
     } finally {
@@ -117,6 +118,7 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
       nextEnabled: _canContinue,
       onNext: _onNext,
       body: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
@@ -164,7 +166,6 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
               height: 1.45,
             ),
           ),
-          const Spacer(),
         ],
       ),
     );
