@@ -108,12 +108,41 @@ void main() {
     final Text cultureTab = tester.widget<Text>(find.text('Culture'));
     expect(cultureTab.style?.color, AppColors.primary);
   });
+
+  testWidgets('uses dark surfaces and readable text in dark mode', (
+    WidgetTester tester,
+  ) async {
+    final _FakeExploreRepository repository = _FakeExploreRepository(
+      cachedSections: _sectionsData('Dark Activity'),
+    );
+
+    await tester.pumpWidget(_buildTestApp(repository, darkMode: true));
+    await tester.pump();
+
+    final ThemeData theme = buildDarkTheme();
+    final Container filterSurface = tester.widget<Container>(
+      find.byKey(const Key('explore-sticky-filter-surface')),
+    );
+    final Text cityHeading = tester.widget<Text>(find.text('Explore by city'));
+    final Text sectionDescription = tester.widget<Text>(
+      find.text('Hands-on experiences and cultural activities'),
+    );
+
+    expect(filterSurface.color, theme.scaffoldBackgroundColor);
+    expect(cityHeading.style?.color, theme.colorScheme.onSurface);
+    expect(sectionDescription.style?.color, theme.colorScheme.onSurface);
+  });
 }
 
-Widget _buildTestApp(ExploreRepository repository) {
+Widget _buildTestApp(ExploreRepository repository, {bool darkMode = false}) {
   return AppLanguageScope(
     controller: AppLanguageController.instance,
-    child: MaterialApp(home: ExplorePage(repository: repository)),
+    child: MaterialApp(
+      theme: buildTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: darkMode ? ThemeMode.dark : ThemeMode.light,
+      home: ExplorePage(repository: repository),
+    ),
   );
 }
 

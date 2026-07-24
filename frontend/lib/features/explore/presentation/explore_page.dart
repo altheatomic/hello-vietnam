@@ -289,10 +289,13 @@ class _ExplorePageState extends State<ExplorePage> {
                               ),
                               child: Text(
                                 context.l10n.ui('Explore by city'),
-                                style: const TextStyle(
+                                key: const Key('explore-city-heading'),
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.black87,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                               ),
                             ),
@@ -517,8 +520,11 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     final double statusBarH = MediaQuery.of(context).padding.top;
+    final ThemeData theme = Theme.of(context);
+    final Color foreground = theme.colorScheme.onSurface;
     return Container(
-      color: Colors.white,
+      key: const Key('explore-sticky-filter-surface'),
+      color: theme.scaffoldBackgroundColor,
       padding: EdgeInsets.only(top: statusBarH + 34),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -556,7 +562,9 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                         fontWeight: isSelected
                             ? FontWeight.w600
                             : FontWeight.w400,
-                        color: isSelected ? AppColors.primary : Colors.grey,
+                        color: isSelected
+                            ? theme.colorScheme.primary
+                            : foreground.withValues(alpha: 0.64),
                       ),
                     ),
                   ),
@@ -564,7 +572,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
               },
             ),
           ),
-          Container(height: 1, color: Colors.grey.shade200),
+          Container(height: 1, color: theme.dividerColor),
         ],
       ),
     );
@@ -669,6 +677,7 @@ class _CategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color foreground = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppConstants.pagePadding,
@@ -685,10 +694,10 @@ class _CategorySection extends StatelessWidget {
               Expanded(
                 child: Text(
                   context.l10n.ui(category.description),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: foreground,
                     height: 1.4,
                   ),
                 ),
@@ -718,7 +727,7 @@ class _CategorySection extends StatelessWidget {
                     context.l10n.ui('Content is being updated.'),
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.grey.shade600,
+                  color: foreground.withValues(alpha: 0.68),
                   height: 1.4,
                 ),
               ),
@@ -818,6 +827,7 @@ class _ExploreStateMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color foreground = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -826,10 +836,10 @@ class _ExploreStateMessage extends StatelessWidget {
           Text(
             context.l10n.ui(message),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: foreground,
             ),
           ),
           if (actionLabel != null && onTap != null) ...<Widget>[

@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../core/auth/auth_repository.dart';
 import '../core/language/app_language.dart';
@@ -1076,7 +1078,7 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
 
 /// Custom bottom navigation bar with rounded top corners and a center
 /// saved-trips shortcut inline with other items.
-class _CustomBottomNav extends StatelessWidget {
+class _CustomBottomNav extends StatefulWidget {
   const _CustomBottomNav({
     required this.currentIndex,
     required this.currentPath,
@@ -1087,7 +1089,7 @@ class _CustomBottomNav extends StatelessWidget {
   final String currentPath;
   final ValueChanged<int> onTap;
 
-  static const _items = <_NavItem>[
+  static const List<_NavItem> items = <_NavItem>[
     _NavItem(
       icon: Icons.home_outlined,
       selectedIcon: Icons.home_rounded,
@@ -1115,122 +1117,189 @@ class _CustomBottomNav extends StatelessWidget {
     ),
   ];
 
+  int get selectedVisualIndex {
+    if (currentPath == AppRoutes.tripPlannerSaved) {
+      return 2;
+    }
+
+    return currentIndex < 2 ? currentIndex : currentIndex + 1;
+  }
+
+  @override
+  State<_CustomBottomNav> createState() => _CustomBottomNavState();
+}
+
+class _CustomBottomNavState extends State<_CustomBottomNav>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _liquidController;
+  late double _fromVisualIndex;
+  late double _toVisualIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _fromVisualIndex = widget.selectedVisualIndex.toDouble();
+    _toVisualIndex = _fromVisualIndex;
+    _liquidController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+      value: 1,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _CustomBottomNav oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final double nextIndex = widget.selectedVisualIndex.toDouble();
+    if (nextIndex == _toVisualIndex) return;
+
+    final double progress = Curves.easeInOutCubicEmphasized.transform(
+      _liquidController.value,
+    );
+    _fromVisualIndex =
+        lerpDouble(_fromVisualIndex, _toVisualIndex, progress) ??
+        _toVisualIndex;
+    _toVisualIndex = nextIndex;
+
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+      _fromVisualIndex = nextIndex;
+      _liquidController.value = 1;
+      return;
+    }
+    _liquidController.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _liquidController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final BorderRadius radius = BorderRadius.circular(34);
     const EdgeInsets navPadding = EdgeInsets.symmetric(horizontal: 14);
-    final Color shadowColor = isDark
-        ? Colors.black.withValues(alpha: 0.36)
-        : Colors.black.withValues(alpha: 0.10);
-    final int selectedVisualIndex = _selectedVisualIndex;
+    final int selectedVisualIndex = widget.selectedVisualIndex;
 
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.fromLTRB(8, 0, 8, 10),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: radius,
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: shadowColor,
-              blurRadius: 28,
-              spreadRadius: -6,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: radius,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-            child: Container(
-              height: 70,
-              decoration: BoxDecoration(
-                borderRadius: radius,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? <Color>[
-                          const Color(0xE6102530),
-                          const Color(0xB80A1A22),
-                        ]
-                      : <Color>[
-                          Colors.white.withValues(alpha: 0.76),
-                          const Color(0xDDEFF9FF),
-                        ],
-                ),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.11)
-                      : Colors.white.withValues(alpha: 0.72),
-                  width: 1,
-                ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+          child: Container(
+            key: const Key('liquid-nav-surface'),
+            height: 70,
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? <Color>[const Color(0x80102530), const Color(0x520A1A22)]
+                    : <Color>[
+                        Colors.white.withValues(alpha: 0.48),
+                        const Color(0x66EFF9FF),
+                      ],
               ),
-              child: LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  final double availableWidth =
-                      constraints.maxWidth - navPadding.horizontal;
-                  final double slotWidth = availableWidth / _items.length;
-                  final double indicatorWidth = (slotWidth - 14)
-                      .clamp(54.0, 68.0)
-                      .toDouble();
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.white.withValues(alpha: 0.48),
+                width: 1,
+              ),
+            ),
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double availableWidth =
+                    constraints.maxWidth - navPadding.horizontal;
+                final double slotWidth =
+                    availableWidth / _CustomBottomNav.items.length;
+                final double indicatorWidth = (slotWidth - 14)
+                    .clamp(54.0, 68.0)
+                    .toDouble();
 
-                  return Padding(
-                    padding: navPadding,
-                    child: Stack(
-                      alignment: Alignment.centerLeft,
-                      children: <Widget>[
-                        TweenAnimationBuilder<double>(
-                          tween: Tween<double>(
-                            begin: selectedVisualIndex.toDouble(),
-                            end: selectedVisualIndex.toDouble(),
-                          ),
-                          duration: const Duration(milliseconds: 360),
-                          curve: Curves.easeOutCubic,
-                          builder:
-                              (
-                                BuildContext context,
-                                double value,
-                                Widget? child,
-                              ) {
-                                return Transform.translate(
-                                  offset: Offset(
-                                    (value * slotWidth) +
-                                        ((slotWidth - indicatorWidth) / 2),
-                                    0,
-                                  ),
-                                  child: child,
-                                );
-                              },
-                          child: _NavSelectionIndicator(
-                            width: indicatorWidth,
-                            isDark: isDark,
-                          ),
-                        ),
-                        Row(
-                          children: List.generate(_items.length, (i) {
+                return Padding(
+                  padding: navPadding,
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: <Widget>[
+                      AnimatedBuilder(
+                        animation: _liquidController,
+                        builder: (BuildContext context, Widget? child) {
+                          final double rawProgress = reduceMotion
+                              ? 1
+                              : _liquidController.value;
+                          final double motionProgress = Curves
+                              .easeInOutCubicEmphasized
+                              .transform(rawProgress);
+                          final double visualIndex =
+                              lerpDouble(
+                                _fromVisualIndex,
+                                _toVisualIndex,
+                                motionProgress,
+                              ) ??
+                              _toVisualIndex;
+                          final double travelDistance =
+                              (_toVisualIndex - _fromVisualIndex).abs().clamp(
+                                0,
+                                4,
+                              );
+                          final double liquidPulse = reduceMotion
+                              ? 0
+                              : math.sin(math.pi * rawProgress);
+                          final double horizontalStretch =
+                              1 +
+                              liquidPulse * (0.22 + (travelDistance * 0.035));
+                          final double verticalSquash =
+                              1 - (liquidPulse * 0.13);
+                          return Transform.translate(
+                            key: const Key('liquid-nav-motion'),
+                            offset: Offset(
+                              (visualIndex * slotWidth) +
+                                  ((slotWidth - indicatorWidth) / 2),
+                              0,
+                            ),
+                            child: Transform.scale(
+                              key: const Key('liquid-nav-morph'),
+                              scaleX: horizontalStretch,
+                              scaleY: verticalSquash,
+                              child: _NavSelectionIndicator(
+                                width: indicatorWidth,
+                                isDark: isDark,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      Row(
+                        children: List<Widget>.generate(
+                          _CustomBottomNav.items.length,
+                          (int i) {
                             final int? branchIndex = _branchIndexForVisual(i);
                             final bool isSelected = i == selectedVisualIndex;
                             return Expanded(
                               child: _buildNavItem(
                                 context,
-                                _items[i],
+                                _CustomBottomNav.items[i],
                                 isSelected,
                                 branchIndex == null
                                     ? () =>
                                           context.go(AppRoutes.tripPlannerSaved)
-                                    : () => onTap(branchIndex),
+                                    : () => widget.onTap(branchIndex),
                               ),
                             );
-                          }),
+                          },
                         ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -1246,14 +1315,22 @@ class _CustomBottomNav extends StatelessWidget {
   ) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final color = isSelected
-        ? AppColors.primaryLight
+        ? isDark
+              ? AppColors.primaryLight
+              : AppColors.primaryDark
         : isDark
         ? const Color(0xFF9BB7C5)
         : AppColors.textSecondary;
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        if (!isSelected) {
+          HapticFeedback.selectionClick();
+        }
+        onTap();
+      },
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
+        key: Key('bottom-nav-${item.label.toLowerCase()}'),
         height: 54,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1291,14 +1368,6 @@ class _CustomBottomNav extends StatelessWidget {
     );
   }
 
-  int get _selectedVisualIndex {
-    if (currentPath == AppRoutes.tripPlannerSaved) {
-      return 2;
-    }
-
-    return currentIndex < 2 ? currentIndex : currentIndex + 1;
-  }
-
   int? _branchIndexForVisual(int visualIndex) {
     if (visualIndex == 2) {
       return null;
@@ -1320,33 +1389,25 @@ class _NavSelectionIndicator extends StatelessWidget {
       width: width,
       height: 54,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
               ? <Color>[
-                  AppColors.primaryLight.withValues(alpha: 0.18),
-                  Colors.white.withValues(alpha: 0.06),
+                  AppColors.primaryLight.withValues(alpha: 0.15),
+                  Colors.white.withValues(alpha: 0.035),
                 ]
               : <Color>[
-                  AppColors.primary.withValues(alpha: 0.12),
-                  Colors.white.withValues(alpha: 0.70),
+                  AppColors.primary.withValues(alpha: 0.11),
+                  Colors.white.withValues(alpha: 0.44),
                 ],
         ),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.12)
-              : AppColors.primary.withValues(alpha: 0.10),
+              ? Colors.white.withValues(alpha: 0.10)
+              : Colors.white.withValues(alpha: 0.56),
         ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: isDark ? 0.14 : 0.10),
-            blurRadius: 16,
-            spreadRadius: -6,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
     );
   }

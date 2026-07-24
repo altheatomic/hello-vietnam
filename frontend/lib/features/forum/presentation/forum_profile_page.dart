@@ -91,7 +91,7 @@ class ForumProfilePage extends StatelessWidget {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(
                       AppConstants.pagePadding,
-                      22,
+                      16,
                       AppConstants.pagePadding,
                       28,
                     ),
@@ -102,19 +102,19 @@ class ForumProfilePage extends StatelessWidget {
                         onToggleFollow: () =>
                             store.toggleFollowAuthor(profile.author.id),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 20),
                       Text(
                         context.l10n.ui('Posts'),
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: 19,
                           fontWeight: FontWeight.w800,
                           color: ForumColors.foreground(context),
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       ...posts.map(
                         (ForumPost post) => Padding(
-                          padding: const EdgeInsets.only(bottom: 18),
+                          padding: const EdgeInsets.only(bottom: 14),
                           child: ForumPostCard(
                             post: post,
                             onOpen: () =>

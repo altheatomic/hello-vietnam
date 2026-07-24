@@ -67,18 +67,18 @@ class ForumSavedPostsPage extends StatelessWidget {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
-                            const Icon(
+                            Icon(
                               Icons.bookmark_border_rounded,
                               size: 36,
-                              color: ForumColors.textMuted,
+                              color: ForumColors.muted(context),
                             ),
                             const SizedBox(height: 12),
                             Text(
                               context.l10n.ui('No saved posts yet'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: ForumColors.textPrimary,
+                                color: ForumColors.foreground(context),
                               ),
                             ),
                           ],
