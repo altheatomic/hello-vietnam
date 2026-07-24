@@ -205,8 +205,9 @@ List<Map<String, dynamic>> _objectList(Map<String, dynamic> json, String key) {
   if (value is! List) throw FormatException('$key must be a list.');
   return value
       .map((Object? item) {
-        if (item is! Map)
+        if (item is! Map) {
           throw FormatException('$key contains an invalid item.');
+        }
         return Map<String, dynamic>.from(item);
       })
       .toList(growable: false);

@@ -62,6 +62,8 @@ import '../features/explore/domain/explore_province.dart';
 import '../features/ai_search/data/ai_recognition_history_repository.dart';
 import '../features/ai_search/presentation/ai_recognition_history_page.dart';
 import '../features/ai_search/presentation/ai_search_page.dart';
+import '../features/ai_chat/presentation/ai_chat_history_page.dart';
+import '../features/ai_chat/presentation/ai_chat_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/notification/presentation/notification_settings_page.dart';
 import '../features/get_started/presentation/get_started_page.dart';
@@ -251,6 +253,8 @@ class AppRoutes {
   static const popularApps = '/popular-apps';
   static const aiSearch = '/ai-search';
   static const aiSearchHistory = '/ai-search/history';
+  static const aiChat = '/ai-chat';
+  static const aiChatHistory = '/ai-chat/history';
   static const wishlist = '/wishlist';
   static const voucher = '/voucher';
   static const loyalty = '/loyalty';
@@ -576,6 +580,17 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.aiSearchHistory,
         builder: (c, s) => const AiRecognitionHistoryPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.aiChat,
+        builder: (c, s) =>
+            AiChatPage(conversationId: s.uri.queryParameters['conversationId']),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.aiChatHistory,
+        builder: (c, s) => const AiChatHistoryPage(),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
