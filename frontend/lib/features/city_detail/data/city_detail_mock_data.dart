@@ -26,7 +26,6 @@ CityDetailData resolveCityDetail(CityDetailRequest request) {
       whatToExpect: destination.highlights.isNotEmpty
           ? destination.highlights
           : _defaultWhatToExpect(destination.name),
-      reviews: _buildCityReviews(destination.name),
     ),
     bestTimeTitle: destination.bestTimeTitle.isNotEmpty
         ? destination.bestTimeTitle
@@ -134,39 +133,3 @@ List<String> _defaultBestTimeDetails(String cityName) {
   ];
 }
 
-List<ItemReview> _buildCityReviews(String cityName) {
-  return <ItemReview>[
-    ItemReview(
-      userName: 'Minh',
-      date: '06/01/2026',
-      ratingLabel: 'Fantastic',
-      rating: 5.0,
-      comment:
-          '$cityName felt lively and easy to explore. The mix of landmarks, food, and local neighborhoods made the visit feel full without being rushed.',
-    ),
-    ItemReview(
-      userName: 'Anna',
-      date: '19/01/2026',
-      ratingLabel: 'Amazing',
-      rating: 4.9,
-      comment:
-          'I especially liked how $cityName offered both iconic sights and quieter moments away from the busiest areas.',
-    ),
-    ItemReview(
-      userName: 'Khoa',
-      date: '08/02/2026',
-      ratingLabel: 'Great',
-      rating: 4.7,
-      comment:
-          'The best part of $cityName was how much there was to do in a single day, from food stops to cultural places and evening views.',
-    ),
-    ItemReview(
-      userName: 'Sana',
-      date: '27/02/2026',
-      ratingLabel: 'Fantastic',
-      rating: 5.0,
-      comment:
-          '$cityName is a place I would gladly revisit. It felt welcoming, photogenic, and very easy to recommend to first-time visitors.',
-    ),
-  ];
-}

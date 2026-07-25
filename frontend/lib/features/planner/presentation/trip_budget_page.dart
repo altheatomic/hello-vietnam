@@ -7,6 +7,7 @@ import 'package:hellovietnam/features/planner/data/models/trip_plan_request.dart
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 class TripBudgetPage extends StatefulWidget {
   const TripBudgetPage({super.key, this.wizard});
@@ -189,21 +190,23 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
               const _LoadingBanner(),
               const SizedBox(height: 20),
             ],
-            const Text(
-              'Option 1: Enter daily budget',
+            Text(
+              context.l10n.ui('Option 1: Enter daily budget'),
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF162235),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Use an exact amount per day if you already know your spending limit.',
+            Text(
+              context.l10n.ui(
+                'Use an exact amount per day if you already know your spending limit.',
+              ),
               style: TextStyle(
                 fontSize: 14.5,
                 fontStyle: FontStyle.italic,
-                color: Color(0xFF6F7B8A),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
                 height: 1.4,
               ),
@@ -215,28 +218,30 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
             ),
             if (_hasTypedBudget) ...<Widget>[
               const SizedBox(height: 10),
-              const _SelectedBudgetHint(
+              _SelectedBudgetHint(
                 label: 'Using exact daily budget. Price range will be ignored.',
               ),
             ],
             const SizedBox(height: 24),
             const _OptionDivider(),
             const SizedBox(height: 24),
-            const Text(
-              'Option 2: Choose price range',
+            Text(
+              context.l10n.ui('Option 2: Choose price range'),
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF162235),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Use a quick preset instead of typing an exact amount.',
+            Text(
+              context.l10n.ui(
+                'Use a quick preset instead of typing an exact amount.',
+              ),
               style: TextStyle(
                 fontSize: 14.5,
                 fontStyle: FontStyle.italic,
-                color: Color(0xFF6F7B8A),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
                 height: 1.4,
               ),
@@ -247,14 +252,14 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: _BudgetRangeCard(
-                  label: range,
+                  label: context.l10n.ui(range),
                   selected: selected,
                   onTap: () => _selectRange(range),
                 ),
               );
             }),
             if (_selectedRange != null)
-              const _SelectedBudgetHint(
+              _SelectedBudgetHint(
                 label: 'Using price range. Typed daily budget will be ignored.',
               ),
           ],
@@ -269,28 +274,34 @@ class _LoadingBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FAFF),
+        color: isDark
+            ? theme.colorScheme.surfaceContainerHighest
+            : const Color(0xFFF0FAFF),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFB8E9FF)),
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFB8E9FF),
+        ),
       ),
-      child: const Row(
+      child: Row(
         children: <Widget>[
-          SizedBox(
+          const SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(strokeWidth: 2.5),
           ),
-          SizedBox(width: 14),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
-              'Generating your personalised itinerary…',
+              context.l10n.ui('Generating your personalised itinerary…'),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF3B495D),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -310,7 +321,7 @@ class _BudgetInputField extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: selected ? const Color(0xFF22B7F1) : const Color(0xFFC4F4FF),
@@ -330,10 +341,10 @@ class _BudgetInputField extends StatelessWidget {
         inputFormatters: <TextInputFormatter>[
           FilteringTextInputFormatter.allow(RegExp(r'[0-9, ]')),
         ],
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15.5,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF162235),
+          color: Theme.of(context).colorScheme.onSurface,
         ),
         decoration: InputDecoration(
           prefixIcon: const Icon(
@@ -341,7 +352,7 @@ class _BudgetInputField extends StatelessWidget {
             color: Color(0xFF9AA3B2),
             size: 22,
           ),
-          hintText: 'e.g. 800,000 VND per day',
+          hintText: context.l10n.ui('e.g. 800,000 VND per day'),
           hintStyle: const TextStyle(
             fontSize: 15.5,
             color: Color(0xFF9AA3B2),
@@ -373,22 +384,26 @@ class _OptionDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: <Widget>[
-        Expanded(child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2)),
+        const Expanded(
+          child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2),
+        ),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text(
-            'OR',
+            context.l10n.ui('OR'),
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF8A95A5),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 1.1,
             ),
           ),
         ),
-        Expanded(child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2)),
+        const Expanded(
+          child: Divider(color: Color(0xFFD8EAF3), thickness: 1.2),
+        ),
       ],
     );
   }
@@ -401,13 +416,19 @@ class _SelectedBudgetHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF2FBFF),
+        color: isDark
+            ? theme.colorScheme.surfaceContainerHighest
+            : const Color(0xFFF2FBFF),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFCBEFFF)),
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFCBEFFF),
+        ),
       ),
       child: Row(
         children: <Widget>[
@@ -419,11 +440,11 @@ class _SelectedBudgetHint extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              label,
-              style: const TextStyle(
+              context.l10n.ui(label),
+              style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF4F6072),
+                color: theme.colorScheme.onSurfaceVariant,
                 height: 1.35,
               ),
             ),
@@ -456,7 +477,9 @@ class _BudgetRangeCard extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           height: 58,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: selected ? 0.98 : 0.95),
+            color: Theme.of(
+              context,
+            ).colorScheme.surface.withValues(alpha: selected ? 0.98 : 0.95),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected
@@ -477,7 +500,7 @@ class _BudgetRangeCard extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15.5,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF22B7F1),
