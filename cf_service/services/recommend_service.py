@@ -1,15 +1,15 @@
 """
 services/recommend_service.py
-Personalized province ranking for the Recommend feature.
+Province listing for the Recommend feature.
 
-Pipeline (single-pass, batched):
-  1. Fetch all provinces from old_province
-  2. Fetch ALL eligible places across all provinces in one query
-  3. Batch-fetch place tags (chunked, already done in module1_repository)
-  4. Build user interest state once (M1 setup)
-  5. Per province: attach tags → rank_places_by_tag_match → avg CB score
-  6. Batch-fetch CF scores for all place IDs → avg CF per province
-  7. Blend CB + CF, sort descending, return top-N
+Pipeline (no ML scoring — see routes/recommend.py::get_province_detail for
+the CB+CF ranked flow used once the user taps into a specific province):
+  1. Fetch all provinces from old_province (name, description_en,
+     average_rating, review_count — all real columns, nothing computed)
+  2. Fetch eligible places (for cover image + place_count only), sorted by
+     rating so the first place seen per province is its best-rated one
+  3. Sort provinces by name with Vietnamese diacritics stripped (A-Z as
+     shown on screen, not raw Vietnamese Unicode order)
 """
 
 from __future__ import annotations
@@ -17,19 +17,46 @@ from __future__ import annotations
 import time  # TEMP — perf audit, remove after done
 
 from db.supabase_client import fetch_all_rows
-from services.module1_algorithm import (
-    build_user_interest_state_from_rows,
-    compute_alpha,
-    rank_places_by_tag_match,
-)
-from services.module1_repository import (
-    attach_place_tags_to_places,
-    build_tag_map,
-    fetch_active_tags,
-    fetch_cf_scores_for_user,
-    fetch_place_tags_for_places,
-    fetch_user_interest_tags,
-)
+
+# Mirrors frontend/lib/core/utils/vietnamese_text_utils.dart
+# (_vietnameseDiacriticReplacements) character-for-character, so provinces
+# sort in the same order they're displayed in (diacritics stripped).
+_VIETNAMESE_DIACRITIC_REPLACEMENTS: dict[str, str] = {
+    "à": "a", "á": "a", "ạ": "a", "ả": "a", "ã": "a",
+    "â": "a", "ầ": "a", "ấ": "a", "ậ": "a", "ẩ": "a", "ẫ": "a",
+    "ă": "a", "ằ": "a", "ắ": "a", "ặ": "a", "ẳ": "a", "ẵ": "a",
+    "è": "e", "é": "e", "ẹ": "e", "ẻ": "e", "ẽ": "e",
+    "ê": "e", "ề": "e", "ế": "e", "ệ": "e", "ể": "e", "ễ": "e",
+    "ì": "i", "í": "i", "ị": "i", "ỉ": "i", "ĩ": "i",
+    "ò": "o", "ó": "o", "ọ": "o", "ỏ": "o", "õ": "o",
+    "ô": "o", "ồ": "o", "ố": "o", "ộ": "o", "ổ": "o", "ỗ": "o",
+    "ơ": "o", "ờ": "o", "ớ": "o", "ợ": "o", "ở": "o", "ỡ": "o",
+    "ù": "u", "ú": "u", "ụ": "u", "ủ": "u", "ũ": "u",
+    "ư": "u", "ừ": "u", "ứ": "u", "ự": "u", "ử": "u", "ữ": "u",
+    "ỳ": "y", "ý": "y", "ỵ": "y", "ỷ": "y", "ỹ": "y",
+    "đ": "d",
+    "À": "A", "Á": "A", "Ạ": "A", "Ả": "A", "Ã": "A",
+    "Â": "A", "Ầ": "A", "Ấ": "A", "Ậ": "A", "Ẩ": "A", "Ẫ": "A",
+    "Ă": "A", "Ằ": "A", "Ắ": "A", "Ặ": "A", "Ẳ": "A", "Ẵ": "A",
+    "È": "E", "É": "E", "Ẹ": "E", "Ẻ": "E", "Ẽ": "E",
+    "Ê": "E", "Ề": "E", "Ế": "E", "Ệ": "E", "Ể": "E", "Ễ": "E",
+    "Ì": "I", "Í": "I", "Ị": "I", "Ỉ": "I", "Ĩ": "I",
+    "Ò": "O", "Ó": "O", "Ọ": "O", "Ỏ": "O", "Õ": "O",
+    "Ô": "O", "Ồ": "O", "Ố": "O", "Ộ": "O", "Ổ": "O", "Ỗ": "O",
+    "Ơ": "O", "Ờ": "O", "Ớ": "O", "Ợ": "O", "Ở": "O", "Ỡ": "O",
+    "Ù": "U", "Ú": "U", "Ụ": "U", "Ủ": "U", "Ũ": "U",
+    "Ư": "U", "Ừ": "U", "Ứ": "U", "Ự": "U", "Ử": "U", "Ữ": "U",
+    "Ỳ": "Y", "Ý": "Y", "Ỵ": "Y", "Ỷ": "Y", "Ỹ": "Y",
+    "Đ": "D",
+}
+
+
+def remove_vietnamese_diacritics(text: str) -> str:
+    """Removes precomposed Vietnamese diacritics, matching the frontend's
+    removeVietnameseDiacritics() character-for-character (no Unicode
+    normalization — 'Đ' is not decomposable via NFD, so it needs the
+    explicit map above)."""
+    return "".join(_VIETNAMESE_DIACRITIC_REPLACEMENTS.get(ch, ch) for ch in text)
 
 
 def _extract_gallery_urls(gallery_raw: list) -> list[str]:
@@ -44,113 +71,83 @@ def _extract_gallery_urls(gallery_raw: list) -> list[str]:
     return urls
 
 
-def recommend_provinces(supabase, id_user: str, limit: int = 20) -> list[dict]:
+def recommend_provinces(supabase, limit: int = 20) -> list[dict]:
     # TEMP — perf audit, remove after done
     _t0 = time.perf_counter()
 
-    # ── Step 1: All provinces ─────────────────────────────────────────────────
-    prov_resp = supabase.table("old_province").select("id_province, name").execute()
-    province_map: dict[str, str] = {
-        str(p["id_province"]): p["name"]
+    # ── Step 1: All provinces — real columns, nothing computed ────────────────
+    prov_resp = (
+        supabase
+        .table("old_province")
+        .select("id_province,name,description_en,average_rating,review_count")
+        .execute()
+    )
+    province_map: dict[str, dict] = {
+        str(p["id_province"]): p
         for p in (prov_resp.data or [])
     }
     if not province_map:
         return []
 
-    # ── Step 2: All eligible places (paginated past PostgREST max-rows) ───────
+    # ── Step 2: Eligible places, sorted best-first, for cover image + count ───
     def _build_places_query(start: int, end: int):
         return (
             supabase
             .table("place_localized_en")
             .select(
-                "id_place,old_province,name,cover_image,gallery,"
+                "id_place,old_province,cover_image,gallery,"
                 "average_rating,review_count,"
-                "place_subcategory!inner(name,place_category,is_itinerary_eligible)"
+                "place_subcategory!inner(is_itinerary_eligible)"
             )
             .eq("status", "active")
             .eq("place_subcategory.is_itinerary_eligible", True)
             .filter("latitude", "not.is", "null")
             .filter("longitude", "not.is", "null")
+            .order("average_rating", desc=True)
+            .order("review_count", desc=True)
             .range(start, end)
         )
 
     all_places = fetch_all_rows(_build_places_query)
-    if not all_places:
-        return []
 
-    # Group by province, cap sample per province
-    by_province: dict[str, list[dict]] = {}
+    # Places are fetched best-rated-first, so the first place seen per
+    # province is already its highest-rated (tie-broken by review_count).
+    place_count: dict[str, int] = {}
+    cover_by_province: dict[str, dict] = {}
     for p in all_places:
         prov_id = str(p.get("old_province") or "")
-        if prov_id and prov_id in province_map:
-            by_province.setdefault(prov_id, []).append(p)
+        if not prov_id or prov_id not in province_map:
+            continue
+        place_count[prov_id] = place_count.get(prov_id, 0) + 1
+        if prov_id not in cover_by_province:
+            cover_by_province[prov_id] = p
 
-    # ── Step 3: User interest state (once) ───────────────────────────────────
-    tags = fetch_active_tags(supabase)
-    tag_map = build_tag_map(tags)
-    id_tag_map = {
-        str(t["id_tag"]): t["tag_code"]
-        for t in tags
-        if t.get("id_tag") and t.get("tag_code")
-    }
-    interest_rows = fetch_user_interest_tags(supabase, id_user)
-    user_interest_state = build_user_interest_state_from_rows(
-        interest_rows, tag_map, id_tag_map
-    )
-
-    # ── Step 4: Batch-fetch place tags & CF scores for all places ─────────────
-    all_place_ids = [str(p["id_place"]) for p in all_places]
-    place_tag_rows = fetch_place_tags_for_places(supabase, all_place_ids)
-    cf_scores_all = fetch_cf_scores_for_user(supabase, id_user, all_place_ids)
-
-    # ── Step 5: Score each province ───────────────────────────────────────────
+    # ── Step 3: Assemble + sort A-Z by diacritics-stripped name ────────────────
     results: list[dict] = []
-    for prov_id, places in by_province.items():
-        sample = places
-        sample_ids_set = {str(p["id_place"]) for p in sample}
-
-        enriched = attach_place_tags_to_places(sample, place_tag_rows)
-        ranked = rank_places_by_tag_match(
-            enriched, user_interest_state,
-            weight_field="final_weight",
-            id_tag_map=id_tag_map,
-        )
-
-        avg_cb = sum(p.get("tag_match") or 0.0 for p in ranked) / len(ranked)
-
-        cf_subset = {k: v for k, v in cf_scores_all.items() if k in sample_ids_set}
-        avg_cf = sum(cf_subset.values()) / len(cf_subset) if cf_subset else 0.0
-
-        alpha = compute_alpha(cf_subset, len(sample))
-        final_score = alpha * avg_cb + (1 - alpha) * avg_cf
-
-        top = ranked[0] if ranked else {}
-        cover = top.get("cover_image")
-        gallery_urls = _extract_gallery_urls(top.get("gallery") or [])
-
-        avg_rating = round(
-            sum((p.get("average_rating") or 0.0) for p in sample) / len(sample), 1
-        )
+    for prov_id, province in province_map.items():
+        top_place = cover_by_province.get(prov_id, {})
+        gallery_urls = _extract_gallery_urls(top_place.get("gallery") or [])
 
         results.append({
             "id_province":  prov_id,
-            "name":         province_map[prov_id],
-            "place_count":  len(places),
-            "cover_image":  cover,
+            "name":         province.get("name"),
+            "description":  province.get("description_en"),
+            "place_count":  place_count.get(prov_id, 0),
+            "cover_image":  top_place.get("cover_image"),
             "gallery":      gallery_urls,
-            "avg_rating":   avg_rating,
-            "cb_score":     round(avg_cb, 4),
-            "cf_score":     round(avg_cf, 4),
-            "final_score":  round(final_score, 4),
+            "avg_rating":   province.get("average_rating") or 0.0,
+            "review_count": province.get("review_count") or 0,
         })
 
-    results.sort(key=lambda x: x["final_score"], reverse=True)
+    results.sort(
+        key=lambda r: remove_vietnamese_diacritics(r["name"] or "").lower()
+    )
 
     # TEMP — perf audit, remove after done
     elapsed_ms = round((time.perf_counter() - _t0) * 1000, 1)
     print(
         f"[TIMING] recommend_provinces: elapsed={elapsed_ms}ms "
-        f"total_places={len(all_places)} provinces_scored={len(results)}"
+        f"total_places={len(all_places)} provinces={len(results)}"
     )
 
     return results[:limit]

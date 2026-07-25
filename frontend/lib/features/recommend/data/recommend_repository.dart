@@ -130,9 +130,14 @@ class RecommendRepository {
       id: json['id_province'] as String? ?? '',
       name: json['name'] as String? ?? '',
       shortDescription: '$placeCount places · ★ $avgRating',
-      description: '',
+      description: json['description'] as String? ?? '',
       imagePath: imagePath,
+      // Not populated by backend recommend_provinces() response (which no
+      // longer computes ML scores for province listing); defaults to 0.
+      // Retained for compatibility with mock data used elsewhere
+      // (travel_recommendation_service.dart).
       rating: (json['final_score'] as num?)?.toDouble() ?? 0,
+      avgRating: avgRating,
       gallery: gallery,
       bestMonths: const <int>[],
     );

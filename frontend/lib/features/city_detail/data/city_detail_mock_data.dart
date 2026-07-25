@@ -14,10 +14,13 @@ CityDetailData resolveCityDetail(CityDetailRequest request) {
       name: destination.name,
       category: DetailCategory.culture,
       images: _buildImages(destination, request),
-      rating: request.fallbackRating ?? destination.rating,
+      rating:
+          request.fallbackRating ??
+          destination.avgRating ??
+          destination.rating,
       reviewCount: _reviewCountFor(destination.name),
       ratingLabel: _ratingLabelFor(
-        request.fallbackRating ?? destination.rating,
+        request.fallbackRating ?? destination.avgRating ?? destination.rating,
       ),
       description: destination.description,
       whatToExpect: destination.highlights.isNotEmpty
