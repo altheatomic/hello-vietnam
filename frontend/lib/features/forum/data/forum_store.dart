@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/create_forum_post_request.dart';
 import '../domain/forum_models.dart';
+import 'forum_page_cursor.dart';
 import 'forum_repository.dart';
 
 class ForumStore extends ChangeNotifier {
@@ -26,6 +27,15 @@ class ForumStore extends ChangeNotifier {
   final Map<String, ForumPost> _postsById = <String, ForumPost>{};
   final Map<String, List<ForumComment>> _commentsByPostId =
       <String, List<ForumComment>>{};
+  final Map<String, ForumPageCursor?> _nextCommentCursorByPostId =
+      <String, ForumPageCursor?>{};
+  final Map<String, bool> _hasMoreCommentsByPostId = <String, bool>{};
+  final Map<String, String> _commentErrorsByPostId = <String, String>{};
+  final Set<String> _loadedCommentPostIds = <String>{};
+  final Set<String> _loadingInitialCommentPostIds = <String>{};
+  final Set<String> _loadingMoreCommentPostIds = <String>{};
+  final Map<String, Future<void>> _commentLoadFutures =
+      <String, Future<void>>{};
   final List<String> _forYouFeedIds = <String>[];
   final List<String> _followingFeedIds = <String>[];
   final Set<String> _blockedAuthorIds = <String>{};
@@ -42,8 +52,8 @@ class ForumStore extends ChangeNotifier {
   bool _isLoadingMoreFollowing = false;
   bool _hasMoreForYou = false;
   bool _hasMoreFollowing = false;
-  String? _nextForYouCursor;
-  String? _nextFollowingCursor;
+  ForumPageCursor? _nextForYouCursor;
+  ForumPageCursor? _nextFollowingCursor;
   String? _errorMessage;
   Future<void>? _loadFuture;
   Future<void>? _loadMoreForYouFuture;
@@ -260,6 +270,70 @@ class ForumStore extends ChangeNotifier {
     return List<ForumComment>.unmodifiable(
       _commentsByPostId[postId] ?? const <ForumComment>[],
     );
+  }
+
+  bool hasLoadedComments(String postId) =>
+      _loadedCommentPostIds.contains(postId);
+
+  bool isLoadingComments(String postId) =>
+      _loadingInitialCommentPostIds.contains(postId);
+
+  bool isLoadingMoreComments(String postId) =>
+      _loadingMoreCommentPostIds.contains(postId);
+
+  bool hasMoreComments(String postId) =>
+      _hasMoreCommentsByPostId[postId] ?? false;
+
+  String? commentErrorForPost(String postId) => _commentErrorsByPostId[postId];
+
+  Future<void> ensureCommentsLoaded(
+    String postId, {
+    bool forceRefresh = false,
+  }) {
+    if (!forceRefresh && hasLoadedComments(postId)) {
+      return Future<void>.value();
+    }
+
+    final Future<void>? activeLoad = _commentLoadFutures[postId];
+    if (activeLoad != null) {
+      return activeLoad;
+    }
+
+    final Future<void> load =
+        _loadCommentsPage(
+          postId: postId,
+          beforeCursor: null,
+          append: false,
+        ).whenComplete(() {
+          _commentLoadFutures.remove(postId);
+        });
+    _commentLoadFutures[postId] = load;
+    return load;
+  }
+
+  Future<void> loadMoreComments(String postId) {
+    if (!hasLoadedComments(postId)) {
+      return ensureCommentsLoaded(postId);
+    }
+    if (!hasMoreComments(postId)) {
+      return Future<void>.value();
+    }
+
+    final Future<void>? activeLoad = _commentLoadFutures[postId];
+    if (activeLoad != null) {
+      return activeLoad;
+    }
+
+    final Future<void> load =
+        _loadCommentsPage(
+          postId: postId,
+          beforeCursor: _nextCommentCursorByPostId[postId],
+          append: true,
+        ).whenComplete(() {
+          _commentLoadFutures.remove(postId);
+        });
+    _commentLoadFutures[postId] = load;
+    return load;
   }
 
   void toggleLike(String postId) {
@@ -495,6 +569,7 @@ class ForumStore extends ChangeNotifier {
     await _repository.deletePost(postId);
     _postsById.remove(postId);
     _commentsByPostId.remove(postId);
+    _clearCommentState(postId);
     _forYouFeedIds.remove(postId);
     _followingFeedIds.remove(postId);
     _reportedPostIds.remove(postId);
@@ -507,6 +582,82 @@ class ForumStore extends ChangeNotifier {
         .whereType<ForumPost>()
         .where((ForumPost post) => !_blockedAuthorIds.contains(post.author.id))
         .toList(growable: false);
+  }
+
+  Future<void> _loadCommentsPage({
+    required String postId,
+    required ForumPageCursor? beforeCursor,
+    required bool append,
+  }) async {
+    final Set<String> loadingSet = append
+        ? _loadingMoreCommentPostIds
+        : _loadingInitialCommentPostIds;
+    loadingSet.add(postId);
+    _commentErrorsByPostId.remove(postId);
+    notifyListeners();
+
+    try {
+      final ForumCommentsPage page = await _repository.loadCommentsPage(
+        postId: postId,
+        beforeCursor: beforeCursor,
+      );
+      _mergeCommentsPage(postId, page.comments, append: append);
+      _nextCommentCursorByPostId[postId] = page.nextCursor;
+      _hasMoreCommentsByPostId[postId] = page.hasMore;
+      _loadedCommentPostIds.add(postId);
+    } catch (error) {
+      _commentErrorsByPostId[postId] = error.toString();
+      debugPrint('Load forum comments error for $postId: $error');
+    } finally {
+      loadingSet.remove(postId);
+      notifyListeners();
+    }
+  }
+
+  void _mergeCommentsPage(
+    String postId,
+    List<ForumComment> incoming, {
+    required bool append,
+  }) {
+    if (!append) {
+      _commentsByPostId[postId] = List<ForumComment>.from(incoming);
+      return;
+    }
+
+    final List<ForumComment> comments = _commentsByPostId.putIfAbsent(
+      postId,
+      () => <ForumComment>[],
+    );
+    final Set<String> existingIds = comments
+        .map((ForumComment comment) => comment.id)
+        .toSet();
+    for (final ForumComment comment in incoming) {
+      if (existingIds.add(comment.id)) {
+        comments.add(comment);
+      }
+    }
+  }
+
+  void _clearCommentState(String postId) {
+    _commentsByPostId.remove(postId);
+    _nextCommentCursorByPostId.remove(postId);
+    _hasMoreCommentsByPostId.remove(postId);
+    _commentErrorsByPostId.remove(postId);
+    _loadedCommentPostIds.remove(postId);
+    _loadingInitialCommentPostIds.remove(postId);
+    _loadingMoreCommentPostIds.remove(postId);
+    _commentLoadFutures.remove(postId);
+  }
+
+  void _clearAllCommentState() {
+    _commentsByPostId.clear();
+    _nextCommentCursorByPostId.clear();
+    _hasMoreCommentsByPostId.clear();
+    _commentErrorsByPostId.clear();
+    _loadedCommentPostIds.clear();
+    _loadingInitialCommentPostIds.clear();
+    _loadingMoreCommentPostIds.clear();
+    _commentLoadFutures.clear();
   }
 
   void _applySnapshot(ForumRepositorySnapshot snapshot) {
@@ -522,17 +673,15 @@ class ForumStore extends ChangeNotifier {
           (ForumPost post) => MapEntry<String, ForumPost>(post.id, post),
         ),
       );
-    _commentsByPostId
-      ..clear()
-      ..addAll(
-        snapshot.commentsByPostId.map(
-          (String key, List<ForumComment> value) =>
-              MapEntry<String, List<ForumComment>>(
-                key,
-                List<ForumComment>.from(value),
-              ),
-        ),
-      );
+    _clearAllCommentState();
+    snapshot.commentsByPostId.forEach((
+      String postId,
+      List<ForumComment> comments,
+    ) {
+      _commentsByPostId[postId] = List<ForumComment>.from(comments);
+      _loadedCommentPostIds.add(postId);
+      _hasMoreCommentsByPostId[postId] = false;
+    });
     _forYouFeedIds
       ..clear()
       ..addAll(snapshot.forYouFeedIds);
@@ -570,6 +719,8 @@ class ForumStore extends ChangeNotifier {
       List<ForumComment> comments,
     ) {
       _commentsByPostId[postId] = List<ForumComment>.from(comments);
+      _loadedCommentPostIds.add(postId);
+      _hasMoreCommentsByPostId[postId] = false;
     });
     _blockedAuthorIds.addAll(snapshot.blockedAuthorIds);
     _reportedPostIds.addAll(snapshot.reportedPostIds);
@@ -600,7 +751,7 @@ class ForumStore extends ChangeNotifier {
     _currentUserProfile = null;
     _profilesById.clear();
     _postsById.clear();
-    _commentsByPostId.clear();
+    _clearAllCommentState();
     _forYouFeedIds.clear();
     _followingFeedIds.clear();
     _blockedAuthorIds.clear();

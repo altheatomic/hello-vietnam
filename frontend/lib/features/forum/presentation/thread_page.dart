@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
@@ -10,14 +12,65 @@ import 'package:hellovietnam/features/forum/domain/forum_models.dart';
 import 'package:hellovietnam/features/forum/presentation/forum_post_actions.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
 
-class ThreadPage extends StatelessWidget {
-  const ThreadPage({super.key, required this.postId});
+class ThreadPage extends StatefulWidget {
+  const ThreadPage({super.key, required this.postId, this.store});
 
   final String postId;
+  final ForumStore? store;
+
+  @override
+  State<ThreadPage> createState() => _ThreadPageState();
+}
+
+class _ThreadPageState extends State<ThreadPage> {
+  late final ForumStore _store = widget.store ?? ForumStore.instance;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    unawaited(_loadThread());
+  }
+
+  @override
+  void didUpdateWidget(covariant ThreadPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.postId != widget.postId) {
+      unawaited(_loadThread());
+    }
+  }
+
+  Future<void> _loadThread() async {
+    await _store.ensureLoaded();
+    if (!mounted || _store.postById(widget.postId) == null) {
+      return;
+    }
+    await _store.ensureCommentsLoaded(widget.postId);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+    final ScrollPosition position = _scrollController.position;
+    if (position.maxScrollExtent - position.pixels <= 320) {
+      unawaited(_store.loadMoreComments(widget.postId));
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final ForumStore store = ForumStore.instance;
+    final ForumStore store = _store;
+    final String postId = widget.postId;
 
     void showComingSoon(String message) {
       ScaffoldMessenger.of(context)
@@ -133,6 +186,7 @@ class ThreadPage extends StatelessWidget {
                 ),
                 Expanded(
                   child: SingleChildScrollView(
+                    controller: _scrollController,
                     padding: const EdgeInsets.fromLTRB(
                       AppConstants.pagePadding,
                       22,
@@ -176,21 +230,68 @@ class ThreadPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        ...comments.map(
-                          (ForumComment comment) => Padding(
-                            padding: const EdgeInsets.only(bottom: 18),
-                            child: ForumCommentCard(
-                              comment: comment,
-                              onAuthorTap: () => openProfile(comment.author.id),
-                              onLike: () =>
-                                  store.toggleCommentLike(postId, comment.id),
-                              onReply: () => openReplyModal(
-                                post: post,
-                                replyToHandle: comment.author.handle,
+                        if (store.isLoadingComments(postId))
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 28),
+                            child: Center(
+                              child: CircularProgressIndicator.adaptive(),
+                            ),
+                          )
+                        else if (!store.hasLoadedComments(postId) &&
+                            store.commentErrorForPost(postId) != null)
+                          _CommentLoadError(
+                            message: context.l10n.ui(
+                              'Could not load comments.',
+                            ),
+                            onRetry: () => store.ensureCommentsLoaded(
+                              postId,
+                              forceRefresh: true,
+                            ),
+                          )
+                        else if (comments.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: Text(
+                                context.l10n.ui('No comments yet.'),
+                                style: TextStyle(
+                                  color: ForumColors.muted(context),
+                                ),
+                              ),
+                            ),
+                          )
+                        else
+                          ...comments.map(
+                            (ForumComment comment) => Padding(
+                              padding: const EdgeInsets.only(bottom: 18),
+                              child: ForumCommentCard(
+                                comment: comment,
+                                onAuthorTap: () =>
+                                    openProfile(comment.author.id),
+                                onLike: () =>
+                                    store.toggleCommentLike(postId, comment.id),
+                                onReply: () => openReplyModal(
+                                  post: post,
+                                  replyToHandle: comment.author.handle,
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        if (store.isLoadingMoreComments(postId))
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: CircularProgressIndicator.adaptive(),
+                            ),
+                          )
+                        else if (store.hasLoadedComments(postId) &&
+                            store.commentErrorForPost(postId) != null)
+                          _CommentLoadError(
+                            message: context.l10n.ui(
+                              'Could not load more comments.',
+                            ),
+                            onRetry: () => store.loadMoreComments(postId),
+                          ),
                       ],
                     ),
                   ),
@@ -198,6 +299,38 @@ class ThreadPage extends StatelessWidget {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _CommentLoadError extends StatelessWidget {
+  const _CommentLoadError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: ForumColors.muted(context)),
+            ),
+            const SizedBox(height: 6),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: Text(context.l10n.ui('Retry')),
+            ),
+          ],
         ),
       ),
     );
