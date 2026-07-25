@@ -119,7 +119,7 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
     final double statusBarH = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: <Widget>[
           Padding(

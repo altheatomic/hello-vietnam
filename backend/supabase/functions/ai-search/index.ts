@@ -1,3 +1,7 @@
+import { createClient } from "@supabase/supabase-js";
+import { loadFoodCatalog } from "./food_catalog.ts";
+import { findBestFoodMatch } from "./food_matcher.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -170,8 +174,7 @@ Deno.serve(async (request) => {
   if (!geminiResponse.ok) {
     return jsonResponse(
       {
-        error:
-          geminiData?.error?.message ??
+        error: geminiData?.error?.message ??
           `Gemini request failed (${geminiResponse.status}).`,
       },
       geminiResponse.status,
@@ -196,11 +199,23 @@ Deno.serve(async (request) => {
     );
   }
 
+  const resultType = normalizeResultType(parsed.result_type);
+  const confidence = clampConfidence(parsed.confidence);
+  const detectedName = readString(parsed.detected_name);
+  const alternativeNames = readString(parsed.alternative_names);
+  const databaseMatch = resultType === "food"
+    ? await resolveFoodDatabaseMatch({
+      detectedName,
+      alternativeNames,
+      confidence,
+    })
+    : null;
+
   return jsonResponse(
     {
-      result_type: normalizeResultType(parsed.result_type),
-      confidence: clampConfidence(parsed.confidence),
-      detected_name: readString(parsed.detected_name),
+      result_type: resultType,
+      confidence,
+      detected_name: detectedName,
       subtitle: readString(parsed.subtitle),
       summary: readString(parsed.summary),
       location_hint: readString(parsed.location_hint),
@@ -212,15 +227,54 @@ Deno.serve(async (request) => {
       cultural_significance: readString(parsed.cultural_significance),
       usage_bullets: readStringArray(parsed.usage_bullets),
       production_method: readString(parsed.production_method),
-      alternative_names: readString(parsed.alternative_names),
+      alternative_names: alternativeNames,
       price_range: readString(parsed.price_range),
       suggested_places: readStringArray(parsed.suggested_places),
+      db_match: databaseMatch,
       provider: "gemini",
       model: geminiModel,
     },
     200,
   );
 });
+
+async function resolveFoodDatabaseMatch(input: {
+  detectedName: string;
+  alternativeNames: string;
+  confidence: number;
+}) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.warn(
+      "AI Search database matching skipped: Supabase secrets missing.",
+    );
+    return null;
+  }
+
+  try {
+    const client = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+    const catalog = await loadFoodCatalog(client);
+    return findBestFoodMatch({
+      detectedName: input.detectedName,
+      alternativeNames: input.alternativeNames,
+      recognitionConfidence: input.confidence,
+      catalog,
+    });
+  } catch (error) {
+    console.warn(
+      `AI Search database matching skipped: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return null;
+  }
+}
 
 function normalizeResultType(value: unknown) {
   const raw = readString(value).toLowerCase();

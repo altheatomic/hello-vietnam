@@ -360,8 +360,9 @@ class _TranslatePageState extends State<TranslatePage>
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F5FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: <Widget>[
@@ -394,10 +395,10 @@ class _TranslatePageState extends State<TranslatePage>
                             child: Text(
                               context.l10n.ui('Translate'),
                               maxLines: 1,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 33,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF1F2735),
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -415,7 +416,7 @@ class _TranslatePageState extends State<TranslatePage>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: <BoxShadow>[
                         BoxShadow(
@@ -510,10 +511,10 @@ class _TranslatePageState extends State<TranslatePage>
                       alignment: Alignment.centerLeft,
                       child: Text(
                         context.l10n.ui('QUICK EXAMPLES'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF7B8596),
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -984,6 +985,7 @@ class _QuickExampleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -991,7 +993,7 @@ class _QuickExampleTile extends StatelessWidget {
         height: 58,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
@@ -1001,14 +1003,17 @@ class _QuickExampleTile extends StatelessWidget {
             Expanded(
               child: Text(
                 text,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
-                  color: Color(0xFF3A4455),
+                  color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFFD0D5DE)),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),
@@ -1036,6 +1041,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final List<_LanguageOption> options = widget.languages.where((
       _LanguageOption item,
     ) {
@@ -1045,9 +1051,9 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.74,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
       ),
       child: Column(
         children: <Widget>[
@@ -1067,18 +1073,18 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                 Expanded(
                   child: Text(
                     context.l10n.ui('Select Language'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF242D3D),
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
                 IconButton(
                   onPressed: () => context.pop(),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close_rounded,
-                    color: Color(0xFFA4ACB9),
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -1089,7 +1095,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
             child: Container(
               height: 42,
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F6F9),
+                color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextField(
@@ -1148,7 +1154,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                                   : FontWeight.w600,
                               color: selected
                                   ? const Color(0xFF2E74DA)
-                                  : const Color(0xFF4A5567),
+                                  : theme.colorScheme.onSurface,
                             ),
                           ),
                         ),

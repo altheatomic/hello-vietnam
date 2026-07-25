@@ -7,6 +7,7 @@ import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
+import 'package:hellovietnam/features/forum/presentation/forum_post_actions.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
 
 class ForumProfilePage extends StatelessWidget {
@@ -40,27 +41,7 @@ class ForumProfilePage extends StatelessWidget {
     }
 
     Future<void> openPostMenu(ForumPost post) async {
-      final ForumPostMoreAction? action = await ForumPostMoreMenu.show(
-        context,
-        author: post.author,
-        isFollowing: post.author.isFollowing,
-      );
-      if (!context.mounted || action == null) {
-        return;
-      }
-
-      switch (action) {
-        case ForumPostMoreAction.follow:
-          store.toggleFollowAuthor(post.author.id);
-          break;
-        case ForumPostMoreAction.block:
-          store.toggleBlockAuthor(post.author.id);
-          showComingSoon('${post.author.name} đã bị block khỏi forum feed.');
-          break;
-        case ForumPostMoreAction.report:
-          context.push(AppRoutes.forumReportPath(post.id));
-          break;
-      }
+      await ForumPostActions.open(context, store: store, post: post);
     }
 
     return ForumBackground(
@@ -110,7 +91,7 @@ class ForumProfilePage extends StatelessWidget {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(
                       AppConstants.pagePadding,
-                      22,
+                      16,
                       AppConstants.pagePadding,
                       28,
                     ),
@@ -121,19 +102,19 @@ class ForumProfilePage extends StatelessWidget {
                         onToggleFollow: () =>
                             store.toggleFollowAuthor(profile.author.id),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 20),
                       Text(
                         context.l10n.ui('Posts'),
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: 19,
                           fontWeight: FontWeight.w800,
                           color: ForumColors.foreground(context),
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       ...posts.map(
                         (ForumPost post) => Padding(
-                          padding: const EdgeInsets.only(bottom: 18),
+                          padding: const EdgeInsets.only(bottom: 14),
                           child: ForumPostCard(
                             post: post,
                             onOpen: () =>
@@ -151,9 +132,7 @@ class ForumProfilePage extends StatelessWidget {
                             onSharedItemTap: post.sharedItem == null
                                 ? null
                                 : () => openSharedItem(post.sharedItem!),
-                            showMoreButton: !store.isCurrentUser(
-                              post.author.id,
-                            ),
+                            showMoreButton: true,
                             showInlineFollow: false,
                           ),
                         ),

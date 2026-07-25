@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
-import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
@@ -29,7 +29,7 @@ class _TripResultPageState extends State<TripResultPage> {
   Future<void> _handleSave() async {
     final idPlan = widget.plan.idPlan;
     if (idPlan == null) {
-      _showSnackBar('No plan ID — please generate again.');
+      _showSnackBar(context.l10n.ui('No plan ID — please generate again.'));
       return;
     }
 
@@ -37,11 +37,11 @@ class _TripResultPageState extends State<TripResultPage> {
     try {
       await TripRepository().savePlan(idPlan);
       if (!mounted) return;
-      _showSnackBar('Trip saved!');
+      _showSnackBar(context.l10n.ui('Trip saved!'));
       context.push(AppRoutes.tripPlannerSaved);
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar('Could not save trip. Please try again.');
+      _showSnackBar(context.l10n.ui('Could not save trip. Please try again.'));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -50,28 +50,29 @@ class _TripResultPageState extends State<TripResultPage> {
   void _handleShare() {
     final plan = widget.plan;
     if (plan.idPlan == null) {
-      _showSnackBar('Save the trip first before sharing.');
+      _showSnackBar(context.l10n.ui('Save the trip first before sharing.'));
       return;
     }
     showDialog<void>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
-        title: const Text('Share to Forum'),
-        content: const Text(
-          'Share this trip plan as a forum post? '
-          'Other users can save it to their own trips.',
+        title: Text(context.l10n.ui('Share to Forum')),
+        content: Text(
+          context.l10n.ui(
+            'Share this trip plan as a forum post? Other users can save it to their own trips.',
+          ),
         ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.ui('Cancel')),
           ),
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
               await _shareToForum();
             },
-            child: const Text('Share'),
+            child: Text(context.l10n.ui('Share')),
           ),
         ],
       ),
@@ -94,29 +95,42 @@ class _TripResultPageState extends State<TripResultPage> {
           (sum, d) =>
               sum + d.places.where((p) => p.type != 'lunch_break').length,
         ),
+        'days': plan.days
+            .map(
+              (d) => <String, dynamic>{
+                'day': d.day,
+                'places': d.places
+                    .where((p) => p.type != 'lunch_break')
+                    .map((p) => p.name)
+                    .toList(),
+              },
+            )
+            .toList(),
       };
 
       final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId == null) {
-        _showSnackBar('Please sign in to share.');
+        _showSnackBar(context.l10n.ui('Please sign in to share.'));
         return;
       }
 
-      await Supabase.instance.client.from('forum_post').insert(<String, dynamic>{
-        'id_author_user': userId,
-        'content':
-            'I created a ${plan.days.length}-day trip plan! '
-            'Check it out and save it to your trips.',
-        'status': 'active',
-        'shared_item': sharedItem,
-      });
+      await Supabase.instance.client
+          .from('forum_post')
+          .insert(<String, dynamic>{
+            'id_author_user': userId,
+            'content':
+                'I created a ${plan.days.length}-day trip plan! '
+                'Check it out and save it to your trips.',
+            'status': 'active',
+            'shared_item': sharedItem,
+          });
       await ForumStore.instance.refresh(notifyLoading: false);
 
       if (!mounted) return;
-      _showSnackBar('Shared to Forum!');
+      _showSnackBar(context.l10n.ui('Shared to Forum!'));
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar('Could not share. Please try again.');
+      _showSnackBar(context.l10n.ui('Could not share. Please try again.'));
     } finally {
       if (mounted) setState(() => _isSharing = false);
     }
@@ -133,35 +147,52 @@ class _TripResultPageState extends State<TripResultPage> {
   @override
   Widget build(BuildContext context) {
     final days = _convertPlan(widget.plan);
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final List<Color> pageColors = isDark
+        ? const <Color>[Color(0xFF020B10), Color(0xFF0B1A22), Color(0xFF0B2426)]
+        : const <Color>[
+            Color(0xFFF1F6FE),
+            Color(0xFFDFF5FF),
+            Color(0xFFCCF6F1),
+          ];
 
-    final totalActivities =
-        days.fold<int>(0, (sum, d) => sum + d.activities.length);
+    final totalActivities = days.fold<int>(
+      0,
+      (sum, d) => sum + d.activities.length,
+    );
     final String dateRange = _tripDateRange(widget.plan.days);
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: <Color>[
-              Color(0xFFF1F6FE),
-              Color(0xFFDFF5FF),
-              Color(0xFFCCF6F1),
-            ],
+            colors: pageColors,
           ),
         ),
         child: Stack(
           children: <Widget>[
-            const Positioned(
+            Positioned(
               top: -90,
               right: -60,
-              child: _DecorativeOrb(size: 220, color: Color(0x662BC3FF)),
+              child: _DecorativeOrb(
+                size: 220,
+                color: isDark
+                    ? const Color(0x332BC3FF)
+                    : const Color(0x662BC3FF),
+              ),
             ),
-            const Positioned(
+            Positioned(
               bottom: 100,
               left: -40,
-              child: _DecorativeOrb(size: 180, color: Color(0x5556E2D5)),
+              child: _DecorativeOrb(
+                size: 180,
+                color: isDark
+                    ? const Color(0x2256E2D5)
+                    : const Color(0x5556E2D5),
+              ),
             ),
             SafeArea(
               child: SingleChildScrollView(
@@ -172,12 +203,12 @@ class _TripResultPageState extends State<TripResultPage> {
                   children: <Widget>[
                     _BackButtonCircle(onTap: () => context.pop()),
                     const SizedBox(height: 18),
-                    const Text(
-                      'Your Vietnam Adventure',
+                    Text(
+                      context.l10n.ui('Your Vietnam Adventure'),
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                         height: 1.08,
                       ),
                     ),
@@ -185,19 +216,19 @@ class _TripResultPageState extends State<TripResultPage> {
                     if (dateRange.isNotEmpty) ...<Widget>[
                       Text(
                         dateRange,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14.5,
-                          color: Color(0xFF556273),
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 4),
                     ],
                     Text(
-                      '${days.length} ${days.length == 1 ? 'day' : 'days'} • $totalActivities activities',
-                      style: const TextStyle(
+                      '${days.length} ${context.l10n.ui(days.length == 1 ? 'day' : 'days')} • $totalActivities ${context.l10n.ui('Activities').toLowerCase()}',
+                      style: TextStyle(
                         fontSize: 14.5,
-                        color: Color(0xFF556273),
+                        color: theme.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -206,7 +237,9 @@ class _TripResultPageState extends State<TripResultPage> {
                       children: <Widget>[
                         Expanded(
                           child: _ActionButton(
-                            label: _isSaving ? 'Saving…' : 'Save',
+                            label: context.l10n.ui(
+                              _isSaving ? 'Saving…' : 'Save',
+                            ),
                             onTap: _isSaving ? null : _handleSave,
                           ),
                         ),
@@ -237,7 +270,7 @@ class _TripResultPageState extends State<TripResultPage> {
                           child: _StatCard(
                             icon: Icons.calendar_today_outlined,
                             value: '${days.length}',
-                            label: 'Days',
+                            label: context.l10n.ui('Days'),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -245,26 +278,26 @@ class _TripResultPageState extends State<TripResultPage> {
                           child: _StatCard(
                             icon: Icons.location_on_outlined,
                             value: '$totalActivities',
-                            label: 'Activities',
+                            label: context.l10n.ui('Activities'),
                           ),
                         ),
                         const SizedBox(width: 14),
-                        const Expanded(
+                        Expanded(
                           child: _StatCard(
                             icon: Icons.access_time_rounded,
-                            value: 'Full',
-                            label: 'Schedule',
+                            value: context.l10n.ui('Full'),
+                            label: context.l10n.ui('Schedule'),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 34),
-                    const Text(
-                      'Your Itinerary',
+                    Text(
+                      context.l10n.ui('Your Itinerary'),
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -344,7 +377,8 @@ List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
     return TripPlannerDayData(
       dayLabel: 'Day ${day.day}',
       date: _formatIsoDate(day.date),
-      activityCountLabel: '$count ${count == 1 ? 'activity' : 'activities'} planned',
+      activityCountLabel:
+          '$count ${count == 1 ? 'activity' : 'activities'} planned',
       moreActivitiesLabel: count > shown ? '+ ${count - shown} more' : '',
       gradientColors: gradients[i % gradients.length],
       activities: activities,
@@ -375,8 +409,18 @@ String _formatIsoDate(String iso) {
   final parts = iso.split('-');
   if (parts.length != 3) return iso;
   const months = <String>[
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   final month = int.tryParse(parts[1]) ?? 0;
   final day = int.tryParse(parts[2]) ?? 0;
@@ -404,6 +448,8 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -412,24 +458,33 @@ class _ActionButton extends StatelessWidget {
         child: Ink(
           height: 50,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.97),
+            color: Theme.of(
+              context,
+            ).colorScheme.surface.withValues(alpha: 0.97),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFD5F4FF), width: 1.4),
-            boxShadow: const <BoxShadow>[
+            border: Border.all(
+              color: isDark
+                  ? theme.colorScheme.outline
+                  : const Color(0xFFD5F4FF),
+              width: isDark ? 1.0 : 1.4,
+            ),
+            boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Color(0x260F2C4F),
-                blurRadius: 24,
-                offset: Offset(0, 12),
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.16)
+                    : const Color(0x260F2C4F),
+                blurRadius: isDark ? 14 : 24,
+                offset: Offset(0, isDark ? 6 : 12),
               ),
             ],
           ),
           child: Center(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF3B495D),
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
@@ -447,6 +502,8 @@ class _IconActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -456,18 +513,27 @@ class _IconActionButton extends StatelessWidget {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.97),
+            color: Theme.of(
+              context,
+            ).colorScheme.surface.withValues(alpha: 0.97),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFD5F4FF), width: 1.4),
-            boxShadow: const <BoxShadow>[
+            border: Border.all(
+              color: isDark
+                  ? theme.colorScheme.outline
+                  : const Color(0xFFD5F4FF),
+              width: isDark ? 1.0 : 1.4,
+            ),
+            boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Color(0x260F2C4F),
-                blurRadius: 24,
-                offset: Offset(0, 12),
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.16)
+                    : const Color(0x260F2C4F),
+                blurRadius: isDark ? 14 : 24,
+                offset: Offset(0, isDark ? 6 : 12),
               ),
             ],
           ),
-          child: Icon(icon, color: const Color(0xFF3B495D), size: 22),
+          child: Icon(icon, color: theme.colorScheme.onSurface, size: 22),
         ),
       ),
     );
@@ -501,13 +567,17 @@ class _StartTripButton extends StatelessWidget {
               ),
             ],
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
-              SizedBox(width: 8),
+              const Icon(
+                Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
               Text(
-                'Start Trip',
+                context.l10n.ui('Start Trip'),
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
@@ -535,17 +605,24 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.97),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.97),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD5F4FF), width: 1.4),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFD5F4FF),
+          width: isDark ? 1.0 : 1.4,
+        ),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x260F2C4F),
-            blurRadius: 24,
-            offset: Offset(0, 12),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.16)
+                : const Color(0x260F2C4F),
+            blurRadius: isDark ? 14 : 24,
+            offset: Offset(0, isDark ? 6 : 12),
           ),
         ],
       ),
@@ -571,17 +648,20 @@ class _StatCard extends StatelessWidget {
           Text(
             value,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14.5, color: Color(0xFF556273)),
+            style: TextStyle(
+              fontSize: 14.5,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -597,28 +677,38 @@ class _DayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: data.gradientColors
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final List<Color> cardColors = isDark
+        ? const <Color>[Color(0xFF0B1A22), Color(0xFF122832), Color(0xFF0B2426)]
+        : data.gradientColors
               .map(
                 (Color color) => Color.alphaBlend(
                   Colors.white.withValues(alpha: 0.3),
                   color,
                 ),
               )
-              .toList(),
+              .toList();
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: cardColors,
         ),
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: const Color(0xFF78DFFF), width: 2.2),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFF78DFFF),
+          width: isDark ? 1.2 : 2.2,
+        ),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x280F2C4F),
-            blurRadius: 28,
-            offset: Offset(0, 14),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.2)
+                : const Color(0x280F2C4F),
+            blurRadius: isDark ? 18 : 28,
+            offset: Offset(0, isDark ? 8 : 14),
           ),
         ],
       ),
@@ -626,39 +716,44 @@ class _DayCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.92),
+              color: Theme.of(
+                context,
+              ).colorScheme.surface.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(999),
-              border:
-                  Border.all(color: const Color(0xFF2C374C), width: 2),
+              border: Border.all(
+                color: isDark
+                    ? theme.colorScheme.outline
+                    : const Color(0xFF2C374C),
+                width: isDark ? 1 : 2,
+              ),
             ),
             child: Text(
-              data.dayLabel,
-              style: const TextStyle(
+              context.l10n.ui(data.dayLabel),
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
           const SizedBox(height: 14),
           Text(
             data.date,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF445163),
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            data.activityCountLabel,
-            style: const TextStyle(
+            context.l10n.ui(data.activityCountLabel),
+            style: TextStyle(
               fontSize: 15,
               fontStyle: FontStyle.italic,
-              color: Color(0xFF5D6A7A),
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 14),
@@ -676,10 +771,10 @@ class _DayCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   data.moreActivitiesLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14.5,
                     fontStyle: FontStyle.italic,
-                    color: Color(0xFF5D6A7A),
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -691,10 +786,10 @@ class _DayCard extends StatelessWidget {
                   child: Ink(
                     width: 34,
                     height: 34,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFEFFBFE),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
                       shape: BoxShape.circle,
-                      boxShadow: <BoxShadow>[
+                      boxShadow: const <BoxShadow>[
                         BoxShadow(
                           color: Color(0x2622B7F1),
                           blurRadius: 12,
@@ -724,17 +819,24 @@ class _TripActivityTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.97),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.97),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF90E9FF), width: 2),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFF90E9FF),
+          width: isDark ? 1 : 2,
+        ),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x260F2C4F),
-            blurRadius: 20,
-            offset: Offset(0, 12),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.16)
+                : const Color(0x260F2C4F),
+            blurRadius: isDark ? 12 : 20,
+            offset: Offset(0, isDark ? 6 : 12),
           ),
         ],
       ),
@@ -774,19 +876,19 @@ class _TripActivityTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  activity.title,
-                  style: const TextStyle(
+                  context.l10n.ui(activity.title),
+                  style: TextStyle(
                     fontSize: 15.5,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${activity.time} • ${activity.slot}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF5D6A7A),
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -820,7 +922,7 @@ class _BackButtonCircle extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.74),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.74),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x18000000),
@@ -834,13 +936,13 @@ class _BackButtonCircle extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           customBorder: const CircleBorder(),
-          child: const SizedBox(
+          child: SizedBox(
             width: 48,
             height: 48,
             child: Icon(
               Icons.arrow_back_rounded,
               size: 24,
-              color: Color(0xFF3A465D),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),

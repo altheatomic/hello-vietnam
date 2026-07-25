@@ -57,6 +57,7 @@ class _LanguagePageState extends State<LanguagePage> {
   Widget build(BuildContext context) {
     final AppStrings strings = context.l10n;
     final AppLanguage selectedLanguage = context.languageController.language;
+    final ColorScheme colors = Theme.of(context).colorScheme;
 
     return PopScope(
       canPop: !_isApplyingLanguage,
@@ -99,21 +100,21 @@ class _LanguagePageState extends State<LanguagePage> {
                               children: <Widget>[
                                 Text(
                                   strings.language,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 29,
                                     height: 1.15,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF101828),
+                                    color: colors.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 7),
                                 Text(
                                   strings.selectPreferredLanguage,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     height: 1.2,
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xFF4A5565),
+                                    color: colors.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -164,16 +165,18 @@ class _LanguageApplyingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Positioned.fill(
       child: ColoredBox(
-        color: Colors.white.withValues(alpha: 0.86),
+        color: (isDark ? colors.scrim : Colors.white).withValues(alpha: 0.86),
         child: SafeArea(
           child: Center(
             child: Container(
               width: 224,
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colors.surface,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: const <BoxShadow>[
                   BoxShadow(
@@ -195,11 +198,11 @@ class _LanguageApplyingOverlay extends StatelessWidget {
                   Text(
                     message,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       height: 1.25,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF101828),
+                      color: colors.onSurface,
                     ),
                   ),
                 ],
@@ -225,6 +228,8 @@ class _LanguageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -236,12 +241,14 @@ class _LanguageTile extends StatelessWidget {
           height: 66,
           padding: const EdgeInsets.fromLTRB(13, 13, 13, 13),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFFE1F5FE) : Colors.white,
+            color: selected
+                ? (isDark
+                      ? colors.primary.withValues(alpha: 0.14)
+                      : const Color(0xFFE1F5FE))
+                : colors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected
-                  ? const Color(0xFF81D4FA)
-                  : const Color(0xFFE5E7EB),
+              color: selected ? const Color(0xFF81D4FA) : colors.outlineVariant,
               width: 1.1,
             ),
           ),
@@ -263,11 +270,11 @@ class _LanguageTile extends StatelessWidget {
                       item.nativeName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         height: 1.2,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF101828),
+                        color: colors.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -277,11 +284,11 @@ class _LanguageTile extends StatelessWidget {
                           : item.englishName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         height: 1.1,
                         fontWeight: FontWeight.w400,
-                        color: Color(0xFF6A7282),
+                        color: colors.onSurfaceVariant,
                       ),
                     ),
                   ],

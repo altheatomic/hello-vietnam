@@ -45,7 +45,7 @@ class ActiveTripCard extends StatelessWidget {
     final status = trip.status;
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: _cardDecoration(status),
+      decoration: _cardDecoration(context, status),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -69,14 +69,14 @@ class ActiveTripCard extends StatelessWidget {
   }
 }
 
-BoxDecoration _cardDecoration(TripStatus status) {
+BoxDecoration _cardDecoration(BuildContext context, TripStatus status) {
   final Color accent = switch (status) {
     TripStatus.upcoming => _kAmber,
     TripStatus.inProgress => _kGreen,
     TripStatus.completed => _kBlue,
   };
   return BoxDecoration(
-    color: Colors.white,
+    color: Theme.of(context).colorScheme.surface,
     borderRadius: BorderRadius.circular(AppConstants.cardRadius),
     border: Border.all(color: accent.withValues(alpha: 0.25), width: 1.5),
     boxShadow: <BoxShadow>[
@@ -207,6 +207,8 @@ class _UpcomingBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final first = trip.relevantActivity.activity;
+    final Color primaryText = Theme.of(context).colorScheme.onSurface;
+    final Color secondaryText = Theme.of(context).colorScheme.onSurfaceVariant;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -234,15 +236,12 @@ class _UpcomingBody extends StatelessWidget {
                 trip.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 11.5, color: secondaryText),
               ),
               const SizedBox(height: 5),
               Text(
                 context.l10n.firstStop,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: _kAmber,
@@ -253,20 +252,17 @@ class _UpcomingBody extends StatelessWidget {
                 first.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14.5,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: primaryText,
                   height: 1.25,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 '${first.time} · ${first.slot}',
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 12.5, color: secondaryText),
               ),
             ],
           ),
@@ -286,6 +282,8 @@ class _InProgressBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final ref = trip.relevantActivity;
     final activity = ref.activity;
+    final Color primaryText = Theme.of(context).colorScheme.onSurface;
+    final Color secondaryText = Theme.of(context).colorScheme.onSurfaceVariant;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -312,15 +310,12 @@ class _InProgressBody extends StatelessWidget {
                 trip.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 11.5, color: secondaryText),
               ),
               const SizedBox(height: 3),
               Text(
                 context.l10n.nextStop,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: _kGreen,
@@ -331,20 +326,17 @@ class _InProgressBody extends StatelessWidget {
                 activity.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14.5,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: primaryText,
                   height: 1.25,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 '${activity.time} · ${activity.slot}',
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 12.5, color: secondaryText),
               ),
             ],
           ),
@@ -362,6 +354,8 @@ class _CompletedBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color primaryText = Theme.of(context).colorScheme.onSurface;
+    final Color secondaryText = Theme.of(context).colorScheme.onSurfaceVariant;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
@@ -383,10 +377,10 @@ class _CompletedBody extends StatelessWidget {
                 trip.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14.5,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: primaryText,
                 ),
               ),
               const SizedBox(height: 4),
@@ -395,10 +389,7 @@ class _CompletedBody extends StatelessWidget {
                   trip.totalActivities,
                   trip.days.length,
                 ),
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 12.5, color: secondaryText),
               ),
             ],
           ),
@@ -469,7 +460,7 @@ class _GhostButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        foregroundColor: AppColors.textSecondary,
+        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       child: Text(
         label,
@@ -542,12 +533,13 @@ class _ImageFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return Container(
-      color: const Color(0xFFEFF8FF),
-      child: const Center(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Center(
         child: Icon(
           Icons.image_not_supported_outlined,
-          color: Color(0xFFAEC6D4),
+          color: theme.colorScheme.onSurfaceVariant,
           size: 28,
         ),
       ),

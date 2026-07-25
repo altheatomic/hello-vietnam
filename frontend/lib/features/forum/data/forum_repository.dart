@@ -18,6 +18,10 @@ class ForumRepositorySnapshot {
     required this.notifications,
     required this.blockedAuthorIds,
     required this.reportedPostIds,
+    this.nextForYouCursor,
+    this.nextFollowingCursor,
+    this.hasMoreForYou = false,
+    this.hasMoreFollowing = false,
   });
 
   final String currentUserId;
@@ -30,6 +34,10 @@ class ForumRepositorySnapshot {
   final List<ForumNotificationItem> notifications;
   final Set<String> blockedAuthorIds;
   final Set<String> reportedPostIds;
+  final String? nextForYouCursor;
+  final String? nextFollowingCursor;
+  final bool hasMoreForYou;
+  final bool hasMoreFollowing;
 }
 
 class ForumRepository {
@@ -47,17 +55,57 @@ class ForumRepository {
   CloudflareMediaRepository get _mediaUploader =>
       _mediaRepository ??= CloudflareMediaRepository();
 
-  Future<ForumRepositorySnapshot> loadSnapshot() async {
+  Future<ForumRepositorySnapshot> loadSnapshot({
+    String? beforeForYouCursor,
+    String? beforeFollowingCursor,
+    int limit = 20,
+    bool loadForYouPage = true,
+    bool loadFollowingPage = true,
+    bool includeNotifications = true,
+  }) async {
     final String currentUserId = await _requireForumUser();
 
-    final List<Map<String, dynamic>> postRows = await _client
-        .from('forum_post')
-        .select(
-          'id_post, id_author_user, title, content, shared_item, created_at, status',
+    final List<Map<String, dynamic>> followingRows = await _optionalRows(
+      () => _client
+          .from('forum_user_follow')
+          .select('following_user_id')
+          .eq('follower_user_id', currentUserId),
+      source: 'forum_user_follow',
+    );
+
+    final Set<String> followingIds = followingRows
+        .map(
+          (Map<String, dynamic> row) => _stringValue(row['following_user_id']),
         )
-        .or('status.is.null,status.eq.active')
-        .order('created_at', ascending: false)
-        .limit(80);
+        .where((String id) => id.isNotEmpty)
+        .toSet();
+
+    final List<Map<String, dynamic>> forYouPostRows = loadForYouPage
+        ? await _loadPostPage(beforeCursor: beforeForYouCursor, limit: limit)
+        : const <Map<String, dynamic>>[];
+    final List<Map<String, dynamic>> followingPostRows =
+        loadFollowingPage && followingIds.isNotEmpty
+        ? await _loadPostPage(
+            beforeCursor: beforeFollowingCursor,
+            limit: limit,
+            authorIds: followingIds,
+          )
+        : const <Map<String, dynamic>>[];
+
+    final Map<String, Map<String, dynamic>> postRowsById =
+        <String, Map<String, dynamic>>{};
+    for (final Map<String, dynamic> row in <Map<String, dynamic>>[
+      ...forYouPostRows,
+      ...followingPostRows,
+    ]) {
+      final String postId = _stringValue(row['id_post']);
+      if (postId.isNotEmpty) {
+        postRowsById[postId] = row;
+      }
+    }
+    final List<Map<String, dynamic>> postRows = postRowsById.values.toList(
+      growable: false,
+    );
 
     final List<String> postIds = postRows
         .map((Map<String, dynamic> row) => _stringValue(row['id_post']))
@@ -136,14 +184,6 @@ class ForumRepository {
             source: 'forum_post_bookmark',
           );
 
-    final List<Map<String, dynamic>> followingRows = await _optionalRows(
-      () => _client
-          .from('forum_user_follow')
-          .select('following_user_id')
-          .eq('follower_user_id', currentUserId),
-      source: 'forum_user_follow',
-    );
-
     final List<Map<String, dynamic>> followerRows = authorIds.isEmpty
         ? <Map<String, dynamic>>[]
         : await _optionalRows(
@@ -173,12 +213,6 @@ class ForumRepository {
             source: 'forum_post_report',
           );
 
-    final Set<String> followingIds = followingRows
-        .map(
-          (Map<String, dynamic> row) => _stringValue(row['following_user_id']),
-        )
-        .where((String id) => id.isNotEmpty)
-        .toSet();
     final Set<String> blockedIds = blockedRows
         .map((Map<String, dynamic> row) => _stringValue(row['blocked_user_id']))
         .where((String id) => id.isNotEmpty)
@@ -260,13 +294,22 @@ class ForumRepository {
         })
         .toList(growable: false);
 
-    final List<String> forYouFeedIds = posts
-        .where((ForumPost post) => !blockedIds.contains(post.author.id))
-        .map((ForumPost post) => post.id)
+    final Map<String, ForumPost> postsById = <String, ForumPost>{
+      for (final ForumPost post in posts) post.id: post,
+    };
+    final List<String> forYouFeedIds = forYouPostRows
+        .map((Map<String, dynamic> row) => _stringValue(row['id_post']))
+        .where((String postId) {
+          final ForumPost? post = postsById[postId];
+          return post != null && !blockedIds.contains(post.author.id);
+        })
         .toList(growable: false);
-    final List<String> followingFeedIds = posts
-        .where((ForumPost post) => followingIds.contains(post.author.id))
-        .map((ForumPost post) => post.id)
+    final List<String> followingFeedIds = followingPostRows
+        .map((Map<String, dynamic> row) => _stringValue(row['id_post']))
+        .where((String postId) {
+          final ForumPost? post = postsById[postId];
+          return post != null && !blockedIds.contains(post.author.id);
+        })
         .toList(growable: false);
 
     return ForumRepositorySnapshot(
@@ -279,12 +322,57 @@ class ForumRepository {
       commentsByPostId: commentsByPostId,
       forYouFeedIds: forYouFeedIds,
       followingFeedIds: followingFeedIds,
-      notifications: await _loadNotifications(profilesById),
+      notifications: includeNotifications
+          ? await _loadNotifications(profilesById)
+          : const <ForumNotificationItem>[],
       blockedAuthorIds: blockedIds,
       reportedPostIds: reportRows
           .map((Map<String, dynamic> row) => _stringValue(row['id_post']))
           .toSet(),
+      nextForYouCursor: _nextCursor(forYouPostRows, limit),
+      nextFollowingCursor: _nextCursor(followingPostRows, limit),
+      hasMoreForYou: forYouPostRows.length == limit,
+      hasMoreFollowing: followingPostRows.length == limit,
     );
+  }
+
+  Future<List<Map<String, dynamic>>> _loadPostPage({
+    required String? beforeCursor,
+    required int limit,
+    Set<String>? authorIds,
+  }) async {
+    dynamic query = _client
+        .from('forum_post')
+        .select(
+          'id_post, id_author_user, title, content, shared_item, created_at, status',
+        )
+        .or('status.is.null,status.eq.active');
+
+    if (beforeCursor != null && beforeCursor.isNotEmpty) {
+      query = query.lt('created_at', beforeCursor);
+    }
+    if (authorIds != null && authorIds.isNotEmpty) {
+      query = query.inFilter('id_author_user', authorIds.toList());
+    }
+
+    final List<dynamic> rows = await query
+        .order('created_at', ascending: false)
+        .limit(limit);
+    return rows
+        .whereType<Map>()
+        .map(
+          (Map<dynamic, dynamic> row) => row.map(
+            (dynamic key, dynamic value) =>
+                MapEntry<String, dynamic>(key.toString(), value),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  String? _nextCursor(List<Map<String, dynamic>> rows, int limit) {
+    if (rows.length < limit || rows.isEmpty) return null;
+    final String cursor = _stringValue(rows.last['created_at']);
+    return cursor.isEmpty ? null : cursor;
   }
 
   Future<String> createPost({
@@ -343,6 +431,139 @@ class ForumRepository {
     }
 
     return postId;
+  }
+
+  Future<List<String>> updatePost({
+    required String postId,
+    required String content,
+    required List<String> retainedImageUrls,
+    List<XFile> imageFiles = const <XFile>[],
+  }) async {
+    final String userId = await _requireForumUser();
+    final List<dynamic> mediaRows = await _client
+        .from('forum_post_media')
+        .select('id_media, url, position')
+        .eq('id_post', postId)
+        .order('position');
+    final Map<String, Map<String, dynamic>> mediaByUrl =
+        <String, Map<String, dynamic>>{
+          for (final dynamic rawRow in mediaRows)
+            if (rawRow is Map)
+              _stringValue(rawRow['url']): rawRow.map(
+                (dynamic key, dynamic value) =>
+                    MapEntry<String, dynamic>(key.toString(), value),
+              ),
+        }..remove('');
+
+    final List<String> retainedUrls = retainedImageUrls
+        .map((String url) => url.trim())
+        .where(mediaByUrl.containsKey)
+        .toSet()
+        .take(6)
+        .toList(growable: false);
+    final List<XFile> newImages = imageFiles
+        .take(6 - retainedUrls.length)
+        .toList(growable: false);
+
+    final List<dynamic> updatedRows = await _client
+        .from('forum_post')
+        .update(<String, dynamic>{
+          'content': content.trim(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id_post', postId)
+        .eq('id_author_user', userId)
+        .select('id_post');
+    if (updatedRows.isEmpty) {
+      throw StateError('Post not found or you cannot edit this post.');
+    }
+
+    for (int index = 0; index < retainedUrls.length; index++) {
+      final String mediaId = _stringValue(
+        mediaByUrl[retainedUrls[index]]?['id_media'],
+      );
+      if (mediaId.isEmpty) continue;
+      await _client
+          .from('forum_post_media')
+          .update(<String, dynamic>{'position': index})
+          .eq('id_media', mediaId)
+          .eq('id_post', postId);
+    }
+
+    final List<String> removedUrls = mediaByUrl.keys
+        .where((String url) => !retainedUrls.contains(url))
+        .toList(growable: false);
+    if (removedUrls.isNotEmpty) {
+      final List<String> removedIds = removedUrls
+          .map((String url) => _stringValue(mediaByUrl[url]?['id_media']))
+          .where((String id) => id.isNotEmpty)
+          .toList(growable: false);
+      if (removedIds.isNotEmpty) {
+        await _client
+            .from('forum_post_media')
+            .delete()
+            .eq('id_post', postId)
+            .inFilter('id_media', removedIds);
+      }
+    }
+
+    List<String> uploadedUrls = const <String>[];
+    if (newImages.isNotEmpty) {
+      uploadedUrls = await _uploadPostImages(
+        userId: userId,
+        postId: postId,
+        imageFiles: newImages,
+      );
+      try {
+        await _client.from('forum_post_media').insert(<Map<String, dynamic>>[
+          for (int index = 0; index < uploadedUrls.length; index++)
+            <String, dynamic>{
+              'id_post': postId,
+              'url': uploadedUrls[index],
+              'position': retainedUrls.length + index,
+            },
+        ]);
+      } catch (_) {
+        await _deleteMediaUrls(uploadedUrls);
+        rethrow;
+      }
+    }
+
+    await _deleteMediaUrls(removedUrls);
+    return <String>[...retainedUrls, ...uploadedUrls];
+  }
+
+  Future<void> deletePost(String postId) async {
+    final String userId = await _requireForumUser();
+    final List<dynamic> mediaRows = await _client
+        .from('forum_post_media')
+        .select('url')
+        .eq('id_post', postId);
+    final List<String> mediaUrls = mediaRows
+        .whereType<Map>()
+        .map((Map<dynamic, dynamic> row) => _stringValue(row['url']))
+        .where((String url) => url.isNotEmpty)
+        .toList(growable: false);
+
+    final List<dynamic> deletedRows = await _client
+        .from('forum_post')
+        .delete()
+        .eq('id_post', postId)
+        .eq('id_author_user', userId)
+        .select('id_post');
+    if (deletedRows.isEmpty) {
+      throw StateError('Post not found or you cannot delete this post.');
+    }
+
+    await _deleteMediaUrls(mediaUrls);
+  }
+
+  Future<void> _deleteMediaUrls(Iterable<String> urls) async {
+    final List<String> keys = urls
+        .map(_mediaUploader.keyFromUrlOrPath)
+        .whereType<String>()
+        .toList(growable: false);
+    await _mediaUploader.deleteKeys(keys);
   }
 
   Future<List<String>> _uploadPostImages({

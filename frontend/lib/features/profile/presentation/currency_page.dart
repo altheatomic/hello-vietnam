@@ -1,149 +1,58 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/features/profile/data/currency_service.dart';
 
 class CurrencyPage extends StatefulWidget {
-  const CurrencyPage({super.key});
+  const CurrencyPage({super.key, this.controller});
+
+  final CurrencyController? controller;
 
   @override
   State<CurrencyPage> createState() => _CurrencyPageState();
 }
 
 class _CurrencyPageState extends State<CurrencyPage> {
-  static const List<_CurrencyOption> _currencies = <_CurrencyOption>[
-    _CurrencyOption(
-      code: 'USD',
-      title: 'USD - \$',
-      subtitle: 'US Dollar',
-      flagCode: 'gb',
-    ),
-    _CurrencyOption(
-      code: 'VND',
-      title: 'VND - ₫',
-      subtitle: 'Vietnamese Dong',
-      flagCode: 'vn',
-    ),
-    _CurrencyOption(
-      code: 'EUR',
-      title: 'EUR - €',
-      subtitle: 'Euro',
-      flagCode: 'eu',
-    ),
-    _CurrencyOption(
-      code: 'GBP',
-      title: 'GBP - £',
-      subtitle: 'British Pound',
-      flagCode: 'gb',
-    ),
-    _CurrencyOption(
-      code: 'JPY',
-      title: 'JPY - ¥',
-      subtitle: 'Japanese Yen',
-      flagCode: 'jp',
-    ),
-    _CurrencyOption(
-      code: 'CNY',
-      title: 'CNY - ¥',
-      subtitle: 'Chinese Yuan',
-      flagCode: 'cn',
-    ),
-    _CurrencyOption(
-      code: 'KRW',
-      title: 'KRW - ₩',
-      subtitle: 'South Korean Won',
-      flagCode: 'kr',
-    ),
-    _CurrencyOption(
-      code: 'AUD',
-      title: 'AUD - A\$',
-      subtitle: 'Australian Dollar',
-      flagCode: 'au',
-    ),
-    _CurrencyOption(
-      code: 'CAD',
-      title: 'CAD - C\$',
-      subtitle: 'Canadian Dollar',
-      flagCode: 'ca',
-    ),
-    _CurrencyOption(
-      code: 'CHF',
-      title: 'CHF - Fr',
-      subtitle: 'Swiss Franc',
-      flagCode: 'ch',
-    ),
-    _CurrencyOption(
-      code: 'SGD',
-      title: 'SGD - S\$',
-      subtitle: 'Singapore Dollar',
-      flagCode: 'sg',
-    ),
-    _CurrencyOption(
-      code: 'HKD',
-      title: 'HKD - HK\$',
-      subtitle: 'Hong Kong Dollar',
-      flagCode: 'hk',
-    ),
-    _CurrencyOption(
-      code: 'INR',
-      title: 'INR - ₹',
-      subtitle: 'Indian Rupee',
-      flagCode: 'in',
-    ),
-    _CurrencyOption(
-      code: 'THB',
-      title: 'THB - ฿',
-      subtitle: 'Thai Baht',
-      flagCode: 'th',
-    ),
-    _CurrencyOption(
-      code: 'MYR',
-      title: 'MYR - RM',
-      subtitle: 'Malaysian Ringgit',
-      flagCode: 'my',
-    ),
-    _CurrencyOption(
-      code: 'IDR',
-      title: 'IDR - Rp',
-      subtitle: 'Indonesian Rupiah',
-      flagCode: 'id',
-    ),
-    _CurrencyOption(
-      code: 'PHP',
-      title: 'PHP - ₱',
-      subtitle: 'Philippine Peso',
-      flagCode: 'ph',
-    ),
-    _CurrencyOption(
-      code: 'RUB',
-      title: 'RUB - ₽',
-      subtitle: 'Russian Ruble',
-      flagCode: 'ru',
-    ),
-    _CurrencyOption(
-      code: 'BRL',
-      title: 'BRL - R\$',
-      subtitle: 'Brazilian Real',
-      flagCode: 'br',
-    ),
-    _CurrencyOption(
-      code: 'MXN',
-      title: 'MXN - Mex\$',
-      subtitle: 'Mexican Peso',
-      flagCode: 'mx',
-    ),
-  ];
+  CurrencyController get _controller =>
+      widget.controller ?? CurrencyRepository.instance;
 
-  String _selectedCode = 'USD';
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_handleCurrencyStateChanged);
+    unawaited(_controller.initialize());
+  }
 
-  void _onSelectCurrency(String code) {
-    setState(() {
-      _selectedCode = code;
-    });
+  @override
+  void dispose() {
+    _controller.removeListener(_handleCurrencyStateChanged);
+    super.dispose();
+  }
+
+  void _handleCurrencyStateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _selectCurrency(String code) async {
+    try {
+      await _controller.selectCurrency(code);
+    } on Object catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not save currency: $error')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color textColor = theme.colorScheme.onSurface;
+    final Color mutedColor = theme.colorScheme.onSurfaceVariant;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -162,6 +71,7 @@ class _CurrencyPageState extends State<CurrencyPage> {
                           size: 18,
                           color: Color(0xFF81D4FA),
                         ),
+                        tooltip: 'Back',
                         splashRadius: 20,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(
@@ -170,7 +80,7 @@ class _CurrencyPageState extends State<CurrencyPage> {
                         ),
                       ),
                     ),
-                    const Align(
+                    Align(
                       alignment: Alignment.center,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -181,17 +91,17 @@ class _CurrencyPageState extends State<CurrencyPage> {
                               fontSize: 29,
                               height: 1.15,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF101828),
+                              color: textColor,
                             ),
                           ),
-                          SizedBox(height: 7),
+                          const SizedBox(height: 7),
                           Text(
                             'Select your preferred currency',
                             style: TextStyle(
                               fontSize: 14,
                               height: 1.2,
                               fontWeight: FontWeight.w400,
-                              color: Color(0xFF4A5565),
+                              color: mutedColor,
                             ),
                           ),
                         ],
@@ -201,19 +111,22 @@ class _CurrencyPageState extends State<CurrencyPage> {
                 ),
               ),
               const SizedBox(height: 14),
+              _CurrencyRateStatus(controller: _controller),
+              const SizedBox(height: 12),
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.only(bottom: 28),
-                  itemCount: _currencies.length,
+                  itemCount: _controller.options.length,
                   separatorBuilder: (BuildContext context, int index) =>
                       const SizedBox(height: 10),
                   itemBuilder: (BuildContext context, int index) {
-                    final _CurrencyOption item = _currencies[index];
-                    final bool selected = item.code == _selectedCode;
+                    final CurrencyOptionViewModel item =
+                        _controller.options[index];
                     return _CurrencyTile(
                       item: item,
-                      selected: selected,
-                      onTap: () => _onSelectCurrency(item.code),
+                      selected: item.selected,
+                      isSaving: _controller.isSavingSelection && item.selected,
+                      onTap: () => _selectCurrency(item.entry.code),
                     );
                   },
                 ),
@@ -226,36 +139,105 @@ class _CurrencyPageState extends State<CurrencyPage> {
   }
 }
 
+class _CurrencyRateStatus extends StatelessWidget {
+  const _CurrencyRateStatus({required this.controller});
+
+  final CurrencyController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<CurrencyOptionViewModel> options = controller.options;
+    final CurrencyOptionViewModel? selected = options
+        .cast<CurrencyOptionViewModel?>()
+        .firstWhere(
+          (CurrencyOptionViewModel? option) => option?.selected ?? false,
+          orElse: () => options.isEmpty ? null : options.first,
+        );
+    final String message = controller.isRefreshing
+        ? 'Updating exchange rates...'
+        : selected?.rate == null
+        ? 'Exchange rates are currently unavailable'
+        : selected!.rateLabel;
+
+    return Row(
+      children: <Widget>[
+        if (controller.isRefreshing)
+          const SizedBox(
+            width: 13,
+            height: 13,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        else
+          Icon(
+            controller.isUsingCache
+                ? Icons.cloud_off_outlined
+                : Icons.currency_exchange_rounded,
+            size: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text(
+            message,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        IconButton(
+          tooltip: 'Refresh exchange rates',
+          onPressed: controller.isRefreshing
+              ? null
+              : () => unawaited(controller.refresh()),
+          icon: const Icon(Icons.refresh_rounded, size: 18),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+        ),
+      ],
+    );
+  }
+}
+
 class _CurrencyTile extends StatelessWidget {
   const _CurrencyTile({
     required this.item,
     required this.selected,
+    required this.isSaving,
     required this.onTap,
   });
 
-  final _CurrencyOption item;
+  final CurrencyOptionViewModel item;
   final bool selected;
+  final bool isSaving;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        key: Key('currency-option-${item.entry.code}'),
         borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
           height: 66,
-          padding: const EdgeInsets.fromLTRB(13, 13, 13, 13),
+          padding: const EdgeInsets.all(13),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFFE1F5FE) : Colors.white,
+            color: selected
+                ? (isDark
+                      ? colors.primary.withValues(alpha: 0.14)
+                      : const Color(0xFFE1F5FE))
+                : colors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected
-                  ? const Color(0xFF81D4FA)
-                  : const Color(0xFFE5E7EB),
+              color: selected ? const Color(0xFF81D4FA) : colors.outlineVariant,
               width: 1.1,
             ),
           ),
@@ -264,7 +246,7 @@ class _CurrencyTile extends StatelessWidget {
               SizedBox(
                 width: 36,
                 height: 36,
-                child: _RoundFlag(flagCode: item.flagCode, radius: 18),
+                child: _RoundFlag(flagCode: item.entry.flagCode, radius: 18),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -276,11 +258,11 @@ class _CurrencyTile extends StatelessWidget {
                       item.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         height: 1.2,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF101828),
+                        color: colors.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -288,11 +270,11 @@ class _CurrencyTile extends StatelessWidget {
                       item.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         height: 1.1,
                         fontWeight: FontWeight.w400,
-                        color: Color(0xFF6A7282),
+                        color: colors.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -314,11 +296,19 @@ class _CurrencyTile extends StatelessWidget {
                           color: Color(0xFF81D4FA),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.check_rounded,
-                          color: Colors.white,
-                          size: 14,
-                        ),
+                        child: isSaving
+                            ? const Padding(
+                                padding: EdgeInsets.all(4),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.check_rounded,
+                                color: Colors.white,
+                                size: 14,
+                              ),
                       )
                     : const SizedBox(key: ValueKey<String>('unselected')),
               ),
@@ -328,20 +318,6 @@ class _CurrencyTile extends StatelessWidget {
       ),
     );
   }
-}
-
-class _CurrencyOption {
-  const _CurrencyOption({
-    required this.code,
-    required this.title,
-    required this.subtitle,
-    required this.flagCode,
-  });
-
-  final String code;
-  final String title;
-  final String subtitle;
-  final String flagCode;
 }
 
 class _RoundFlag extends StatelessWidget {

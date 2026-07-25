@@ -156,12 +156,15 @@
       "Bash(diff -u \"/c/Users/Asus/hellovietnam/frontend/lib/features/planner/presentation/business_location_page.dart\" \"/c/Users/Asus/hellovietnam-remote/frontend/lib/features/planner/presentation/business_location_page.dart\")",
       "Read(//c/Users/Asus/hellovietnam-remote/frontend/lib/features/planner/presentation/**)",
       "Bash(python -m py_compile scripts/translate_province_descriptions.py services/recommend_service.py)",
-      "Bash(python -m py_compile services/recommend_service.py routes/recommend.py)"
+      "Bash(python -m py_compile services/recommend_service.py routes/recommend.py)",
+      "Bash(cd /c/Users/Asus/hellovietnam-remote && cat frontend/test/features/planner/presentation/business_location_page_test.dart 2>/dev/null || find frontend/test -iname \"business_location_page_test.dart\")",
+      "Bash(echo \"=== ItemDetail constructor - LOCAL \\(base state, unchanged\\) ===\" *)"
     ],
     "additionalDirectories": [
       "\\tmp",
       "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\auth\\presentation",
-      "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\item_detail\\presentation"
+      "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\item_detail\\presentation",
+      "C:\\Users\\Asus\\AppData\\Local\\Temp\\claude\\c--Users-Asus-hellovietnam\\884fc7e8-7421-4ce2-b40b-dd486646062a\\scratchpad"
     ]
   }
 }

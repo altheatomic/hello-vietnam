@@ -34,6 +34,7 @@ class AiSearchResult {
     required this.alternativeNames,
     required this.priceRange,
     required this.suggestedPlaces,
+    this.databaseMatch,
   });
 
   final String resultType;
@@ -53,6 +54,7 @@ class AiSearchResult {
   final String alternativeNames;
   final String priceRange;
   final List<String> suggestedPlaces;
+  final AiSearchDatabaseMatch? databaseMatch;
 
   bool get isFood => resultType.toLowerCase() == 'food';
 
@@ -85,8 +87,76 @@ class AiSearchResult {
       alternativeNames: (json['alternative_names'] as String? ?? '').trim(),
       priceRange: (json['price_range'] as String? ?? '').trim(),
       suggestedPlaces: readStringList('suggested_places'),
+      databaseMatch: AiSearchDatabaseMatch.tryParse(json['db_match']),
     );
   }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'result_type': resultType,
+    'confidence': confidence,
+    'detected_name': detectedName,
+    'subtitle': subtitle,
+    'summary': summary,
+    'location_hint': locationHint,
+    'category_text': categoryText,
+    'primary_tags': primaryTags,
+    'secondary_tags': secondaryTags,
+    'best_time': bestTime,
+    'note': note,
+    'cultural_significance': culturalSignificance,
+    'usage_bullets': usageBullets,
+    'production_method': productionMethod,
+    'alternative_names': alternativeNames,
+    'price_range': priceRange,
+    'suggested_places': suggestedPlaces,
+    if (databaseMatch != null) 'db_match': databaseMatch!.toJson(),
+  };
+}
+
+class AiSearchDatabaseMatch {
+  const AiSearchDatabaseMatch({
+    required this.category,
+    required this.id,
+    required this.name,
+    required this.matchScore,
+    this.imagePath,
+  });
+
+  final String category;
+  final String id;
+  final String name;
+  final double matchScore;
+  final String? imagePath;
+
+  static AiSearchDatabaseMatch? tryParse(Object? value) {
+    if (value is! Map) return null;
+    final Map<String, dynamic> json = Map<String, dynamic>.from(value);
+    final String status = (json['status'] as String? ?? '').trim();
+    final String category = (json['category'] as String? ?? '').trim();
+    final String id = (json['id'] as String? ?? '').trim();
+    final String name = (json['name'] as String? ?? '').trim();
+    if (status != 'matched' || category.isEmpty || id.isEmpty || name.isEmpty) {
+      return null;
+    }
+
+    final String imagePath = (json['image_path'] as String? ?? '').trim();
+    return AiSearchDatabaseMatch(
+      category: category,
+      id: id,
+      name: name,
+      matchScore: (json['match_score'] as num?)?.toDouble() ?? 0,
+      imagePath: imagePath.isEmpty ? null : imagePath,
+    );
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'status': 'matched',
+    'category': category,
+    'id': id,
+    'name': name,
+    'match_score': matchScore,
+    if (imagePath != null) 'image_path': imagePath,
+  };
 }
 
 class AiSearchService {

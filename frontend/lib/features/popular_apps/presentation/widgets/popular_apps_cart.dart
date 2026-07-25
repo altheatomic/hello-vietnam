@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hellovietnam/features/popular_apps/domain/popular_apps_item.dart';
 
 class PopularAppsCard extends StatelessWidget {
@@ -12,6 +11,8 @@ class PopularAppsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: ClipRRect(
@@ -21,9 +22,15 @@ class PopularAppsCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.74),
+              color: theme.colorScheme.surface.withValues(
+                alpha: isDark ? 0.94 : 0.74,
+              ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
+              border: Border.all(
+                color: isDark
+                    ? theme.colorScheme.outline
+                    : Colors.white.withValues(alpha: 0.72),
+              ),
               boxShadow: <BoxShadow>[
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
@@ -44,10 +51,10 @@ class PopularAppsCard extends StatelessWidget {
                         item.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF1F2937),
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -55,9 +62,9 @@ class PopularAppsCard extends StatelessWidget {
                         item.category,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF6B7280),
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -66,9 +73,9 @@ class PopularAppsCard extends StatelessWidget {
                         item.description,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4B5563),
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -83,10 +90,10 @@ class PopularAppsCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             item.rating.toStringAsFixed(1),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF374151),
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(width: 18),
@@ -98,10 +105,10 @@ class PopularAppsCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             item.downloads,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF374151),
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ],
@@ -151,48 +158,26 @@ class _AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: item.gradientColors,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: item.accentColor.withValues(alpha: 0.28),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: SizedBox.square(
+        dimension: size,
+        child: _AssetLogo(path: item.logoUrl, fallbackColor: item.accentColor),
       ),
-      child: _NetworkLogo(url: item.logoUrl, fallbackColor: item.accentColor),
     );
   }
 }
 
-class _NetworkLogo extends StatelessWidget {
-  const _NetworkLogo({required this.url, required this.fallbackColor});
+class _AssetLogo extends StatelessWidget {
+  const _AssetLogo({required this.path, required this.fallbackColor});
 
-  final String url;
+  final String path;
   final Color fallbackColor;
 
   @override
   Widget build(BuildContext context) {
-    if (url.toLowerCase().endsWith('.svg')) {
-      return SvgPicture.network(
-        url,
-        fit: BoxFit.contain,
-        placeholderBuilder: (_) => _LogoFallback(color: fallbackColor),
-      );
-    }
-
-    return Image.network(
-      url,
+    return Image.asset(
+      path,
       fit: BoxFit.contain,
       errorBuilder: (_, _, _) => _LogoFallback(color: fallbackColor),
     );

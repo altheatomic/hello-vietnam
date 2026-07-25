@@ -1,0 +1,186 @@
+erDiagram
+  USER_ACCOUNT {
+    uuid id_user PK
+    text full_name
+    text username
+    text role
+    timestamptz created_at
+  }
+  USER_SETTING {
+    uuid id_user PK,FK
+    text language
+    text theme
+    text currency
+  }
+  USER_TRAVEL_PROFILE {
+    uuid id_user PK,FK
+    text companion_style
+    text budget_level
+    text pace_level
+  }
+  PROVINCE {
+    uuid id_province PK
+    text name
+    text region_code FK
+    text short_description
+  }
+  PLACE_SUBCATEGORY {
+    uuid id_place_subcategory PK
+    text name
+    text place_category
+  }
+  PLACE {
+    uuid id_place PK
+    uuid id_province FK
+    uuid id_place_subcategory FK
+    text name
+    float latitude
+    float longitude
+  }
+  TAG {
+    uuid id_tag PK
+    text name
+    text category
+  }
+  PLACE_TAG {
+    uuid id_place PK,FK
+    uuid id_tag PK,FK
+    numeric confidence_score
+  }
+  USER_INTEREST_TAG {
+    uuid id_user PK,FK
+    uuid id_tag PK,FK
+    numeric final_weight
+  }
+  PLAN {
+    uuid id_plan PK
+    uuid id_user FK
+    uuid id_province FK
+    date start_at
+    date end_at
+    text status
+  }
+  PLAN_COMPONENT {
+    uuid id_component PK
+    uuid id_plan FK
+    uuid id_place FK
+    int day
+    int visit_order
+  }
+  USER_EVENT_LOG {
+    uuid id_event PK
+    uuid id_user FK
+    uuid id_place FK
+    text event_type
+    timestamptz created_at
+  }
+  FORUM_POST {
+    uuid id_post PK
+    uuid id_author_user FK
+    text content
+    timestamptz created_at
+  }
+  FORUM_COMMENT {
+    uuid id_comment PK
+    uuid id_post FK
+    uuid id_author_user FK
+    text content
+  }
+  FORUM_POST_MEDIA {
+    uuid id_media PK
+    uuid id_post FK
+    text url
+  }
+  REPORT {
+    uuid id_report PK
+    uuid id_user FK
+    text report_category
+    text status
+  }
+  SUBSCRIPTION_PLAN {
+    uuid id_subscription_plan PK
+    text code
+    int duration_days
+    bigint price_minor
+  }
+  PREMIUM_SUBSCRIPTION {
+    uuid id_prs PK
+    uuid id_user FK
+    uuid id_plan FK
+    timestamptz end_date
+    text status
+  }
+  PAYMENT {
+    uuid id_payment PK
+    uuid id_user FK
+    uuid id_subscription_plan FK
+    bigint amount_minor
+    text status
+  }
+  USER_LOYALTY_ACCOUNT {
+    uuid id_user PK,FK
+    int available_points
+    text current_tier
+  }
+  LOYALTY_TRANSACTION {
+    uuid id_transaction PK
+    uuid id_user FK
+    int point_amount
+    text action_type
+  }
+  VOUCHER_CONFIG {
+    uuid id_voucher PK
+    text voucher_code
+    text discount_type
+    int discount_value
+  }
+  VOUCHER_WALLET {
+    uuid id_wallet PK
+    uuid id_user FK
+    uuid id_voucher FK
+    text status
+  }
+  REVIEWS {
+    uuid id_review PK
+    uuid id_user FK
+    text content_type
+    uuid content_id
+    int rating
+  }
+  FAVORITE_PLACE {
+    uuid id_user PK,FK
+    uuid id_place PK,FK
+    timestamptz created_at
+  }
+
+  USER_ACCOUNT ||--|| USER_SETTING : "co"
+  USER_ACCOUNT ||--|| USER_TRAVEL_PROFILE : "co"
+  USER_ACCOUNT ||--o{ USER_INTEREST_TAG : "chon so thich"
+  TAG ||--o{ USER_INTEREST_TAG : "duoc quan tam"
+  PROVINCE ||--o{ PLACE : "chua"
+  PLACE_SUBCATEGORY ||--o{ PLACE : "phan loai"
+  PLACE ||--o{ PLACE_TAG : "duoc gan"
+  TAG ||--o{ PLACE_TAG : "mo ta"
+  USER_ACCOUNT ||--o{ PLAN : "tao"
+  PROVINCE ||--o{ PLAN : "diem den"
+  PLAN ||--o{ PLAN_COMPONENT : "gom"
+  PLACE ||--o{ PLAN_COMPONENT : "duoc xep"
+  USER_ACCOUNT ||--o{ USER_EVENT_LOG : "phat sinh"
+  PLACE ||--o{ USER_EVENT_LOG : "duoc tuong tac"
+  USER_ACCOUNT ||--o{ FORUM_POST : "dang"
+  FORUM_POST ||--o{ FORUM_COMMENT : "co"
+  USER_ACCOUNT ||--o{ FORUM_COMMENT : "viet"
+  FORUM_POST ||--o{ FORUM_POST_MEDIA : "dinh kem"
+  USER_ACCOUNT ||--o{ REPORT : "gui"
+  SUBSCRIPTION_PLAN ||--o{ PREMIUM_SUBSCRIPTION : "ap dung"
+  USER_ACCOUNT ||--o{ PREMIUM_SUBSCRIPTION : "dang ky"
+  USER_ACCOUNT ||--o{ PAYMENT : "thanh toan"
+  SUBSCRIPTION_PLAN ||--o{ PAYMENT : "duoc mua"
+  USER_ACCOUNT ||--|| USER_LOYALTY_ACCOUNT : "so huu"
+  USER_ACCOUNT ||--o{ LOYALTY_TRANSACTION : "nhan/doi diem"
+  USER_ACCOUNT ||--o{ VOUCHER_WALLET : "so huu"
+  VOUCHER_CONFIG ||--o{ VOUCHER_WALLET : "cap"
+  USER_ACCOUNT ||--o{ REVIEWS : "danh gia"
+  USER_ACCOUNT ||--o{ FAVORITE_PLACE : "luu"
+  PLACE ||--o{ FAVORITE_PLACE : "duoc luu"
+

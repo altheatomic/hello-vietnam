@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
-import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/glass_card.dart';
@@ -134,17 +133,20 @@ class _ForumReportPostPageState extends State<ForumReportPostPage> {
                         opacity: 0.58,
                         padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.68),
+                          color: ForumColors.glassBorder(
+                            context,
+                            lightAlpha: 0.68,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            const Text(
+                            Text(
                               'Why are you reporting this post?',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
-                                color: ForumColors.textPrimary,
+                                color: ForumColors.foreground(context),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -172,26 +174,29 @@ class _ForumReportPostPageState extends State<ForumReportPostPage> {
                         opacity: 0.58,
                         padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.68),
+                          color: ForumColors.glassBorder(
+                            context,
+                            lightAlpha: 0.68,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            const Text(
+                            Text(
                               'Additional information (Optional)',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
-                                color: ForumColors.textPrimary,
+                                color: ForumColors.foreground(context),
                               ),
                             ),
                             const SizedBox(height: 14),
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.8),
+                                color: ForumColors.embeddedSurface(context),
                                 borderRadius: BorderRadius.circular(24),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.72),
+                                  color: ForumColors.glassBorder(context),
                                 ),
                               ),
                               child: TextField(
@@ -201,12 +206,20 @@ class _ForumReportPostPageState extends State<ForumReportPostPage> {
                                   hintText:
                                       'Provide any additional details that might help us understand the issue...',
                                   hintStyle: TextStyle(
-                                    color: AppColors.textSecondary.withValues(
-                                      alpha: 0.8,
-                                    ),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant
+                                        .withValues(alpha: 0.8),
                                   ),
+                                  filled: false,
                                   border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
                                   contentPadding: const EdgeInsets.all(18),
+                                ),
+                                style: TextStyle(
+                                  color: ForumColors.foreground(context),
                                 ),
                               ),
                             ),
@@ -258,12 +271,12 @@ class _ForumReportPostPageState extends State<ForumReportPostPage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         "Your report is anonymous. We'll review it and take appropriate action.",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -285,12 +298,17 @@ class _ReportedPostPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color foreground = ForumColors.foreground(context);
+    final Color muted = ForumColors.muted(context);
+
     return GlassCard(
       borderRadius: 28,
       blur: 16,
       opacity: 0.58,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.68)),
+      border: Border.all(
+        color: ForumColors.glassBorder(context, lightAlpha: 0.68),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -298,30 +316,20 @@ class _ReportedPostPreview extends StatelessWidget {
             children: <Widget>[
               Text(
                 post.author.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: ForumColors.textPrimary,
+                  color: foreground,
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                post.timeAgo,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: ForumColors.textMuted,
-                ),
-              ),
+              Text(post.timeAgo, style: TextStyle(fontSize: 12, color: muted)),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             post.content,
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.4,
-              color: ForumColors.textPrimary,
-            ),
+            style: TextStyle(fontSize: 14, height: 1.4, color: foreground),
           ),
           if (post.imageUrls.isNotEmpty) ...<Widget>[
             const SizedBox(height: 14),
@@ -355,18 +363,20 @@ class _ReportReasonTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color foreground = ForumColors.foreground(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.62),
+          color: ForumColors.embeddedSurface(context),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected
                 ? ForumColors.cyanPrimary.withValues(alpha: 0.75)
-                : Colors.white.withValues(alpha: 0.7),
+                : ForumColors.glassBorder(context),
             width: isSelected ? 1.6 : 1,
           ),
         ),
@@ -376,14 +386,10 @@ class _ReportReasonTile extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.64),
+                color: ForumColors.embeddedSurface(context),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                option.icon,
-                size: 20,
-                color: ForumColors.textPrimary,
-              ),
+              child: Icon(option.icon, size: 20, color: foreground),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -392,18 +398,18 @@ class _ReportReasonTile extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     option.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: ForumColors.textPrimary,
+                      color: foreground,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     option.subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -418,7 +424,9 @@ class _ReportReasonTile extends StatelessWidget {
                 border: Border.all(
                   color: isSelected
                       ? ForumColors.cyanPrimary
-                      : AppColors.textSecondary.withValues(alpha: 0.35),
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
                   width: 1.6,
                 ),
               ),

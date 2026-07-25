@@ -11,7 +11,15 @@
       "Bash(flutter pub *)",
       "Bash(flutter run *)",
       "Bash(tee /tmp/flutter_run.log)",
-      "Bash(cd \"c:\\\\Users\\\\Asus\\\\hellovietnam-remote\\\\frontend\" && grep -n \"supabaseUrl\\\\|supabaseAnonKey\\\\|fromEnvironment\\\\|dotenv\" lib/core/config/env.dart 2>&1 | head -20)"
+      "Bash(cd \"c:\\\\Users\\\\Asus\\\\hellovietnam-remote\\\\frontend\" && grep -n \"supabaseUrl\\\\|supabaseAnonKey\\\\|fromEnvironment\\\\|dotenv\" lib/core/config/env.dart 2>&1 | head -20)",
+      "Bash(cd /c/Users/Asus/hellovietnam-remote *)",
+      "Read(//c/Users/Asus/hellovietnam-remote/**)",
+      "Bash(git checkout *)",
+      "Bash(grep -v ^frontend/pubspec /c/Users/Asus/AppData/Local/Temp/claude/c--Users-Asus-hellovietnam/884fc7e8-7421-4ce2-b40b-dd486646062a/scratchpad/group2_to_copy.txt)",
+      "Read(//c/Users/Asus/AppData/Local/Temp/claude/c--Users-Asus-hellovietnam/884fc7e8-7421-4ce2-b40b-dd486646062a/scratchpad/**)",
+      "Bash(SCRATCH=\"/c/Users/Asus/AppData/Local/Temp/claude/c--Users-Asus-hellovietnam/884fc7e8-7421-4ce2-b40b-dd486646062a/scratchpad\" *)",
+      "Bash(grep -iv \"^.*//\\\\|forum\")",
+      "Bash(python -m py_compile services/recommend_service.py routes/recommend.py scripts/translate_province_descriptions.py)"
     ]
   }
 }

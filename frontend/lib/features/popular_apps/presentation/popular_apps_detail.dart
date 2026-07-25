@@ -1,16 +1,23 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/popular_apps/data/popular_apps_mock_data.dart';
 import 'package:hellovietnam/features/popular_apps/domain/popular_apps_post.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+typedef PopularAppExternalUrlLauncher = Future<bool> Function(Uri uri);
 
 class PopularAppsDetailPage extends StatefulWidget {
-  const PopularAppsDetailPage({super.key, required this.appId});
+  const PopularAppsDetailPage({
+    super.key,
+    required this.appId,
+    this.openExternalUrl,
+  });
 
   final String appId;
+  final PopularAppExternalUrlLauncher? openExternalUrl;
 
   @override
   State<PopularAppsDetailPage> createState() => _PopularAppsDetailPageState();
@@ -51,7 +58,7 @@ class _PopularAppsDetailPageState extends State<PopularAppsDetailPage> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEFF6FF),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: <Widget>[
           const Positioned.fill(child: _DetailBackground()),
@@ -72,7 +79,7 @@ class _PopularAppsDetailPageState extends State<PopularAppsDetailPage> {
                     children: <Widget>[
                       _DownloadButton(
                         label: post.ctaLabel,
-                        onTap: () => _showDownloadFallback(context, post),
+                        onTap: () => _openDownload(post),
                       ),
                       const SizedBox(height: 36),
                       _ImageCarousel(
@@ -93,20 +100,22 @@ class _PopularAppsDetailPageState extends State<PopularAppsDetailPage> {
                           children: <Widget>[
                             Text(
                               post.summaryTitle,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
-                                color: Color(0xFF1F2937),
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 24),
                             Text(
                               post.summaryBody,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 height: 1.55,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF334155),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -119,10 +128,10 @@ class _PopularAppsDetailPageState extends State<PopularAppsDetailPage> {
                           children: <Widget>[
                             Text(
                               post.stepsTitle,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
-                                color: Color(0xFF1F2937),
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 24),
@@ -157,12 +166,26 @@ class _PopularAppsDetailPageState extends State<PopularAppsDetailPage> {
     );
   }
 
-  void _showDownloadFallback(BuildContext context, PopularAppsPost post) {
+  Future<void> _openDownload(PopularAppsPost post) async {
+    final Uri uri = Uri.parse(post.downloadUrl);
+    try {
+      final bool didLaunch = widget.openExternalUrl != null
+          ? await widget.openExternalUrl!(uri)
+          : await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!didLaunch && mounted) _showDownloadError(post);
+    } catch (_) {
+      if (mounted) _showDownloadError(post);
+    }
+  }
+
+  void _showDownloadError(PopularAppsPost post) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text('Visit ${post.downloadUrl} to download ${post.title}.'),
+          content: Text(
+            'Could not open Google Play for ${post.title.replaceFirst(' Guide', '')}.',
+          ),
         ),
       );
   }
@@ -181,10 +204,14 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.fromLTRB(40, topInset + 18, 40, 22),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: theme.colorScheme.surface.withValues(
+          alpha: isDark ? 0.98 : 0.92,
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.10),
@@ -202,10 +229,10 @@ class _TopBar extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
-                color: Color(0xFF1F2937),
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
@@ -347,7 +374,7 @@ class _ImageCarousel extends StatelessWidget {
   static String _captionFor(String appId) {
     switch (appId) {
       case 'grab':
-      case 'gojek':
+      case 'green_sm':
         return 'Book rides in seconds';
       case 'zalo':
         return 'Connect with locals';
@@ -373,6 +400,8 @@ class _GlassSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
@@ -381,9 +410,15 @@ class _GlassSection extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(32, 30, 32, 32),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.74),
+            color: theme.colorScheme.surface.withValues(
+              alpha: isDark ? 0.94 : 0.74,
+            ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
+            border: Border.all(
+              color: isDark
+                  ? theme.colorScheme.outline
+                  : Colors.white.withValues(alpha: 0.72),
+            ),
             boxShadow: <BoxShadow>[
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.08),
@@ -447,11 +482,11 @@ class _StepRow extends StatelessWidget {
               padding: const EdgeInsets.only(top: 7),
               child: Text(
                 text,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   height: 1.45,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF334155),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -481,22 +516,12 @@ class _LogoHero extends StatelessWidget {
         ),
       ),
       alignment: Alignment.center,
-      child: Container(
-        width: 118,
-        height: 118,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.20),
-              blurRadius: 22,
-              offset: const Offset(0, 10),
-            ),
-          ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: SizedBox.square(
+          dimension: 118,
+          child: _AssetLogo(path: post.logoUrl, color: post.accentColor),
         ),
-        child: _NetworkLogo(url: post.logoUrl, color: post.accentColor),
       ),
     );
   }
@@ -513,7 +538,7 @@ class _NetworkImage extends StatelessWidget {
       url,
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) => Container(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         alignment: Alignment.center,
         child: const Icon(
           Icons.image_outlined,
@@ -525,24 +550,16 @@ class _NetworkImage extends StatelessWidget {
   }
 }
 
-class _NetworkLogo extends StatelessWidget {
-  const _NetworkLogo({required this.url, required this.color});
+class _AssetLogo extends StatelessWidget {
+  const _AssetLogo({required this.path, required this.color});
 
-  final String url;
+  final String path;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    if (url.toLowerCase().endsWith('.svg')) {
-      return SvgPicture.network(
-        url,
-        fit: BoxFit.contain,
-        placeholderBuilder: (_) => Icon(Icons.apps_rounded, color: color),
-      );
-    }
-
-    return Image.network(
-      url,
+    return Image.asset(
+      path,
       fit: BoxFit.contain,
       errorBuilder: (_, _, _) => Icon(Icons.apps_rounded, color: color),
     );
@@ -557,13 +574,17 @@ class _CircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
+          color: theme.colorScheme.surface.withValues(
+            alpha: isDark ? 0.94 : 0.92,
+          ),
           shape: BoxShape.circle,
           boxShadow: <BoxShadow>[
             BoxShadow(
@@ -573,7 +594,7 @@ class _CircleButton extends StatelessWidget {
             ),
           ],
         ),
-        child: Icon(icon, size: 25, color: const Color(0xFF1F2937)),
+        child: Icon(icon, size: 25, color: theme.colorScheme.onSurface),
       ),
     );
   }
@@ -584,16 +605,23 @@ class _DetailBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: <Color>[
-            Color(0xFFEFF6FF),
-            Color(0xFFECFEFF),
-            Color(0xFFF0FDFA),
-          ],
+          colors: isDark
+              ? const <Color>[
+                  Color(0xFF020B10),
+                  Color(0xFF0B1A22),
+                  Color(0xFF0B2426),
+                ]
+              : const <Color>[
+                  Color(0xFFEFF6FF),
+                  Color(0xFFECFEFF),
+                  Color(0xFFF0FDFA),
+                ],
         ),
       ),
     );

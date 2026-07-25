@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/auth/auth_repository.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/media/media_url_resolver.dart';
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
@@ -318,7 +320,9 @@ class _WishlistPageState extends State<WishlistPage> {
   void initState() {
     super.initState();
     _wishlistController.addListener(_syncFromWishlistController);
-    _loadWishlist();
+    // Always refresh when opening Wishlist so optimistic saves from other
+    // features are replaced with the backend title, description, and preview.
+    _loadWishlist(force: true);
   }
 
   @override
@@ -425,7 +429,6 @@ class _WishlistPageState extends State<WishlistPage> {
       ratingLabel: item.rating.toStringAsFixed(1),
       description: item.detailDescription,
       whatToExpect: item.highlightsDescription,
-      reviews: const <ItemReview>[],
     );
   }
 
@@ -474,7 +477,7 @@ class _WishlistPageState extends State<WishlistPage> {
   Future<void> _toggleFavorite(WishlistItem item) async {
     final userId = AuthRepository.instance.user?.id;
     if (userId == null) {
-      _showSnackBar('Please sign in to update wishlist.');
+      _showSnackBar(context.l10n.ui('Please sign in to update wishlist.'));
       return;
     }
 
@@ -485,10 +488,10 @@ class _WishlistPageState extends State<WishlistPage> {
         fallbackName: item.title,
       );
       if (!mounted || result != null) return;
-      _showSnackBar('Please sign in to update wishlist.');
+      _showSnackBar(context.l10n.ui('Please sign in to update wishlist.'));
     } catch (error) {
       if (!mounted) return;
-      _showSnackBar('Update wishlist failed: $error');
+      _showSnackBar('${context.l10n.ui('Update wishlist failed')}: $error');
     }
   }
 
@@ -591,69 +594,92 @@ class _WishlistPageState extends State<WishlistPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 6),
-              child: Row(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  _WishlistGlassIconButton(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    onTap: () => Navigator.of(context).maybePop(),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Wishlist',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: isDark
-                            ? theme.colorScheme.onSurface
-                            : AppColors.primaryDark,
-                        letterSpacing: 0,
+                  Row(
+                    children: <Widget>[
+                      _WishlistGlassIconButton(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        onTap: () => Navigator.of(context).maybePop(),
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          context.l10n.wishlist,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: isDark
+                                ? theme.colorScheme.onSurface
+                                : AppColors.primaryDark,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  _WishlistCategoryDropdown(
-                    selectedType: _selectedType,
-                    onChanged: (WishlistType? type) {
-                      setState(() => _selectedType = type);
-                    },
+                  const SizedBox(height: 10),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          context.l10n.wishlistSavedCount(
+                            _filteredItems.length,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isDark
+                                ? const Color(0xFFA9BCC7)
+                                : AppColors.textSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      _WishlistCategoryDropdown(
+                        selectedType: _selectedType,
+                        onChanged: (WishlistType? type) {
+                          setState(() => _selectedType = type);
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 0, 22, 16),
-              child: Text(
-                '${_filteredItems.length} saved ${_filteredItems.length == 1 ? 'item' : 'items'}',
-                style: TextStyle(
-                  color: isDark
-                      ? const Color(0xFFA9BCC7)
-                      : AppColors.textSecondary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
             Expanded(
               child: _isLoading
-                  ? const AppLoadingScreen(
-                      message: 'Loading wishlist',
+                  ? AppLoadingScreen(
+                      message: context.l10n.ui('Loading wishlist'),
                       compact: true,
                     )
                   : _loadError != null
                   ? _WishlistStatusView(
-                      message: 'Load wishlist failed.\n$_loadError',
-                      actionLabel: 'Retry',
+                      message:
+                          '${context.l10n.loadWishlistFailed}\n$_loadError',
+                      actionLabel: context.l10n.retry,
                       onActionTap: () => _loadWishlist(force: true),
                     )
                   : _filteredItems.isEmpty
                   ? _WishlistStatusView(
                       message: AuthRepository.instance.isLoggedIn
-                          ? 'No ${_selectedType?.label.toLowerCase() ?? 'item'} in wishlist.'
-                          : 'Please sign in to use wishlist.',
+                          ? context.l10n.noItemInWishlist(
+                              _selectedType == null
+                                  ? context.l10n.wishlistTypeLabel('item')
+                                  : context.l10n.wishlistTypeLabel(
+                                      _selectedType!.name,
+                                    ),
+                            )
+                          : context.l10n.pleaseSignInToUseWishlist,
                       actionLabel: AuthRepository.instance.isLoggedIn
                           ? null
-                          : 'Sign in',
+                          : context.l10n.signIn,
                       onActionTap: AuthRepository.instance.isLoggedIn
                           ? null
                           : () => Navigator.of(context).maybePop(),
@@ -662,7 +688,7 @@ class _WishlistPageState extends State<WishlistPage> {
                       padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
                       itemCount: _filteredItems.length,
                       separatorBuilder: (BuildContext context, int index) =>
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                       itemBuilder: (BuildContext context, int index) {
                         final WishlistItem item = _filteredItems[index];
                         return _WishlistCard(
@@ -736,7 +762,11 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
       if (next == null) {
         setState(() => _isFavorite = previous);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please sign in to update wishlist.')),
+          SnackBar(
+            content: Text(
+              context.l10n.ui('Please sign in to update wishlist.'),
+            ),
+          ),
         );
         return;
       }
@@ -744,9 +774,11 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _isFavorite = previous);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${context.l10n.ui('Update wishlist failed')}: $error'),
+        ),
+      );
     }
   }
 
@@ -762,6 +794,7 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
     final double topInset = MediaQuery.of(context).padding.top;
     final double bottomInset = MediaQuery.of(context).padding.bottom;
     final bool isPlace = widget.item.type == WishlistType.place;
@@ -778,7 +811,7 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Stack(
           children: <Widget>[
             SingleChildScrollView(
@@ -868,10 +901,10 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                         const SizedBox(height: 8),
                         Text(
                           widget.item.detailDescription,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 17,
                             height: 1.45,
-                            color: Color(0xFF222222),
+                            color: colors.onSurface,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -879,19 +912,19 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                           children: <Widget>[
                             Expanded(
                               child: Text(
-                                'Images',
-                                style: const TextStyle(
+                                context.l10n.ui('Images'),
+                                style: TextStyle(
                                   fontSize: 34,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF0C709D),
+                                  color: colors.primary,
                                 ),
                               ),
                             ),
                             GestureDetector(
                               onTap: () => _openAllImages(context),
-                              child: const Text(
-                                'See all',
-                                style: TextStyle(
+                              child: Text(
+                                context.l10n.ui('See all'),
+                                style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                   color: Color(0xFF6ABFE6),
@@ -927,12 +960,12 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                         ),
                         if (isPlace) ...<Widget>[
                           const SizedBox(height: 16),
-                          const Text(
-                            'Location',
+                          Text(
+                            context.l10n.ui('Location'),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0C709D),
+                              color: colors.primary,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -948,23 +981,23 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                           _RatingSection(rating: widget.item.rating),
                         ] else if (isFood) ...<Widget>[
                           const SizedBox(height: 16),
-                          const Text(
-                            'Ingredients',
+                          Text(
+                            context.l10n.ui('Ingredients'),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0C709D),
+                              color: colors.primary,
                             ),
                           ),
                           const SizedBox(height: 6),
                           _BulletList(items: widget.item.ingredients),
                           const SizedBox(height: 12),
-                          const Text(
-                            'Flavor',
+                          Text(
+                            context.l10n.ui('Flavor'),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0C709D),
+                              color: colors.primary,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -973,21 +1006,21 @@ class _WishlistDetailPageState extends State<WishlistDetailPage> {
                           _RatingSection(rating: widget.item.rating),
                         ] else ...<Widget>[
                           const SizedBox(height: 16),
-                          const Text(
-                            'The highlights of a visit',
+                          Text(
+                            context.l10n.ui('The highlights of a visit'),
                             style: TextStyle(
                               fontSize: 34,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0C709D),
+                              color: colors.primary,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             widget.item.highlightsDescription,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               height: 1.4,
-                              color: Color(0xFF232323),
+                              color: colors.onSurface,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -1056,7 +1089,7 @@ class WishlistAllImagesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 18),
@@ -1075,11 +1108,11 @@ class WishlistAllImagesPage extends StatelessWidget {
                   ),
                   Expanded(
                     child: Text(
-                      '${item.title.replaceFirst('TP. ', '')} Images',
-                      style: const TextStyle(
+                      '${item.title.replaceFirst('TP. ', '')} ${context.l10n.ui('Images')}',
+                      style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF0C709D),
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -1132,19 +1165,20 @@ class _RatingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final String ratingText = rating.toStringAsFixed(1).replaceAll('.', ',');
     final int filledStars = rating.floor().clamp(0, 5);
+    final ColorScheme colors = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
           children: <Widget>[
-            const Expanded(
+            Expanded(
               child: Text(
                 'Rating',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0C709D),
+                  color: colors.primary,
                 ),
               ),
             ),
@@ -1175,10 +1209,10 @@ class _RatingSection extends StatelessWidget {
                           width: 12,
                           child: Text(
                             '$label',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF202020),
+                              color: colors.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -1207,10 +1241,10 @@ class _RatingSection extends StatelessWidget {
               children: <Widget>[
                 Text(
                   ratingText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 38,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF666666),
+                    color: colors.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1249,10 +1283,10 @@ class _BulletList extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 2),
               child: Text(
                 '• $item',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   height: 1.3,
-                  color: Color(0xFF222222),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -1343,112 +1377,133 @@ class _WishlistCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.08)
         : Colors.white.withValues(alpha: 0.85);
 
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(26),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(26),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: surface,
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: borderColor, width: 1.25),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: isDark
-                    ? Colors.black.withValues(alpha: 0.32)
-                    : AppColors.primary.withValues(alpha: 0.11),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
-              ),
-              BoxShadow(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.02)
-                    : Colors.white.withValues(alpha: 0.72),
-                blurRadius: 1,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: innerBorderColor, width: 0.7),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(25),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = constraints.maxWidth < 350;
+        final double previewWidth = compact ? 92 : 108;
+
+        return Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(22),
+            child: Ink(
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: borderColor, width: 1.25),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.32)
+                        : AppColors.primary.withValues(alpha: 0.11),
+                    blurRadius: 22,
+                    offset: const Offset(0, 10),
                   ),
-                  child: Stack(
-                    children: <Widget>[
-                      _NetworkImageWithFallback(
-                        imageUrl: item.coverImageUrl,
-                        width: double.infinity,
-                        height: 184,
-                      ),
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: _WishlistGlassIconButton(
-                          icon: isFavorite
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          iconColor: const Color(0xFFFF4D79),
-                          onTap: onToggleFavorite,
-                        ),
-                      ),
-                    ],
+                  BoxShadow(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.02)
+                        : Colors.white.withValues(alpha: 0.72),
+                    blurRadius: 1,
+                    offset: const Offset(0, 1),
                   ),
+                ],
+              ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(21),
+                  border: Border.all(color: innerBorderColor, width: 0.7),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                child: SizedBox(
+                  height: compact ? 128 : 136,
+                  child: Row(
                     children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              item.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 23,
-                                fontWeight: FontWeight.w800,
-                                color: titleColor,
-                                letterSpacing: 0,
+                      ClipRRect(
+                        borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(21),
+                        ),
+                        child: SizedBox(
+                          width: previewWidth,
+                          height: double.infinity,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: <Widget>[
+                              _NetworkImageWithFallback(
+                                imageUrl: item.coverImageUrl,
+                                width: previewWidth,
+                                height: double.infinity,
                               ),
-                            ),
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: _WishlistGlassIconButton(
+                                  icon: isFavorite
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  iconColor: const Color(0xFFFF4D79),
+                                  onTap: onToggleFavorite,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 10),
-                          _WishlistTypeChip(type: item.type),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        item.shortDescription,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.45,
-                          color: bodyColor,
-                          fontWeight: FontWeight.w500,
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            compact ? 10 : 12,
+                            12,
+                            12,
+                            12,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                item.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: compact ? 17 : 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: titleColor,
+                                  height: 1.12,
+                                  letterSpacing: 0,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: _WishlistTypeChip(type: item.type),
+                              ),
+                              const SizedBox(height: 6),
+                              Expanded(
+                                child: Text(
+                                  item.shortDescription,
+                                  maxLines: compact ? 2 : 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    height: 1.35,
+                                    color: bodyColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -1462,24 +1517,29 @@ class _WishlistTypeChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: isDark ? 0.20 : 0.12),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 150),
+      child: Container(
+        height: 28,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: isDark ? 0.20 : 0.12),
+          ),
         ),
-      ),
-      child: Text(
-        type.label,
-        style: TextStyle(
-          color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0,
+        child: Text(
+          context.l10n.wishlistTypeLabel(type.name),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0,
+          ),
         ),
       ),
     );
@@ -1556,9 +1616,11 @@ class _WishlistCategoryDropdown extends StatelessWidget {
     final Color foreground = isDark
         ? AppColors.primaryLight
         : AppColors.primaryDark;
+    final WishlistType? currentType = selectedType;
+    final String currentValue = currentType?.name ?? 'all';
 
-    return PopupMenuButton<WishlistType?>(
-      initialValue: selectedType,
+    return PopupMenuButton<String>(
+      initialValue: currentValue,
       offset: const Offset(0, 48),
       elevation: 0,
       color: isDark ? const Color(0xFF0B1A22) : Colors.white,
@@ -1573,12 +1635,22 @@ class _WishlistCategoryDropdown extends StatelessWidget {
         ),
       ),
       constraints: const BoxConstraints(minWidth: 172),
-      onSelected: onChanged,
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<WishlistType?>>[
-        PopupMenuItem<WishlistType?>(
-          value: null,
+      onSelected: (String value) {
+        if (value == 'all') {
+          onChanged(null);
+          return;
+        }
+        onChanged(
+          WishlistType.values.firstWhere(
+            (WishlistType type) => type.name == value,
+          ),
+        );
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+        PopupMenuItem<String>(
+          value: 'all',
           child: Text(
-            'All Category',
+            context.l10n.allCategories,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w700,
@@ -1586,10 +1658,10 @@ class _WishlistCategoryDropdown extends StatelessWidget {
           ),
         ),
         ...WishlistType.values.map(
-          (WishlistType type) => PopupMenuItem<WishlistType?>(
-            value: type,
+          (WishlistType type) => PopupMenuItem<String>(
+            value: type.name,
             child: Text(
-              type.label,
+              context.l10n.wishlistTypeLabel(type.name),
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
@@ -1630,7 +1702,9 @@ class _WishlistCategoryDropdown extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 112),
               child: Text(
-                selectedType?.label ?? 'All Category',
+                currentType == null
+                    ? context.l10n.allCategories
+                    : context.l10n.wishlistTypeLabel(currentType.name),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -1658,18 +1732,18 @@ class _CircleIconButton extends StatelessWidget {
   const _CircleIconButton({
     required this.icon,
     required this.onTap,
-    this.iconColor = const Color(0xFF2C2C2C),
+    this.iconColor,
   });
 
   final IconData icon;
   final VoidCallback onTap;
-  final Color iconColor;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
     return _WishlistGlassIconButton(
       icon: icon,
-      iconColor: iconColor,
+      iconColor: iconColor ?? Theme.of(context).colorScheme.onSurface,
       onTap: onTap,
     );
   }
@@ -1695,10 +1769,10 @@ class _ReportAssetIconButton extends StatelessWidget {
             fit: BoxFit.contain,
             errorBuilder:
                 (BuildContext context, Object error, StackTrace? stackTrace) =>
-                    const Icon(
+                    Icon(
                       Icons.bug_report_outlined,
                       size: 28,
-                      color: Color(0xFF2C2C2C),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
           ),
         ),
@@ -1720,8 +1794,9 @@ class _NetworkImageWithFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String normalizedImageUrl = MediaUrlResolver.resolve(imageUrl);
     final bool isMap = imageUrl.toLowerCase().contains('map');
-    return Container(
+    final Widget fallback = Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
@@ -1754,6 +1829,34 @@ class _NetworkImageWithFallback extends StatelessWidget {
         ],
       ),
     );
+
+    if (MediaUrlResolver.isNetwork(normalizedImageUrl)) {
+      return Image.network(
+        normalizedImageUrl,
+        key: ValueKey<String>('wishlist-preview-$normalizedImageUrl'),
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) =>
+                fallback,
+      );
+    }
+
+    if (normalizedImageUrl.startsWith('assets/')) {
+      return Image.asset(
+        normalizedImageUrl,
+        key: ValueKey<String>('wishlist-preview-$normalizedImageUrl'),
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) =>
+                fallback,
+      );
+    }
+
+    return fallback;
   }
 }
 

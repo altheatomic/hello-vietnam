@@ -9,6 +9,7 @@ class ExploreFloatingBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -16,7 +17,7 @@ class ExploreFloatingBackButton extends StatelessWidget {
         child: Align(
           alignment: Alignment.topLeft,
           child: Material(
-            color: Colors.white.withValues(alpha: 0.94),
+            color: theme.colorScheme.surface.withValues(alpha: 0.94),
             elevation: 6,
             shadowColor: Colors.black.withValues(alpha: 0.12),
             shape: const CircleBorder(),

@@ -54,6 +54,70 @@ void main() {
     );
   });
 
+  test('select projections only request schema-backed primary keys', () {
+    final AdminContentRepository repository = AdminContentRepository();
+    final Map<AdminContentResourceConfig, List<String>> unsupportedColumns =
+        <AdminContentResourceConfig, List<String>>{
+          AdminContentConfigs.province: <String>[
+            'id_city',
+            'province_id',
+            'id',
+          ],
+          AdminContentConfigs.activity: <String>['id_activity'],
+          AdminContentConfigs.culture: <String>['id_culture'],
+          AdminContentConfigs.localProduct: <String>['id_local_product'],
+        };
+
+    for (final entry in unsupportedColumns.entries) {
+      final List<String> listColumns = repository
+          .listSelectColumnsFor(entry.key)
+          .split(', ');
+      final List<String> detailColumns = repository
+          .detailSelectColumnsFor(entry.key)
+          .split(', ');
+
+      expect(listColumns, contains(entry.key.idColumn));
+      expect(detailColumns, contains(entry.key.idColumn));
+      for (final unsupportedColumn in entry.value) {
+        expect(
+          listColumns,
+          isNot(contains(unsupportedColumn)),
+          reason:
+              '${entry.key.table} list must not query $unsupportedColumn',
+        );
+        expect(
+          detailColumns,
+          isNot(contains(unsupportedColumn)),
+          reason:
+              '${entry.key.table} detail must not query $unsupportedColumn',
+        );
+      }
+    }
+  });
+
+  test('select projections do not request legacy field aliases', () {
+    final AdminContentRepository repository = AdminContentRepository();
+    final List<String> unsupportedAliases = <String>[
+      'province_name',
+      'city',
+      'city_name',
+    ];
+
+    final List<String> listColumns = repository
+        .listSelectColumnsFor(AdminContentConfigs.province)
+        .split(', ');
+    final List<String> detailColumns = repository
+        .detailSelectColumnsFor(AdminContentConfigs.province)
+        .split(', ');
+
+    expect(listColumns, contains('name'));
+    expect(detailColumns, contains('name'));
+    for (final alias in unsupportedAliases) {
+      expect(listColumns, isNot(contains(alias)));
+      expect(detailColumns, isNot(contains(alias)));
+    }
+  });
+
   test(
     'fetchRecord loads a full row through the shared table client',
     () async {

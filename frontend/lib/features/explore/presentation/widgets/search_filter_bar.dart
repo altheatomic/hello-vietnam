@@ -2,23 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 
 class SearchFilterBar extends StatelessWidget {
-  const SearchFilterBar({
-    super.key,
-    this.onSearchTap,
-    this.onFilterTap,
-  });
+  const SearchFilterBar({super.key, this.onSearchTap, this.onFilterTap});
 
   final VoidCallback? onSearchTap;
   final VoidCallback? onFilterTap;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return GestureDetector(
       onTap: onSearchTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
@@ -30,7 +27,8 @@ class SearchFilterBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.location_on_outlined, 
+            Icon(
+              Icons.location_on_outlined,
               color: AppColors.primary,
               size: 20,
             ),
@@ -44,14 +42,14 @@ class SearchFilterBar extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 Text(
                   'Anywhere · Any week · Add guests',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -66,11 +64,7 @@ class SearchFilterBar extends StatelessWidget {
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.tune,
-                  color: Colors.white,
-                  size: 18,
-                ),
+                child: Icon(Icons.tune, color: Colors.white, size: 18),
               ),
             ),
           ],

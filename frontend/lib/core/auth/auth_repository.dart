@@ -6,6 +6,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../media/cloudflare_media_repository.dart';
+import '../../features/notification/application/notification_inbox_controller.dart';
+import '../../features/notification/application/notification_preferences_controller.dart';
+import '../../features/notification/application/push_notification_service.dart';
 
 class CurrentUserProfileData {
   const CurrentUserProfileData({
@@ -30,22 +33,15 @@ class AuthRepository extends ChangeNotifier {
   AuthRepository._() {
     _user = _supabase.auth.currentUser;
     if (_user != null) {
-      unawaited(
-        LoyaltyAwardService.instance.award(
-          actionType: 'daily_login',
-          description: 'Daily login',
-        ),
-      );
+      _handleSignedInUser();
     }
     _authSubscription = _supabase.auth.onAuthStateChange.listen((data) {
       _user = data.session?.user;
       if (_user != null) {
-        unawaited(
-          LoyaltyAwardService.instance.award(
-            actionType: 'daily_login',
-            description: 'Daily login',
-          ),
-        );
+        _handleSignedInUser();
+      } else {
+        NotificationInboxController.instance.reset();
+        NotificationPreferencesController.instance.reset();
       }
       notifyListeners();
     });
@@ -263,7 +259,45 @@ class AuthRepository extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    try {
+      await PushNotificationService.instance.unregisterCurrentDevice();
+    } catch (error) {
+      debugPrint('Unregister push device failed: $error');
+    }
     await _supabase.auth.signOut();
+  }
+
+  void _handleSignedInUser() {
+    unawaited(_awardDailyLoginSafely());
+    unawaited(_syncPushDeviceSafely());
+    unawaited(_refreshNotificationInboxSafely());
+  }
+
+  Future<void> _awardDailyLoginSafely() async {
+    try {
+      await LoyaltyAwardService.instance.award(
+        actionType: 'daily_login',
+        description: 'Daily login',
+      );
+    } catch (error) {
+      debugPrint('Daily login loyalty award skipped: $error');
+    }
+  }
+
+  Future<void> _syncPushDeviceSafely() async {
+    try {
+      await PushNotificationService.instance.syncCurrentDevice();
+    } catch (error) {
+      debugPrint('Push device sync skipped: $error');
+    }
+  }
+
+  Future<void> _refreshNotificationInboxSafely() async {
+    try {
+      await NotificationInboxController.instance.refresh();
+    } catch (error) {
+      debugPrint('Notification inbox refresh skipped: $error');
+    }
   }
 
   Future<void> resetPassword({required String email}) async {

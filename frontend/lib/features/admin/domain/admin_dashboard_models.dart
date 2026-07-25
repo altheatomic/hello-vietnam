@@ -210,6 +210,9 @@ class DashboardSearchInsight {
     required this.resultRate,
     required this.conversionRate,
     required this.statusLabel,
+    this.volumeLabel = 'searches',
+    this.resultRateLabel = 'result rate',
+    this.conversionRateLabel = 'conversion',
     this.route,
   });
 
@@ -218,6 +221,9 @@ class DashboardSearchInsight {
   final double resultRate;
   final double conversionRate;
   final String statusLabel;
+  final String volumeLabel;
+  final String resultRateLabel;
+  final String conversionRateLabel;
   final String? route;
 }
 

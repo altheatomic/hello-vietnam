@@ -2,19 +2,30 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
+import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../data/ai_recognition_history_repository.dart';
 import '../data/ai_search_service.dart';
 
-enum _AiSearchView {
-  initial,
-  analyzing,
-  resultFood,
-  resultObject,
-}
+enum _AiSearchView { initial, analyzing, resultFood, resultObject }
 
 class AiSearchPage extends StatefulWidget {
-  const AiSearchPage({super.key});
+  const AiSearchPage({
+    super.key,
+    this.aiSearchService,
+    this.historyStore,
+    this.onOpenHistory,
+    this.initialHistoryEntry,
+  });
+
+  final AiSearchService? aiSearchService;
+  final AiRecognitionHistoryStore? historyStore;
+  final VoidCallback? onOpenHistory;
+  final AiRecognitionHistoryEntry? initialHistoryEntry;
 
   @override
   State<AiSearchPage> createState() => _AiSearchPageState();
@@ -23,7 +34,6 @@ class AiSearchPage extends StatefulWidget {
 class _AiSearchPageState extends State<AiSearchPage> {
   static const Color _accent = Color(0xFF29B6F6);
   static const Color _accentDark = Color(0xFF0277BD);
-  static const Color _screenBg = Color(0xFFF7F9FC);
   static const Color _cardShadow1 = Color(0x14000000);
   static const Color _cardShadow2 = Color(0x0A000000);
 
@@ -31,7 +41,8 @@ class _AiSearchPageState extends State<AiSearchPage> {
   bool _foodFavorite = false;
   bool _objectFavorite = false;
   final ImagePicker _imagePicker = ImagePicker();
-  final AiSearchService _aiSearchService = AiSearchService();
+  late final AiSearchService _aiSearchService;
+  late final AiRecognitionHistoryStore _historyStore;
   Uint8List? _selectedImageBytes;
   String? _selectedImageName;
 
@@ -70,6 +81,23 @@ class _AiSearchPageState extends State<AiSearchPage> {
 
   _RecognitionData get _activeData => _activeRecognitionData;
 
+  @override
+  void initState() {
+    super.initState();
+    _aiSearchService = widget.aiSearchService ?? AiSearchService();
+    _historyStore = widget.historyStore ?? AiRecognitionHistoryRepository();
+    final AiRecognitionHistoryEntry? historyEntry = widget.initialHistoryEntry;
+    if (historyEntry != null) {
+      _selectedImageBytes = historyEntry.thumbnailBytes;
+      _activeRecognitionData = _RecognitionData.fromAiSearchResult(
+        historyEntry.result,
+      );
+      _view = historyEntry.result.isFood
+          ? _AiSearchView.resultFood
+          : _AiSearchView.resultObject;
+    }
+  }
+
   bool get _isActiveFavorite {
     return _activeRecognitionData.isFood ? _foodFavorite : _objectFavorite;
   }
@@ -102,7 +130,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Khong mo duoc anh: $error')),
+        SnackBar(
+          content: Text('${context.l10n.ui('Could not open image')}: $error'),
+        ),
       );
     }
   }
@@ -122,21 +152,53 @@ class _AiSearchPageState extends State<AiSearchPage> {
             ? _AiSearchView.resultFood
             : _AiSearchView.resultObject;
       });
+      await _saveRecognitionHistory(result, file);
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _view = _AiSearchView.initial;
       });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
+  Future<void> _saveRecognitionHistory(
+    AiSearchResult result,
+    XFile file,
+  ) async {
+    try {
+      final Uint8List bytes = _selectedImageBytes ?? await file.readAsBytes();
+      await _historyStore.save(result: result, imageBytes: bytes);
+    } catch (error, stackTrace) {
+      debugPrint('Could not save AI recognition history: $error\n$stackTrace');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
+        SnackBar(
+          content: Text(
+            context.l10n.ui(
+              'Recognition completed, but history could not be saved.',
+            ),
+          ),
+        ),
       );
     }
+  }
+
+  void _openHistory() {
+    final VoidCallback? callback = widget.onOpenHistory;
+    if (callback != null) {
+      callback();
+      return;
+    }
+    context.push(AppRoutes.aiSearchHistory);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _screenBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 260),
         switchInCurve: Curves.easeOut,
@@ -144,8 +206,8 @@ class _AiSearchPageState extends State<AiSearchPage> {
         child: _view == _AiSearchView.initial
             ? _buildInitialView(context)
             : _view == _AiSearchView.analyzing
-                ? _buildAnalyzingView(context)
-                : _buildResultView(context, _activeData),
+            ? _buildAnalyzingView(context)
+            : _buildResultView(context, _activeData),
       ),
     );
   }
@@ -184,6 +246,13 @@ class _AiSearchPageState extends State<AiSearchPage> {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  const Spacer(),
+                  _glassButton(
+                    key: const Key('ai-search-history-button'),
+                    icon: Icons.history_rounded,
+                    onTap: _openHistory,
+                    tooltip: 'Recognition history',
+                  ),
                 ],
               ),
               const Spacer(),
@@ -221,8 +290,8 @@ class _AiSearchPageState extends State<AiSearchPage> {
         ),
         Expanded(
           child: Container(
-            color: const Color(0xFFF4F7FB),
-            child: Padding(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
               child: Column(
                 children: <Widget>[
@@ -276,7 +345,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          const Text(
+                          Text(
                             'Choose from Library',
                             style: TextStyle(
                               color: Color(0xFF0277BD),
@@ -285,10 +354,12 @@ class _AiSearchPageState extends State<AiSearchPage> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
+                          Text(
                             'PNG, JPG supported',
                             style: TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -301,12 +372,14 @@ class _AiSearchPageState extends State<AiSearchPage> {
                   Row(
                     children: <Widget>[
                       Expanded(child: Divider(color: Colors.grey.shade300)),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           'OR',
                           style: TextStyle(
-                            color: Color(0xFF94A3B8),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -386,10 +459,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
               duration: const Duration(milliseconds: 900),
               curve: Curves.easeInOut,
               builder: (BuildContext context, double value, Widget? child) {
-                return Transform.scale(
-                  scale: value,
-                  child: child,
-                );
+                return Transform.scale(scale: value, child: child);
               },
               child: Container(
                 width: 112,
@@ -456,7 +526,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
       children: <Widget>[
         Positioned.fill(
           child: Container(
-            color: _screenBg,
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: SingleChildScrollView(
               padding: EdgeInsets.only(bottom: bottomSafe + 118),
               child: Column(
@@ -475,27 +545,32 @@ class _AiSearchPageState extends State<AiSearchPage> {
                             : Image.asset(
                                 data.heroAssetPath,
                                 fit: BoxFit.cover,
-                                errorBuilder: (
-                                  BuildContext context,
-                                  Object error,
-                                  StackTrace? stackTrace,
-                                ) {
-                                  return Container(
-                                    decoration: const BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: <Color>[
-                                          Color(0xFF5B6073),
-                                          Color(0xFF202736),
-                                        ],
-                                      ),
-                                    ),
-                                    child: const Center(
-                                      child: Icon(Icons.image_not_supported, color: Colors.white70, size: 36),
-                                    ),
-                                  );
-                                },
+                                errorBuilder:
+                                    (
+                                      BuildContext context,
+                                      Object error,
+                                      StackTrace? stackTrace,
+                                    ) {
+                                      return Container(
+                                        decoration: const BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: <Color>[
+                                              Color(0xFF5B6073),
+                                              Color(0xFF202736),
+                                            ],
+                                          ),
+                                        ),
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.image_not_supported,
+                                            color: Colors.white70,
+                                            size: 36,
+                                          ),
+                                        ),
+                                      );
+                                    },
                               ),
                         Container(
                           decoration: const BoxDecoration(
@@ -516,12 +591,17 @@ class _AiSearchPageState extends State<AiSearchPage> {
                             children: <Widget>[
                               GestureDetector(
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.32),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.32,
+                                      ),
                                       width: 1,
                                     ),
                                   ),
@@ -583,7 +663,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
                                 ),
                               ),
                               if (_selectedImageName != null &&
-                                  _selectedImageName!.trim().isNotEmpty) ...<Widget>[
+                                  _selectedImageName!
+                                      .trim()
+                                      .isNotEmpty) ...<Widget>[
                                 const SizedBox(height: 2),
                                 Text(
                                   _selectedImageName!,
@@ -605,8 +687,15 @@ class _AiSearchPageState extends State<AiSearchPage> {
                     child: Column(
                       children: <Widget>[
                         _buildMatchCard(data),
+                        if (data.databaseMatch != null) ...<Widget>[
+                          const SizedBox(height: 12),
+                          _buildDatabaseMatchCard(data.databaseMatch!),
+                        ],
                         const SizedBox(height: 12),
-                        if (data.isFood) ..._buildFoodCards(data) else ..._buildObjectCards(data),
+                        if (data.isFood)
+                          ..._buildFoodCards(data)
+                        else
+                          ..._buildObjectCards(data),
                       ],
                     ),
                   ),
@@ -654,9 +743,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
         title: 'BEST TIME TO ENJOY',
         child: Text(
           data.bestTime,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 29 / 2.2,
-            color: Color(0xFF475569),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -667,9 +756,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
         title: 'FOOD NOTE',
         child: Text(
           data.note,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12.5,
-            color: Color(0xFF64748B),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.55,
             fontWeight: FontWeight.w500,
           ),
@@ -681,9 +770,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
         title: 'CULTURAL SIGNIFICANCE',
         child: Text(
           data.cultural,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12.5,
-            color: Color(0xFF64748B),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.55,
             fontWeight: FontWeight.w500,
           ),
@@ -693,9 +782,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
       _buildInfoCard(
         icon: Icons.place_outlined,
         title: 'SUGGESTED PLACES TO TRY',
-        child: Column(
-          children: data.places.map(_buildPlaceLine).toList(),
-        ),
+        child: Column(children: data.places.map(_buildPlaceLine).toList()),
       ),
     ];
   }
@@ -705,9 +792,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
       _buildInfoCard(
         icon: Icons.sell_outlined,
         title: 'CATEGORY',
-        child: Wrap(
-          children: <Widget>[_buildPill(data.categoryText)],
-        ),
+        child: Wrap(children: <Widget>[_buildPill(data.categoryText)]),
       ),
       const SizedBox(height: 12),
       _buildInfoCard(
@@ -734,9 +819,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
         title: 'PRODUCTION METHOD',
         child: Text(
           data.productionMethod,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12.5,
-            color: Color(0xFF64748B),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.55,
             fontWeight: FontWeight.w500,
           ),
@@ -748,9 +833,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
         title: 'ALTERNATIVE NAMES',
         child: Text(
           data.alternativeNames,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12.5,
-            color: Color(0xFF64748B),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.55,
             fontWeight: FontWeight.w500,
           ),
@@ -774,9 +859,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
       _buildInfoCard(
         icon: Icons.storefront_outlined,
         title: 'WHERE TO BUY / SEE IT',
-        child: Column(
-          children: data.places.map(_buildPlaceLine).toList(),
-        ),
+        child: Column(children: data.places.map(_buildPlaceLine).toList()),
       ),
     ];
   }
@@ -790,19 +873,11 @@ class _AiSearchPageState extends State<AiSearchPage> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: _cardShadow1,
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
-          BoxShadow(
-            color: _cardShadow2,
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
+          BoxShadow(color: _cardShadow1, blurRadius: 3, offset: Offset(0, 1)),
+          BoxShadow(color: _cardShadow2, blurRadius: 12, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -817,17 +892,13 @@ class _AiSearchPageState extends State<AiSearchPage> {
                   color: _accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(7),
                 ),
-                child: Icon(
-                  icon,
-                  size: 14,
-                  color: _accentDark,
-                ),
+                child: Icon(icon, size: 14, color: _accentDark),
               ),
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xFF64748B),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.3,
@@ -847,7 +918,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const <BoxShadow>[
           BoxShadow(color: _cardShadow1, blurRadius: 3, offset: Offset(0, 1)),
@@ -859,7 +930,11 @@ class _AiSearchPageState extends State<AiSearchPage> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.check_circle_outline, color: data.matchLabelColor, size: 16),
+              Icon(
+                Icons.check_circle_outline,
+                color: data.matchLabelColor,
+                size: 16,
+              ),
               const SizedBox(width: 8),
               Text(
                 data.matchLabel,
@@ -870,10 +945,10 @@ class _AiSearchPageState extends State<AiSearchPage> {
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 '|  AI Recognition Result',
                 style: TextStyle(
-                  color: Color(0xFF94A3B8),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
@@ -883,8 +958,8 @@ class _AiSearchPageState extends State<AiSearchPage> {
           const SizedBox(height: 10),
           Text(
             data.summary,
-            style: const TextStyle(
-              color: Color(0xFF475569),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 15,
               height: 1.55,
               fontWeight: FontWeight.w500,
@@ -892,6 +967,83 @@ class _AiSearchPageState extends State<AiSearchPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDatabaseMatchCard(AiSearchDatabaseMatch match) {
+    final int matchPercent = (match.matchScore * 100).round().clamp(0, 100);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _accent.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: _accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.verified_outlined,
+              color: _accentDark,
+              size: 21,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  match.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Travel database match · $matchPercent%',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'View details',
+            onPressed: () => _openDatabaseMatch(match),
+            icon: const Icon(Icons.arrow_forward_rounded),
+            color: _accentDark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openDatabaseMatch(AiSearchDatabaseMatch match) {
+    if (match.category != 'food') return;
+    final ItemDetailRequest request = ItemDetailRequest(
+      id: match.id,
+      name: match.name,
+      category: DetailCategory.food,
+      fallbackImagePath: match.imagePath,
+    );
+    context.push(
+      AppRoutes.detailPathForCategory(DetailCategory.food),
+      extra: request,
     );
   }
 
@@ -933,9 +1085,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF475569),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 height: 1.45,
                 fontWeight: FontWeight.w500,
               ),
@@ -968,9 +1120,9 @@ class _AiSearchPageState extends State<AiSearchPage> {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF334155),
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w500,
                 height: 1.3,
               ),
@@ -1006,10 +1158,13 @@ class _AiSearchPageState extends State<AiSearchPage> {
   }
 
   Widget _glassButton({
+    Key? key,
     required IconData icon,
     required VoidCallback onTap,
+    String? tooltip,
   }) {
-    return GestureDetector(
+    final Widget button = GestureDetector(
+      key: key,
       onTap: onTap,
       child: Container(
         width: 34,
@@ -1025,6 +1180,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
         child: Icon(icon, color: Colors.white, size: 18),
       ),
     );
+    return tooltip == null ? button : Tooltip(message: tooltip, child: button);
   }
 }
 
@@ -1050,6 +1206,7 @@ class _RecognitionData {
     this.alternativeNames = '',
     this.priceRange = '',
     this.places = const <String>[],
+    this.databaseMatch,
   });
 
   final bool isFood;
@@ -1073,6 +1230,7 @@ class _RecognitionData {
   final String alternativeNames;
   final String priceRange;
   final List<String> places;
+  final AiSearchDatabaseMatch? databaseMatch;
 
   factory _RecognitionData.fromAiSearchResult(AiSearchResult result) {
     final double confidencePercent = result.confidence * 100;
@@ -1118,6 +1276,7 @@ class _RecognitionData {
       alternativeNames: result.alternativeNames,
       priceRange: result.priceRange,
       places: result.suggestedPlaces,
+      databaseMatch: result.databaseMatch,
     );
   }
 }

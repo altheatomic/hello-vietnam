@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
-import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 class TripPlannerPage extends StatefulWidget {
   const TripPlannerPage({super.key});
@@ -54,18 +54,23 @@ class _TripPlannerPageState extends State<TripPlannerPage>
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final List<Color> backgroundColors = isDark
+        ? const <Color>[Color(0xFF020B10), Color(0xFF0B1A22), Color(0xFF0B2426)]
+        : const <Color>[
+            Color(0xFFF1F6FE),
+            Color(0xFFDFF5FF),
+            Color(0xFFCCF6F1),
+          ];
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: <Color>[
-              Color(0xFFF1F6FE),
-              Color(0xFFDFF5FF),
-              Color(0xFFCCF6F1),
-            ],
+            colors: backgroundColors,
           ),
         ),
         child: Stack(
@@ -75,7 +80,9 @@ class _TripPlannerPageState extends State<TripPlannerPage>
               right: -60,
               child: _DecorativeBlurOrb(
                 size: 220,
-                color: const Color(0x662BC3FF),
+                color: isDark
+                    ? const Color(0x332BC3FF)
+                    : const Color(0x662BC3FF),
               ),
             ),
             Positioned(
@@ -83,7 +90,9 @@ class _TripPlannerPageState extends State<TripPlannerPage>
               left: -70,
               child: _DecorativeBlurOrb(
                 size: 180,
-                color: const Color(0x5532D2FF),
+                color: isDark
+                    ? const Color(0x2232D2FF)
+                    : const Color(0x5532D2FF),
               ),
             ),
             Positioned(
@@ -91,7 +100,9 @@ class _TripPlannerPageState extends State<TripPlannerPage>
               right: -50,
               child: _DecorativeBlurOrb(
                 size: 170,
-                color: const Color(0x5556E2D5),
+                color: isDark
+                    ? const Color(0x2256E2D5)
+                    : const Color(0x5556E2D5),
               ),
             ),
             SafeArea(
@@ -144,13 +155,13 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                             begin: 0.08,
                             end: 0.38,
                             child: Text(
-                              'Personalized Itinerary',
+                              context.l10n.ui('Personalized Itinerary'),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: headerTitleSize,
                                 fontWeight: FontWeight.w800,
                                 height: 1.08,
-                                color: AppColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -160,13 +171,13 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                             begin: 0.16,
                             end: 0.46,
                             child: Text(
-                              "Let's create your perfect trip",
+                              context.l10n.ui("Let's create your perfect trip"),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: headerSubtitleSize,
                                 fontStyle: FontStyle.italic,
                                 fontWeight: FontWeight.w500,
-                                color: const Color(0xFF687384),
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -197,12 +208,12 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                             begin: 0.36,
                             end: 0.66,
                             child: Text(
-                              'Trip Type',
+                              context.l10n.ui('Trip Type'),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: sectionTitleSize,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -212,13 +223,15 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                             begin: 0.42,
                             end: 0.72,
                             child: Text(
-                              'What type of trip are you planning?',
+                              context.l10n.ui(
+                                'What type of trip are you planning?',
+                              ),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: sectionSubtitleSize,
                                 fontStyle: FontStyle.italic,
                                 fontWeight: FontWeight.w500,
-                                color: const Color(0xFF7B8594),
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -233,9 +246,10 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                                     end: 0.84,
                                     offset: const Offset(-0.08, 0),
                                     child: _TripTypeCard(
-                                      title: 'Leisure Trip',
-                                      subtitle:
-                                          'Relax, explore, and enjoy\nyour vacation',
+                                      title: context.l10n.ui('Leisure Trip'),
+                                      subtitle: context.l10n.ui(
+                                        'Relax, explore, and enjoy\nyour vacation',
+                                      ),
                                       icon: Icons.beach_access_rounded,
                                       imageUrl:
                                           'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
@@ -263,9 +277,10 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                                     end: 0.92,
                                     offset: const Offset(-0.08, 0),
                                     child: _TripTypeCard(
-                                      title: 'Business Trip',
-                                      subtitle:
-                                          'Meetings, conferences, and\nnetworking',
+                                      title: context.l10n.ui('Business Trip'),
+                                      subtitle: context.l10n.ui(
+                                        'Meetings, conferences, and\nnetworking',
+                                      ),
                                       icon: Icons.work_outline_rounded,
                                       imageUrl:
                                           'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
@@ -315,6 +330,8 @@ class _ProgressHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Column(
       children: <Widget>[
         Row(
@@ -331,7 +348,11 @@ class _ProgressHeader extends StatelessWidget {
                           colors: <Color>[Color(0xFF14C4E7), Color(0xFF4D9AF6)],
                         )
                       : null,
-                  color: isActive ? null : const Color(0xFFD6D4DC),
+                  color: isActive
+                      ? null
+                      : (isDark
+                            ? theme.colorScheme.surfaceContainerHighest
+                            : const Color(0xFFD6D4DC)),
                   boxShadow: isActive
                       ? const <BoxShadow>[
                           BoxShadow(
@@ -348,12 +369,12 @@ class _ProgressHeader extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(
-          'Step 1 of 5',
+          context.l10n.stepOf(1, 5),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: labelSize,
             fontStyle: FontStyle.italic,
-            color: const Color(0xFF7A8494),
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -623,9 +644,14 @@ class _SavedTripsShortcutButton extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.92),
+            color: Theme.of(
+              context,
+            ).colorScheme.surface.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: const Color(0xFFD6EEF8), width: 1.2),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline,
+              width: 1.2,
+            ),
             boxShadow: const <BoxShadow>[
               BoxShadow(
                 color: Color(0x120F2C4F),
@@ -634,21 +660,21 @@ class _SavedTripsShortcutButton extends StatelessWidget {
               ),
             ],
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(
+              const Icon(
                 Icons.bookmark_added_rounded,
                 size: 18,
                 color: Color(0xFF21B4EB),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
-                'Saved Trips',
+                context.l10n.ui('Saved Trips'),
                 style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF405166),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -671,12 +697,12 @@ class _BackArrowButton extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: const Padding(
-          padding: EdgeInsets.all(4),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
           child: Icon(
             Icons.arrow_back_rounded,
             size: 24,
-            color: Color(0xFF37455E),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),

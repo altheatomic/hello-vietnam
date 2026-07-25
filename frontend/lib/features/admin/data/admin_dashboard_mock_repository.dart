@@ -6,7 +6,9 @@ class MockAdminDashboardRepository implements AdminDashboardRepository {
   const MockAdminDashboardRepository();
 
   @override
-  Future<AdminDashboardSnapshot> fetchDashboardSnapshot() async {
+  Future<AdminDashboardSnapshot> fetchDashboardSnapshot({
+    bool forceRefresh = false,
+  }) async {
     return const AdminDashboardSnapshot(
       generatedAtLabel: 'Synced 21 Apr 2026 • 16:45 ICT',
       hero: DashboardHero(

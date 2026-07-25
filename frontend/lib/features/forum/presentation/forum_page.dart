@@ -6,6 +6,7 @@ import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
+import 'package:hellovietnam/features/forum/presentation/forum_post_actions.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
 
 class ForumPage extends StatefulWidget {
@@ -80,27 +81,7 @@ class _ForumPageState extends State<ForumPage>
   }
 
   Future<void> _openPostMenu(ForumPost post) async {
-    final ForumPostMoreAction? action = await ForumPostMoreMenu.show(
-      context,
-      author: post.author,
-      isFollowing: post.author.isFollowing,
-    );
-    if (!mounted || action == null) {
-      return;
-    }
-
-    switch (action) {
-      case ForumPostMoreAction.follow:
-        _store.toggleFollowAuthor(post.author.id);
-        break;
-      case ForumPostMoreAction.block:
-        _store.toggleBlockAuthor(post.author.id);
-        _showComingSoon('${post.author.name} đã bị block khỏi forum feed.');
-        break;
-      case ForumPostMoreAction.report:
-        context.push(AppRoutes.forumReportPath(post.id));
-        break;
-    }
+    await ForumPostActions.open(context, store: _store, post: post);
   }
 
   @override
@@ -191,7 +172,9 @@ class _ForumPageState extends State<ForumPage>
                         onMore: _openPostMenu,
                         onSharedItemTap: _openSharedItem,
                         onSharedTripPlanTap: _openSharedTripPlan,
-                        currentUserId: _store.currentUserId,
+                        hasMore: _store.hasMoreForYou,
+                        isLoadingMore: _store.isLoadingMoreForYou,
+                        onLoadMore: _store.loadMoreForYou,
                       ),
                       _ForumFeedList(
                         posts: _store.followingPosts,
@@ -211,7 +194,9 @@ class _ForumPageState extends State<ForumPage>
                         onMore: _openPostMenu,
                         onSharedItemTap: _openSharedItem,
                         onSharedTripPlanTap: _openSharedTripPlan,
-                        currentUserId: _store.currentUserId,
+                        hasMore: _store.hasMoreFollowing,
+                        isLoadingMore: _store.isLoadingMoreFollowing,
+                        onLoadMore: _store.loadMoreFollowing,
                       ),
                     ],
                   );
@@ -241,7 +226,9 @@ class _ForumFeedList extends StatelessWidget {
     required this.onMore,
     required this.onSharedItemTap,
     required this.onSharedTripPlanTap,
-    required this.currentUserId,
+    required this.hasMore,
+    required this.isLoadingMore,
+    required this.onLoadMore,
   });
 
   final List<ForumPost> posts;
@@ -258,48 +245,91 @@ class _ForumFeedList extends StatelessWidget {
   final ValueChanged<ForumPost> onMore;
   final ValueChanged<SharedExploreItem> onSharedItemTap;
   final ValueChanged<SharedTripPlanItem> onSharedTripPlanTap;
-  final String currentUserId;
+  final bool hasMore;
+  final bool isLoadingMore;
+  final Future<void> Function() onLoadMore;
 
   @override
   Widget build(BuildContext context) {
+    final int composerCount = showComposer ? 1 : 0;
+    final int loaderCount = hasMore || isLoadingMore ? 1 : 0;
+
     return RefreshIndicator(
       onRefresh: onRefresh,
-      child: ListView.separated(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(
-          AppConstants.pagePadding,
-          18,
-          AppConstants.pagePadding,
-          144,
-        ),
-        itemCount: posts.length + (showComposer ? 1 : 0),
-        separatorBuilder: (_, _) => const SizedBox(height: 18),
-        itemBuilder: (BuildContext context, int index) {
-          if (showComposer && index == 0) {
-            return composer;
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification notification) {
+          if (notification.metrics.extentAfter < 640 &&
+              hasMore &&
+              !isLoadingMore) {
+            onLoadMore();
           }
-
-          final int postIndex = showComposer ? index - 1 : index;
-          final ForumPost post = posts[postIndex];
-          return ForumPostCard(
-            post: post,
-            onOpen: () => onOpen(post.id),
-            onAuthorTap: () => onAuthorTap(post.author.id),
-            onLike: () => onLike(post.id),
-            onComment: () => onComment(post.id),
-            onBookmark: () => onBookmark(post.id),
-            onShare: () => onShare(post.id),
-            onFollow: () => onFollow(post.author.id),
-            onMore: () => onMore(post),
-            onSharedItemTap: post.sharedItem == null
-                ? null
-                : () => onSharedItemTap(post.sharedItem!),
-            onSharedTripPlanTap: post.sharedTripPlan == null
-                ? null
-                : () => onSharedTripPlanTap(post.sharedTripPlan!),
-            showMoreButton: post.author.id != currentUserId,
-          );
+          return false;
         },
+        child: ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(
+            AppConstants.pagePadding,
+            18,
+            AppConstants.pagePadding,
+            144,
+          ),
+          itemCount: posts.length + composerCount + loaderCount,
+          separatorBuilder: (_, _) => const SizedBox(height: 18),
+          itemBuilder: (BuildContext context, int index) {
+            if (showComposer && index == 0) {
+              return composer;
+            }
+
+            final int postIndex = index - composerCount;
+            if (postIndex >= posts.length) {
+              return _ForumLoadMoreIndicator(isLoading: isLoadingMore);
+            }
+
+            final ForumPost post = posts[postIndex];
+            return ForumPostCard(
+              post: post,
+              onOpen: () => onOpen(post.id),
+              onAuthorTap: () => onAuthorTap(post.author.id),
+              onLike: () => onLike(post.id),
+              onComment: () => onComment(post.id),
+              onBookmark: () => onBookmark(post.id),
+              onShare: () => onShare(post.id),
+              onFollow: () => onFollow(post.author.id),
+              onMore: () => onMore(post),
+              onSharedItemTap: post.sharedItem == null
+                  ? null
+                  : () => onSharedItemTap(post.sharedItem!),
+              onSharedTripPlanTap: post.sharedTripPlan == null
+                  ? null
+                  : () => onSharedTripPlanTap(post.sharedTripPlan!),
+              showMoreButton: true,
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ForumLoadMoreIndicator extends StatelessWidget {
+  const _ForumLoadMoreIndicator({required this.isLoading});
+
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isLoading) {
+      return const SizedBox(height: 56);
+    }
+
+    return const SizedBox(
+      height: 64,
+      child: Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(strokeWidth: 2.4),
+        ),
       ),
     );
   }

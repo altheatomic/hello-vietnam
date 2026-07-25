@@ -118,7 +118,7 @@ class AppStrings {
   String get currency => _vi ? 'Tiền tệ' : 'Currency';
   String get notification => _vi ? 'Thông báo' : 'Notification';
   String get deleteUserData =>
-      _vi ? 'Xóa dữ liệu người dùng' : 'Delete user data';
+      _vi ? 'Quản lý media đã tải lên' : 'Manage uploaded media';
   String get logOut => _vi ? 'Đăng xuất' : 'Log out';
 
   String get selectPreferredLanguage =>
@@ -198,6 +198,73 @@ class AppStrings {
   }
 
   String forumPostsCount(int count) => _vi ? '$count bài viết' : '$count posts';
+  String wishlistSavedCount(int count) => _vi
+      ? '$count mục đã lưu'
+      : '$count saved ${count == 1 ? 'item' : 'items'}';
+  String loyaltyHighestTier(String tier) =>
+      _vi ? 'Hạng cao nhất: $tier' : 'Highest tier: $tier';
+  String loyaltyTierProgress(int current, int target, String tier) => _vi
+      ? '$current/$target điểm hạng để đạt $tier'
+      : '$current/$target tier points to $tier';
+  String get loyaltyHighestTierReached =>
+      _vi ? 'Bạn đang ở hạng cao nhất.' : 'You are at the highest tier.';
+  String loyaltyCycleEnds(String date) =>
+      _vi ? 'Chu kỳ kết thúc: $date' : 'Cycle ends: $date';
+  String loyaltyEarnSummary(
+    int points,
+    int tierPoints, {
+    required bool requiresApproval,
+    required bool automatic,
+  }) {
+    final String base = _vi
+        ? '+$points điểm, +$tierPoints điểm hạng'
+        : '+$points points, +$tierPoints tier points';
+    final String suffix = requiresApproval
+        ? (_vi ? ' · Cần xét duyệt' : ' . Needs review')
+        : automatic
+        ? (_vi ? ' · Tự động' : ' . Automatic')
+        : '';
+    return '$base$suffix';
+  }
+
+  String loyaltyTestPointsAdded(int points) => _vi
+      ? 'Đã cộng $points điểm kiểm thử.'
+      : 'Added $points test loyalty points.';
+  String loyaltyTokenCost(int points, {int? dailyLimit}) {
+    if (_vi) {
+      return dailyLimit == null
+          ? 'Chi phí: $points điểm.'
+          : 'Chi phí: $points điểm. Giới hạn mỗi ngày: $dailyLimit token.';
+    }
+    return dailyLimit == null
+        ? 'Cost: $points points.'
+        : 'Cost: $points points. Daily limit: $dailyLimit tokens.';
+  }
+
+  String loyaltyVoucherRequirement(int points, String description) =>
+      _vi ? '$points điểm · $description' : '$points points . $description';
+  String loyaltyWalletExpiry(String date) =>
+      _vi ? 'Hết hạn $date' : 'Expires $date';
+  String loyaltyTransactionSummary(
+    String status,
+    int pointChange,
+    int tokenChange,
+    String? date,
+  ) {
+    final String points = pointChange == 0
+        ? ''
+        : ' ${pointChange > 0 ? '+' : ''}$pointChange ${_vi ? 'điểm' : 'pts'}';
+    final String tokens = tokenChange == 0
+        ? ''
+        : ' ${tokenChange > 0 ? '+' : ''}$tokenChange token';
+    final String dateSuffix = date == null
+        ? ''
+        : _vi
+        ? ' · $date'
+        : ' . $date';
+    return '$status$points$tokens$dateSuffix';
+  }
+
   String get cancel => _vi ? 'Hủy' : 'Cancel';
   String get viewPlan => _vi ? 'Xem lịch' : 'View Plan';
   String get endTrip => _vi ? 'Kết thúc' : 'End Trip';
@@ -264,11 +331,17 @@ class AppStrings {
   }
 
   static const Map<String, String> _viText = <String, String>{
+    'Home': 'Trang chủ',
+    'Planner': 'Lịch trình',
+    'Saved': 'Đã lưu',
+    'Forum': 'Diễn đàn',
+    'Profile': 'Hồ sơ',
     'Explore Vietnam with': 'Khám phá Việt Nam cùng',
     'Explore local culture, traditional food, and meaningful travel experiences across Vietnam.\nLet us guide you through every journey.':
         'Khám phá văn hóa, ẩm thực và trải nghiệm du lịch khắp Việt Nam.\nĐể chúng tôi đồng hành cùng bạn.',
     'Get Started': 'Bắt đầu',
     'Discover': 'Khám phá',
+    'Destination': 'Điểm đến',
     'Login to Start Your': 'Đăng nhập để bắt đầu',
     'Amazing Trips': 'Chuyến đi tuyệt vời',
     'Enter your email': 'Nhập email',
@@ -851,7 +924,6 @@ class AppStrings {
     'Where to?': 'Đi đâu?',
     'Choose your dream destination': 'Chọn điểm đến mơ ước',
     'Back': 'Quay lại',
-    'Delete': 'Xóa',
     'Ok': 'OK',
     'Personal Data': 'Dữ liệu cá nhân',
     'All Images': 'Tất cả ảnh',
@@ -959,6 +1031,131 @@ class AppStrings {
     'Loyalty updated successfully.': 'Đã cập nhật điểm thưởng.',
     'Daily login is awarded automatically.':
         'Điểm đăng nhập hằng ngày được cộng tự động.',
+    'Generating...': 'Đang tạo lịch trình...',
+    'Saving…': 'Đang lưu…',
+    'Share': 'Chia sẻ',
+    'Share to Forum': 'Chia sẻ lên Diễn đàn',
+    'Get Directions': 'Chỉ đường',
+    'Create Trip on Google Maps': 'Tạo chuyến đi trên Google Maps',
+    'Back to trip planner': 'Quay lại Lịch trình',
+    'Destinations': 'Điểm đến',
+    'No destinations available yet.': 'Hiện chưa có điểm đến.',
+    'Generating your personalised itinerary…':
+        'Đang tạo lịch trình cá nhân hóa…',
+    'No plan ID — please generate again.':
+        'Không tìm thấy mã lịch trình — vui lòng tạo lại.',
+    'Could not save trip. Please try again.':
+        'Không thể lưu chuyến đi. Vui lòng thử lại.',
+    'Save the trip first before sharing.':
+        'Vui lòng lưu chuyến đi trước khi chia sẻ.',
+    'Share this trip plan as a forum post? Other users can save it to their own trips.':
+        'Chia sẻ lịch trình này thành bài viết trên diễn đàn? Người dùng khác có thể lưu vào chuyến đi của họ.',
+    'Please sign in to share.': 'Vui lòng đăng nhập để chia sẻ.',
+    'Could not share. Please try again.':
+        'Không thể chia sẻ. Vui lòng thử lại.',
+    'Days': 'Ngày',
+    'Full': 'Đầy đủ',
+    'Schedule': 'Lịch trình',
+    'Your Itinerary': 'Lịch trình của bạn',
+    'Start Trip': 'Bắt đầu chuyến đi',
+    'Nearby': 'Gần đây',
+    'Sort by: Nearest': 'Sắp xếp: Gần nhất',
+    'No nearby places found.': 'Không tìm thấy địa điểm lân cận.',
+    'Route': 'Chỉ đường',
+    'Could not load trip. Please try again.':
+        'Không thể tải chuyến đi. Vui lòng thử lại.',
+    'This trip is no longer available. Please generate it again.':
+        'Chuyến đi này không còn khả dụng. Vui lòng tạo lại.',
+    'Trip saved!': 'Đã lưu chuyến đi!',
+    'Shared to Forum!': 'Đã chia sẻ lên Diễn đàn!',
+    'Available points': 'Điểm hiện có',
+    'Tokens': 'Token',
+    'Lifetime points': 'Tổng điểm tích lũy',
+    'Loyalty notifications': 'Thông báo điểm thưởng',
+    'Only affects points and rewards notifications.':
+        'Chỉ áp dụng cho thông báo về điểm và phần thưởng.',
+    'Tier progress': 'Tiến trình xếp hạng',
+    'Earn points': 'Kiếm điểm',
+    'Add item to wishlist': 'Thêm mục vào danh sách yêu thích',
+    'Create a forum post': 'Tạo bài viết trên diễn đàn',
+    'Submit a review': 'Gửi đánh giá',
+    'Check in at a place': 'Check-in tại một địa điểm',
+    'Daily login': 'Đăng nhập hằng ngày',
+    'Go': 'Đi',
+    'Auto': 'Tự động',
+    'Redeem': 'Đổi',
+    'Add loyalty for testing': 'Cộng điểm thưởng để kiểm thử',
+    'Add 500 test points': 'Cộng 500 điểm kiểm thử',
+    '+500 points, +500 tier points. Temporary test action.':
+        '+500 điểm, +500 điểm hạng. Thao tác kiểm thử tạm thời.',
+    'Add': 'Cộng',
+    'Unable to add test loyalty points.':
+        'Không thể cộng điểm thưởng kiểm thử.',
+    'Exchange points to tokens': 'Đổi điểm thành token',
+    'Get 1 token': 'Nhận 1 token',
+    'Get 5 tokens': 'Nhận 5 token',
+    'Redeem vouchers': 'Đổi voucher',
+    'Voucher wallet': 'Ví voucher',
+    'Transaction history': 'Lịch sử giao dịch',
+    'No active loyalty vouchers yet.': 'Chưa có voucher điểm thưởng.',
+    'Your loyalty voucher wallet is empty.': 'Ví voucher của bạn đang trống.',
+    'No loyalty transactions yet.': 'Chưa có giao dịch điểm thưởng.',
+    'Load loyalty failed.': 'Không tải được điểm thưởng.',
+    'Loading loyalty rewards': 'Đang tải điểm thưởng',
+    'Retry': 'Thử lại',
+    'Needs review': 'Cần xét duyệt',
+    'Automatic': 'Tự động',
+    'pending': 'Đang chờ',
+    'completed': 'Đã hoàn thành',
+    'active': 'Đang hoạt động',
+    'Platinum': 'Hạng Bạch kim',
+    'Wishlist': 'Danh sách yêu thích',
+    'Loading wishlist': 'Đang tải danh sách yêu thích',
+    'Load wishlist failed.': 'Không tải được danh sách yêu thích.',
+    'Sign in': 'Đăng nhập',
     'Could not open image': 'Không mở được ảnh',
+    'AI Travel Assistant': 'Trợ lý du lịch AI',
+    'Chat history': 'Lịch sử trò chuyện',
+    'Could not load this conversation': 'Không thể tải cuộc trò chuyện này',
+    'How can I help with your Vietnam trip?':
+        'Tôi có thể giúp gì cho chuyến đi Việt Nam của bạn?',
+    'Ask for travel ideas, useful local information, or help finding an app feature.':
+        'Hãy hỏi về ý tưởng du lịch, thông tin địa phương hoặc cách tìm một tính năng trong ứng dụng.',
+    'Premium travel assistant': 'Trợ lý du lịch Premium',
+    'Chat with AI for personalized Vietnam travel help and quick access to relevant app features.':
+        'Trò chuyện với AI để nhận hỗ trợ du lịch Việt Nam được cá nhân hóa và mở nhanh tính năng phù hợp.',
+    'View Premium plans': 'Xem các gói Premium',
+    'Renew Premium to continue this conversation.':
+        'Gia hạn Premium để tiếp tục cuộc trò chuyện này.',
+    'Renew': 'Gia hạn',
+    'Ask about your trip in Vietnam...': 'Hỏi về chuyến đi Việt Nam của bạn...',
+    'Send': 'Gửi',
+    'Listen': 'Nghe',
+    'Try again': 'Thử lại',
+    'AI chat history': 'Lịch sử trò chuyện AI',
+    'Refresh': 'Làm mới',
+    'Delete conversation?': 'Xóa cuộc trò chuyện?',
+    'This conversation and all its messages will be removed.':
+        'Cuộc trò chuyện này và toàn bộ tin nhắn sẽ bị xóa.',
+    'Delete': 'Xóa',
+    'Could not delete this conversation.': 'Không thể xóa cuộc trò chuyện này.',
+    'Could not load chat history': 'Không thể tải lịch sử trò chuyện',
+    'Check your connection and try again.': 'Hãy kiểm tra kết nối và thử lại.',
+    'No conversations yet': 'Chưa có cuộc trò chuyện',
+    'Your AI travel conversations will appear here.':
+        'Các cuộc trò chuyện với trợ lý du lịch AI sẽ xuất hiện tại đây.',
+    'Open AI Travel Assistant': 'Mở Trợ lý du lịch AI',
+    'Premium AI Travel Assistant': 'Trợ lý du lịch AI Premium',
+    'Open Trip Planner': 'Mở trình lập lịch trình',
+    'Open Translate': 'Mở công cụ dịch',
+    'Explore Vietnam': 'Khám phá Việt Nam',
+    'View Recommendations': 'Xem gợi ý',
+    'Open Forum': 'Mở diễn đàn',
+    'Open Wishlist': 'Mở danh sách yêu thích',
+    'Open AI Recognition': 'Mở AI nhận diện',
+    'Open Loyalty Rewards': 'Mở phần thưởng thành viên',
+    'Open Popular Apps': 'Mở ứng dụng phổ biến',
+    'Open Notifications': 'Mở thông báo',
+    'Open Profile': 'Mở hồ sơ',
   };
 }

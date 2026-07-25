@@ -29,5 +29,6 @@ void main() {
       'Điểm nổi bật khi ghé thăm',
     );
     expect(strings.ui('All Category'), 'Tất cả danh mục');
+    expect(strings.ui('Destination'), 'Điểm đến');
   });
 }

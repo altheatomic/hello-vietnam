@@ -58,6 +58,7 @@ tree.txt
 plan.md 
 spec.md
 .merge-worktree/
+.worktrees/
 backend/node_modules/
 backend/supabase/.temp/
 backend/crawldata/.env
@@ -70,3 +71,6 @@ cf_service/**/__pycache__/
 cf_service/.pytest_cache/
 cf_service/.mypy_cache/
 .claude/
+# Firebase configuration is environment-specific.
+frontend/android/app/google-services.json
+frontend/ios/Runner/GoogleService-Info.plist

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 
-enum AppNotificationType { trip, forum, voucher, account }
+enum AppNotificationType { loyalty, trip, forum, voucher, account }
 
 extension AppNotificationTypeX on AppNotificationType {
   String get label {
     switch (this) {
+      case AppNotificationType.loyalty:
+        return 'LOYALTY';
       case AppNotificationType.trip:
         return 'TRIP';
       case AppNotificationType.forum:
@@ -19,6 +21,8 @@ extension AppNotificationTypeX on AppNotificationType {
 
   Color get accentColor {
     switch (this) {
+      case AppNotificationType.loyalty:
+        return const Color(0xFF36A9E1);
       case AppNotificationType.trip:
         return const Color(0xFFF4B63E);
       case AppNotificationType.forum:
@@ -32,6 +36,8 @@ extension AppNotificationTypeX on AppNotificationType {
 
   Color get backgroundColor {
     switch (this) {
+      case AppNotificationType.loyalty:
+        return const Color(0xFFE4F5FD);
       case AppNotificationType.trip:
         return const Color(0xFFFFF3DC);
       case AppNotificationType.forum:
@@ -171,8 +177,9 @@ class NotificationTarget {
     }
 
     return NotificationTarget(
-      kind: NotificationTargetKind.values.byName(
-        json['kind'] as String? ?? NotificationTargetKind.recommendPage.name,
+      kind: NotificationTargetKind.values.firstWhere(
+        (NotificationTargetKind item) => item.name == json['kind'],
+        orElse: () => NotificationTargetKind.recommendPage,
       ),
       entityId: json['entityId'] as String?,
       entityName: json['entityName'] as String?,
@@ -218,6 +225,7 @@ class AppNotification {
     required this.description,
     required this.timestampLabel,
     required this.target,
+    this.createdAt,
     this.isRead = false,
     this.metadata = const <String, String>{},
   });
@@ -230,6 +238,7 @@ class AppNotification {
   final String timestampLabel;
   final bool isRead;
   final NotificationTarget target;
+  final DateTime? createdAt;
   final Map<String, String> metadata;
 
   AppNotification copyWith({
@@ -241,6 +250,7 @@ class AppNotification {
     String? timestampLabel,
     bool? isRead,
     NotificationTarget? target,
+    DateTime? createdAt,
     Map<String, String>? metadata,
   }) {
     return AppNotification(
@@ -252,6 +262,7 @@ class AppNotification {
       timestampLabel: timestampLabel ?? this.timestampLabel,
       isRead: isRead ?? this.isRead,
       target: target ?? this.target,
+      createdAt: createdAt ?? this.createdAt,
       metadata: metadata ?? this.metadata,
     );
   }
@@ -266,6 +277,7 @@ class AppNotification {
       'timestampLabel': timestampLabel,
       'isRead': isRead,
       'target': target.toJson(),
+      'createdAt': createdAt?.toIso8601String(),
       'metadata': metadata,
     };
   }
@@ -279,33 +291,85 @@ class AppNotification {
       }
     }
 
+    final DateTime? createdAt = _dateFromJson(
+      json['created_at'] ?? json['createdAt'],
+    );
+    final Map<String, dynamic> payload = _asMap(
+      json['payload_jsonb'] ?? json['payload'],
+    );
+    final Map<String, dynamic> targetJson = _asMap(
+      json['target'] ?? payload['target'],
+    );
     return AppNotification(
-      id: json['id'] as String,
-      type: AppNotificationType.values.byName(
-        json['type'] as String? ?? AppNotificationType.trip.name,
+      id: (json['id_notification'] ?? json['id'] ?? '').toString(),
+      type: _notificationTypeFromName(
+        (json['notification_type'] ?? json['type'])?.toString(),
       ),
-      icon: AppNotificationIcon.values.byName(
-        json['icon'] as String? ?? AppNotificationIcon.calendar.name,
-      ),
+      icon: _notificationIconFromName(json['icon']?.toString()),
       title: json['title'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-      timestampLabel: json['timestampLabel'] as String? ?? '',
-      isRead: json['isRead'] as bool? ?? false,
-      target: NotificationTarget.fromJson(
-        (json['target'] as Map<String, dynamic>?) ?? <String, dynamic>{},
-      ),
+      description: (json['body'] ?? json['description'] ?? '').toString(),
+      timestampLabel:
+          json['timestampLabel']?.toString() ?? _relativeTime(createdAt),
+      isRead: json.containsKey('read_at')
+          ? json['read_at'] != null
+          : json['isRead'] as bool? ?? false,
+      target: NotificationTarget.fromJson(targetJson),
+      createdAt: createdAt,
       metadata: metadata,
     );
   }
+
+  static AppNotificationType _notificationTypeFromName(String? value) {
+    return AppNotificationType.values.firstWhere(
+      (AppNotificationType item) => item.name == value,
+      orElse: () => AppNotificationType.account,
+    );
+  }
+
+  static AppNotificationIcon _notificationIconFromName(String? value) {
+    return AppNotificationIcon.values.firstWhere(
+      (AppNotificationIcon item) => item.name == value,
+      orElse: () => AppNotificationIcon.badge,
+    );
+  }
+
+  static DateTime? _dateFromJson(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
+  static Map<String, dynamic> _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      return value.map(
+        (Object? key, Object? item) => MapEntry(key.toString(), item),
+      );
+    }
+    return <String, dynamic>{};
+  }
+
+  static String _relativeTime(DateTime? value) {
+    if (value == null) return '';
+    final Duration difference = DateTime.now().difference(value.toLocal());
+    if (difference.isNegative || difference.inMinutes < 1) return 'Just now';
+    if (difference.inHours < 1) return '${difference.inMinutes}m ago';
+    if (difference.inDays < 1) return '${difference.inHours}h ago';
+    if (difference.inDays < 7) return '${difference.inDays} days ago';
+    final int weeks = difference.inDays ~/ 7;
+    return weeks == 1 ? '1 week ago' : '$weeks weeks ago';
+  }
 }
 
-enum NotificationFilter { all, forum, voucher, account, trip }
+enum NotificationFilter { all, loyalty, forum, voucher, account, trip }
 
 extension NotificationFilterX on NotificationFilter {
   String get label {
     switch (this) {
       case NotificationFilter.all:
         return 'ALL';
+      case NotificationFilter.loyalty:
+        return 'LOYALTY';
       case NotificationFilter.forum:
         return 'FORUM';
       case NotificationFilter.voucher:
@@ -321,6 +385,8 @@ extension NotificationFilterX on NotificationFilter {
     switch (this) {
       case NotificationFilter.all:
         return true;
+      case NotificationFilter.loyalty:
+        return type == AppNotificationType.loyalty;
       case NotificationFilter.forum:
         return type == AppNotificationType.forum;
       case NotificationFilter.voucher:

@@ -3,8 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
-import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/utils/maps_launcher.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 
 void _openDayRoute(List<TripPlannerActivityData> activities) {
@@ -34,32 +34,44 @@ class TripDayDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TripPlannerDayData day = dayData ?? TripPlannerMockData.dayAt(dayIndex);
+    final TripPlannerDayData day =
+        dayData ?? TripPlannerMockData.dayAt(dayIndex);
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final List<Color> pageColors = isDark
+        ? const <Color>[Color(0xFF020B10), Color(0xFF0B1A22), Color(0xFF0B2426)]
+        : const <Color>[
+            Color(0xFFF1F6FE),
+            Color(0xFFDFF5FF),
+            Color(0xFFCCF6F1),
+          ];
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: <Color>[
-              Color(0xFFF1F6FE),
-              Color(0xFFDFF5FF),
-              Color(0xFFCCF6F1),
-            ],
+            colors: pageColors,
           ),
         ),
         child: Stack(
           children: <Widget>[
-            const Positioned(
+            Positioned(
               top: -90,
               right: -60,
-              child: _DecorativeOrb(size: 220, color: Color(0x662BC3FF)),
+              child: _DecorativeOrb(
+                size: 220,
+                color: Color(isDark ? 0x332BC3FF : 0x662BC3FF),
+              ),
             ),
-            const Positioned(
+            Positioned(
               bottom: 120,
               left: -40,
-              child: _DecorativeOrb(size: 180, color: Color(0x5556E2D5)),
+              child: _DecorativeOrb(
+                size: 180,
+                color: Color(isDark ? 0x2856E2D5 : 0x5556E2D5),
+              ),
             ),
             SafeArea(
               child: SingleChildScrollView(
@@ -70,28 +82,28 @@ class TripDayDetailPage extends StatelessWidget {
                   children: <Widget>[
                     _BackButtonCircle(onTap: () => context.pop()),
                     const SizedBox(height: 20),
-                    _DayPill(label: day.dayLabel),
+                    _DayPill(label: context.l10n.ui(day.dayLabel)),
                     const SizedBox(height: 12),
                     Text(
                       day.date,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF5B6677),
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      day.activityCountLabel,
-                      style: const TextStyle(
+                      context.l10n.ui(day.activityCountLabel),
+                      style: TextStyle(
                         fontSize: 16,
                         fontStyle: FontStyle.italic,
-                        color: Color(0xFF6B7687),
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 22),
                     _GradientActionButton(
-                      label: 'Create Trip on Google Maps',
+                      label: context.l10n.ui('Create Trip on Google Maps'),
                       onTap: () => _openDayRoute(day.activities),
                     ),
                     const SizedBox(height: 22),
@@ -103,16 +115,18 @@ class TripDayDetailPage extends StatelessWidget {
                         .map(
                           (MapEntry<int, TripPlannerActivityData> entry) =>
                               Padding(
-                            padding: const EdgeInsets.only(bottom: 18),
-                            child: _ActivityDetailCard(
-                              activity: entry.value,
-                              onDirections: () => context.push(
-                                AppRoutes.tripPlannerMapPath(
-                                    dayIndex, entry.key),
-                                extra: entry.value,
+                                padding: const EdgeInsets.only(bottom: 18),
+                                child: _ActivityDetailCard(
+                                  activity: entry.value,
+                                  onDirections: () => context.push(
+                                    AppRoutes.tripPlannerMapPath(
+                                      dayIndex,
+                                      entry.key,
+                                    ),
+                                    extra: entry.value,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
                         ),
                   ],
                 ),
@@ -136,15 +150,20 @@ class _ActivityDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.97),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.97),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFD9EDF7), width: 2),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFD9EDF7),
+          width: 2,
+        ),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x220F2C4F),
+            color: isDark ? Colors.black26 : const Color(0x220F2C4F),
             blurRadius: 24,
             offset: Offset(0, 12),
           ),
@@ -185,28 +204,31 @@ class _ActivityDetailCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            activity.title,
-            style: const TextStyle(
+            context.l10n.ui(activity.title),
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               height: 1.2,
             ),
           ),
           const SizedBox(height: 12),
-          _CategoryChip(label: activity.tag),
+          _CategoryChip(label: context.l10n.ui(activity.tag)),
           const SizedBox(height: 14),
           Text(
-            activity.description,
-            style: const TextStyle(
+            context.l10n.ui(activity.description),
+            style: TextStyle(
               fontSize: 15.5,
               fontStyle: FontStyle.italic,
-              color: Color(0xFF677284),
+              color: theme.colorScheme.onSurfaceVariant,
               height: 1.55,
             ),
           ),
           const SizedBox(height: 18),
-          _GradientActionButton(label: 'Get Directions', onTap: onDirections),
+          _GradientActionButton(
+            label: context.l10n.ui('Get Directions'),
+            onTap: onDirections,
+          ),
         ],
       ),
     );
@@ -258,12 +280,16 @@ class _GradientActionButton extends StatelessWidget {
             children: <Widget>[
               const Icon(Icons.send_outlined, color: Colors.white, size: 18),
               const SizedBox(width: 10),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
@@ -281,16 +307,17 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFF2EBEFB), width: 2),
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: Color(0xFF2EBEFB),
@@ -307,16 +334,17 @@ class _TimePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: const Color(0xFF2EBEFB), width: 2),
       ),
       child: Text(
         time,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w700,
           color: Color(0xFF2EBEFB),
@@ -336,16 +364,16 @@ class _DayPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFF2C374C), width: 2),
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w800,
-          color: AppColors.textPrimary,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
     );
@@ -362,7 +390,7 @@ class _BackButtonCircle extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.82),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.82),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x18000000),
@@ -376,13 +404,13 @@ class _BackButtonCircle extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           customBorder: const CircleBorder(),
-          child: const SizedBox(
+          child: SizedBox(
             width: 42,
             height: 42,
             child: Icon(
               Icons.arrow_back_rounded,
               size: 22,
-              color: Color(0xFF3A465D),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),

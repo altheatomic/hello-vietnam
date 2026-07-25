@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -8,7 +9,9 @@ import 'package:hellovietnam/features/notification/presentation/notification_act
 import 'package:hellovietnam/features/notification/presentation/notification_controller.dart';
 
 class NotificationPage extends StatefulWidget {
-  const NotificationPage({super.key});
+  const NotificationPage({super.key, this.controller});
+
+  final NotificationController? controller;
 
   @override
   State<NotificationPage> createState() => _NotificationPageState();
@@ -16,15 +19,31 @@ class NotificationPage extends StatefulWidget {
 
 class _NotificationPageState extends State<NotificationPage> {
   late final NotificationController _controller;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _controller = NotificationController()..load();
+    _controller = widget.controller ?? NotificationController();
+    _scrollController.addListener(_handleScroll);
+    unawaited(_controller.load());
+  }
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients ||
+        _scrollController.position.extentAfter > 320 ||
+        !_controller.hasMore ||
+        _controller.isLoadingMore) {
+      return;
+    }
+    unawaited(_controller.loadMore());
   }
 
   @override
   void dispose() {
+    _scrollController
+      ..removeListener(_handleScroll)
+      ..dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -48,6 +67,8 @@ class _NotificationPageState extends State<NotificationPage> {
                 BuildContext context,
                 void Function(void Function()) setModalState,
               ) {
+                final ThemeData theme = Theme.of(context);
+                final bool isDark = theme.brightness == Brightness.dark;
                 return SafeArea(
                   top: false,
                   child: Padding(
@@ -66,10 +87,14 @@ class _NotificationPageState extends State<NotificationPage> {
                         child: Container(
                           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.94),
+                            color: theme.colorScheme.surface.withValues(
+                              alpha: isDark ? 0.98 : 0.94,
+                            ),
                             borderRadius: BorderRadius.circular(28),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.74),
+                              color: isDark
+                                  ? theme.colorScheme.outline
+                                  : Colors.white.withValues(alpha: 0.74),
                             ),
                             boxShadow: const <BoxShadow>[
                               BoxShadow(
@@ -98,10 +123,12 @@ class _NotificationPageState extends State<NotificationPage> {
                                         },
                                         child: Text(
                                           context.l10n.ui('Clear All'),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w600,
-                                            color: Color(0xFF7D8594),
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
                                           ),
                                         ),
                                       ),
@@ -109,10 +136,10 @@ class _NotificationPageState extends State<NotificationPage> {
                                     Center(
                                       child: Text(
                                         context.l10n.ui('Filters'),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w800,
-                                          color: Color(0xFF2B3340),
+                                          color: theme.colorScheme.onSurface,
                                         ),
                                       ),
                                     ),
@@ -121,13 +148,15 @@ class _NotificationPageState extends State<NotificationPage> {
                                       child: GestureDetector(
                                         onTap: () =>
                                             Navigator.of(context).pop(),
-                                        child: const SizedBox(
+                                        child: SizedBox(
                                           width: 28,
                                           height: 28,
                                           child: Icon(
                                             Icons.close_rounded,
                                             size: 22,
-                                            color: Color(0xFF80889A),
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
                                           ),
                                         ),
                                       ),
@@ -138,10 +167,10 @@ class _NotificationPageState extends State<NotificationPage> {
                               const SizedBox(height: 26),
                               Text(
                                 context.l10n.ui('Notification type'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFF4A5566),
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 14),
@@ -296,7 +325,8 @@ class _NotificationPageState extends State<NotificationPage> {
                           compact: true,
                         ),
                       )
-                    else if (_controller.errorMessage != null)
+                    else if (_controller.errorMessage != null &&
+                        notifications.isEmpty)
                       Expanded(
                         child: Center(
                           child: Padding(
@@ -304,9 +334,11 @@ class _NotificationPageState extends State<NotificationPage> {
                             child: Text(
                               context.l10n.ui(_controller.errorMessage!),
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
-                                color: Color(0xFF6B7280),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -316,40 +348,71 @@ class _NotificationPageState extends State<NotificationPage> {
                       const Expanded(child: _NotificationEmptyState())
                     else
                       Expanded(
-                        child: ListView.separated(
-                          physics: const BouncingScrollPhysics(),
-                          padding: EdgeInsets.fromLTRB(
-                            16,
-                            10,
-                            16,
-                            topInset + 28,
-                          ),
-                          itemCount: notifications.length + 1,
-                          separatorBuilder: (BuildContext context, int index) =>
-                              const SizedBox(height: 14),
-                          itemBuilder: (BuildContext context, int index) {
-                            if (index == notifications.length) {
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Center(
-                                  child: _ClearAllButton(
-                                    onTap: _clearAllNotifications,
+                        child: RefreshIndicator(
+                          onRefresh: _controller.refresh,
+                          child: ListView.separated(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(
+                              parent: BouncingScrollPhysics(),
+                            ),
+                            padding: EdgeInsets.fromLTRB(
+                              16,
+                              10,
+                              16,
+                              topInset + 28,
+                            ),
+                            itemCount: notifications.length + 2,
+                            separatorBuilder:
+                                (BuildContext context, int index) =>
+                                    const SizedBox(height: 14),
+                            itemBuilder: (BuildContext context, int index) {
+                              if (index == notifications.length) {
+                                if (_controller.isLoadingMore) {
+                                  return const Center(
+                                    child: SizedBox.square(
+                                      dimension: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  );
+                                }
+                                if (_controller.hasMore) {
+                                  return Center(
+                                    child: TextButton.icon(
+                                      onPressed: _controller.loadMore,
+                                      icon: const Icon(
+                                        Icons.expand_more_rounded,
+                                      ),
+                                      label: Text(context.l10n.ui('Load more')),
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              }
+                              if (index == notifications.length + 1) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Center(
+                                    child: _ClearAllButton(
+                                      onTap: _clearAllNotifications,
+                                    ),
                                   ),
+                                );
+                              }
+
+                              final AppNotification notification =
+                                  notifications[index];
+                              return _AnimatedNotificationTile(
+                                index: index,
+                                child: _NotificationTile(
+                                  notification: notification,
+                                  onTap: () =>
+                                      _handleNotificationTap(notification),
                                 ),
                               );
-                            }
-
-                            final AppNotification notification =
-                                notifications[index];
-                            return _AnimatedNotificationTile(
-                              index: index,
-                              child: _NotificationTile(
-                                notification: notification,
-                                onTap: () =>
-                                    _handleNotificationTap(notification),
-                              ),
-                            );
-                          },
+                            },
+                          ),
                         ),
                       ),
                   ],
@@ -368,34 +431,50 @@ class _NotificationBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: <Color>[
-            Color(0xFFF1F7FF),
-            Color(0xFFE3FBFF),
-            Color(0xFFF8FFFE),
-          ],
+          colors: isDark
+              ? const <Color>[
+                  Color(0xFF020B10),
+                  Color(0xFF0B1A22),
+                  Color(0xFF0B2426),
+                ]
+              : const <Color>[
+                  Color(0xFFF1F7FF),
+                  Color(0xFFE3FBFF),
+                  Color(0xFFF8FFFE),
+                ],
         ),
       ),
       child: Stack(
-        children: const <Widget>[
+        children: <Widget>[
           Positioned(
             top: -64,
             left: -42,
-            child: _Orb(size: 160, color: Color(0x3D8DD8FF)),
+            child: _Orb(
+              size: 160,
+              color: isDark ? const Color(0x248DD8FF) : const Color(0x3D8DD8FF),
+            ),
           ),
           Positioned(
             top: 220,
             right: -58,
-            child: _Orb(size: 190, color: Color(0x3A73F1E4)),
+            child: _Orb(
+              size: 190,
+              color: isDark ? const Color(0x2073F1E4) : const Color(0x3A73F1E4),
+            ),
           ),
           Positioned(
             bottom: 72,
             left: -50,
-            child: _Orb(size: 176, color: Color(0x3340D8FF)),
+            child: _Orb(
+              size: 176,
+              color: isDark ? const Color(0x2040D8FF) : const Color(0x3340D8FF),
+            ),
           ),
         ],
       ),
@@ -516,15 +595,23 @@ class _CircleGlassButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
+          color: theme.colorScheme.surface.withValues(
+            alpha: isDark ? 0.94 : 0.92,
+          ),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
+          border: Border.all(
+            color: isDark
+                ? theme.colorScheme.outline
+                : Colors.white.withValues(alpha: 0.8),
+          ),
           boxShadow: const <BoxShadow>[
             BoxShadow(
               color: Color(0x220A2942),
@@ -533,7 +620,7 @@ class _CircleGlassButton extends StatelessWidget {
             ),
           ],
         ),
-        child: Icon(icon, size: 18, color: const Color(0xFF667085)),
+        child: Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
       ),
     );
   }
@@ -573,6 +660,8 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     final Color typeColor = notification.type.accentColor;
     final Color typeBackground = notification.type.backgroundColor;
     final String title = _localizedNotificationTitle(context, notification);
@@ -587,11 +676,17 @@ class _NotificationTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
         decoration: BoxDecoration(
-          color: notification.isRead
-              ? Colors.white.withValues(alpha: 0.82)
-              : Colors.white.withValues(alpha: 0.96),
+          color: theme.colorScheme.surface.withValues(
+            alpha: notification.isRead
+                ? (isDark ? 0.78 : 0.82)
+                : (isDark ? 0.96 : 0.96),
+          ),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.88)),
+          border: Border.all(
+            color: isDark
+                ? theme.colorScheme.outline
+                : Colors.white.withValues(alpha: 0.88),
+          ),
           boxShadow: notification.isRead
               ? const <BoxShadow>[
                   BoxShadow(
@@ -648,18 +743,18 @@ class _NotificationTile extends StatelessWidget {
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                             color: notification.isRead
-                                ? const Color(0xFF5E6675)
-                                : const Color(0xFF28313F),
+                                ? theme.colorScheme.onSurfaceVariant
+                                : theme.colorScheme.onSurface,
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         timestamp,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFFA0A7B4),
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       if (!notification.isRead) ...<Widget>[
@@ -684,9 +779,7 @@ class _NotificationTile extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13.5,
                       height: 1.35,
-                      color: notification.isRead
-                          ? const Color(0xFF9EA6B3)
-                          : const Color(0xFF5F6B7A),
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -706,14 +799,22 @@ class _ClearAllButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
+          color: theme.colorScheme.surface.withValues(
+            alpha: isDark ? 0.94 : 0.92,
+          ),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.86)),
+          border: Border.all(
+            color: isDark
+                ? theme.colorScheme.outline
+                : Colors.white.withValues(alpha: 0.86),
+          ),
           boxShadow: const <BoxShadow>[
             BoxShadow(
               color: Color(0x210F2C4F),
@@ -724,10 +825,10 @@ class _ClearAllButton extends StatelessWidget {
         ),
         child: Text(
           context.l10n.ui('Clear All'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF7A8191),
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -748,6 +849,7 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -755,7 +857,9 @@ class _FilterChip extends StatelessWidget {
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF14C6EE) : const Color(0xFFF3F5F8),
+          color: selected
+              ? const Color(0xFF14C6EE)
+              : theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(999),
           boxShadow: selected
               ? const <BoxShadow>[
@@ -772,7 +876,7 @@ class _FilterChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: selected ? Colors.white : const Color(0xFF6C7686),
+            color: selected ? Colors.white : theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -785,6 +889,7 @@ class _NotificationEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return Center(
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0.92, end: 1),
@@ -833,7 +938,7 @@ class _NotificationEmptyState extends StatelessWidget {
                       width: 46,
                       height: 46,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: theme.colorScheme.surface,
                         shape: BoxShape.circle,
                         boxShadow: const <BoxShadow>[
                           BoxShadow(
@@ -859,10 +964,10 @@ class _NotificationEmptyState extends StatelessWidget {
               const SizedBox(height: 28),
               Text(
                 context.l10n.ui('No Notifications'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF374151),
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 10),
@@ -871,10 +976,10 @@ class _NotificationEmptyState extends StatelessWidget {
                   "We'll let you know when there will be\nsomething to update you.",
                 ),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14.5,
                   height: 1.45,
-                  color: Color(0xFF8B93A1),
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -888,6 +993,7 @@ class _NotificationEmptyState extends StatelessWidget {
 String _localizedFilterLabel(BuildContext context, NotificationFilter filter) {
   return switch (filter) {
     NotificationFilter.all => context.l10n.ui('ALL'),
+    NotificationFilter.loyalty => context.l10n.ui('LOYALTY'),
     NotificationFilter.forum => context.l10n.ui('FORUM'),
     NotificationFilter.voucher => context.l10n.ui('VOUCHER'),
     NotificationFilter.account => context.l10n.ui('ACCOUNT'),

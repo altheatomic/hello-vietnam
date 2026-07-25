@@ -50,14 +50,15 @@ void main() {
             handle: '@phuc',
             avatarUrl: '',
           ),
-          createPost: ({
-            required String content,
-            List<String> imageUrls = const <String>[],
-            List<XFile> imageFiles = const <XFile>[],
-            SharedExploreItem? sharedExploreItem,
-          }) async {
-            return 'post-1';
-          },
+          createPost:
+              ({
+                required String content,
+                List<String> imageUrls = const <String>[],
+                List<XFile> imageFiles = const <XFile>[],
+                SharedExploreItem? sharedExploreItem,
+              }) async {
+                return 'post-1';
+              },
         ),
       ),
     );
@@ -83,23 +84,25 @@ void main() {
             handle: '@phuc',
             avatarUrl: '',
           ),
-          createPost: ({
-            required String content,
-            List<String> imageUrls = const <String>[],
-            List<XFile> imageFiles = const <XFile>[],
-            SharedExploreItem? sharedExploreItem,
-          }) async {
-            createdContents.add(content);
-            expect(sharedExploreItem, isNotNull);
-            return 'post-1';
-          },
+          createPost:
+              ({
+                required String content,
+                List<String> imageUrls = const <String>[],
+                List<XFile> imageFiles = const <XFile>[],
+                SharedExploreItem? sharedExploreItem,
+              }) async {
+                createdContents.add(content);
+                expect(sharedExploreItem, isNotNull);
+                return 'post-1';
+              },
           exploreTrackingService: ExploreTrackingService(
-            sender: ({
-              Map<String, String>? headers,
-              required Map<String, dynamic> body,
-            }) async {
-              trackedBodies.add(body);
-            },
+            sender:
+                ({
+                  Map<String, String>? headers,
+                  required Map<String, dynamic> body,
+                }) async {
+                  trackedBodies.add(body);
+                },
             accessTokenProvider: () => 'test-token',
             requestIdGenerator: () => 'request-1',
           ),
@@ -162,5 +165,92 @@ void main() {
 
     expect(find.text('Da Nang'), findsOneWidget);
     expect(wasTapped, isTrue);
+  });
+
+  testWidgets('owned post menu shows edit and delete actions', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (BuildContext context) {
+            return Scaffold(
+              body: TextButton(
+                onPressed: () {
+                  ForumPostMoreMenu.show(
+                    context,
+                    author: const ForumAuthor(
+                      id: 'user-1',
+                      name: 'Phuc',
+                      handle: '@phuc',
+                      avatarUrl: '',
+                    ),
+                    isFollowing: false,
+                    isOwner: true,
+                  );
+                },
+                child: const Text('Open menu'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open menu'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit post'), findsOneWidget);
+    expect(find.text('Delete post'), findsOneWidget);
+    expect(find.text('Report this post'), findsNothing);
+  });
+
+  testWidgets('edit composer is prefilled and submits retained images', (
+    WidgetTester tester,
+  ) async {
+    final List<String> retainedImages = <String>[];
+    String? updatedContent;
+    final ForumPost post = ForumPost(
+      id: 'post-1',
+      author: const ForumAuthor(
+        id: 'user-1',
+        name: 'Phuc',
+        handle: '@phuc',
+        avatarUrl: '',
+      ),
+      content: 'Original content',
+      imageUrls: const <String>['https://example.com/photo.jpg'],
+      timeAgo: 'now',
+      likes: 0,
+      comments: 0,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CreatePostPage(
+          editingPost: post,
+          currentUserAuthor: post.author,
+          updatePost:
+              ({
+                required String postId,
+                required String content,
+                required List<String> retainedImageUrls,
+                List<XFile> imageFiles = const <XFile>[],
+              }) async {
+                updatedContent = content;
+                retainedImages.addAll(retainedImageUrls);
+              },
+        ),
+      ),
+    );
+
+    expect(find.text('Edit post'), findsOneWidget);
+    expect(find.text('Original content'), findsOneWidget);
+
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(updatedContent, 'Original content');
+    expect(retainedImages, <String>['https://example.com/photo.jpg']);
   });
 }

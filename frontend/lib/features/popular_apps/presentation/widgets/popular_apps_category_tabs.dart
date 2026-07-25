@@ -16,57 +16,76 @@ class PopularAppsCategoryTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return SizedBox(
-      height: 60,
+      height: 44,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: categories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
           final category = categories[index];
           final isSelected = category == selectedCategory;
 
-          return GestureDetector(
-            onTap: () => onSelected(category),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(
-                      alpha: isSelected ? 0.92 : 0.58,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(
-                        alpha: isSelected ? 0.82 : 0.44,
-                      ),
-                      width: isSelected ? 2 : 1,
-                    ),
-                    boxShadow: <BoxShadow>[
-                      if (isSelected)
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.10),
-                          blurRadius: 12,
-                          offset: const Offset(0, 5),
+          return Semantics(
+            button: true,
+            selected: isSelected,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => onSelected(category),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                child: Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOutCubic,
+                        height: 36,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? theme.colorScheme.surfaceContainerHighest
+                              : Colors.white.withValues(
+                                  alpha: isSelected ? 0.94 : 0.56,
+                                ),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isDark
+                                ? theme.colorScheme.outline
+                                : Colors.white.withValues(
+                                    alpha: isSelected ? 0.88 : 0.42,
+                                  ),
+                          ),
+                          boxShadow: <BoxShadow>[
+                            if (isSelected)
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                          ],
                         ),
-                    ],
-                  ),
-                  child: Text(
-                    category,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected
-                          ? const Color(0xFF06B6D4)
-                          : const Color(0xFF4B5563),
+                        child: Text(
+                          category,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            color: isSelected
+                                ? const Color(0xFF0369A1)
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),

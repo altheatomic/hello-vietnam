@@ -273,4 +273,3 @@ create trigger favorite_place_track_remove
 after delete on public.favorite_place
 for each row
 execute function public.track_favorite_place_delete();
-

@@ -578,8 +578,8 @@ class _InfoRow extends StatelessWidget {
           width: 108,
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF6B7280),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),

@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hellovietnam/features/notification/application/notification_preferences_controller.dart';
+import 'package:hellovietnam/features/notification/domain/notification_preference.dart';
 
 import '../data/loyalty_award_service.dart';
 import '../data/loyalty_models.dart';
@@ -16,34 +20,58 @@ class LoyaltyPage extends StatefulWidget {
 }
 
 class _LoyaltyPageState extends State<LoyaltyPage> {
-  static const String _loyaltyNotificationsKey =
-      'loyalty_rewards_notifications_enabled';
-
   final LoyaltyRepository _repository = LoyaltyRepository();
+  final NotificationPreferencesController _notificationPreferences =
+      NotificationPreferencesController.instance;
   late Future<LoyaltyDashboardData> _future;
   bool _busy = false;
-  bool _loyaltyNotificationsEnabled = true;
+
+  bool get _loyaltyNotificationsEnabled => _notificationPreferences
+      .preference(NotificationPreferenceType.loyalty)
+      .pushEnabled;
 
   @override
   void initState() {
     super.initState();
     _future = _repository.loadDashboard();
-    _loadNotificationPreference();
+    _notificationPreferences.addListener(_onNotificationPreferenceChanged);
+    unawaited(_loadNotificationPreference());
   }
 
   Future<void> _loadNotificationPreference() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _loyaltyNotificationsEnabled =
-          prefs.getBool(_loyaltyNotificationsKey) ?? true;
-    });
+    try {
+      await _notificationPreferences.load();
+    } catch (_) {
+      // Loyalty data can still be used when preference loading is unavailable.
+    }
   }
 
   Future<void> _setNotificationPreference(bool value) async {
-    setState(() => _loyaltyNotificationsEnabled = value);
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_loyaltyNotificationsKey, value);
+    try {
+      await _notificationPreferences.setPushEnabled(
+        NotificationPreferenceType.loyalty,
+        value,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.l10n.ui('Could not update notification settings.'),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _onNotificationPreferenceChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _notificationPreferences.removeListener(_onNotificationPreferenceChanged);
+    super.dispose();
   }
 
   void _refresh() {
@@ -60,7 +88,9 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
       if (!mounted) return;
       _refresh();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Loyalty updated successfully.')),
+        SnackBar(
+          content: Text(context.l10n.ui('Loyalty updated successfully.')),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -76,7 +106,11 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
     final String? route = _routeForAction(rule.actionType);
     if (route == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Daily login is awarded automatically.')),
+        SnackBar(
+          content: Text(
+            context.l10n.ui('Daily login is awarded automatically.'),
+          ),
+        ),
       );
       return;
     }
@@ -119,8 +153,8 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
         SnackBar(
           content: Text(
             transaction == null
-                ? 'Unable to add test loyalty points.'
-                : 'Added ${transaction.pointChange} test loyalty points.',
+                ? context.l10n.ui('Unable to add test loyalty points.')
+                : context.l10n.loyaltyTestPointsAdded(transaction.pointChange),
           ),
         ),
       );
@@ -137,7 +171,7 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEAFBFF),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: FutureBuilder<LoyaltyDashboardData>(
           future: _future,
@@ -151,8 +185,10 @@ class _LoyaltyPageState extends State<LoyaltyPage> {
                     _Header(onBack: () => context.pop(), onRefresh: _refresh),
                     Expanded(
                       child: snapshot.connectionState == ConnectionState.waiting
-                          ? const AppLoadingScreen(
-                              message: 'Loading loyalty rewards',
+                          ? AppLoadingScreen(
+                              message: context.l10n.ui(
+                                'Loading loyalty rewards',
+                              ),
                               compact: true,
                             )
                           : snapshot.hasError
@@ -199,11 +235,14 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: <Color>[Color(0xFFEAFBFF), Color(0xFFD9FFF8)],
+          colors: isDark
+              ? const <Color>[Color(0xFF020B10), Color(0xFF0B2426)]
+              : const <Color>[Color(0xFFEAFBFF), Color(0xFFD9FFF8)],
         ),
       ),
       child: Row(
@@ -212,9 +251,9 @@ class _Header extends StatelessWidget {
             onPressed: onBack,
             icon: const Icon(Icons.arrow_back_rounded),
           ),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Loyalty Rewards',
+              context.l10n.ui('Loyalty Rewards'),
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
             ),
@@ -326,15 +365,19 @@ class _SummaryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      currentTier?.name ?? account.currentTier,
+                      context.l10n.ui(currentTier?.name ?? account.currentTier),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Text(
-                      'Highest tier: ${account.highestTier}',
-                      style: const TextStyle(color: Color(0xFF64748B)),
+                      context.l10n.loyaltyHighestTier(
+                        context.l10n.ui(account.highestTier),
+                      ),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -345,12 +388,15 @@ class _SummaryCard extends StatelessWidget {
           Row(
             children: <Widget>[
               _Metric(
-                label: 'Available points',
+                label: context.l10n.ui('Available points'),
                 value: account.availablePoints.toString(),
               ),
-              _Metric(label: 'Tokens', value: account.tokenBalance.toString()),
               _Metric(
-                label: 'Lifetime points',
+                label: context.l10n.ui('Tokens'),
+                value: account.tokenBalance.toString(),
+              ),
+              _Metric(
+                label: context.l10n.ui('Lifetime points'),
                 value: account.lifetimePoints.toString(),
               ),
             ],
@@ -382,18 +428,26 @@ class _LoyaltyNotificationSettingsCard extends StatelessWidget {
             const Color(0xFF2EB8EC),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Loyalty notifications',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  context.l10n.ui('Loyalty notifications'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'Only affects points and rewards notifications.',
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                  context.l10n.ui(
+                    'Only affects points and rewards notifications.',
+                  ),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -432,9 +486,9 @@ class _TierProgressCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Tier progress',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Tier progress'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 10),
           LinearProgressIndicator(
@@ -447,18 +501,26 @@ class _TierProgressCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             nextTier == null
-                ? 'You are at the highest tier.'
-                : '${account.tierPoints}/$nextMin tier points to ${nextTier!.name}',
-            style: const TextStyle(
-              color: Color(0xFF475569),
+                ? context.l10n.loyaltyHighestTierReached
+                : context.l10n.loyaltyTierProgress(
+                    account.tierPoints,
+                    nextMin,
+                    context.l10n.ui(nextTier!.name),
+                  ),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
           if (account.tierCycleEndsAt != null) ...<Widget>[
             const SizedBox(height: 6),
             Text(
-              'Cycle ends: ${_formatDate(account.tierCycleEndsAt!)}',
-              style: const TextStyle(color: Color(0xFF64748B)),
+              context.l10n.loyaltyCycleEnds(
+                _formatDate(account.tierCycleEndsAt!),
+              ),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ],
@@ -493,9 +555,9 @@ class _EarnPointsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Earn points',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Earn points'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           ...earnRules.map((LoyaltyRule rule) {
@@ -504,12 +566,14 @@ class _EarnPointsCard extends StatelessWidget {
               icon: isDailyLogin
                   ? Icons.login_rounded
                   : Icons.arrow_forward_rounded,
-              title: rule.name,
-              subtitle:
-                  '+${rule.pointAmount} points, +${rule.tierPointAmount} tier points'
-                  '${rule.requiresApproval ? ' . Needs review' : ''}'
-                  '${isDailyLogin ? ' . Automatic' : ''}',
-              buttonLabel: isDailyLogin ? 'Auto' : 'Go',
+              title: context.l10n.ui(rule.name),
+              subtitle: context.l10n.loyaltyEarnSummary(
+                rule.pointAmount,
+                rule.tierPointAmount,
+                requiresApproval: rule.requiresApproval,
+                automatic: isDailyLogin,
+              ),
+              buttonLabel: context.l10n.ui(isDailyLogin ? 'Auto' : 'Go'),
               enabled: !busy && !isDailyLogin,
               onTap: () => onEarn(rule),
             );
@@ -532,16 +596,18 @@ class _TestLoyaltyCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Add loyalty for testing',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Add loyalty for testing'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           _ActionRow(
             icon: Icons.bug_report_outlined,
-            title: 'Add 500 test points',
-            subtitle: '+500 points, +500 tier points. Temporary test action.',
-            buttonLabel: 'Add',
+            title: context.l10n.ui('Add 500 test points'),
+            subtitle: context.l10n.ui(
+              '+500 points, +500 tier points. Temporary test action.',
+            ),
+            buttonLabel: context.l10n.ui('Add'),
             enabled: !busy,
             onTap: onAdd,
           ),
@@ -568,24 +634,24 @@ class _ExchangeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Exchange points to tokens',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Exchange points to tokens'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           _ActionRow(
             icon: Icons.token_rounded,
-            title: 'Get 1 token',
-            subtitle: 'Cost: 10 points. Daily limit: 50 tokens.',
-            buttonLabel: 'Redeem',
+            title: context.l10n.ui('Get 1 token'),
+            subtitle: context.l10n.loyaltyTokenCost(10, dailyLimit: 50),
+            buttonLabel: context.l10n.ui('Redeem'),
             enabled: !busy && account.availablePoints >= 10,
             onTap: () => onRedeemTokens(1),
           ),
           _ActionRow(
             icon: Icons.toll_rounded,
-            title: 'Get 5 tokens',
-            subtitle: 'Cost: 50 points.',
-            buttonLabel: 'Redeem',
+            title: context.l10n.ui('Get 5 tokens'),
+            subtitle: context.l10n.loyaltyTokenCost(50),
+            buttonLabel: context.l10n.ui('Redeem'),
             enabled: !busy && account.availablePoints >= 50,
             onTap: () => onRedeemTokens(5),
           ),
@@ -614,24 +680,28 @@ class _VoucherExchangeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Redeem vouchers',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Redeem vouchers'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           if (vouchers.isEmpty)
-            const Text(
-              'No active loyalty vouchers yet.',
-              style: TextStyle(color: Color(0xFF64748B)),
+            Text(
+              context.l10n.ui('No active loyalty vouchers yet.'),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             )
           else
             ...vouchers.map(
               (LoyaltyVoucher voucher) => _ActionRow(
                 icon: Icons.confirmation_number_outlined,
-                title: voucher.title,
-                subtitle:
-                    '${voucher.pointsRequired} points . ${voucher.description ?? voucher.code}',
-                buttonLabel: 'Redeem',
+                title: context.l10n.ui(voucher.title),
+                subtitle: context.l10n.loyaltyVoucherRequirement(
+                  voucher.pointsRequired,
+                  context.l10n.ui(voucher.description ?? voucher.code),
+                ),
+                buttonLabel: context.l10n.ui('Redeem'),
                 enabled:
                     !busy && account.availablePoints >= voucher.pointsRequired,
                 onTap: () => onRedeemVoucher(voucher.id),
@@ -654,15 +724,17 @@ class _WalletCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Voucher wallet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Voucher wallet'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           if (wallet.isEmpty)
-            const Text(
-              'Your loyalty voucher wallet is empty.',
-              style: TextStyle(color: Color(0xFF64748B)),
+            Text(
+              context.l10n.ui('Your loyalty voucher wallet is empty.'),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             )
           else
             ...wallet
@@ -670,10 +742,12 @@ class _WalletCard extends StatelessWidget {
                 .map(
                   (LoyaltyWalletVoucher item) => _InfoRow(
                     icon: Icons.local_offer_outlined,
-                    title: item.voucher?.title ?? item.walletCode,
+                    title: context.l10n.ui(
+                      item.voucher?.title ?? item.walletCode,
+                    ),
                     subtitle:
-                        '${item.walletCode} . ${item.status}'
-                        '${item.expiresAt == null ? '' : ' . Expires ${_formatDate(item.expiresAt!)}'}',
+                        '${item.walletCode} · ${context.l10n.ui(item.status)}'
+                        '${item.expiresAt == null ? '' : ' · ${context.l10n.loyaltyWalletExpiry(_formatDate(item.expiresAt!))}'}',
                   ),
                 ),
         ],
@@ -693,32 +767,31 @@ class _TransactionsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Transaction history',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          Text(
+            context.l10n.ui('Transaction history'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           if (transactions.isEmpty)
-            const Text(
-              'No loyalty transactions yet.',
-              style: TextStyle(color: Color(0xFF64748B)),
+            Text(
+              context.l10n.ui('No loyalty transactions yet.'),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             )
           else
             ...transactions.map((LoyaltyTransaction tx) {
-              final String points = tx.pointChange == 0
-                  ? ''
-                  : ' ${tx.pointChange > 0 ? '+' : ''}${tx.pointChange} pts';
-              final String tokens = tx.tokenChange == 0
-                  ? ''
-                  : ' ${tx.tokenChange > 0 ? '+' : ''}${tx.tokenChange} token';
               return _InfoRow(
                 icon: tx.status == 'pending'
                     ? Icons.pending_outlined
                     : Icons.receipt_long_outlined,
-                title: tx.description ?? tx.type,
-                subtitle:
-                    '${tx.status}$points$tokens'
-                    '${tx.createdAt == null ? '' : ' . ${_formatDate(tx.createdAt!)}'}',
+                title: context.l10n.ui(tx.description ?? tx.type),
+                subtitle: context.l10n.loyaltyTransactionSummary(
+                  context.l10n.ui(tx.status),
+                  tx.pointChange,
+                  tx.tokenChange,
+                  tx.createdAt == null ? null : _formatDate(tx.createdAt!),
+                ),
               );
             }),
         ],
@@ -782,7 +855,7 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: <Widget>[
-          _CircleIcon(icon, const Color(0xFF94A3B8)),
+          _CircleIcon(icon, Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 10),
           Expanded(
             child: _TwoLine(title: title, subtitle: subtitle),
@@ -811,7 +884,10 @@ class _TwoLine extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           subtitle,
-          style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 13,
+          ),
         ),
       ],
     );
@@ -837,7 +913,10 @@ class _Metric extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -872,12 +951,18 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: theme.colorScheme.surface.withValues(
+          alpha: isDark ? 0.96 : 0.92,
+        ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white),
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : Colors.white,
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: const Color(0xFF0F172A).withValues(alpha: 0.06),
@@ -911,18 +996,23 @@ class _ErrorState extends StatelessWidget {
               color: Colors.red,
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Load loyalty failed.',
-              style: TextStyle(fontWeight: FontWeight.w800),
+            Text(
+              context.l10n.ui('Load loyalty failed.'),
+              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 6),
             Text(
               error,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 12),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
+            TextButton(
+              onPressed: onRetry,
+              child: Text(context.l10n.ui('Retry')),
+            ),
           ],
         ),
       ),

@@ -38,12 +38,13 @@ class _DestinationCardState extends State<DestinationCard> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return GestureDetector(
       onTap: widget.onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -76,10 +77,10 @@ class _DestinationCardState extends State<DestinationCard> {
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: AppColors.divider,
-                            child: const Center(
+                            child: Center(
                               child: Icon(
                                 Icons.image_not_supported_outlined,
-                                color: AppColors.textSecondary,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           );
@@ -108,7 +109,9 @@ class _DestinationCardState extends State<DestinationCard> {
                       ),
                       child: Icon(
                         _isFavorite ? Icons.favorite : Icons.favorite_outline,
-                        color: _isFavorite ? Colors.red : AppColors.textSecondary,
+                        color: _isFavorite
+                            ? Colors.red
+                            : AppColors.textSecondary,
                         size: 20,
                       ),
                     ),
@@ -129,8 +132,8 @@ class _DestinationCardState extends State<DestinationCard> {
                         margin: const EdgeInsets.symmetric(horizontal: 4),
                         decoration: BoxDecoration(
                           color: _currentImageIndex == index
-                            ? Colors.white
-                            : Colors.white.withValues(alpha: 0.5),
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -192,7 +195,7 @@ class _DestinationCardState extends State<DestinationCard> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -200,7 +203,7 @@ class _DestinationCardState extends State<DestinationCard> {
                               widget.destination.country,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: AppColors.textSecondary,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -219,14 +222,14 @@ class _DestinationCardState extends State<DestinationCard> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                           Text(
                             '(${widget.destination.reviews})',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -242,14 +245,14 @@ class _DestinationCardState extends State<DestinationCard> {
                         '${widget.destination.distance.toStringAsFixed(0)} kilometers',
                         style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       Text(
                         '${widget.destination.checkIn} - ${widget.destination.checkOut}',
                         style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -260,18 +263,19 @@ class _DestinationCardState extends State<DestinationCard> {
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: '\$${widget.destination.pricePerNight.toStringAsFixed(0)}',
+                          text:
+                              '\$${widget.destination.pricePerNight.toStringAsFixed(0)}',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         TextSpan(
                           text: ' night',
                           style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.textSecondary,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],

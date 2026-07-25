@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
-import 'package:hellovietnam/features/admin/data/admin_dashboard_mock_repository.dart';
+import 'package:hellovietnam/features/admin/data/admin_dashboard_repository.dart';
 import 'package:hellovietnam/features/admin/domain/admin_dashboard_models.dart';
 import 'package:hellovietnam/features/admin/domain/admin_dashboard_repository.dart';
 import 'package:hellovietnam/features/admin/presentation/widgets/admin_dashboard_widgets.dart';
 
 class AdminDashboardPage extends StatefulWidget {
-  const AdminDashboardPage({
-    super.key,
-    this.repository = const MockAdminDashboardRepository(),
-  });
+  const AdminDashboardPage({super.key, this.repository});
 
-  final AdminDashboardRepository repository;
+  final AdminDashboardRepository? repository;
 
   @override
   State<AdminDashboardPage> createState() => _AdminDashboardPageState();
@@ -19,17 +16,19 @@ class AdminDashboardPage extends StatefulWidget {
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   late Future<AdminDashboardSnapshot> _future;
+  late final AdminDashboardRepository _repository;
   bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
-    _future = widget.repository.fetchDashboardSnapshot();
+    _repository = widget.repository ?? AdminDashboardRepositoryImpl();
+    _future = _repository.fetchDashboardSnapshot();
   }
 
   Future<void> _refresh() async {
     setState(() => _isRefreshing = true);
-    final nextFuture = widget.repository.fetchDashboardSnapshot();
+    final nextFuture = _repository.fetchDashboardSnapshot(forceRefresh: true);
     setState(() {
       _future = nextFuture;
     });

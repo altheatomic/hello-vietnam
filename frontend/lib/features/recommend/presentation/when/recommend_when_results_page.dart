@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/empty_state.dart';
 import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
@@ -354,13 +355,17 @@ class _SuggestionCardState extends State<_SuggestionCard> {
       );
       if (!mounted || result != null) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to update wishlist.')),
+        SnackBar(
+          content: Text(context.l10n.ui('Please sign in to update wishlist.')),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${context.l10n.ui('Update wishlist failed')}: $error'),
+        ),
+      );
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/storage/local_storage.dart' as app_storage;
 import 'package:hellovietnam/features/profile/presentation/language_page.dart';
@@ -80,5 +81,34 @@ void main() {
     expect(find.byType(LanguagePage), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(AppLanguageController.instance.language, AppLanguage.vietnamese);
+  });
+
+  testWidgets('uses readable semantic text colors in dark mode', (
+    WidgetTester tester,
+  ) async {
+    final ThemeData darkTheme = buildDarkTheme();
+    await tester.pumpWidget(
+      AppLanguageScope(
+        controller: AppLanguageController.instance,
+        child: MaterialApp(theme: darkTheme, home: const LanguagePage()),
+      ),
+    );
+
+    final Text title = tester.widget<Text>(find.text('Language'));
+    final Text subtitle = tester.widget<Text>(
+      find.text('Select your preferred language'),
+    );
+    final Text languageName = tester.widget<Text>(find.text('English'));
+    final Text languageDescription = tester.widget<Text>(
+      find.text('App interface language'),
+    );
+
+    expect(title.style?.color, darkTheme.colorScheme.onSurface);
+    expect(subtitle.style?.color, darkTheme.colorScheme.onSurfaceVariant);
+    expect(languageName.style?.color, darkTheme.colorScheme.onSurface);
+    expect(
+      languageDescription.style?.color,
+      darkTheme.colorScheme.onSurfaceVariant,
+    );
   });
 }

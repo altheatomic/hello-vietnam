@@ -183,19 +183,6 @@ class _LoginPageState extends State<LoginPage> {
               ],
             ),
           ),
-
-          // Fixed close button
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            left: 12,
-            child: IconButton(
-              onPressed: () => context.pop(),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.7),
-              ),
-              icon: const Icon(Icons.close, color: Colors.black87),
-            ),
-          ),
         ],
       ),
     );
@@ -261,7 +248,7 @@ class _LoginPageState extends State<LoginPage> {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF1A1A2E),
+            color: Theme.of(context).colorScheme.onSurface,
             height: 1.3,
           ),
         ),
@@ -417,8 +404,8 @@ class _LoginPageState extends State<LoginPage> {
           onTap: _onForgotPassword,
           child: Text(
             context.l10n.ui('Forgot password?'),
-            style: const TextStyle(
-              color: Color(0xFF1A1A2E),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -473,8 +460,8 @@ class _LoginPageState extends State<LoginPage> {
       child: OutlinedButton.icon(
         onPressed: _onGoogleSignIn,
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF1A1A2E),
-          side: BorderSide(color: Colors.grey.shade300),
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
+          side: BorderSide(color: Theme.of(context).colorScheme.outline),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -512,8 +499,8 @@ class _LoginPageState extends State<LoginPage> {
           onTap: _onCreateAccount,
           child: Text(
             context.l10n.ui('Create an account'),
-            style: const TextStyle(
-              color: Color(0xFF1A1A2E),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),

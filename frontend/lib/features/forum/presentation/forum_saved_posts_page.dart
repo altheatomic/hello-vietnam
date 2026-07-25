@@ -6,6 +6,7 @@ import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
+import 'package:hellovietnam/features/forum/presentation/forum_post_actions.dart';
 import 'package:hellovietnam/features/forum/presentation/widgets/forum_widgets.dart';
 
 class ForumSavedPostsPage extends StatelessWidget {
@@ -38,27 +39,7 @@ class ForumSavedPostsPage extends StatelessWidget {
     }
 
     Future<void> openPostMenu(ForumPost post) async {
-      final ForumPostMoreAction? action = await ForumPostMoreMenu.show(
-        context,
-        author: post.author,
-        isFollowing: post.author.isFollowing,
-      );
-      if (!context.mounted || action == null) {
-        return;
-      }
-
-      switch (action) {
-        case ForumPostMoreAction.follow:
-          store.toggleFollowAuthor(post.author.id);
-          break;
-        case ForumPostMoreAction.block:
-          store.toggleBlockAuthor(post.author.id);
-          showMessage('${post.author.name} đã bị block khỏi forum feed.');
-          break;
-        case ForumPostMoreAction.report:
-          context.push(AppRoutes.forumReportPath(post.id));
-          break;
-      }
+      await ForumPostActions.open(context, store: store, post: post);
     }
 
     return ForumBackground(
@@ -86,18 +67,18 @@ class ForumSavedPostsPage extends StatelessWidget {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
-                            const Icon(
+                            Icon(
                               Icons.bookmark_border_rounded,
                               size: 36,
-                              color: ForumColors.textMuted,
+                              color: ForumColors.muted(context),
                             ),
                             const SizedBox(height: 12),
                             Text(
                               context.l10n.ui('No saved posts yet'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: ForumColors.textPrimary,
+                                color: ForumColors.foreground(context),
                               ),
                             ),
                           ],
@@ -134,7 +115,7 @@ class ForumSavedPostsPage extends StatelessWidget {
                         onSharedItemTap: post.sharedItem == null
                             ? null
                             : () => openSharedItem(post.sharedItem!),
-                        showMoreButton: !store.isCurrentUser(post.author.id),
+                        showMoreButton: true,
                       );
                     },
                   );

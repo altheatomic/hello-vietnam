@@ -1,0 +1,51 @@
+flowchart TB
+  classDef client fill:#E8F6FF,stroke:#1D9AD6,color:#123047,stroke-width:2px;
+  classDef backend fill:#EAFBF3,stroke:#1A9A66,color:#12382A,stroke-width:2px;
+  classDef data fill:#FFF7E6,stroke:#D98B16,color:#4A3210,stroke-width:2px;
+  classDef service fill:#F4EDFF,stroke:#7B55C7,color:#2F2050,stroke-width:2px;
+  classDef external fill:#FFF0F2,stroke:#D8536F,color:#4A1E28,stroke-width:2px;
+
+  subgraph Client["Lop trinh bay - Flutter"]
+    Mobile["Ung dung nguoi dung\nAndroid / Flutter Web"]:::client
+    Admin["Trang quan tri\nFlutter Web"]:::client
+  end
+
+  subgraph Supabase["Lop backend - Supabase"]
+    Auth["Supabase Auth\nJWT, Google OAuth"]:::backend
+    API["PostgREST / RPC\nRLS va truy van du lieu"]:::backend
+    Edge["Edge Functions\nnghiep vu, xac thuc, tich hop API"]:::backend
+    DB[("PostgreSQL\ndu lieu nghiep vu")]:::data
+  end
+
+  subgraph Algorithm["Dich vu thuat toan"]
+    Trip["FastAPI Trip Planner\nCB + CF, K-Means, SA-TSPTW"]:::service
+  end
+
+  subgraph External["Dich vu ben ngoai"]
+    R2["Cloudflare R2\nhinh anh va media"]:::external
+    AI["DeepSeek / Gemini\ndich va tim kiem AI"]:::external
+    Voice["Vbee\nText-to-Speech"]:::external
+    Map["OpenStreetMap\nban do va dinh vi"]:::external
+    Stripe["Stripe\nthanh toan subscription"]:::external
+    Rates["Exchange-rate API\nty gia tien te"]:::external
+  end
+
+  Mobile -->|dang nhap| Auth
+  Admin -->|dang nhap va phan quyen| Auth
+  Mobile -->|CRUD, realtime data| API
+  Admin -->|quan tri du lieu| API
+  Mobile -->|yeu cau nghiep vu| Edge
+  Admin -->|nghiep vu quan tri| Edge
+  Auth --> DB
+  API --> DB
+  Edge --> DB
+  Edge -->|lap lich trinh| Trip
+  Trip -->|doc/ghi ke hoach va diem goi y| DB
+  Edge -->|upload| R2
+  R2 -->|public media URL| Mobile
+  Edge --> AI
+  Edge --> Voice
+  Edge --> Stripe
+  Edge --> Rates
+  Mobile --> Map
+

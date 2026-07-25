@@ -91,6 +91,8 @@ class VoucherDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final MediaQueryData mq = MediaQuery.of(context);
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     final bool canRedeem = payload.availablePoints >= payload.pointsRequired;
     final int missingPoints = (payload.pointsRequired - payload.availablePoints)
         .clamp(0, 1 << 30)
@@ -190,10 +192,10 @@ class VoucherDetailPage extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             context.l10n.ui(payload.title),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF0D1E3A),
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -202,10 +204,14 @@ class VoucherDetailPage extends StatelessWidget {
                               width: double.infinity,
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFEAF6FF),
+                                color: isDark
+                                    ? theme.colorScheme.surfaceContainerHighest
+                                    : const Color(0xFFEAF6FF),
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                  color: const Color(0xFFC7E8FF),
+                                  color: isDark
+                                      ? theme.colorScheme.outline
+                                      : const Color(0xFFC7E8FF),
                                 ),
                               ),
                               child: Column(
@@ -252,18 +258,20 @@ class VoucherDetailPage extends StatelessWidget {
                                       vertical: 12,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: theme.colorScheme.surface,
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: const Color(0xFFC7E8FF),
+                                        color: isDark
+                                            ? theme.colorScheme.outline
+                                            : const Color(0xFFC7E8FF),
                                       ),
                                     ),
                                     child: Text(
                                       payload.voucherCode,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 32,
                                         fontWeight: FontWeight.w800,
-                                        color: Color(0xFF0E1D35),
+                                        color: theme.colorScheme.onSurface,
                                       ),
                                     ),
                                   ),
@@ -273,9 +281,9 @@ class VoucherDetailPage extends StatelessWidget {
                             const SizedBox(height: 12),
                             Text(
                               context.l10n.expiryDate(payload.expiryDate),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
-                                color: Color(0xFF2C3A53),
+                                color: theme.colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -373,9 +381,9 @@ class VoucherDetailPage extends StatelessWidget {
                             const SizedBox(height: 12),
                             Text(
                               context.l10n.validForDays(payload.validityDays),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
-                                color: Color(0xFF2C3A53),
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -383,10 +391,12 @@ class VoucherDetailPage extends StatelessWidget {
                               width: double.infinity,
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: theme.colorScheme.surface,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: const Color(0xFFDEE4EC),
+                                  color: isDark
+                                      ? theme.colorScheme.outline
+                                      : const Color(0xFFDEE4EC),
                                 ),
                               ),
                               child: Column(
@@ -405,10 +415,12 @@ class VoucherDetailPage extends StatelessWidget {
                                       padding: const EdgeInsets.only(bottom: 6),
                                       child: Text(
                                         '- ${context.l10n.ui(line)}',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 14,
                                           height: 1.35,
-                                          color: Color(0xFF1E2D43),
+                                          color: theme
+                                              .colorScheme
+                                              .onSurfaceVariant,
                                         ),
                                       ),
                                     ),
@@ -481,13 +493,17 @@ class _HowToUseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE0E6EE)),
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFE0E6EE),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -515,10 +531,10 @@ class _HowToUseCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       context.l10n.ui(_steps[index]),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         height: 1.3,
-                        color: Color(0xFF1E2D43),
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),

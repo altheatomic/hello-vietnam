@@ -1,4 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  synthesizeVbeeSpeech,
+  VbeeTtsError,
+} from "../_shared/vbee_tts.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -71,7 +75,7 @@ async function authenticate(request: Request) {
 }
 
 async function applyRateLimit(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient<any>>,
   userId: string,
 ) {
   const { data: limitData, error: limitError } = await supabase
@@ -230,13 +234,13 @@ async function handleTextToSpeech(payload: TranslatePayload) {
 
   const text = payload.text?.trim() ?? "";
   const languageCode = payload.languageCode?.trim() ?? "vi";
-  const languageName = payload.languageName?.trim() ?? languageCode;
   if (!text) {
     return jsonResponse({ error: "Text is required." }, 400);
   }
 
   const voiceCode = voiceCodeForLanguage(languageCode);
   if (!voiceCode) {
+    const languageName = payload.languageName?.trim() ?? languageCode;
     return jsonResponse(
       { error: `Server is missing VBEE_VOICE_CODE for ${languageName}.` },
       500,
@@ -250,69 +254,42 @@ async function handleTextToSpeech(payload: TranslatePayload) {
     "https://example.com/vbee-callback";
   const speedRate = Deno.env.get("VBEE_SPEED_RATE") ?? "1.0";
   const bitrate = Deno.env.get("VBEE_BITRATE") ?? "128";
+  const normalizedLanguageCode = localeFor(languageCode);
 
-  const body = {
-    app_id: appId,
-    callback_url: callbackUrl,
-    input_text: text,
-    voice_code: voiceCode,
-    audio_type: "mp3",
-    bitrate,
-    speed_rate: speedRate,
-  };
-
-  const createResponse = await fetch(`${baseUrl}/api/v1/tts`, {
-    method: "POST",
-    headers: vbeeHeaders(vbeeApiKey, appId),
-    body: JSON.stringify(body),
-  });
-  const createData = await readJson(createResponse);
-  if (!createResponse.ok) {
-    return jsonResponse(
+  try {
+    const result = await synthesizeVbeeSpeech(
+      { text, languageCode: normalizedLanguageCode },
       {
-        error: readErrorMessage(createData) ??
-          `Vbee TTS request failed (${createResponse.status}).`,
+        apiKey: vbeeApiKey,
+        appId,
+        baseUrl,
+        pollIntervalMs: 750,
+        maxPollAttempts: 8,
+        vietnameseVoiceCode: normalizedLanguageCode.startsWith("vi-")
+          ? voiceCode
+          : undefined,
+        englishVoiceCode: normalizedLanguageCode.startsWith("en-")
+          ? voiceCode
+          : undefined,
+        defaultVoiceCode: voiceCode,
+        voiceCodes: { [normalizedLanguageCode]: voiceCode },
+        callbackUrl,
+        speedRate,
+        bitrate,
       },
-      createResponse.status,
     );
-  }
 
-  const immediateAudioUrl = extractAudioUrl(createData);
-  const requestId = extractRequestId(createData);
-  if (immediateAudioUrl) {
     return jsonResponse({
-      audio_url: immediateAudioUrl,
+      audio_url: result.audioUrl,
       provider: "vbee",
-      request_id: requestId,
+      request_id: result.requestId || null,
     }, 200);
-  }
-
-  if (!requestId) {
-    return jsonResponse({ error: "Vbee did not return a request id." }, 502);
-  }
-
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    await delay(750);
-    const statusResponse = await fetch(`${baseUrl}/api/v1/tts/${requestId}`, {
-      headers: vbeeHeaders(vbeeApiKey, appId),
-    });
-    const statusData = await readJson(statusResponse);
-    if (!statusResponse.ok) continue;
-
-    const audioUrl = extractAudioUrl(statusData);
-    if (audioUrl) {
-      return jsonResponse({
-        audio_url: audioUrl,
-        provider: "vbee",
-        request_id: requestId,
-      }, 200);
+  } catch (error) {
+    if (error instanceof VbeeTtsError) {
+      return jsonResponse({ error: error.message }, error.statusCode);
     }
+    return jsonResponse({ error: "Vbee TTS request failed." }, 502);
   }
-
-  return jsonResponse(
-    { error: "Vbee audio is not ready yet. Please try again." },
-    504,
-  );
 }
 
 function voiceCodeForLanguage(languageCode: string) {
@@ -348,63 +325,6 @@ function localeFor(languageCode: string) {
   }
 }
 
-function vbeeHeaders(apiKey: string, appId: string) {
-  return {
-    "Authorization": `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-    "User-Agent": "HelloVietnam/1.0",
-    "app-id": appId,
-  };
-}
-
-async function readJson(response: Response) {
-  try {
-    return await response.json();
-  } catch (_) {
-    return {};
-  }
-}
-
-function extractAudioUrl(data: unknown): string | null {
-  const candidates = [
-    data,
-    readObject(data)?.result,
-    readObject(data)?.data,
-    readObject(readObject(data)?.result)?.payload,
-    readObject(readObject(data)?.result)?.result,
-  ];
-
-  for (const candidate of candidates) {
-    const object = readObject(candidate);
-    if (!object) continue;
-    const value = object.audio_url ?? object.audioUrl ?? object.audio_link ??
-      object.audioLink ?? object.url;
-    if (typeof value === "string" && value.trim().length > 0) {
-      return value.trim();
-    }
-  }
-
-  return null;
-}
-
-function extractRequestId(data: unknown): string | null {
-  const candidates = [
-    data,
-    readObject(data)?.result,
-    readObject(data)?.data,
-  ];
-
-  for (const candidate of candidates) {
-    const object = readObject(candidate);
-    const value = object?.request_id ?? object?.requestId ?? object?.id;
-    if (typeof value === "string" && value.trim().length > 0) {
-      return value.trim();
-    }
-  }
-
-  return null;
-}
-
 function readErrorMessage(data: unknown): string | null {
   const object = readObject(data);
   const nestedError = readObject(object?.error);
@@ -419,10 +339,6 @@ function readObject(value: unknown): JsonObject | null {
   return value != null && typeof value === "object" && !Array.isArray(value)
     ? value as JsonObject
     : null;
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function jsonResponse(data: unknown, status: number) {

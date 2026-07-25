@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/utils/maps_launcher.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
@@ -33,7 +33,8 @@ class _TripMapPageState extends State<TripMapPage> {
   @override
   void initState() {
     super.initState();
-    _activity = widget.activity ??
+    _activity =
+        widget.activity ??
         TripPlannerMockData.activityAt(widget.dayIndex, widget.activityIndex);
     _loadNearby();
   }
@@ -53,16 +54,18 @@ class _TripMapPageState extends State<TripMapPage> {
       if (!mounted) return;
       setState(() {
         _places = nearby
-            .map((p) => TripPlannerNearbyPlace(
-                  title: p.name,
-                  subtitle: p.subcategoryName,
-                  distance: p.distanceKm < 1
-                      ? '${(p.distanceKm * 1000).round()}m'
-                      : '${p.distanceKm.toStringAsFixed(1)}km',
-                  eta: '${p.estimatedMinutes} mins',
-                  lat: p.latitude,
-                  lng: p.longitude,
-                ))
+            .map(
+              (p) => TripPlannerNearbyPlace(
+                title: p.name,
+                subtitle: p.subcategoryName,
+                distance: p.distanceKm < 1
+                    ? '${(p.distanceKm * 1000).round()}m'
+                    : '${p.distanceKm.toStringAsFixed(1)}km',
+                eta: '${p.estimatedMinutes} mins',
+                lat: p.latitude,
+                lng: p.longitude,
+              ),
+            )
             .toList();
         _loading = false;
       });
@@ -81,18 +84,25 @@ class _TripMapPageState extends State<TripMapPage> {
       body: Stack(
         children: <Widget>[
           // Real map fills the screen
-          _RealMap(activity: _activity, places: _loading ? <TripPlannerNearbyPlace>[] : _places),
+          _RealMap(
+            activity: _activity,
+            places: _loading ? <TripPlannerNearbyPlace>[] : _places,
+          ),
 
           // Decorative blur orbs
           const Positioned(
             top: -90,
             right: -60,
-            child: IgnorePointer(child: _DecorativeOrb(size: 220, color: Color(0x332BC3FF))),
+            child: IgnorePointer(
+              child: _DecorativeOrb(size: 220, color: Color(0x332BC3FF)),
+            ),
           ),
           const Positioned(
             bottom: 240,
             left: -40,
-            child: IgnorePointer(child: _DecorativeOrb(size: 180, color: Color(0x3356E2D5))),
+            child: IgnorePointer(
+              child: _DecorativeOrb(size: 180, color: Color(0x3356E2D5)),
+            ),
           ),
 
           // Header card (back + title)
@@ -112,7 +122,9 @@ class _TripMapPageState extends State<TripMapPage> {
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.96),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surface.withValues(alpha: 0.96),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
                               color: const Color(0xFFD8F2FF),
@@ -130,21 +142,25 @@ class _TripMapPageState extends State<TripMapPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
                               Text(
-                                _activity.title,
+                                context.l10n.ui(_activity.title),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w800,
-                                  color: AppColors.textPrimary,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                _activity.distanceLabel,
-                                style: const TextStyle(
+                                context.l10n.ui(_activity.distanceLabel),
+                                style: TextStyle(
                                   fontSize: 15,
-                                  color: Color(0xFF6A7585),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -189,10 +205,7 @@ class _RealMap extends StatelessWidget {
         : const LatLng(21.0285, 105.8357); // fallback: Hanoi
 
     return FlutterMap(
-      options: MapOptions(
-        initialCenter: center,
-        initialZoom: 15,
-      ),
+      options: MapOptions(initialCenter: center, initialZoom: 15),
       children: <Widget>[
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -213,14 +226,16 @@ class _RealMap extends StatelessWidget {
             // Nearby place markers (blue)
             ...places
                 .where((p) => p.lat != 0.0 || p.lng != 0.0)
-                .map((p) => Marker(
-                      point: LatLng(p.lat, p.lng),
-                      child: const Icon(
-                        Icons.place,
-                        color: Colors.blue,
-                        size: 30,
-                      ),
-                    )),
+                .map(
+                  (p) => Marker(
+                    point: LatLng(p.lat, p.lng),
+                    child: const Icon(
+                      Icons.place,
+                      color: Colors.blue,
+                      size: 30,
+                    ),
+                  ),
+                ),
           ],
         ),
       ],
@@ -250,7 +265,7 @@ class _ResultSheet extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.98),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.98),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: const <BoxShadow>[
           BoxShadow(
@@ -264,54 +279,58 @@ class _ResultSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
-            children: const <Widget>[
+            children: <Widget>[
               Expanded(
                 child: Text(
-                  'Nearby',
+                  context.l10n.ui('Nearby'),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
               Text(
-                'Sort by: Nearest',
+                context.l10n.ui('Sort by: Nearest'),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF4F5B6D),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
-              SizedBox(width: 6),
-              Icon(Icons.swap_vert_rounded, size: 18, color: Color(0xFF4F5B6D)),
+              const SizedBox(width: 6),
+              Icon(
+                Icons.swap_vert_rounded,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ],
           ),
           const SizedBox(height: 14),
           Expanded(
             child: loading
-                ? const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
                 : places.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No nearby places found.',
-                          style: TextStyle(color: Color(0xFF8A95A5)),
-                        ),
-                      )
-                    : ListView.separated(
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: places.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 12),
-                        itemBuilder: (BuildContext context, int index) {
-                          return _NearbyPlaceTile(
-                            place: places[index],
-                            originLat: originLat,
-                            originLng: originLng,
-                          );
-                        },
+                ? Center(
+                    child: Text(
+                      context.l10n.ui('No nearby places found.'),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
+                    ),
+                  )
+                : ListView.separated(
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: places.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (BuildContext context, int index) {
+                      return _NearbyPlaceTile(
+                        place: places[index],
+                        originLat: originLat,
+                        originLng: originLng,
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -360,7 +379,7 @@ class _NearbyPlaceTile extends StatelessWidget {
             child: Center(
               child: Text(
                 _iconForType(place.subtitle),
-                style: const TextStyle(fontSize: 20),
+                style: TextStyle(fontSize: 20),
               ),
             ),
           ),
@@ -370,19 +389,19 @@ class _NearbyPlaceTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  place.title,
-                  style: const TextStyle(
+                  context.l10n.ui(place.title),
+                  style: TextStyle(
                     fontSize: 16.5,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '${place.subtitle} • ${place.distance}',
-                  style: const TextStyle(
+                  '${context.l10n.ui(place.subtitle)} • ${place.distance}',
+                  style: TextStyle(
                     fontSize: 14.5,
-                    color: Color(0xFF707B8B),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -398,7 +417,7 @@ class _NearbyPlaceTile extends StatelessWidget {
             ),
             child: Text(
               place.eta,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF286EF0),
@@ -434,8 +453,8 @@ class _NearbyPlaceTile extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Text(
-                  'Route',
+                child: Text(
+                  context.l10n.ui('Route'),
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -452,13 +471,18 @@ class _NearbyPlaceTile extends StatelessWidget {
 
   String _iconForType(String type) {
     final String value = type.toLowerCase();
-    if (value.contains('y tế') || value.contains('bệnh viện') || value.contains('hospital')) {
+    if (value.contains('y tế') ||
+        value.contains('bệnh viện') ||
+        value.contains('hospital')) {
       return '🏥';
     }
     if (value.contains('nhà thuốc') || value.contains('pharmacy')) {
       return '💊';
     }
-    if (value.contains('bến xe') || value.contains('sân bay') || value.contains('ga tàu') || value.contains('transport')) {
+    if (value.contains('bến xe') ||
+        value.contains('sân bay') ||
+        value.contains('ga tàu') ||
+        value.contains('transport')) {
       return '🚌';
     }
     if (value.contains('cafe')) return '☕';
@@ -479,7 +503,7 @@ class _BackButtonCircle extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.92),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x18000000),
@@ -493,13 +517,13 @@ class _BackButtonCircle extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           customBorder: const CircleBorder(),
-          child: const SizedBox(
+          child: SizedBox(
             width: 42,
             height: 42,
             child: Icon(
               Icons.arrow_back_rounded,
               size: 22,
-              color: Color(0xFF3A465D),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),

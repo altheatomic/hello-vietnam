@@ -102,19 +102,17 @@ class AdminContentRepository {
   String listSelectColumnsFor(AdminContentResourceConfig config) {
     return _joinColumns(<String>[
       config.idColumn,
-      ...config.idColumnCandidates,
       config.orderColumn,
       for (final field in config.fields.where((field) => field.visibleInTable))
-        ...field.allReadKeys,
+        field.key,
     ]);
   }
 
   String detailSelectColumnsFor(AdminContentResourceConfig config) {
     return _joinColumns(<String>[
       config.idColumn,
-      ...config.idColumnCandidates,
       config.orderColumn,
-      for (final field in config.fields) ...field.allReadKeys,
+      for (final field in config.fields) field.key,
     ]);
   }
 

@@ -8,10 +8,11 @@ import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/media/media_url_resolver.dart';
 import 'package:hellovietnam/features/explore/data/explore_tracking_service.dart';
 import 'package:hellovietnam/features/explore/presentation/widgets/explore_floating_back_button.dart';
 import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
-import 'package:hellovietnam/features/item_detail/data/item_detail_mock_data.dart';
+import 'package:hellovietnam/features/item_detail/data/item_detail_repository.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
@@ -27,6 +28,7 @@ class SharedItemDetailPage extends StatefulWidget {
     this.request,
     this.detail,
     this.reviewRepository,
+    this.itemDetailRepository,
     this.insertedSectionsBuilder,
     this.favoriteType,
     this.favoriteRawId,
@@ -43,6 +45,7 @@ class SharedItemDetailPage extends StatefulWidget {
   final ItemDetailRequest? request;
   final ItemDetail? detail;
   final ReviewRepository? reviewRepository;
+  final ItemDetailRepository? itemDetailRepository;
   final List<Widget> Function(BuildContext context, ItemDetail detail)?
   insertedSectionsBuilder;
   final FavoriteType? favoriteType;
@@ -62,7 +65,7 @@ class SharedItemDetailPage extends StatefulWidget {
 }
 
 class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
-  late final ItemDetail _detail;
+  late ItemDetail _detail;
   final ExploreTrackingService _exploreTrackingService =
       ExploreTrackingService.instance;
   late bool _isFavorite;
@@ -71,13 +74,15 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
   bool _descExpanded = false;
   FavoriteType? _favoriteType;
   late final String _favoriteRawId;
-  late final String _favoriteName;
+  late String _favoriteName;
   late double _displayRating;
+  bool _isDetailLoading = false;
+  Object? _detailError;
 
   @override
   void initState() {
     super.initState();
-    _detail = widget.detail ?? resolveItemDetail(widget.request!);
+    _detail = widget.detail ?? _fallbackDetail(widget.request!);
     _displayRating = _detail.rating;
     _favoriteType =
         widget.favoriteType ??
@@ -107,6 +112,58 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
             provinceId: _trackingProvinceId,
           ),
         );
+      });
+    }
+    if (widget.detail == null && widget.request != null) {
+      _isDetailLoading = true;
+      unawaited(_loadLiveDetail());
+    }
+  }
+
+  ItemDetail _fallbackDetail(ItemDetailRequest request) {
+    final List<String> images = <String>[
+      ...request.fallbackImages,
+      if (request.fallbackImagePath != null) request.fallbackImagePath!.trim(),
+    ].where((String image) => image.isNotEmpty).toSet().toList(growable: false);
+    return ItemDetail(
+      id: request.id,
+      name: request.name,
+      category: request.category,
+      images: images,
+      rating: 0,
+      reviewCount: 0,
+      ratingLabel: '',
+      description: '',
+      whatToExpect: '',
+    );
+  }
+
+  Future<void> _loadLiveDetail() async {
+    final ItemDetailRequest request = widget.request!;
+    try {
+      ItemDetail live =
+          await (widget.itemDetailRepository ?? ItemDetailRepository.instance)
+              .load(request);
+      if (live.images.isEmpty && _detail.images.isNotEmpty) {
+        live = live.copyWith(images: _detail.images);
+      }
+      if (!mounted) return;
+      setState(() {
+        _detail = live;
+        _displayRating = live.rating;
+        _favoriteType =
+            widget.favoriteType ??
+            request.favoriteType ??
+            _favoriteTypeForDetail(live);
+        _favoriteName = widget.favoriteName ?? live.name;
+        _detailError = null;
+        _isDetailLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _detailError = error;
+        _isDetailLoading = false;
       });
     }
   }
@@ -156,7 +213,11 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
       if (next == null) {
         setState(() => _isFavorite = previous);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please sign in to update wishlist.')),
+          SnackBar(
+            content: Text(
+              context.l10n.ui('Please sign in to update wishlist.'),
+            ),
+          ),
         );
       } else {
         setState(() => _isFavorite = next);
@@ -174,9 +235,11 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _isFavorite = previous);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Update wishlist failed: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${context.l10n.ui('Update wishlist failed')}: $error'),
+        ),
+      );
     }
   }
 
@@ -207,8 +270,9 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
       ? 'place'
       : _sharedContentTypeForCategory(_detail.category);
 
-  String? get _sharedLabelOverride =>
-      _favoriteType == FavoriteType.place ? 'Destination' : null;
+  String? get _sharedLabelOverride => _favoriteType == FavoriteType.place
+      ? context.l10n.ui('Destination')
+      : null;
 
   FavoriteType? _favoriteTypeForDetail(ItemDetail detail) {
     switch (detail.category) {
@@ -273,6 +337,17 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
+                  if (_isDetailLoading) ...<Widget>[
+                    const LinearProgressIndicator(
+                      color: AppColors.primary,
+                      backgroundColor: AppColors.primaryLight,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (_detailError != null) ...<Widget>[
+                    _DetailLoadError(onRetry: _retryLiveDetail),
+                    const SizedBox(height: 12),
+                  ],
                   _DetailHeader(title: _detail.name),
                   const SizedBox(height: 20),
                   _HeroImageCarousel(
@@ -316,7 +391,6 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     ] else ...<Widget>[
                       _ReviewSummary(
                         rating: _detail.rating,
-                        ratingLabel: _detail.ratingLabel,
                         reviewCount: _detail.reviewCount,
                       ),
                       const SizedBox(height: 14),
@@ -367,6 +441,52 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
       ),
     );
   }
+
+  Future<void> _retryLiveDetail() async {
+    setState(() {
+      _detailError = null;
+      _isDetailLoading = true;
+    });
+    await _loadLiveDetail();
+  }
+}
+
+class _DetailLoadError extends StatelessWidget {
+  const _DetailLoadError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.errorContainer,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              Icons.cloud_off_outlined,
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                context.l10n.ui('Unable to load item details.'),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: onRetry,
+              child: Text(context.l10n.ui('Retry')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _DetailHeader extends StatelessWidget {
@@ -379,8 +499,9 @@ class _DetailHeader extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(left: 48),
+      padding: const EdgeInsets.symmetric(horizontal: 48),
       child: RichText(
+        textAlign: TextAlign.center,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         text: TextSpan(
@@ -390,7 +511,7 @@ class _DetailHeader extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
           children: <TextSpan>[
-            const TextSpan(text: 'Discover, '),
+            TextSpan(text: '${context.l10n.ui('Discover')}, '),
             TextSpan(
               text: '$title!',
               style: const TextStyle(
@@ -574,7 +695,7 @@ class _QuickInfoCard extends StatelessWidget {
                       GestureDetector(
                         onTap: onToggleExpanded,
                         child: Text(
-                          isExpanded ? 'Less' : 'More',
+                          context.l10n.ui(isExpanded ? 'Less' : 'More'),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -652,14 +773,9 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _ReviewSummary extends StatelessWidget {
-  const _ReviewSummary({
-    required this.rating,
-    required this.ratingLabel,
-    required this.reviewCount,
-  });
+  const _ReviewSummary({required this.rating, required this.reviewCount});
 
   final double rating;
-  final String ratingLabel;
   final int reviewCount;
 
   @override
@@ -702,7 +818,7 @@ class _ReviewSummary extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                ratingLabel,
+                context.l10n.reviewSummaryLabel(rating),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -710,7 +826,7 @@ class _ReviewSummary extends StatelessWidget {
                 ),
               ),
               Text(
-                '$reviewCount reviews',
+                context.l10n.reviewCount(reviewCount),
                 style: TextStyle(fontSize: 13, color: secondaryText),
               ),
             ],
@@ -1217,19 +1333,9 @@ class _NetworkOrAssetImage extends StatelessWidget {
   final double borderRadius;
   final bool showOverlay;
 
-  String get _normalizedImagePath {
-    String value = imagePath.trim();
-    for (int i = 0; i < 2; i++) {
-      if (value.contains('%')) {
-        value = Uri.decodeFull(value);
-      }
-    }
-    return value;
-  }
+  String get _normalizedImagePath => MediaUrlResolver.resolve(imagePath);
 
-  bool get _isNetworkImage =>
-      _normalizedImagePath.startsWith('http://') ||
-      _normalizedImagePath.startsWith('https://');
+  bool get _isNetworkImage => MediaUrlResolver.isNetwork(_normalizedImagePath);
 
   bool get _isAssetImage => _normalizedImagePath.startsWith('assets/');
 

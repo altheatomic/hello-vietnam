@@ -389,7 +389,11 @@ class _RewardHeroSection extends StatelessWidget {
                   ),
                 ),
               ),
-              Expanded(child: Container(color: const Color(0xFFF3F5F7))),
+              Expanded(
+                child: Container(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                ),
+              ),
             ],
           ),
           const Positioned(
@@ -419,7 +423,7 @@ class _AvatarCircle extends StatelessWidget {
       width: 52,
       height: 52,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 2),
       ),
@@ -520,10 +524,10 @@ class _RewardSummaryCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 context.l10n.ui('Gold'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F1F3A),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const Spacer(),
@@ -566,7 +570,7 @@ class _RewardSummaryCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1D2A39),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -618,7 +622,7 @@ class _VoucherPinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     return Container(
-      color: const Color(0xFFF3F5F7),
+      color: Theme.of(context).scaffoldBackgroundColor,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -633,10 +637,10 @@ class _VoucherPinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
               const SizedBox(width: 8),
               Text(
                 context.l10n.ui('Vouchers'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F1F3A),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -812,6 +816,7 @@ class _RedeemVoucherCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -819,9 +824,9 @@ class _RedeemVoucherCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE3E8EE)),
+            border: Border.all(color: colors.outlineVariant),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -867,10 +872,10 @@ class _RedeemVoucherCard extends StatelessWidget {
                           context.l10n.ui(item.title),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF0F1F3A),
+                            color: colors.onSurface,
                             height: 1.2,
                           ),
                         ),
@@ -887,7 +892,7 @@ class _RedeemVoucherCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           formattedPoints,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFFF0A429),
@@ -897,10 +902,10 @@ class _RedeemVoucherCard extends StatelessWidget {
                         const SizedBox(width: 2),
                         Text(
                           context.l10n.ui('points'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF98A0AA),
+                            color: colors.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -974,6 +979,7 @@ class _MyVoucherCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -982,9 +988,9 @@ class _MyVoucherCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE3E8EE)),
+            border: Border.all(color: colors.outlineVariant),
             boxShadow: <BoxShadow>[
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
@@ -1028,26 +1034,26 @@ class _MyVoucherCard extends StatelessWidget {
                         const SizedBox(height: 8),
                         Text(
                           context.l10n.ui(item.title),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF0F1F3A),
+                            color: colors.onSurface,
                           ),
                         ),
                         const SizedBox(height: 6),
                         Row(
                           children: <Widget>[
-                            const Icon(
+                            Icon(
                               Icons.calendar_today_rounded,
                               size: 14,
-                              color: Color(0xFF7D8794),
+                              color: colors.onSurfaceVariant,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               '${context.l10n.ui('Exp')}: ${item.expiry}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
-                                color: Color(0xFF5B6674),
+                                color: colors.onSurfaceVariant,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -1066,23 +1072,23 @@ class _MyVoucherCard extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(9),
                                   border: Border.all(
-                                    color: const Color(0xFFD5DCE4),
+                                    color: colors.outlineVariant,
                                   ),
                                 ),
                                 child: Text(
                                   item.code,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF223348),
+                                    color: colors.onSurface,
                                   ),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
-                            const Icon(
+                            Icon(
                               Icons.content_copy_rounded,
-                              color: Color(0xFF6D7988),
+                              color: colors.onSurfaceVariant,
                               size: 19,
                             ),
                           ],

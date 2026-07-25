@@ -105,6 +105,8 @@ class _RankBenefitsPageState extends State<RankBenefitsPage> {
   Widget build(BuildContext context) {
     final double topInset = MediaQuery.of(context).padding.top;
     final double bottomInset = MediaQuery.of(context).padding.bottom;
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
@@ -298,13 +300,13 @@ class _RankBenefitsPageState extends State<RankBenefitsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  const Text(
+                  Text(
                     'All Membership Tiers',
                     style: TextStyle(
                       fontSize: 33,
                       height: 1,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A2230),
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -337,11 +339,17 @@ class _RankBenefitsPageState extends State<RankBenefitsPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE5F5FC),
+                      color: isDark
+                          ? theme.colorScheme.surfaceContainerHighest
+                          : const Color(0xFFE5F5FC),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFD2E9F5)),
+                      border: Border.all(
+                        color: isDark
+                            ? theme.colorScheme.outline
+                            : const Color(0xFFD2E9F5),
+                      ),
                     ),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Row(
@@ -357,7 +365,7 @@ class _RankBenefitsPageState extends State<RankBenefitsPage> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF2A3445),
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
                           ],
@@ -368,7 +376,7 @@ class _RankBenefitsPageState extends State<RankBenefitsPage> {
                           style: TextStyle(
                             fontSize: 14,
                             height: 1.35,
-                            color: Color(0xFF4B5565),
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                         SizedBox(height: 4),
@@ -377,7 +385,7 @@ class _RankBenefitsPageState extends State<RankBenefitsPage> {
                           style: TextStyle(
                             fontSize: 14,
                             height: 1.35,
-                            color: Color(0xFF4B5565),
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                         SizedBox(height: 4),
@@ -386,7 +394,7 @@ class _RankBenefitsPageState extends State<RankBenefitsPage> {
                           style: TextStyle(
                             fontSize: 14,
                             height: 1.35,
-                            color: Color(0xFF4B5565),
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -427,16 +435,18 @@ class _TierCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool showProgress = tier.isCurrent;
     final bool showLockNeed = !unlocked && tier.requiredPoints > 0;
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: tier.isCurrent
               ? const Color(0xFF68C6F3)
-              : const Color(0xFFE3E7ED),
+              : (isDark ? theme.colorScheme.outline : const Color(0xFFE3E7ED)),
           width: tier.isCurrent ? 1.6 : 1,
         ),
         boxShadow: <BoxShadow>[
@@ -474,10 +484,10 @@ class _TierCard extends StatelessWidget {
                           children: <Widget>[
                             Text(
                               tier.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF1E2633),
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
                             if (tier.isCurrent) ...<Widget>[
@@ -523,9 +533,9 @@ class _TierCard extends StatelessWidget {
                           tier.requiredPoints == 0
                               ? tier.subLabel
                               : '$formattedRequiredPoints points',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF7A8393),
+                            color: theme.colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -536,9 +546,9 @@ class _TierCard extends StatelessWidget {
                     turns: expanded ? 0.5 : 0.0,
                     duration: const Duration(milliseconds: 240),
                     curve: Curves.easeInOutCubic,
-                    child: const Icon(
+                    child: Icon(
                       Icons.keyboard_arrow_up_rounded,
-                      color: Color(0xFF9AA3B1),
+                      color: theme.colorScheme.onSurfaceVariant,
                       size: 20,
                     ),
                   ),
@@ -565,18 +575,20 @@ class _TierCard extends StatelessWidget {
                                   children: <Widget>[
                                     Text(
                                       '$formattedCurrentPoints points',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF5C6675),
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                     const Spacer(),
                                     Text(
                                       '$formattedRequiredPoints points',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF5C6675),
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -607,18 +619,22 @@ class _TierCard extends StatelessWidget {
                                   9,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: tier.benefitBackground,
+                                  color: isDark
+                                      ? theme
+                                            .colorScheme
+                                            .surfaceContainerHighest
+                                      : tier.benefitBackground,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: <Widget>[
-                                    const Text(
+                                    Text(
                                       'Benefits:',
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF394252),
+                                        color: theme.colorScheme.onSurface,
                                       ),
                                     ),
                                     const SizedBox(height: 6),
@@ -651,10 +667,12 @@ class _TierCard extends StatelessWidget {
                                             Expanded(
                                               child: Text(
                                                 benefit,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 13,
                                                   height: 1.25,
-                                                  color: Color(0xFF4F5868),
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
                                                 ),
                                               ),
                                             ),
@@ -675,9 +693,10 @@ class _TierCard extends StatelessWidget {
                                 Center(
                                   child: RichText(
                                     text: TextSpan(
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
-                                        color: Color(0xFF6E7786),
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
                                         fontFamily: 'Roboto',
                                       ),
                                       children: <TextSpan>[

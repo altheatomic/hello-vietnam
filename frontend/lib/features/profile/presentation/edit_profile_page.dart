@@ -87,26 +87,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const Text(
-                'Choose Avatar',
+              Text(
+                context.l10n.ui('Choose Avatar'),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A1A),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Chon anh tu thiet bi'),
+                title: Text(context.l10n.ui('Choose photo from device')),
                 onTap: _isUploadingAvatar ? null : _pickAvatarFromDevice,
               ),
               if (_avatarUrl != null && _avatarUrl!.trim().isNotEmpty)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.delete_outline_rounded),
-                  title: const Text('Go avatar da upload'),
+                  title: Text(context.l10n.ui('Remove uploaded avatar')),
                   onTap: _isUploadingAvatar ? null : _removeUploadedAvatar,
                 ),
               const SizedBox(height: 12),
@@ -175,12 +175,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _avatarUrl = avatarUrl;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cap nhat avatar thanh cong.')),
+        SnackBar(content: Text(context.l10n.ui('Avatar updated.'))),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tai avatar len that bai: $error')),
+        SnackBar(
+          content: Text('${context.l10n.ui('Upload avatar failed')}: $error'),
+        ),
       );
     } finally {
       if (mounted) {
@@ -198,14 +200,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
       setState(() {
         _avatarUrl = null;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Da go avatar da upload.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.ui('Uploaded avatar removed.'))),
+      );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Go avatar that bai: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${context.l10n.ui('Remove avatar failed')}: $error'),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isUploadingAvatar = false);
@@ -228,11 +232,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final _AvatarPreset avatar = _avatarPresets[_avatarIndex];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: <Widget>[
           Container(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             padding: EdgeInsets.fromLTRB(10, topInset + 8, 10, 10),
             child: SizedBox(
               height: 48,
@@ -240,20 +244,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 children: <Widget>[
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.chevron_left,
                       size: 26,
-                      color: Color(0xFF1C1C1C),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   Expanded(
                     child: Text(
                       context.l10n.ui('Edit Profile'),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF121212),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -301,10 +305,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 color: const Color(0xFFDDDDDD),
                               ),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.edit,
                               size: 16,
-                              color: Color(0xFF5F5F5F),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
