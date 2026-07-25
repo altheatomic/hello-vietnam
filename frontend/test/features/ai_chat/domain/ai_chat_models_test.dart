@@ -85,16 +85,42 @@ void main() {
     expect(page.nextCursor, 'cursor-2');
     expect(page.items.map((item) => item.id), <String>['older', 'newer']);
   });
+
+  test('send result keeps the user question before its assistant reply', () {
+    final AiChatSendResult result = AiChatSendResult.fromJson(<String, Object?>{
+      'conversation_id': 'conversation-1',
+      'messages': <Object?>[
+        _messageJson(
+          id: 'assistant-message',
+          createdAt: '2026-07-25T02:00:00Z',
+          role: 'assistant',
+        ),
+        _messageJson(
+          id: 'user-message',
+          createdAt: '2026-07-25T02:00:00Z',
+          role: 'user',
+        ),
+      ],
+      'remaining': 99,
+      'idempotent': false,
+    });
+
+    expect(result.messages.map((item) => item.id), <String>[
+      'user-message',
+      'assistant-message',
+    ]);
+  });
 }
 
 Map<String, Object?> _messageJson({
   required String id,
   required String createdAt,
+  String role = 'user',
 }) {
   return <String, Object?>{
     'id_message': id,
     'id_conversation': 'conversation-1',
-    'role': 'user',
+    'role': role,
     'content': id,
     'request_id': 'request-1',
     'created_at': createdAt,

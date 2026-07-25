@@ -333,10 +333,7 @@ List<AiChatMessage> _mergeMessages(
     for (final AiChatMessage message in second) message.id: message,
   };
   final List<AiChatMessage> merged = byId.values.toList(growable: false)
-    ..sort(
-      (AiChatMessage left, AiChatMessage right) =>
-          left.createdAt.compareTo(right.createdAt),
-    );
+    ..sort(compareAiChatMessagesChronologically);
   return List<AiChatMessage>.unmodifiable(merged);
 }
 

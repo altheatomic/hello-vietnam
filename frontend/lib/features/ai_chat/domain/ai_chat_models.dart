@@ -127,12 +127,10 @@ class AiChatMessagePage {
   factory AiChatMessagePage.fromJson(Map<String, dynamic> json) {
     final List<AiChatMessage> items =
         _objectList(
-          json,
-          'items',
-        ).map(AiChatMessage.fromJson).toList(growable: false)..sort(
-          (AiChatMessage left, AiChatMessage right) =>
-              left.createdAt.compareTo(right.createdAt),
-        );
+            json,
+            'items',
+          ).map(AiChatMessage.fromJson).toList(growable: false)
+          ..sort(compareAiChatMessagesChronologically);
     return AiChatMessagePage(
       items: List<AiChatMessage>.unmodifiable(items),
       nextCursor: _optionalString(json['next_cursor']),
@@ -161,12 +159,10 @@ class AiChatSendResult {
     }
     final List<AiChatMessage> messages =
         _objectList(
-          json,
-          'messages',
-        ).map(AiChatMessage.fromJson).toList(growable: false)..sort(
-          (AiChatMessage left, AiChatMessage right) =>
-              left.createdAt.compareTo(right.createdAt),
-        );
+            json,
+            'messages',
+          ).map(AiChatMessage.fromJson).toList(growable: false)
+          ..sort(compareAiChatMessagesChronologically);
     return AiChatSendResult(
       conversationId: _requiredString(json, 'conversation_id'),
       messages: List<AiChatMessage>.unmodifiable(messages),
@@ -174,6 +170,22 @@ class AiChatSendResult {
       idempotent: rawIdempotent,
     );
   }
+}
+
+int compareAiChatMessagesChronologically(
+  AiChatMessage left,
+  AiChatMessage right,
+) {
+  final int timestampOrder = left.createdAt.compareTo(right.createdAt);
+  if (timestampOrder != 0) return timestampOrder;
+
+  if (left.requestId != null &&
+      left.requestId == right.requestId &&
+      left.role != right.role) {
+    return left.isUser ? -1 : 1;
+  }
+
+  return left.id.compareTo(right.id);
 }
 
 String _requiredString(Map<String, dynamic> json, String key) {

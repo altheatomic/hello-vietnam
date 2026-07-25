@@ -79,6 +79,43 @@ void main() {
       );
     });
 
+    test('keeps a completed exchange in question then answer order', () async {
+      repository.sendCompleter = Completer<AiChatSendResult>();
+      final Future<void> pendingSend = controller.send('Hello');
+      final DateTime createdAt = DateTime.utc(2026, 7, 25, 10);
+      repository.sendCompleter!.complete(
+        AiChatSendResult(
+          conversationId: 'conversation-1',
+          messages: <AiChatMessage>[
+            AiChatMessage(
+              id: 'assistant-message',
+              conversationId: 'conversation-1',
+              role: AiChatRole.assistant,
+              content: 'Hello! How can I help?',
+              requestId: 'request-1',
+              createdAt: createdAt,
+            ),
+            AiChatMessage(
+              id: 'user-message',
+              conversationId: 'conversation-1',
+              role: AiChatRole.user,
+              content: 'Hello',
+              requestId: 'request-1',
+              createdAt: createdAt,
+            ),
+          ],
+          remaining: 99,
+          idempotent: false,
+        ),
+      );
+      await pendingSend;
+
+      expect(controller.state.messages.map((message) => message.id), <String>[
+        'user-message',
+        'assistant-message',
+      ]);
+    });
+
     test('older messages prepend chronologically without duplicates', () async {
       repository.messagePages.add(
         AiChatMessagePage(
