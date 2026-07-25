@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/media/cloudflare_media_repository.dart';
 import '../domain/create_forum_post_request.dart';
 import '../domain/forum_models.dart';
+import 'forum_page_cursor.dart';
+import 'forum_rpc_row_mapper.dart';
 
 class ForumRepositorySnapshot {
   const ForumRepositorySnapshot({
@@ -34,20 +36,35 @@ class ForumRepositorySnapshot {
   final List<ForumNotificationItem> notifications;
   final Set<String> blockedAuthorIds;
   final Set<String> reportedPostIds;
-  final String? nextForYouCursor;
-  final String? nextFollowingCursor;
+  final ForumPageCursor? nextForYouCursor;
+  final ForumPageCursor? nextFollowingCursor;
   final bool hasMoreForYou;
   final bool hasMoreFollowing;
+}
+
+class ForumCommentsPage {
+  const ForumCommentsPage({
+    required this.comments,
+    required this.nextCursor,
+    required this.hasMore,
+  });
+
+  final List<ForumComment> comments;
+  final ForumPageCursor? nextCursor;
+  final bool hasMore;
 }
 
 class ForumRepository {
   ForumRepository({
     SupabaseClient? client,
     CloudflareMediaRepository? mediaRepository,
+    ForumRpcRowMapper rowMapper = const ForumRpcRowMapper(),
   }) : _client = client ?? Supabase.instance.client,
-       _mediaRepository = mediaRepository;
+       _mediaRepository = mediaRepository,
+       _rowMapper = rowMapper;
 
   final SupabaseClient _client;
+  final ForumRpcRowMapper _rowMapper;
   CloudflareMediaRepository? _mediaRepository;
 
   User? get _authUser => _client.auth.currentUser;
@@ -56,41 +73,39 @@ class ForumRepository {
       _mediaRepository ??= CloudflareMediaRepository();
 
   Future<ForumRepositorySnapshot> loadSnapshot({
-    String? beforeForYouCursor,
-    String? beforeFollowingCursor,
+    ForumPageCursor? beforeForYouCursor,
+    ForumPageCursor? beforeFollowingCursor,
     int limit = 20,
     bool loadForYouPage = true,
     bool loadFollowingPage = true,
     bool includeNotifications = true,
   }) async {
     final String currentUserId = await _requireForumUser();
-
-    final List<Map<String, dynamic>> followingRows = await _optionalRows(
-      () => _client
-          .from('forum_user_follow')
-          .select('following_user_id')
-          .eq('follower_user_id', currentUserId),
-      source: 'forum_user_follow',
-    );
-
-    final Set<String> followingIds = followingRows
-        .map(
-          (Map<String, dynamic> row) => _stringValue(row['following_user_id']),
-        )
-        .where((String id) => id.isNotEmpty)
-        .toSet();
-
-    final List<Map<String, dynamic>> forYouPostRows = loadForYouPage
-        ? await _loadPostPage(beforeCursor: beforeForYouCursor, limit: limit)
-        : const <Map<String, dynamic>>[];
-    final List<Map<String, dynamic>> followingPostRows =
-        loadFollowingPage && followingIds.isNotEmpty
-        ? await _loadPostPage(
-            beforeCursor: beforeFollowingCursor,
-            limit: limit,
-            authorIds: followingIds,
-          )
-        : const <Map<String, dynamic>>[];
+    final List<List<Map<String, dynamic>>> pages =
+        await Future.wait(<Future<List<Map<String, dynamic>>>>[
+          if (loadForYouPage)
+            _loadFeedPage(
+              feed: 'for_you',
+              beforeCursor: beforeForYouCursor,
+              limit: limit,
+            )
+          else
+            Future<List<Map<String, dynamic>>>.value(
+              const <Map<String, dynamic>>[],
+            ),
+          if (loadFollowingPage)
+            _loadFeedPage(
+              feed: 'following',
+              beforeCursor: beforeFollowingCursor,
+              limit: limit,
+            )
+          else
+            Future<List<Map<String, dynamic>>>.value(
+              const <Map<String, dynamic>>[],
+            ),
+        ]);
+    final List<Map<String, dynamic>> forYouPostRows = pages[0];
+    final List<Map<String, dynamic>> followingPostRows = pages[1];
 
     final Map<String, Map<String, dynamic>> postRowsById =
         <String, Map<String, dynamic>>{};
@@ -103,213 +118,31 @@ class ForumRepository {
         postRowsById[postId] = row;
       }
     }
-    final List<Map<String, dynamic>> postRows = postRowsById.values.toList(
-      growable: false,
-    );
-
-    final List<String> postIds = postRows
-        .map((Map<String, dynamic> row) => _stringValue(row['id_post']))
-        .where((String id) => id.isNotEmpty)
-        .toList(growable: false);
-
-    final List<String> authorIds = postRows
-        .map((Map<String, dynamic> row) => _stringValue(row['id_author_user']))
-        .where((String id) => id.isNotEmpty)
-        .toSet()
-        .toList();
-
-    final List<Map<String, dynamic>> commentRows = postIds.isEmpty
-        ? <Map<String, dynamic>>[]
-        : await _client
-              .from('forum_comment')
-              .select(
-                'id_comment, id_post, id_author_user, content, created_at, status',
-              )
-              .inFilter('id_post', postIds)
-              .or('status.is.null,status.eq.active')
-              .order('created_at', ascending: false);
-
-    authorIds.addAll(
-      commentRows
-          .map(
-            (Map<String, dynamic> row) => _stringValue(row['id_author_user']),
-          )
-          .where((String id) => id.isNotEmpty),
-    );
-
-    final List<Map<String, dynamic>> mediaRows = postIds.isEmpty
-        ? <Map<String, dynamic>>[]
-        : await _optionalRows(
-            () => _client
-                .from('forum_post_media')
-                .select('id_post, url, position')
-                .inFilter('id_post', postIds)
-                .order('position'),
-            source: 'forum_post_media',
-          );
-
-    final List<Map<String, dynamic>> likedPostRows = postIds.isEmpty
-        ? <Map<String, dynamic>>[]
-        : await _optionalRows(
-            () => _client
-                .from('forum_post_like')
-                .select('id_post, id_user')
-                .inFilter('id_post', postIds),
-            source: 'forum_post_like',
-          );
-
-    final List<String> commentIds = commentRows
-        .map((Map<String, dynamic> row) => _stringValue(row['id_comment']))
-        .where((String id) => id.isNotEmpty)
-        .toList(growable: false);
-
-    final List<Map<String, dynamic>> likedCommentRows = commentIds.isEmpty
-        ? <Map<String, dynamic>>[]
-        : await _optionalRows(
-            () => _client
-                .from('forum_comment_like')
-                .select('id_comment, id_user')
-                .inFilter('id_comment', commentIds),
-            source: 'forum_comment_like',
-          );
-
-    final List<Map<String, dynamic>> bookmarkRows = postIds.isEmpty
-        ? <Map<String, dynamic>>[]
-        : await _optionalRows(
-            () => _client
-                .from('forum_post_bookmark')
-                .select('id_post, id_user')
-                .eq('id_user', currentUserId)
-                .inFilter('id_post', postIds),
-            source: 'forum_post_bookmark',
-          );
-
-    final List<Map<String, dynamic>> followerRows = authorIds.isEmpty
-        ? <Map<String, dynamic>>[]
-        : await _optionalRows(
-            () => _client
-                .from('forum_user_follow')
-                .select('following_user_id, follower_user_id')
-                .inFilter('following_user_id', authorIds.toSet().toList()),
-            source: 'forum_user_follow',
-          );
-
-    final List<Map<String, dynamic>> blockedRows = await _optionalRows(
-      () => _client
-          .from('forum_user_block')
-          .select('blocked_user_id')
-          .eq('blocker_user_id', currentUserId),
-      source: 'forum_user_block',
-    );
-
-    final List<Map<String, dynamic>> reportRows = postIds.isEmpty
-        ? <Map<String, dynamic>>[]
-        : await _optionalRows(
-            () => _client
-                .from('forum_post_report')
-                .select('id_post')
-                .eq('id_reporter_user', currentUserId)
-                .inFilter('id_post', postIds),
-            source: 'forum_post_report',
-          );
-
-    final Set<String> blockedIds = blockedRows
-        .map((Map<String, dynamic> row) => _stringValue(row['blocked_user_id']))
-        .where((String id) => id.isNotEmpty)
-        .toSet();
-
-    authorIds
-      ..add(currentUserId)
-      ..addAll(followingIds);
-    final Map<String, ForumUserProfile> profilesById = await _loadProfiles(
-      authorIds.toSet().toList(),
-      currentUserId: currentUserId,
-      followingIds: followingIds,
-      followerRows: followerRows,
-    );
-
-    final Map<String, List<String>> imageUrlsByPostId =
-        <String, List<String>>{};
-    for (final Map<String, dynamic> row in mediaRows) {
-      final String postId = _stringValue(row['id_post']);
-      final String url = _stringValue(row['url']);
-      if (postId.isNotEmpty && url.isNotEmpty) {
-        imageUrlsByPostId.putIfAbsent(postId, () => <String>[]).add(url);
-      }
-    }
-
-    final Map<String, int> likeCountByPostId = _countBy(
-      likedPostRows,
-      'id_post',
-    );
-    final Set<String> likedPostIds = likedPostRows
-        .where(
+    final List<ForumMappedFeedRow> mappedRows = postRowsById.values
+        .map(
           (Map<String, dynamic> row) =>
-              _stringValue(row['id_user']) == currentUserId,
+              _rowMapper.mapFeedRow(row, currentUserId: currentUserId),
         )
-        .map((Map<String, dynamic> row) => _stringValue(row['id_post']))
-        .toSet();
-    final Set<String> bookmarkedPostIds = bookmarkRows
-        .map((Map<String, dynamic> row) => _stringValue(row['id_post']))
-        .toSet();
-
-    final Map<String, int> commentCountByPostId = _countBy(
-      commentRows,
-      'id_post',
-    );
-    final Map<String, List<ForumComment>> commentsByPostId = _buildComments(
-      commentRows: commentRows,
-      profilesById: profilesById,
-      likeCountByCommentId: _countBy(likedCommentRows, 'id_comment'),
-      likedCommentIds: likedCommentRows
-          .where(
-            (Map<String, dynamic> row) =>
-                _stringValue(row['id_user']) == currentUserId,
-          )
-          .map((Map<String, dynamic> row) => _stringValue(row['id_comment']))
-          .toSet(),
-    );
-
-    final List<ForumPost> posts = postRows
-        .map((Map<String, dynamic> row) {
-          final String postId = _stringValue(row['id_post']);
-          final String authorId = _stringValue(row['id_author_user']);
-          final ForumAuthor author =
-              profilesById[authorId]?.author ??
-              _fallbackProfile(authorId, currentUserId: currentUserId).author;
-          return ForumPost(
-            id: postId,
-            author: author,
-            content: _stringValue(row['content']),
-            imageUrls: imageUrlsByPostId[postId] ?? const <String>[],
-            timeAgo: _timeAgo(row['created_at']),
-            likes: likeCountByPostId[postId] ?? 0,
-            comments: commentCountByPostId[postId] ?? 0,
-            sharedItem: _sharedItemFrom(row['shared_item']),
-            sharedTripPlan: _sharedTripPlanFrom(row['shared_item']),
-            isLiked: likedPostIds.contains(postId),
-            isBookmarked: bookmarkedPostIds.contains(postId),
-            showFollowButton: authorId != currentUserId && !author.isFollowing,
-          );
-        })
         .toList(growable: false);
+    final List<ForumPost> posts = mappedRows
+        .map((ForumMappedFeedRow row) => row.post)
+        .toList(growable: false);
+    final Map<String, ForumUserProfile> profilesById =
+        <String, ForumUserProfile>{
+          for (final ForumMappedFeedRow row in mappedRows)
+            row.profile.author.id: row.profile,
+        };
+    profilesById[currentUserId] =
+        profilesById[currentUserId] ??
+        await _loadCurrentUserProfile(currentUserId);
 
-    final Map<String, ForumPost> postsById = <String, ForumPost>{
-      for (final ForumPost post in posts) post.id: post,
-    };
     final List<String> forYouFeedIds = forYouPostRows
         .map((Map<String, dynamic> row) => _stringValue(row['id_post']))
-        .where((String postId) {
-          final ForumPost? post = postsById[postId];
-          return post != null && !blockedIds.contains(post.author.id);
-        })
+        .where((String postId) => postRowsById.containsKey(postId))
         .toList(growable: false);
     final List<String> followingFeedIds = followingPostRows
         .map((Map<String, dynamic> row) => _stringValue(row['id_post']))
-        .where((String postId) {
-          final ForumPost? post = postsById[postId];
-          return post != null && !blockedIds.contains(post.author.id);
-        })
+        .where((String postId) => postRowsById.containsKey(postId))
         .toList(growable: false);
 
     return ForumRepositorySnapshot(
@@ -319,60 +152,144 @@ class ForumRepository {
           _fallbackProfile(currentUserId, currentUserId: currentUserId),
       profilesById: profilesById,
       posts: posts,
-      commentsByPostId: commentsByPostId,
+      commentsByPostId: const <String, List<ForumComment>>{},
       forYouFeedIds: forYouFeedIds,
       followingFeedIds: followingFeedIds,
       notifications: includeNotifications
           ? await _loadNotifications(profilesById)
           : const <ForumNotificationItem>[],
-      blockedAuthorIds: blockedIds,
-      reportedPostIds: reportRows
-          .map((Map<String, dynamic> row) => _stringValue(row['id_post']))
+      blockedAuthorIds: const <String>{},
+      reportedPostIds: mappedRows
+          .where((ForumMappedFeedRow row) => row.isReported)
+          .map((ForumMappedFeedRow row) => row.post.id)
           .toSet(),
-      nextForYouCursor: _nextCursor(forYouPostRows, limit),
-      nextFollowingCursor: _nextCursor(followingPostRows, limit),
+      nextForYouCursor: _nextCursor(
+        forYouPostRows,
+        limit: limit,
+        idKey: 'id_post',
+      ),
+      nextFollowingCursor: _nextCursor(
+        followingPostRows,
+        limit: limit,
+        idKey: 'id_post',
+      ),
       hasMoreForYou: forYouPostRows.length == limit,
       hasMoreFollowing: followingPostRows.length == limit,
     );
   }
 
-  Future<List<Map<String, dynamic>>> _loadPostPage({
-    required String? beforeCursor,
-    required int limit,
-    Set<String>? authorIds,
+  Future<ForumCommentsPage> loadCommentsPage({
+    required String postId,
+    ForumPageCursor? beforeCursor,
+    int limit = 20,
   }) async {
-    dynamic query = _client
-        .from('forum_post')
-        .select(
-          'id_post, id_author_user, title, content, shared_item, created_at, status',
-        )
-        .or('status.is.null,status.eq.active');
+    await _requireForumUser();
+    final Map<String, dynamic> arguments = <String, dynamic>{
+      'p_post_id': postId,
+      'p_limit': limit,
+      'p_before_created_at': null,
+      'p_before_comment_id': null,
+      ...?beforeCursor?.toRpcArguments(
+        createdAtKey: 'p_before_created_at',
+        idKey: 'p_before_comment_id',
+      ),
+    };
+    final List<Map<String, dynamic>> rows = _normalizeRows(
+      await _client.rpc('forum_comments_page', params: arguments),
+    );
+    return ForumCommentsPage(
+      comments: rows.map(_rowMapper.mapCommentRow).toList(growable: false),
+      nextCursor: _nextCursor(rows, limit: limit, idKey: 'id_comment'),
+      hasMore: rows.length == limit,
+    );
+  }
 
-    if (beforeCursor != null && beforeCursor.isNotEmpty) {
-      query = query.lt('created_at', beforeCursor);
-    }
-    if (authorIds != null && authorIds.isNotEmpty) {
-      query = query.inFilter('id_author_user', authorIds.toList());
-    }
+  Future<List<Map<String, dynamic>>> _loadFeedPage({
+    required String feed,
+    required ForumPageCursor? beforeCursor,
+    required int limit,
+  }) async {
+    final Map<String, dynamic> arguments = <String, dynamic>{
+      'p_feed': feed,
+      'p_limit': limit,
+      'p_before_created_at': null,
+      'p_before_post_id': null,
+      ...?beforeCursor?.toRpcArguments(
+        createdAtKey: 'p_before_created_at',
+        idKey: 'p_before_post_id',
+      ),
+    };
+    return _normalizeRows(
+      await _client.rpc('forum_feed_page', params: arguments),
+    );
+  }
 
-    final List<dynamic> rows = await query
-        .order('created_at', ascending: false)
-        .limit(limit);
-    return rows
+  ForumPageCursor? _nextCursor(
+    List<Map<String, dynamic>> rows, {
+    required int limit,
+    required String idKey,
+  }) {
+    if (rows.length < limit || rows.isEmpty) return null;
+    return ForumPageCursor.fromRow(rows.last, idKey: idKey);
+  }
+
+  List<Map<String, dynamic>> _normalizeRows(Object? value) {
+    if (value is! List) return const <Map<String, dynamic>>[];
+    return value
         .whereType<Map>()
         .map(
           (Map<dynamic, dynamic> row) => row.map(
-            (dynamic key, dynamic value) =>
-                MapEntry<String, dynamic>(key.toString(), value),
+            (dynamic key, dynamic innerValue) =>
+                MapEntry<String, dynamic>(key.toString(), innerValue),
           ),
         )
         .toList(growable: false);
   }
 
-  String? _nextCursor(List<Map<String, dynamic>> rows, int limit) {
-    if (rows.length < limit || rows.isEmpty) return null;
-    final String cursor = _stringValue(rows.last['created_at']);
-    return cursor.isEmpty ? null : cursor;
+  Future<ForumUserProfile> _loadCurrentUserProfile(String userId) async {
+    final List<dynamic> results = await Future.wait<dynamic>(<Future<dynamic>>[
+      _client
+          .from('user_account')
+          .select('id_user, full_name, username, avatar, role')
+          .eq('id_user', userId)
+          .maybeSingle(),
+      _client
+          .from('forum_user_follow')
+          .select('follower_user_id')
+          .eq('following_user_id', userId)
+          .limit(1)
+          .count(CountOption.exact),
+      _client
+          .from('forum_user_follow')
+          .select('following_user_id')
+          .eq('follower_user_id', userId)
+          .limit(1)
+          .count(CountOption.exact),
+    ]);
+    final Object? rawProfile = results[0];
+    if (rawProfile is! Map) {
+      return _fallbackProfile(userId, currentUserId: userId);
+    }
+    final Map<String, dynamic> profile = rawProfile.map(
+      (dynamic key, dynamic value) =>
+          MapEntry<String, dynamic>(key.toString(), value),
+    );
+    return _profileFromRow(
+      profile,
+      currentUserId: userId,
+      isFollowing: false,
+      followersCount: _responseCount(results[1]),
+      followingCount: _responseCount(results[2]),
+    );
+  }
+
+  int _responseCount(Object? response) {
+    try {
+      final dynamic count = (response as dynamic).count;
+      return count is num ? count.toInt() : 0;
+    } catch (_) {
+      return 0;
+    }
   }
 
   Future<String> createPost({
@@ -763,54 +680,6 @@ class ForumRepository {
     return userId;
   }
 
-  Future<Map<String, ForumUserProfile>> _loadProfiles(
-    List<String> userIds, {
-    required String currentUserId,
-    required Set<String> followingIds,
-    required List<Map<String, dynamic>> followerRows,
-  }) async {
-    if (userIds.isEmpty) return <String, ForumUserProfile>{};
-
-    final List<Map<String, dynamic>> rows = await _client
-        .from('user_account')
-        .select('id_user, full_name, username, avatar, role')
-        .inFilter('id_user', userIds.toSet().toList());
-
-    final Map<String, int> followersByUserId = _countBy(
-      followerRows,
-      'following_user_id',
-    );
-    final Map<String, int> followingByUserId = _countBy(
-      followerRows,
-      'follower_user_id',
-    );
-
-    final Map<String, ForumUserProfile> profiles = <String, ForumUserProfile>{
-      for (final Map<String, dynamic> row in rows)
-        _stringValue(row['id_user']): _profileFromRow(
-          row,
-          currentUserId: currentUserId,
-          isFollowing: followingIds.contains(_stringValue(row['id_user'])),
-          followersCount: followersByUserId[_stringValue(row['id_user'])] ?? 0,
-          followingCount: followingByUserId[_stringValue(row['id_user'])] ?? 0,
-        ),
-    };
-
-    for (final String userId in userIds.toSet()) {
-      if (userId.isEmpty || profiles.containsKey(userId)) continue;
-
-      profiles[userId] = _fallbackProfile(
-        userId,
-        currentUserId: currentUserId,
-        isFollowing: followingIds.contains(userId),
-        followersCount: followersByUserId[userId] ?? 0,
-        followingCount: followingByUserId[userId] ?? 0,
-      );
-    }
-
-    return profiles;
-  }
-
   Future<List<ForumNotificationItem>> _loadNotifications(
     Map<String, ForumUserProfile> profilesById,
   ) async {
@@ -846,37 +715,6 @@ class ForumRepository {
       debugPrint('Load forum notifications warning: $error');
       return const <ForumNotificationItem>[];
     }
-  }
-
-  Map<String, List<ForumComment>> _buildComments({
-    required List<Map<String, dynamic>> commentRows,
-    required Map<String, ForumUserProfile> profilesById,
-    required Map<String, int> likeCountByCommentId,
-    required Set<String> likedCommentIds,
-  }) {
-    final Map<String, List<ForumComment>> commentsByPostId =
-        <String, List<ForumComment>>{};
-    for (final Map<String, dynamic> row in commentRows) {
-      final String postId = _stringValue(row['id_post']);
-      final String commentId = _stringValue(row['id_comment']);
-      final String authorId = _stringValue(row['id_author_user']);
-      final ForumAuthor author =
-          profilesById[authorId]?.author ??
-          _fallbackProfile(authorId, currentUserId: '').author;
-      commentsByPostId
-          .putIfAbsent(postId, () => <ForumComment>[])
-          .add(
-            ForumComment(
-              id: commentId,
-              author: author,
-              content: _stringValue(row['content']),
-              timeAgo: _timeAgo(row['created_at']),
-              likes: likeCountByCommentId[commentId] ?? 0,
-              isLiked: likedCommentIds.contains(commentId),
-            ),
-          );
-    }
-    return commentsByPostId;
   }
 
   ForumUserProfile _profileFromRow(
@@ -931,59 +769,7 @@ class ForumRepository {
     );
   }
 
-  Map<String, int> _countBy(List<Map<String, dynamic>> rows, String key) {
-    final Map<String, int> counts = <String, int>{};
-    for (final Map<String, dynamic> row in rows) {
-      final String value = _stringValue(row[key]);
-      if (value.isNotEmpty) {
-        counts[value] = (counts[value] ?? 0) + 1;
-      }
-    }
-    return counts;
-  }
-
-  Future<List<Map<String, dynamic>>> _optionalRows(
-    Future<List<Map<String, dynamic>>> Function() load, {
-    required String source,
-  }) async {
-    try {
-      return await load();
-    } catch (error) {
-      debugPrint('Load optional forum table $source warning: $error');
-      return <Map<String, dynamic>>[];
-    }
-  }
-
   String _stringValue(Object? value) => value?.toString().trim() ?? '';
-
-  Map<String, dynamic>? _normalizedSharedItemMap(Object? value) {
-    if (value is Map<String, dynamic>) {
-      return value;
-    }
-    if (value is Map) {
-      return value.map(
-        (dynamic key, dynamic innerValue) =>
-            MapEntry(key.toString(), innerValue),
-      );
-    }
-    return null;
-  }
-
-  SharedExploreItem? _sharedItemFrom(Object? value) {
-    final Map<String, dynamic>? map = _normalizedSharedItemMap(value);
-    if (map == null || map['type'] == 'trip_plan') {
-      return null;
-    }
-    return SharedExploreItem.fromJson(map);
-  }
-
-  SharedTripPlanItem? _sharedTripPlanFrom(Object? value) {
-    final Map<String, dynamic>? map = _normalizedSharedItemMap(value);
-    if (map == null || map['type'] != 'trip_plan') {
-      return null;
-    }
-    return SharedTripPlanItem.fromJson(map);
-  }
 
   String _handleFrom(String value) {
     final String normalized = value

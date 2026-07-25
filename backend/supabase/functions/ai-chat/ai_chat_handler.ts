@@ -32,6 +32,25 @@ export interface CommittedExchange {
   messages: AiChatMessageRecord[];
 }
 
+export type AiChatPreparation =
+  | {
+      status: "ready";
+      history: ChatHistoryMessage[];
+    }
+  | {
+      status: "committed";
+      exchange: CommittedExchange;
+      remaining: number;
+    }
+  | { status: "premium_required" }
+  | { status: "quota_reached" }
+  | { status: "conversation_not_found" };
+
+export interface CommitExchangeResult {
+  exchange: CommittedExchange;
+  remaining: number;
+}
+
 export interface DeepSeekCallResult {
   content: unknown;
   model: string;
@@ -66,20 +85,15 @@ export interface MessagePage {
 
 export interface AiChatGateway {
   hasActivePremium(userId: string): Promise<boolean>;
-  getDailyMessageLimit(userId: string): Promise<number>;
-  getSuccessfulMessagesToday(userId: string): Promise<number>;
-  findCommittedExchange(
+  prepareSendRequest(
     userId: string,
     conversationId: string,
     requestId: string,
-  ): Promise<CommittedExchange | null>;
-  loadRecentMessages(
-    userId: string,
-    conversationId: string,
-    limit: number,
-  ): Promise<ChatHistoryMessage[]>;
+    allowNewConversation: boolean,
+    historyLimit: number,
+  ): Promise<AiChatPreparation>;
   callDeepSeek(messages: DeepSeekMessage[]): Promise<DeepSeekCallResult>;
-  commitExchange(input: CommitExchangeInput): Promise<CommittedExchange>;
+  commitExchange(input: CommitExchangeInput): Promise<CommitExchangeResult>;
   listConversations(
     userId: string,
     cursor: string | null,
@@ -92,20 +106,31 @@ export interface AiChatGateway {
     limit: number,
   ): Promise<MessagePage>;
   deleteConversation(userId: string, conversationId: string): Promise<void>;
-  synthesizeSpeech(
-    text: string,
-    languageCode: string,
-  ): Promise<VbeeTtsResult>;
+  synthesizeSpeech(text: string, languageCode: string): Promise<VbeeTtsResult>;
 }
 
 export interface AiChatHandlerDependencies {
   gateway: AiChatGateway;
+  now?: () => number;
+  recordMetric?: (metric: AiChatRequestMetric) => void;
+}
+
+export interface AiChatRequestMetric {
+  action: string;
+  correlationId: string;
+  status: number;
+  totalMs: number;
+  stagesMs: Record<string, number>;
+  model?: string;
+  inputTokens?: number;
+  outputTokens?: number;
 }
 
 export class AiChatGatewayError extends Error {
   constructor(
     readonly code:
       | "AI_CHAT_CONVERSATION_NOT_FOUND"
+      | "AI_CHAT_DAILY_LIMIT_REACHED"
       | "AI_CHAT_PROVIDER_UNAVAILABLE"
       | "AI_CHAT_TTS_UNAVAILABLE"
       | "PREMIUM_REQUIRED",
@@ -121,113 +146,144 @@ export async function handleAiChatRequest(
   request: Request,
   userId: string,
 ): Promise<Response> {
+  const metrics = new RequestMetrics(
+    request.headers.get("x-request-id"),
+    dependencies.now,
+    dependencies.recordMetric,
+  );
+  let action = request.method === "OPTIONS" ? "options" : "unknown";
+  const finish = (response: Response) => metrics.finish(response, action);
+
   if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return finish(new Response("ok", { headers: corsHeaders }));
   }
   if (request.method !== "POST") {
-    return jsonResponse({ error: "AI_CHAT_INVALID_REQUEST" }, 405);
+    return finish(jsonResponse({ error: "AI_CHAT_INVALID_REQUEST" }, 405));
   }
 
   try {
     const body = await readJsonBody(request);
     const parsed = parseAiChatRequest(body);
+    action = parsed.action;
     const gateway = dependencies.gateway;
 
     switch (parsed.action) {
       case "send_message": {
-        await requirePremium(gateway, userId);
         const id = parsed.conversationId ?? crypto.randomUUID();
-        const existing = await gateway.findCommittedExchange(
-          userId,
-          id,
-          parsed.requestId,
+        const preparation = await metrics.measure("prepare", () =>
+          gateway.prepareSendRequest(
+            userId,
+            id,
+            parsed.requestId,
+            parsed.conversationId === null,
+            12,
+          ),
         );
 
-        if (existing !== null) {
-          const remaining = await loadRemainingQuota(gateway, userId);
-          return exchangeResponse(existing, remaining, true);
+        if (preparation.status === "premium_required") {
+          return finish(jsonResponse({ error: "PREMIUM_REQUIRED" }, 403));
+        }
+        if (preparation.status === "quota_reached") {
+          return finish(
+            jsonResponse(
+              {
+                error: "AI_CHAT_DAILY_LIMIT_REACHED",
+                remaining: 0,
+              },
+              429,
+            ),
+          );
+        }
+        if (preparation.status === "conversation_not_found") {
+          throw new AiChatGatewayError("AI_CHAT_CONVERSATION_NOT_FOUND", 404);
+        }
+        if (preparation.status === "committed") {
+          return finish(
+            exchangeResponse(preparation.exchange, preparation.remaining, true),
+          );
         }
 
-        const limit = await gateway.getDailyMessageLimit(userId);
-        const successful = await gateway.getSuccessfulMessagesToday(userId);
-        if (successful >= limit) {
-          return jsonResponse({
-            error: "AI_CHAT_DAILY_LIMIT_REACHED",
-            remaining: 0,
-          }, 429);
-        }
-
-        const history = await gateway.loadRecentMessages(userId, id, 12);
         let deepSeekResult: DeepSeekCallResult;
         try {
-          deepSeekResult = await gateway.callDeepSeek(
-            buildDeepSeekMessages(history, parsed.content),
+          deepSeekResult = await metrics.measure("deepseek", () =>
+            gateway.callDeepSeek(
+              buildDeepSeekMessages(preparation.history, parsed.content),
+            ),
           );
-        } catch {
-          throw new AiChatGatewayError(
-            "AI_CHAT_PROVIDER_UNAVAILABLE",
-            503,
+        } catch (error) {
+          console.error(
+            "[ai-chat] DeepSeek provider call failed:",
+            error instanceof Error ? error.message : String(error),
           );
+          throw new AiChatGatewayError("AI_CHAT_PROVIDER_UNAVAILABLE", 503);
         }
 
+        metrics.recordUsage(deepSeekResult);
         const modelResult = parseDeepSeekChatResult(deepSeekResult.content);
-        const exchange = await gateway.commitExchange({
-          userId,
-          conversationId: id,
-          requestId: parsed.requestId,
-          userContent: parsed.content,
-          assistantContent: modelResult.answer,
-          actionKey: modelResult.action?.key ?? null,
-          actionPayload: modelResult.action?.payload ?? null,
-          model: deepSeekResult.model,
-          inputTokens: deepSeekResult.inputTokens,
-          outputTokens: deepSeekResult.outputTokens,
-          estimatedCost: deepSeekResult.estimatedCost,
-        });
+        const committed = await metrics.measure("commit", () =>
+          gateway.commitExchange({
+            userId,
+            conversationId: id,
+            requestId: parsed.requestId,
+            userContent: parsed.content,
+            assistantContent: modelResult.answer,
+            actionKey: modelResult.action?.key ?? null,
+            actionPayload: modelResult.action?.payload ?? null,
+            model: deepSeekResult.model,
+            inputTokens: deepSeekResult.inputTokens,
+            outputTokens: deepSeekResult.outputTokens,
+            estimatedCost: deepSeekResult.estimatedCost,
+          }),
+        );
 
-        return exchangeResponse(
-          exchange,
-          Math.max(limit - successful - 1, 0),
-          false,
+        return finish(
+          exchangeResponse(committed.exchange, committed.remaining, false),
         );
       }
       case "list_conversations": {
-        const page = await gateway.listConversations(
-          userId,
-          parsed.cursor,
-          parsed.limit,
+        const page = await metrics.measure("database", () =>
+          gateway.listConversations(userId, parsed.cursor, parsed.limit),
         );
-        return jsonResponse({
-          items: page.items.map(serializeConversation),
-          next_cursor: page.nextCursor,
-        });
+        return finish(
+          jsonResponse({
+            items: page.items.map(serializeConversation),
+            next_cursor: page.nextCursor,
+          }),
+        );
       }
       case "list_messages": {
-        const page = await gateway.listMessages(
-          userId,
-          parsed.conversationId,
-          parsed.cursor,
-          parsed.limit,
+        const page = await metrics.measure("database", () =>
+          gateway.listMessages(
+            userId,
+            parsed.conversationId,
+            parsed.cursor,
+            parsed.limit,
+          ),
         );
-        return jsonResponse({
-          items: page.items.map(serializeMessage),
-          next_cursor: page.nextCursor,
-        });
+        return finish(
+          jsonResponse({
+            items: page.items.map(serializeMessage),
+            next_cursor: page.nextCursor,
+          }),
+        );
       }
       case "delete_conversation":
-        await gateway.deleteConversation(userId, parsed.conversationId);
-        return jsonResponse({ deleted: true });
+        await metrics.measure("database", () =>
+          gateway.deleteConversation(userId, parsed.conversationId),
+        );
+        return finish(jsonResponse({ deleted: true }));
       case "tts": {
-        await requirePremium(gateway, userId);
+        await metrics.measure("premium", () => requirePremium(gateway, userId));
         try {
-          const result = await gateway.synthesizeSpeech(
-            parsed.text,
-            parsed.languageCode,
+          const result = await metrics.measure("vbee", () =>
+            gateway.synthesizeSpeech(parsed.text, parsed.languageCode),
           );
-          return jsonResponse({
-            audio_url: result.audioUrl,
-            request_id: result.requestId,
-          });
+          return finish(
+            jsonResponse({
+              audio_url: result.audioUrl,
+              request_id: result.requestId,
+            }),
+          );
         } catch {
           throw new AiChatGatewayError("AI_CHAT_TTS_UNAVAILABLE", 503);
         }
@@ -235,12 +291,12 @@ export async function handleAiChatRequest(
     }
   } catch (error) {
     if (error instanceof AiChatValidationError) {
-      return jsonResponse({ error: error.code }, 400);
+      return finish(jsonResponse({ error: error.code }, 400));
     }
     if (error instanceof AiChatGatewayError) {
-      return jsonResponse({ error: error.code }, error.statusCode);
+      return finish(jsonResponse({ error: error.code }, error.statusCode));
     }
-    return jsonResponse({ error: "AI_CHAT_PROVIDER_UNAVAILABLE" }, 500);
+    return finish(jsonResponse({ error: "AI_CHAT_PROVIDER_UNAVAILABLE" }, 500));
   }
 }
 
@@ -248,20 +304,9 @@ async function requirePremium(
   gateway: AiChatGateway,
   userId: string,
 ): Promise<void> {
-  if (!await gateway.hasActivePremium(userId)) {
+  if (!(await gateway.hasActivePremium(userId))) {
     throw new AiChatGatewayError("PREMIUM_REQUIRED", 403);
   }
-}
-
-async function loadRemainingQuota(
-  gateway: AiChatGateway,
-  userId: string,
-): Promise<number> {
-  const [limit, successful] = await Promise.all([
-    gateway.getDailyMessageLimit(userId),
-    gateway.getSuccessfulMessagesToday(userId),
-  ]);
-  return Math.max(limit - successful, 0);
 }
 
 async function readJsonBody(
@@ -333,4 +378,76 @@ function jsonResponse(
       "content-type": "application/json; charset=utf-8",
     },
   });
+}
+
+class RequestMetrics {
+  readonly correlationId: string;
+  private readonly startedAt: number;
+  private readonly stagesMs: Record<string, number> = {};
+  private readonly now: () => number;
+  private model: string | undefined;
+  private inputTokens: number | undefined;
+  private outputTokens: number | undefined;
+
+  constructor(
+    requestedCorrelationId: string | null,
+    now: (() => number) | undefined,
+    private readonly recordMetric:
+      | ((metric: AiChatRequestMetric) => void)
+      | undefined,
+  ) {
+    this.now = now ?? (() => performance.now());
+    this.startedAt = this.now();
+    const requested = requestedCorrelationId?.trim() ?? "";
+    this.correlationId =
+      requested && requested.length <= 100 ? requested : crypto.randomUUID();
+  }
+
+  async measure<T>(stage: string, operation: () => Promise<T>): Promise<T> {
+    const startedAt = this.now();
+    try {
+      return await operation();
+    } finally {
+      this.stagesMs[stage] = Math.max(
+        (this.stagesMs[stage] ?? 0) + this.now() - startedAt,
+        0,
+      );
+    }
+  }
+
+  recordUsage(result: DeepSeekCallResult): void {
+    this.model = result.model;
+    this.inputTokens = result.inputTokens;
+    this.outputTokens = result.outputTokens;
+  }
+
+  finish(response: Response, action: string): Response {
+    const totalMs = Math.max(this.now() - this.startedAt, 0);
+    const headers = new Headers(response.headers);
+    headers.set("x-request-id", this.correlationId);
+    headers.set(
+      "server-timing",
+      [
+        ...Object.entries(this.stagesMs).map(
+          ([stage, duration]) => `${stage};dur=${duration.toFixed(1)}`,
+        ),
+        `total;dur=${totalMs.toFixed(1)}`,
+      ].join(", "),
+    );
+    this.recordMetric?.({
+      action,
+      correlationId: this.correlationId,
+      status: response.status,
+      totalMs,
+      stagesMs: { ...this.stagesMs },
+      model: this.model,
+      inputTokens: this.inputTokens,
+      outputTokens: this.outputTokens,
+    });
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  }
 }

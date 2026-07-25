@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hellovietnam/features/forum/data/forum_page_cursor.dart';
 import 'package:hellovietnam/features/forum/data/forum_repository.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/forum/domain/forum_models.dart';
@@ -23,15 +24,16 @@ void main() {
   });
 
   test('loadMoreForYou appends the next cursor page', () async {
+    final ForumPageCursor cursor = _cursor('post-1');
     final _FakeForumRepository repository = _FakeForumRepository(
-      seededPages: <String?, ForumRepositorySnapshot>{
+      seededPages: <ForumPageCursor?, ForumRepositorySnapshot>{
         null: _snapshot(
           posts: <ForumPost>[_post('post-1', authorId: 'user-2')],
           forYouFeedIds: const <String>['post-1'],
-          nextForYouCursor: 'cursor-1',
+          nextForYouCursor: cursor,
           hasMoreForYou: true,
         ),
-        'cursor-1': _snapshot(
+        cursor: _snapshot(
           posts: <ForumPost>[_post('post-2', authorId: 'user-3')],
           forYouFeedIds: const <String>['post-2'],
           nextForYouCursor: null,
@@ -48,13 +50,13 @@ void main() {
       'post-1',
       'post-2',
     ]);
-    expect(repository.requestedForYouCursors, <String?>[null, 'cursor-1']);
+    expect(repository.requestedForYouCursors, <ForumPageCursor?>[null, cursor]);
     await repository.dispose();
   });
 
   test('toggleLike persists without reloading the feed snapshot', () async {
     final _FakeForumRepository repository = _FakeForumRepository(
-      seededPages: <String?, ForumRepositorySnapshot>{
+      seededPages: <ForumPageCursor?, ForumRepositorySnapshot>{
         null: _snapshot(
           posts: <ForumPost>[_post('post-1', authorId: 'user-2')],
           forYouFeedIds: const <String>['post-1'],
@@ -76,7 +78,7 @@ void main() {
 
   test('updatePost updates an owned post without reloading the feed', () async {
     final _FakeForumRepository repository = _FakeForumRepository(
-      seededPages: <String?, ForumRepositorySnapshot>{
+      seededPages: <ForumPageCursor?, ForumRepositorySnapshot>{
         null: _snapshot(
           posts: <ForumPost>[_post('post-1', authorId: 'user-1')],
           forYouFeedIds: const <String>['post-1'],
@@ -102,7 +104,7 @@ void main() {
 
   test('updatePost rejects posts owned by another user', () async {
     final _FakeForumRepository repository = _FakeForumRepository(
-      seededPages: <String?, ForumRepositorySnapshot>{
+      seededPages: <ForumPageCursor?, ForumRepositorySnapshot>{
         null: _snapshot(
           posts: <ForumPost>[_post('post-1', authorId: 'user-2')],
           forYouFeedIds: const <String>['post-1'],
@@ -127,7 +129,7 @@ void main() {
 
   test('deletePost removes an owned post from every local view', () async {
     final _FakeForumRepository repository = _FakeForumRepository(
-      seededPages: <String?, ForumRepositorySnapshot>{
+      seededPages: <ForumPageCursor?, ForumRepositorySnapshot>{
         null: _snapshot(
           posts: <ForumPost>[
             _post('post-1', authorId: 'user-1', isBookmarked: true),
@@ -149,33 +151,91 @@ void main() {
     expect(store.savedPosts, isEmpty);
     await repository.dispose();
   });
+
+  test('comments load lazily and append the next unique page', () async {
+    final ForumPageCursor cursor = _cursor('comment-1');
+    final _FakeForumRepository repository = _FakeForumRepository(
+      seededPages: <ForumPageCursor?, ForumRepositorySnapshot>{
+        null: _snapshot(
+          posts: <ForumPost>[_post('post-1', authorId: 'user-2')],
+          forYouFeedIds: const <String>['post-1'],
+        ),
+      },
+      seededCommentPages: <String, ForumCommentsPage>{
+        'post-1:first': ForumCommentsPage(
+          comments: <ForumComment>[_comment('comment-1')],
+          nextCursor: cursor,
+          hasMore: true,
+        ),
+        'post-1:comment-1': ForumCommentsPage(
+          comments: <ForumComment>[
+            _comment('comment-1'),
+            _comment('comment-2'),
+          ],
+          nextCursor: null,
+          hasMore: false,
+        ),
+      },
+    );
+    final ForumStore store = ForumStore.test(repository: repository);
+
+    await store.ensureLoaded();
+    await store.ensureCommentsLoaded('post-1');
+
+    expect(store.hasLoadedComments('post-1'), isTrue);
+    expect(store.hasMoreComments('post-1'), isTrue);
+    expect(
+      store.commentsForPost('post-1').map((ForumComment item) => item.id),
+      <String>['comment-1'],
+    );
+
+    await store.loadMoreComments('post-1');
+
+    expect(
+      store.commentsForPost('post-1').map((ForumComment item) => item.id),
+      <String>['comment-1', 'comment-2'],
+    );
+    expect(store.hasMoreComments('post-1'), isFalse);
+    expect(repository.requestedCommentCursors, <ForumPageCursor?>[
+      null,
+      cursor,
+    ]);
+    await repository.dispose();
+  });
 }
 
 class _FakeForumRepository extends ForumRepository {
-  _FakeForumRepository({Map<String?, ForumRepositorySnapshot>? seededPages})
-    : super(client: SupabaseClient('https://example.supabase.co', 'anon-key')) {
-    pagesByCursor = <String?, ForumRepositorySnapshot>{
+  _FakeForumRepository({
+    Map<ForumPageCursor?, ForumRepositorySnapshot>? seededPages,
+    Map<String, ForumCommentsPage>? seededCommentPages,
+  }) : super(
+         client: SupabaseClient('https://example.supabase.co', 'anon-key'),
+       ) {
+    pagesByCursor = <ForumPageCursor?, ForumRepositorySnapshot>{
       null: _snapshot(),
       ...?seededPages,
     };
+    commentPagesByKey = <String, ForumCommentsPage>{...?seededCommentPages};
   }
 
   final StreamController<AuthState> _authStateController =
       StreamController<AuthState>.broadcast();
-  late final Map<String?, ForumRepositorySnapshot> pagesByCursor;
+  late final Map<ForumPageCursor?, ForumRepositorySnapshot> pagesByCursor;
+  late final Map<String, ForumCommentsPage> commentPagesByKey;
   int loadSnapshotCalls = 0;
   int setPostLikedCalls = 0;
   int updatePostCalls = 0;
   int deletePostCalls = 0;
-  final List<String?> requestedForYouCursors = <String?>[];
+  final List<ForumPageCursor?> requestedForYouCursors = <ForumPageCursor?>[];
+  final List<ForumPageCursor?> requestedCommentCursors = <ForumPageCursor?>[];
 
   @override
   Stream<AuthState> get authStateChanges => _authStateController.stream;
 
   @override
   Future<ForumRepositorySnapshot> loadSnapshot({
-    String? beforeForYouCursor,
-    String? beforeFollowingCursor,
+    ForumPageCursor? beforeForYouCursor,
+    ForumPageCursor? beforeFollowingCursor,
     int limit = 20,
     bool loadForYouPage = true,
     bool loadFollowingPage = true,
@@ -184,6 +244,22 @@ class _FakeForumRepository extends ForumRepository {
     loadSnapshotCalls += 1;
     requestedForYouCursors.add(beforeForYouCursor);
     return pagesByCursor[beforeForYouCursor] ?? _snapshot();
+  }
+
+  @override
+  Future<ForumCommentsPage> loadCommentsPage({
+    required String postId,
+    ForumPageCursor? beforeCursor,
+    int limit = 20,
+  }) async {
+    requestedCommentCursors.add(beforeCursor);
+    final String key = '$postId:${beforeCursor?.id ?? 'first'}';
+    return commentPagesByKey[key] ??
+        const ForumCommentsPage(
+          comments: <ForumComment>[],
+          nextCursor: null,
+          hasMore: false,
+        );
   }
 
   @override
@@ -217,8 +293,8 @@ ForumRepositorySnapshot _snapshot({
   List<ForumPost> posts = const <ForumPost>[],
   List<String> forYouFeedIds = const <String>[],
   List<String> followingFeedIds = const <String>[],
-  String? nextForYouCursor,
-  String? nextFollowingCursor,
+  ForumPageCursor? nextForYouCursor,
+  ForumPageCursor? nextFollowingCursor,
   bool hasMoreForYou = false,
   bool hasMoreFollowing = false,
 }) {
@@ -242,6 +318,20 @@ ForumRepositorySnapshot _snapshot({
     nextFollowingCursor: nextFollowingCursor,
     hasMoreForYou: hasMoreForYou,
     hasMoreFollowing: hasMoreFollowing,
+  );
+}
+
+ForumPageCursor _cursor(String id) {
+  return ForumPageCursor(createdAt: DateTime.utc(2026, 7, 25), id: id);
+}
+
+ForumComment _comment(String id) {
+  return ForumComment(
+    id: id,
+    author: _profile('user-2', isCurrentUser: false).author,
+    content: 'Comment $id',
+    timeAgo: 'now',
+    likes: 0,
   );
 }
 

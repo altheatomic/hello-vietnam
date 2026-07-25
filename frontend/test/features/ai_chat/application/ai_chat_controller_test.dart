@@ -27,8 +27,9 @@ void main() {
     });
 
     test('blank messages do not call the repository', () async {
-      await controller.send('   ');
+      final bool sent = await controller.send('   ');
 
+      expect(sent, isFalse);
       expect(repository.sendCalls, isEmpty);
       expect(controller.state.messages, isEmpty);
     });
@@ -38,7 +39,7 @@ void main() {
       () async {
         repository.sendCompleter = Completer<AiChatSendResult>();
 
-        final Future<void> pendingSend = controller.send('Plan a Hue trip');
+        final Future<bool> pendingSend = controller.send('Plan a Hue trip');
 
         expect(controller.state.messages, hasLength(1));
         expect(controller.state.messages.single.content, 'Plan a Hue trip');
@@ -46,7 +47,7 @@ void main() {
         expect(controller.state.isSending, isTrue);
 
         repository.sendCompleter!.completeError(Exception('offline'));
-        await pendingSend;
+        expect(await pendingSend, isFalse);
         expect(controller.state.failedRequestIds, contains('request-1'));
 
         repository.sendCompleter = Completer<AiChatSendResult>();
@@ -68,9 +69,9 @@ void main() {
 
     test('failed send marks only its optimistic message', () async {
       repository.sendCompleter = Completer<AiChatSendResult>();
-      final Future<void> pendingSend = controller.send('Hello');
+      final Future<bool> pendingSend = controller.send('Hello');
       repository.sendCompleter!.completeError(Exception('failed'));
-      await pendingSend;
+      expect(await pendingSend, isFalse);
 
       expect(controller.state.messages, hasLength(1));
       expect(
@@ -81,7 +82,7 @@ void main() {
 
     test('keeps a completed exchange in question then answer order', () async {
       repository.sendCompleter = Completer<AiChatSendResult>();
-      final Future<void> pendingSend = controller.send('Hello');
+      final Future<bool> pendingSend = controller.send('Hello');
       final DateTime createdAt = DateTime.utc(2026, 7, 25, 10);
       repository.sendCompleter!.complete(
         AiChatSendResult(
@@ -108,7 +109,7 @@ void main() {
           idempotent: false,
         ),
       );
-      await pendingSend;
+      expect(await pendingSend, isTrue);
 
       expect(controller.state.messages.map((message) => message.id), <String>[
         'user-message',
