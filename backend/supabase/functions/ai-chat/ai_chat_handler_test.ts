@@ -4,7 +4,10 @@ import {
   type AiChatConversationRecord,
   type AiChatGateway,
   type AiChatMessageRecord,
+  type AiChatPreparation,
+  type AiChatRequestMetric,
   type CommitExchangeInput,
+  type CommitExchangeResult,
   type CommittedExchange,
   type ConversationPage,
   type DeepSeekCallResult,
@@ -20,10 +23,11 @@ const createdAt = "2026-07-25T01:00:00.000Z";
 
 class FakeGateway implements AiChatGateway {
   premium = true;
-  dailyLimit = 100;
-  successfulToday = 0;
-  committed: CommittedExchange | null = null;
-  recentMessages: ChatHistoryMessage[] = [];
+  preparation: AiChatPreparation = {
+    status: "ready",
+    history: [],
+  };
+  commitRemaining = 99;
   deepSeekResult: DeepSeekCallResult = {
     content: JSON.stringify({
       answer: "Here is a plan.",
@@ -45,10 +49,12 @@ class FakeGateway implements AiChatGateway {
   premiumChecks = 0;
   deepSeekCalls = 0;
   deepSeekMessages: DeepSeekMessage[] | null = null;
-  findArgs: {
+  prepareArgs: {
     userId: string;
     conversationId: string;
     requestId: string;
+    allowNewConversation: boolean;
+    historyLimit: number;
   } | null = null;
   committedInput: CommitExchangeInput | null = null;
   listConversationsArgs: {
@@ -70,33 +76,21 @@ class FakeGateway implements AiChatGateway {
     return Promise.resolve(this.premium);
   }
 
-  getDailyMessageLimit(_userId: string): Promise<number> {
-    return Promise.resolve(this.dailyLimit);
-  }
-
-  getSuccessfulMessagesToday(_userId: string): Promise<number> {
-    return Promise.resolve(this.successfulToday);
-  }
-
-  findCommittedExchange(
+  prepareSendRequest(
     authenticatedUserId: string,
     id: string,
     idempotencyKey: string,
-  ): Promise<CommittedExchange | null> {
-    this.findArgs = {
+    allowNewConversation: boolean,
+    historyLimit: number,
+  ): Promise<AiChatPreparation> {
+    this.prepareArgs = {
       userId: authenticatedUserId,
       conversationId: id,
       requestId: idempotencyKey,
+      allowNewConversation,
+      historyLimit,
     };
-    return Promise.resolve(this.committed);
-  }
-
-  loadRecentMessages(
-    _userId: string,
-    _conversationId: string,
-    limit: number,
-  ): Promise<ChatHistoryMessage[]> {
-    return Promise.resolve(this.recentMessages.slice(-limit));
+    return Promise.resolve(this.preparation);
   }
 
   callDeepSeek(messages: DeepSeekMessage[]): Promise<DeepSeekCallResult> {
@@ -105,9 +99,12 @@ class FakeGateway implements AiChatGateway {
     return Promise.resolve(this.deepSeekResult);
   }
 
-  commitExchange(input: CommitExchangeInput): Promise<CommittedExchange> {
+  commitExchange(input: CommitExchangeInput): Promise<CommitExchangeResult> {
     this.committedInput = input;
-    return Promise.resolve(exchangeFromInput(input));
+    return Promise.resolve({
+      exchange: exchangeFromInput(input),
+      remaining: this.commitRemaining,
+    });
   }
 
   listConversations(
@@ -163,7 +160,7 @@ class FakeGateway implements AiChatGateway {
 
 Deno.test("non-Premium users cannot send messages", async () => {
   const gateway = new FakeGateway();
-  gateway.premium = false;
+  gateway.preparation = { status: "premium_required" };
 
   const response = await handleAiChatRequest(
     { gateway },
@@ -227,7 +224,7 @@ Deno.test("expired Premium users can still list and delete history", async () =>
 
 Deno.test("daily quota rejects the 101st successful message", async () => {
   const gateway = new FakeGateway();
-  gateway.successfulToday = 100;
+  gateway.preparation = { status: "quota_reached" };
 
   const response = await handleAiChatRequest(
     { gateway },
@@ -245,7 +242,7 @@ Deno.test("daily quota rejects the 101st successful message", async () => {
 
 Deno.test("the 100th message succeeds and reports zero remaining", async () => {
   const gateway = new FakeGateway();
-  gateway.successfulToday = 99;
+  gateway.commitRemaining = 0;
 
   const response = await handleAiChatRequest(
     { gateway },
@@ -265,7 +262,11 @@ Deno.test("the 100th message succeeds and reports zero remaining", async () => {
 
 Deno.test("an idempotent retry returns the committed exchange", async () => {
   const gateway = new FakeGateway();
-  gateway.committed = existingExchange();
+  gateway.preparation = {
+    status: "committed",
+    exchange: existingExchange(),
+    remaining: 99,
+  };
 
   const response = await handleAiChatRequest(
     { gateway },
@@ -283,16 +284,66 @@ Deno.test("an idempotent retry returns the committed exchange", async () => {
 
 Deno.test("send forwards only twelve history messages plus new input", async () => {
   const gateway = new FakeGateway();
-  gateway.recentMessages = Array.from({ length: 14 }, (_, index) => ({
-    role: index % 2 === 0 ? "user" as const : "assistant" as const,
-    content: `message-${index}`,
-  }));
+  gateway.preparation = {
+    status: "ready",
+    history: Array.from({ length: 12 }, (_, index) => ({
+      role: index % 2 === 0 ? "user" as const : "assistant" as const,
+      content: `message-${index + 2}`,
+    })),
+  };
 
   await handleAiChatRequest({ gateway }, sendRequest(), userId);
 
   assertEquals(gateway.deepSeekMessages?.length, 14);
   assertEquals(gateway.deepSeekMessages?.[1].content, "message-2");
   assertEquals(gateway.deepSeekMessages?.at(-1)?.content, "Plan Hue");
+});
+
+Deno.test("send preparation receives ownership and history context once", async () => {
+  const gateway = new FakeGateway();
+
+  await handleAiChatRequest({ gateway }, sendRequest(), userId);
+
+  assertEquals(gateway.prepareArgs, {
+    userId,
+    conversationId,
+    requestId,
+    allowNewConversation: false,
+    historyLimit: 12,
+  });
+});
+
+Deno.test("responses expose correlation and server timing without message content", async () => {
+  const gateway = new FakeGateway();
+  const metrics: AiChatRequestMetric[] = [];
+  let now = 0;
+  const request = sendRequest({
+    "x-request-id": "client-correlation-id",
+  });
+
+  const response = await handleAiChatRequest(
+    {
+      gateway,
+      now: () => {
+        now += 5;
+        return now;
+      },
+      recordMetric: (metric) => metrics.push(metric),
+    },
+    request,
+    userId,
+  );
+
+  assertEquals(response.headers.get("x-request-id"), "client-correlation-id");
+  assertEquals(
+    response.headers.get("server-timing")?.includes("deepseek"),
+    true,
+  );
+  assertEquals(metrics.length, 1);
+  assertEquals(metrics[0].model, "deepseek-chat");
+  assertEquals(metrics[0].inputTokens, 20);
+  assertEquals(metrics[0].outputTokens, 30);
+  assertEquals(JSON.stringify(metrics).includes("Plan Hue"), false);
 });
 
 Deno.test("malformed model actions are absent from committed response", async () => {
@@ -390,21 +441,27 @@ Deno.test("OPTIONS returns the shared CORS response", async () => {
   assertEquals(response.headers.get("Access-Control-Allow-Origin"), "*");
 });
 
-function post(body: Record<string, unknown>): Request {
+function post(
+  body: Record<string, unknown>,
+  extraHeaders: Record<string, string> = {},
+): Request {
   return new Request("https://example.test/ai-chat", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...extraHeaders,
+    },
     body: JSON.stringify(body),
   });
 }
 
-function sendRequest(): Request {
+function sendRequest(headers: Record<string, string> = {}): Request {
   return post({
     action: "send_message",
     conversation_id: conversationId,
     request_id: requestId,
     content: "Plan Hue",
-  });
+  }, headers);
 }
 
 function existingExchange(): CommittedExchange {

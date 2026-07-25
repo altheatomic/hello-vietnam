@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/router.dart';
 import '../../../../core/language/app_language.dart';
 import '../../../profile/data/subscription_repository.dart';
 import '../../data/ai_chat_launcher_position_store.dart';
+import '../../data/ai_chat_premium_access_cache.dart';
 
 typedef AiChatLauncherPremiumLoader = Future<bool> Function();
 
@@ -65,7 +67,13 @@ class _AiChatHomeLauncherState extends State<AiChatHomeLauncher> {
   }
 
   Future<bool> _loadPremiumStatus() async {
-    return await SubscriptionRepository().loadCurrentSubscription() != null;
+    final String? userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return false;
+    return AiChatPremiumAccessCache.shared.load(
+      userId: userId,
+      loader: () async =>
+          await SubscriptionRepository().loadCurrentSubscription() != null,
+    );
   }
 
   void _handleTap() {

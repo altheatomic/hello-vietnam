@@ -10,7 +10,7 @@ class AiChatComposer extends StatefulWidget {
   });
 
   final bool isSending;
-  final Future<void> Function(String content) onSend;
+  final Future<bool> Function(String content) onSend;
 
   @override
   State<AiChatComposer> createState() => _AiChatComposerState();
@@ -38,9 +38,9 @@ class _AiChatComposerState extends State<AiChatComposer> {
     final String content = _controller.text.trim();
     if (content.isEmpty || widget.isSending) return;
     FocusScope.of(context).unfocus();
-    await widget.onSend(content);
+    final bool sent = await widget.onSend(content);
     if (!mounted) return;
-    _controller.clear();
+    if (sent) _controller.clear();
   }
 
   @override

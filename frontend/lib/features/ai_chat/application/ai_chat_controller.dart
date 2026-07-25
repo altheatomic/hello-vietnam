@@ -183,9 +183,9 @@ class AiChatController extends ChangeNotifier {
     }
   }
 
-  Future<void> send(String content) async {
+  Future<bool> send(String content) async {
     final String normalized = content.trim();
-    if (normalized.isEmpty || _state.isSending) return;
+    if (normalized.isEmpty || _state.isSending) return false;
     final String requestId = _requestIdFactory();
     _activeSendRequestId = requestId;
     _failedDraft = _FailedDraft(content: normalized, requestId: requestId);
@@ -205,7 +205,7 @@ class AiChatController extends ChangeNotifier {
         errorMessage: null,
       ),
     );
-    await _sendDraft(_failedDraft!);
+    return _sendDraft(_failedDraft!);
   }
 
   Future<void> retryLastSend() async {
@@ -221,7 +221,7 @@ class AiChatController extends ChangeNotifier {
     await _sendDraft(draft);
   }
 
-  Future<void> _sendDraft(_FailedDraft draft) async {
+  Future<bool> _sendDraft(_FailedDraft draft) async {
     _setState(_state.copyWith(isSending: true));
     try {
       final AiChatSendResult result = await _repository.sendMessage(
@@ -229,7 +229,7 @@ class AiChatController extends ChangeNotifier {
         requestId: draft.requestId,
         content: draft.content,
       );
-      if (_activeSendRequestId != draft.requestId) return;
+      if (_activeSendRequestId != draft.requestId) return false;
       final List<AiChatMessage> retained = _state.messages
           .where(
             (AiChatMessage message) =>
@@ -249,8 +249,9 @@ class AiChatController extends ChangeNotifier {
           errorMessage: null,
         ),
       );
+      return true;
     } catch (error) {
-      if (_activeSendRequestId != draft.requestId) return;
+      if (_activeSendRequestId != draft.requestId) return false;
       _activeSendRequestId = null;
       _setState(
         _state.copyWith(
@@ -262,6 +263,7 @@ class AiChatController extends ChangeNotifier {
           errorMessage: error.toString(),
         ),
       );
+      return false;
     }
   }
 

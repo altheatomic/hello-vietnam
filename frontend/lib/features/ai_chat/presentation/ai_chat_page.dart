@@ -2,13 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/router.dart';
 import '../../../core/language/app_language.dart';
 import '../../profile/data/subscription_repository.dart';
 import '../application/ai_chat_action_catalog.dart';
 import '../application/ai_chat_controller.dart';
+import '../data/ai_chat_premium_access_cache.dart';
 import '../domain/ai_chat_models.dart';
+import 'ai_chat_list_change.dart';
 import 'widgets/ai_chat_bubble.dart';
 import 'widgets/ai_chat_composer.dart';
 
@@ -43,7 +46,7 @@ class _AiChatPageState extends State<AiChatPage> {
 
   bool _checkingPremium = true;
   bool _isPremium = false;
-  int _lastMessageCount = 0;
+  List<String> _lastMessageIds = const <String>[];
 
   @override
   void initState() {
@@ -74,17 +77,54 @@ class _AiChatPageState extends State<AiChatPage> {
   }
 
   Future<bool> _defaultPremiumLoader() async {
-    return (await SubscriptionRepository().loadCurrentSubscription()) != null;
+    final String? userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return false;
+    return AiChatPremiumAccessCache.shared.load(
+      userId: userId,
+      loader: () async =>
+          (await SubscriptionRepository().loadCurrentSubscription()) != null,
+    );
   }
 
   void _handleControllerChanged() {
     if (!mounted) return;
-    setState(() {});
-    final int messageCount = _controller.state.messages.length;
-    if (messageCount > _lastMessageCount) {
-      _lastMessageCount = messageCount;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
-    }
+    final List<String> currentIds = _controller.state.messages
+        .map((AiChatMessage message) => message.id)
+        .toList(growable: false);
+    final AiChatListChange change = detectAiChatListChange(
+      previousIds: _lastMessageIds,
+      currentIds: currentIds,
+    );
+    _lastMessageIds = currentIds;
+    if (change == AiChatListChange.none) return;
+
+    final bool shouldAutoScroll =
+        !_scrollController.hasClients ||
+        shouldAutoScrollAiChatAppend(
+          currentOffset: _scrollController.offset,
+          maxScrollExtent: _scrollController.position.maxScrollExtent,
+        );
+    final double oldMaxExtent = _scrollController.hasClients
+        ? _scrollController.position.maxScrollExtent
+        : 0;
+    final double oldOffset = _scrollController.hasClients
+        ? _scrollController.offset
+        : 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      if (change == AiChatListChange.prepended) {
+        final double extentDelta =
+            _scrollController.position.maxScrollExtent - oldMaxExtent;
+        _scrollController.jumpTo(
+          (oldOffset + extentDelta).clamp(
+            0,
+            _scrollController.position.maxScrollExtent,
+          ),
+        );
+      } else if (shouldAutoScroll) {
+        _scrollToLatest();
+      }
+    });
   }
 
   void _handleScroll() {
@@ -153,7 +193,6 @@ class _AiChatPageState extends State<AiChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final AiChatState state = _controller.state;
     final bool hasExistingConversation =
         widget.conversationId?.trim().isNotEmpty == true;
 
@@ -173,17 +212,24 @@ class _AiChatPageState extends State<AiChatPage> {
           ? const Center(child: CircularProgressIndicator())
           : !_isPremium && !hasExistingConversation
           ? _PremiumGate(onUpgrade: _openUpgrade)
-          : Column(
-              children: <Widget>[
-                if (!_isPremium) _ExpiredPremiumNotice(onUpgrade: _openUpgrade),
-                Expanded(child: _buildMessages(state)),
-                if (_isPremium)
-                  AiChatComposer(
-                    key: const Key('ai-chat-composer'),
-                    isSending: state.isSending,
-                    onSend: _controller.send,
-                  ),
-              ],
+          : ListenableBuilder(
+              listenable: _controller,
+              builder: (BuildContext context, Widget? child) {
+                final AiChatState currentState = _controller.state;
+                return Column(
+                  children: <Widget>[
+                    if (!_isPremium)
+                      _ExpiredPremiumNotice(onUpgrade: _openUpgrade),
+                    Expanded(child: _buildMessages(currentState)),
+                    if (_isPremium)
+                      AiChatComposer(
+                        key: const Key('ai-chat-composer'),
+                        isSending: currentState.isSending,
+                        onSend: _controller.send,
+                      ),
+                  ],
+                );
+              },
             ),
     );
   }

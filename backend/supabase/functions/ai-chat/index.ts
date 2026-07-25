@@ -14,19 +14,20 @@ import {
   type AiChatGateway,
   AiChatGatewayError,
   type AiChatMessageRecord,
+  type AiChatPreparation,
   type CommitExchangeInput,
-  type CommittedExchange,
+  type CommitExchangeResult,
   type ConversationPage,
   type DeepSeekCallResult,
   handleAiChatRequest,
   type MessagePage,
 } from "./ai_chat_handler.ts";
 import {
-  type ChatHistoryMessage,
   decodeCursor,
   type DeepSeekMessage,
   encodeCursor,
 } from "./ai_chat_domain.ts";
+import { resolveDeepSeekChatModel } from "./ai_chat_config.ts";
 
 type JsonObject = Record<string, unknown>;
 
@@ -39,7 +40,9 @@ const DEEPSEEK_API_KEY = requiredEnvironment("DEEPSEEK_API_KEY");
 const DEEPSEEK_BASE_URL = (
   Deno.env.get("DEEPSEEK_BASE_URL") ?? "https://api.deepseek.com"
 ).replace(/\/+$/u, "");
-const DEEPSEEK_MODEL = Deno.env.get("DEEPSEEK_CHAT_MODEL") ?? "deepseek-chat";
+const DEEPSEEK_MODEL = resolveDeepSeekChatModel(
+  Deno.env.get("DEEPSEEK_CHAT_MODEL"),
+);
 
 class SupabaseAiChatGateway implements AiChatGateway {
   constructor(private readonly client: SupabaseClient) {}
@@ -57,80 +60,50 @@ class SupabaseAiChatGateway implements AiChatGateway {
     return data !== null;
   }
 
-  async getDailyMessageLimit(userId: string): Promise<number> {
-    const { data, error } = await this.client
-      .from("ai_user_quota")
-      .select("daily_limit")
-      .eq("id_user", userId)
-      .eq("feature", "ai_chat")
-      .maybeSingle();
-    assertDatabaseSuccess(error);
-    const limit = Number(data?.daily_limit ?? 100);
-    return Number.isInteger(limit) && limit >= 0 ? limit : 100;
-  }
-
-  async getSuccessfulMessagesToday(userId: string): Promise<number> {
-    const now = new Date();
-    const dayStart = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-    )).toISOString();
-    const { count, error } = await this.client
-      .from("ai_usage_log")
-      .select("id", { count: "exact", head: true })
-      .eq("id_user", userId)
-      .eq("provider", "deepseek")
-      .eq("feature", "ai_chat")
-      .eq("status", "success")
-      .gte("created_at", dayStart);
-    assertDatabaseSuccess(error);
-    return count ?? 0;
-  }
-
-  async findCommittedExchange(
+  async prepareSendRequest(
     userId: string,
     conversationId: string,
     requestId: string,
-  ): Promise<CommittedExchange | null> {
-    if (!await this.ownsConversation(userId, conversationId)) return null;
-
-    const { data, error } = await this.client
-      .from("ai_chat_message")
-      .select(
-        "id_message,id_conversation,role,content,action_key,action_payload,request_id,created_at",
-      )
-      .eq("id_conversation", conversationId)
-      .eq("request_id", requestId)
-      .order("created_at")
-      .order("id_message");
+    allowNewConversation: boolean,
+    historyLimit: number,
+  ): Promise<AiChatPreparation> {
+    const { data, error } = await this.client.rpc(
+      "prepare_ai_chat_request",
+      {
+        p_id_user: userId,
+        p_id_conversation: conversationId,
+        p_request_id: requestId,
+        p_allow_new_conversation: allowNewConversation,
+        p_history_limit: historyLimit,
+      },
+    );
     assertDatabaseSuccess(error);
-    if ((data?.length ?? 0) !== 2) return null;
+    const result = requireRecord(data);
+    const status = String(result.status ?? "");
+    if (status === "premium_required") return { status };
+    if (status === "quota_reached") return { status };
+    if (status === "conversation_not_found") return { status };
+    if (status === "committed") {
+      return {
+        status,
+        exchange: mapExchange(result, conversationId),
+        remaining: nonNegativeInteger(result.remaining),
+      };
+    }
+    if (status !== "ready") {
+      throw new Error("Invalid AI chat preparation response");
+    }
+    const history = Array.isArray(result.history) ? result.history : [];
     return {
-      conversationId,
-      messages: data!.map(mapMessage),
+      status,
+      history: history.map((entry) => {
+        const row = requireRecord(entry);
+        return {
+          role: row.role === "assistant" ? "assistant" : "user",
+          content: String(row.content ?? ""),
+        };
+      }),
     };
-  }
-
-  async loadRecentMessages(
-    userId: string,
-    conversationId: string,
-    limit: number,
-  ): Promise<ChatHistoryMessage[]> {
-    if (!await this.ownsConversation(userId, conversationId)) return [];
-
-    const { data, error } = await this.client
-      .from("ai_chat_message")
-      .select("role,content,created_at,id_message")
-      .eq("id_conversation", conversationId)
-      .order("created_at", { ascending: false })
-      .order("id_message", { ascending: false })
-      .limit(limit);
-    assertDatabaseSuccess(error);
-    return ((data ?? []) as JsonObject[]).reverse().map((row) => ({
-      role: row.role === "assistant" ? "assistant" : "user",
-      content: String(row.content ?? ""),
-    }));
   }
 
   async callDeepSeek(
@@ -156,7 +129,16 @@ class SupabaseAiChatGateway implements AiChatGateway {
       });
       const body = await response.json().catch(() => null) as JsonObject | null;
       if (!response.ok) {
-        throw new Error(`DeepSeek request failed (${response.status})`);
+        const providerCode = nestedValue(body, ["error", "code"]);
+        const providerMessage = nestedValue(body, ["error", "message"]);
+        const detail = [providerCode, providerMessage]
+          .filter((value) => typeof value === "string" && value.trim())
+          .join(": ");
+        throw new Error(
+          `DeepSeek request failed (${response.status} ${response.statusText})${
+            detail ? `: ${detail}` : ""
+          }`,
+        );
       }
       const content = nestedValue(body, ["choices", 0, "message", "content"]);
       if (typeof content !== "string" || !content.trim()) {
@@ -186,7 +168,7 @@ class SupabaseAiChatGateway implements AiChatGateway {
 
   async commitExchange(
     input: CommitExchangeInput,
-  ): Promise<CommittedExchange> {
+  ): Promise<CommitExchangeResult> {
     const { data, error } = await this.client.rpc("commit_ai_chat_exchange", {
       p_id_user: input.userId,
       p_id_conversation: input.conversationId,
@@ -200,14 +182,14 @@ class SupabaseAiChatGateway implements AiChatGateway {
       p_output_tokens: input.outputTokens,
       p_estimated_cost: input.estimatedCost,
     });
+    if (databaseErrorMessage(error).includes("AI_CHAT_DAILY_LIMIT_REACHED")) {
+      throw new AiChatGatewayError("AI_CHAT_DAILY_LIMIT_REACHED", 429);
+    }
     assertDatabaseSuccess(error);
     const result = requireRecord(data);
-    const messages = Array.isArray(result.messages) ? result.messages : [];
     return {
-      conversationId: String(
-        result.conversation_id ?? input.conversationId,
-      ),
-      messages: messages.map((message) => mapMessage(requireRecord(message))),
+      exchange: mapExchange(result, input.conversationId),
+      remaining: nonNegativeInteger(result.remaining),
     };
   }
 
@@ -249,37 +231,29 @@ class SupabaseAiChatGateway implements AiChatGateway {
     cursor: string | null,
     limit: number,
   ): Promise<MessagePage> {
-    if (!await this.ownsConversation(userId, conversationId)) {
+    const decoded = cursor === null ? null : decodeCursor(cursor);
+    const { data, error } = await this.client.rpc("list_ai_chat_messages", {
+      p_id_user: userId,
+      p_id_conversation: conversationId,
+      p_before_created_at: decoded?.createdAt ?? null,
+      p_before_id: decoded?.id ?? null,
+      p_limit: limit,
+    });
+    assertDatabaseSuccess(error);
+    const result = requireRecord(data);
+    if (result.status === "conversation_not_found") {
       throw new AiChatGatewayError(
         "AI_CHAT_CONVERSATION_NOT_FOUND",
         404,
       );
     }
-    let query = this.client
-      .from("ai_chat_message")
-      .select(
-        "id_message,id_conversation,role,content,action_key,action_payload,request_id,created_at",
-      )
-      .eq("id_conversation", conversationId)
-      .order("created_at", { ascending: false })
-      .order("id_message", { ascending: false })
-      .limit(limit + 1);
-    if (cursor !== null) {
-      const decoded = decodeCursor(cursor);
-      query = query.or(
-        `created_at.lt.${decoded.createdAt},and(created_at.eq.${decoded.createdAt},id_message.lt.${decoded.id})`,
-      );
-    }
-    const { data, error } = await query;
-    assertDatabaseSuccess(error);
-    const rows = data ?? [];
-    const hasMore = rows.length > limit;
-    const descending = rows.slice(0, limit).map(mapMessage);
-    const last = descending.at(-1);
+    const items = (Array.isArray(result.items) ? result.items : [])
+      .map((message) => mapMessage(requireRecord(message)));
+    const oldest = items[0];
     return {
-      items: descending.reverse(),
-      nextCursor: hasMore && last
-        ? encodeCursor(last.createdAt, last.id)
+      items,
+      nextCursor: result.has_more === true && oldest
+        ? encodeCursor(oldest.createdAt, oldest.id)
         : null,
     };
   }
@@ -309,20 +283,19 @@ class SupabaseAiChatGateway implements AiChatGateway {
       vbeeConfiguration(languageCode),
     );
   }
+}
 
-  private async ownsConversation(
-    userId: string,
-    conversationId: string,
-  ): Promise<boolean> {
-    const { data, error } = await this.client
-      .from("ai_chat_conversation")
-      .select("id_conversation")
-      .eq("id_conversation", conversationId)
-      .eq("id_user", userId)
-      .maybeSingle();
-    assertDatabaseSuccess(error);
-    return data !== null;
-  }
+function mapExchange(
+  row: JsonObject,
+  fallbackConversationId: string,
+): CommitExchangeResult["exchange"] {
+  const messages = Array.isArray(row.messages) ? row.messages : [];
+  return {
+    conversationId: String(
+      row.conversation_id ?? fallbackConversationId,
+    ),
+    messages: messages.map((message) => mapMessage(requireRecord(message))),
+  };
 }
 
 function mapConversation(row: JsonObject): AiChatConversationRecord {
@@ -410,6 +383,11 @@ function numericValue(value: unknown): number {
   return Number.isFinite(parsed) && parsed >= 0 ? Math.trunc(parsed) : 0;
 }
 
+function nonNegativeInteger(value: unknown): number {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.trunc(parsed) : 0;
+}
+
 function nestedValue(
   value: unknown,
   path: Array<string | number>,
@@ -440,6 +418,14 @@ function assertDatabaseSuccess(error: unknown): void {
   if (error !== null && error !== undefined) {
     throw new Error("AI chat database operation failed");
   }
+}
+
+function databaseErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (isRecord(error) && typeof error.message === "string") {
+    return error.message;
+  }
+  return "";
 }
 
 function requiredEnvironment(name: string): string {
@@ -481,7 +467,19 @@ Deno.serve(async (request) => {
       global: { headers: { Authorization: authorization } },
     });
     const userId = await requireAuthenticatedUserId(userClient);
-    return await handleAiChatRequest({ gateway }, request, userId);
+    return await handleAiChatRequest(
+      {
+        gateway,
+        recordMetric: (metric) => {
+          console.log(JSON.stringify({
+            event: "ai_chat_request",
+            ...metric,
+          }));
+        },
+      },
+      request,
+      userId,
+    );
   } catch (error) {
     if (error instanceof AuthorizationError) {
       return jsonResponse({ error: "AUTH_REQUIRED" }, error.statusCode);
