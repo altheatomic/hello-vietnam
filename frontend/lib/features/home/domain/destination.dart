@@ -7,6 +7,10 @@ class Destination {
   final String imagePath;  // asset or network URL
   final bool isFavorite;
 
+  /// Real translated description (e.g. description_en) from the backend,
+  /// when available.
+  final String? description;
+
   const Destination({
     required this.id,
     required this.name,
@@ -14,6 +18,7 @@ class Destination {
     required this.rating,
     required this.imagePath,
     this.isFavorite = false,
+    this.description,
   });
 
   /// Ready for future API integration – plug your JSON shape here.
@@ -25,6 +30,7 @@ class Destination {
       rating: (json['rating'] as num).toDouble(),
       imagePath: json['image_path'] as String,
       isFavorite: json['is_favorite'] as bool? ?? false,
+      description: json['description'] as String?,
     );
   }
 }

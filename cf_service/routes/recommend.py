@@ -12,12 +12,16 @@ router = APIRouter()
 
 @router.get("/api/recommend/provinces")
 async def get_recommended_provinces(
+    # id_user is required because the recommend edge function always sends
+    # it (see backend/supabase/functions/recommend/recommend_handler.ts) —
+    # kept on the route so that call keeps working, even though the
+    # province listing itself no longer computes anything per-user.
     id_user: str,
-    limit: int = 20,
+    limit: int = 100,
     supabase=Depends(get_supabase),
 ):
     from services.recommend_service import recommend_provinces
-    results = recommend_provinces(supabase, id_user, limit=limit)
+    results = recommend_provinces(supabase, limit=limit)
     return {"provinces": results}
 
 

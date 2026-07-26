@@ -79,7 +79,7 @@ class RecommendRepository {
   final SupabaseFunctionClient _functionClient;
 
   Future<List<RecommendDestination>> getPersonalizedProvinces({
-    int limit = 20,
+    int limit = 100,
   }) async {
     final Map<String, dynamic> data = await _invoke(<String, Object?>{
       'action': 'getPersonalizedProvinces',
@@ -123,16 +123,20 @@ class RecommendRepository {
         json['cover_image'] as String? ??
         (gallery.isNotEmpty ? gallery.first : '');
     final int placeCount = (json['place_count'] as num?)?.toInt() ?? 0;
-    final double avgRating =
-        (json['avg_rating'] as num?)?.toDouble() ?? 0;
+    final double avgRating = (json['avg_rating'] as num?)?.toDouble() ?? 0;
 
     return RecommendDestination(
       id: json['id_province'] as String? ?? '',
       name: json['name'] as String? ?? '',
       shortDescription: '$placeCount places · ★ $avgRating',
-      description: '',
+      description: json['description'] as String? ?? '',
       imagePath: imagePath,
+      // Not populated by backend recommend_provinces() response (which no
+      // longer computes ML scores for province listing); defaults to 0.
+      // Retained for compatibility with mock data used elsewhere
+      // (travel_recommendation_service.dart).
       rating: (json['final_score'] as num?)?.toDouble() ?? 0,
+      avgRating: avgRating,
       gallery: gallery,
       bestMonths: const <int>[],
     );

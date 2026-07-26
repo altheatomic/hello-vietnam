@@ -12,7 +12,7 @@ void main() {
     await app_storage.LocalStorage.instance.initialize();
     await Supabase.initialize(
       url: Env.supabaseUrl,
-      anonKey: Env.supabaseAnonKey,
+      publishableKey: Env.supabaseAnonKey,
     );
   });
 

@@ -8,18 +8,28 @@ CityDetailData resolveCityDetail(CityDetailRequest request) {
   final destination =
       _findDestination(request) ?? _buildFallbackDestination(request);
 
+  // Priority: real backend description (request.description) > mock/template
+  // fallback from `destination`, so a province whose description_en hasn't
+  // been translated yet still shows some description instead of nothing.
+  final resolvedDescription = request.description?.trim().isNotEmpty == true
+      ? request.description!.trim()
+      : destination.description;
+
   return CityDetailData(
     detail: ItemDetail(
       id: destination.id,
       name: destination.name,
       category: DetailCategory.culture,
       images: _buildImages(destination, request),
-      rating: request.fallbackRating ?? destination.rating,
+      rating:
+          request.fallbackRating ??
+          destination.avgRating ??
+          destination.rating,
       reviewCount: _reviewCountFor(destination.name),
       ratingLabel: _ratingLabelFor(
-        request.fallbackRating ?? destination.rating,
+        request.fallbackRating ?? destination.avgRating ?? destination.rating,
       ),
-      description: destination.description,
+      description: resolvedDescription,
       whatToExpect: destination.highlights.isNotEmpty
           ? destination.highlights
           : _defaultWhatToExpect(destination.name),

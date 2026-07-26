@@ -67,16 +67,13 @@ class SupabaseAiChatGateway implements AiChatGateway {
     allowNewConversation: boolean,
     historyLimit: number,
   ): Promise<AiChatPreparation> {
-    const { data, error } = await this.client.rpc(
-      "prepare_ai_chat_request",
-      {
-        p_id_user: userId,
-        p_id_conversation: conversationId,
-        p_request_id: requestId,
-        p_allow_new_conversation: allowNewConversation,
-        p_history_limit: historyLimit,
-      },
-    );
+    const { data, error } = await this.client.rpc("prepare_ai_chat_request", {
+      p_id_user: userId,
+      p_id_conversation: conversationId,
+      p_request_id: requestId,
+      p_allow_new_conversation: allowNewConversation,
+      p_history_limit: historyLimit,
+    });
     assertDatabaseSuccess(error);
     const result = requireRecord(data);
     const status = String(result.status ?? "");
@@ -106,9 +103,7 @@ class SupabaseAiChatGateway implements AiChatGateway {
     };
   }
 
-  async callDeepSeek(
-    messages: DeepSeekMessage[],
-  ): Promise<DeepSeekCallResult> {
+  async callDeepSeek(messages: DeepSeekMessage[]): Promise<DeepSeekCallResult> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
     try {
@@ -127,7 +122,9 @@ class SupabaseAiChatGateway implements AiChatGateway {
           messages,
         }),
       });
-      const body = await response.json().catch(() => null) as JsonObject | null;
+      const body = (await response
+        .json()
+        .catch(() => null)) as JsonObject | null;
       if (!response.ok) {
         const providerCode = nestedValue(body, ["error", "code"]);
         const providerMessage = nestedValue(body, ["error", "message"]);
@@ -155,11 +152,7 @@ class SupabaseAiChatGateway implements AiChatGateway {
         model: DEEPSEEK_MODEL,
         inputTokens,
         outputTokens,
-        estimatedCost: estimateCost(
-          DEEPSEEK_MODEL,
-          inputTokens,
-          outputTokens,
-        ),
+        estimatedCost: estimateCost(DEEPSEEK_MODEL, inputTokens, outputTokens),
       };
     } finally {
       clearTimeout(timeout);
@@ -219,9 +212,8 @@ class SupabaseAiChatGateway implements AiChatGateway {
     const last = included.at(-1);
     return {
       items: included,
-      nextCursor: hasMore && last
-        ? encodeCursor(last.updatedAt, last.id)
-        : null,
+      nextCursor:
+        hasMore && last ? encodeCursor(last.updatedAt, last.id) : null,
     };
   }
 
@@ -242,19 +234,18 @@ class SupabaseAiChatGateway implements AiChatGateway {
     assertDatabaseSuccess(error);
     const result = requireRecord(data);
     if (result.status === "conversation_not_found") {
-      throw new AiChatGatewayError(
-        "AI_CHAT_CONVERSATION_NOT_FOUND",
-        404,
-      );
+      throw new AiChatGatewayError("AI_CHAT_CONVERSATION_NOT_FOUND", 404);
     }
-    const items = (Array.isArray(result.items) ? result.items : [])
-      .map((message) => mapMessage(requireRecord(message)));
+    const items = (Array.isArray(result.items) ? result.items : []).map(
+      (message) => mapMessage(requireRecord(message)),
+    );
     const oldest = items[0];
     return {
       items,
-      nextCursor: result.has_more === true && oldest
-        ? encodeCursor(oldest.createdAt, oldest.id)
-        : null,
+      nextCursor:
+        result.has_more === true && oldest
+          ? encodeCursor(oldest.createdAt, oldest.id)
+          : null,
     };
   }
 
@@ -270,10 +261,7 @@ class SupabaseAiChatGateway implements AiChatGateway {
       .select("id_conversation");
     assertDatabaseSuccess(error);
     if ((data?.length ?? 0) === 0) {
-      throw new AiChatGatewayError(
-        "AI_CHAT_CONVERSATION_NOT_FOUND",
-        404,
-      );
+      throw new AiChatGatewayError("AI_CHAT_CONVERSATION_NOT_FOUND", 404);
     }
   }
 
@@ -291,9 +279,7 @@ function mapExchange(
 ): CommitExchangeResult["exchange"] {
   const messages = Array.isArray(row.messages) ? row.messages : [];
   return {
-    conversationId: String(
-      row.conversation_id ?? fallbackConversationId,
-    ),
+    conversationId: String(row.conversation_id ?? fallbackConversationId),
     messages: messages.map((message) => mapMessage(requireRecord(message))),
   };
 }
@@ -336,8 +322,8 @@ function vbeeConfiguration(languageCode: string): VbeeTtsConfig {
     vietnameseVoiceCode: locale.startsWith("vi-") ? voiceCode : undefined,
     englishVoiceCode: locale.startsWith("en-") ? voiceCode : undefined,
     defaultVoiceCode: voiceCode,
-    callbackUrl: Deno.env.get("VBEE_CALLBACK_URL") ??
-      "https://example.com/vbee-callback",
+    callbackUrl:
+      Deno.env.get("VBEE_CALLBACK_URL") ?? "https://example.com/vbee-callback",
     speedRate: Deno.env.get("VBEE_SPEED_RATE") ?? "1.0",
     bitrate: Deno.env.get("VBEE_BITRATE") ?? "128",
   };
@@ -346,12 +332,13 @@ function vbeeConfiguration(languageCode: string): VbeeTtsConfig {
 function voiceCodeForLocale(locale: string): string | undefined {
   const exact = locale.replaceAll("-", "_").toUpperCase();
   const language = locale.split("-")[0].toUpperCase();
-  return Deno.env.get(`VBEE_${exact}_VOICE_CODE`) ??
+  return (
+    Deno.env.get(`VBEE_${exact}_VOICE_CODE`) ??
     Deno.env.get(`VBEE_${language}_VOICE_CODE`) ??
     (locale.startsWith("vi-")
-      ? Deno.env.get("VBEE_VOICE_CODE") ??
-        "hn_female_ngochuyen_full_48k-fhg"
-      : Deno.env.get("VBEE_VOICE_CODE") ?? undefined);
+      ? (Deno.env.get("VBEE_VOICE_CODE") ?? "hn_female_ngochuyen_full_48k-fhg")
+      : (Deno.env.get("VBEE_VOICE_CODE") ?? undefined))
+  );
 }
 
 function normalizeLocale(value: string): string {
@@ -374,8 +361,10 @@ function estimateCost(
   const outputRate = Number.parseFloat(
     Deno.env.get(`AI_COST_${normalized}_OUTPUT_PER_1M`) ?? "0",
   );
-  return inputTokens / 1_000_000 * inputRate +
-    outputTokens / 1_000_000 * outputRate;
+  return (
+    (inputTokens / 1_000_000) * inputRate +
+    (outputTokens / 1_000_000) * outputRate
+  );
 }
 
 function numericValue(value: unknown): number {
@@ -388,10 +377,7 @@ function nonNegativeInteger(value: unknown): number {
   return Number.isFinite(parsed) && parsed >= 0 ? Math.trunc(parsed) : 0;
 }
 
-function nestedValue(
-  value: unknown,
-  path: Array<string | number>,
-): unknown {
+function nestedValue(value: unknown, path: Array<string | number>): unknown {
   let current = value;
   for (const key of path) {
     if (Array.isArray(current) && typeof key === "number") {
@@ -471,10 +457,12 @@ Deno.serve(async (request) => {
       {
         gateway,
         recordMetric: (metric) => {
-          console.log(JSON.stringify({
-            event: "ai_chat_request",
-            ...metric,
-          }));
+          console.log(
+            JSON.stringify({
+              event: "ai_chat_request",
+              ...metric,
+            }),
+          );
         },
       },
       request,

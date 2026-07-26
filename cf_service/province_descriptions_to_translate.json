@@ -1,0 +1,380 @@
+[
+  {
+    "id_province": "6f3240c9-cc33-4ee6-a8c6-1a5b6b87c906",
+    "name": "Hà Nội",
+    "description_vi": "Thủ đô Việt Nam với lịch sử lâu đời",
+    "description_en": "Vietnam's capital city with a long history"
+  },
+  {
+    "id_province": "81a15bed-747b-4abc-b18b-3756b81bf944",
+    "name": "Hà Giang",
+    "description_vi": "Vùng cao nguyên đá và bản sắc dân tộc",
+    "description_en": "A rocky plateau region rich in ethnic culture"
+  },
+  {
+    "id_province": "b7918d61-c56e-4721-904c-567909526b8a",
+    "name": "Cao Bằng",
+    "description_vi": "Tỉnh miền núi nổi tiếng với thác Bản Giốc",
+    "description_en": "A mountainous province famous for Ban Gioc Waterfall"
+  },
+  {
+    "id_province": "148d261b-28b5-4c4b-a687-73f82268a9c3",
+    "name": "Bắc Kạn",
+    "description_vi": "Vùng núi với hồ Ba Bể nổi tiếng",
+    "description_en": "A mountainous region known for Ba Be Lake"
+  },
+  {
+    "id_province": "3198e3df-52cc-4320-9b07-52f8408fe69c",
+    "name": "Tuyên Quang",
+    "description_vi": "Vùng lịch sử cách mạng và thiên nhiên xanh",
+    "description_en": "A region of revolutionary history and lush nature"
+  },
+  {
+    "id_province": "e1388744-613c-431e-b85f-2845fc301d54",
+    "name": "Lào Cai",
+    "description_vi": "Nổi tiếng với Sa Pa và ruộng bậc thang",
+    "description_en": "Famous for Sa Pa and its terraced rice fields"
+  },
+  {
+    "id_province": "79903cde-65c7-49cd-b9ef-7cfe5435f8c4",
+    "name": "Yên Bái",
+    "description_vi": "Vùng núi với Mù Cang Chải nổi tiếng",
+    "description_en": "A mountainous region known for Mu Cang Chai"
+  },
+  {
+    "id_province": "9911c5a6-4bf1-42af-a221-a7146c908b3e",
+    "name": "Thái Nguyên",
+    "description_vi": "Trung tâm chè lớn của Việt Nam",
+    "description_en": "Vietnam's major tea-producing hub"
+  },
+  {
+    "id_province": "972fae90-94ae-4bcd-a966-608d1048a5aa",
+    "name": "Lạng Sơn",
+    "description_vi": "Tỉnh biên giới với nhiều cửa khẩu quan trọng",
+    "description_en": "A border province with several major checkpoints"
+  },
+  {
+    "id_province": "dc19f8e4-0e0f-42f4-98cf-3b8c52437226",
+    "name": "Quảng Ninh",
+    "description_vi": "Nổi tiếng với vịnh Hạ Long",
+    "description_en": "Famous for Ha Long Bay"
+  },
+  {
+    "id_province": "23d6f159-acef-41c4-ae34-37a377e87f44",
+    "name": "Bắc Giang",
+    "description_vi": "Vùng trung du nổi tiếng với vải thiều",
+    "description_en": "A midland region famous for lychee"
+  },
+  {
+    "id_province": "0e895821-e631-4d9e-bf97-4ef7f3eebb3e",
+    "name": "Phú Thọ",
+    "description_vi": "Đất tổ Hùng Vương",
+    "description_en": "The ancestral land of the Hung Kings"
+  },
+  {
+    "id_province": "5861241c-e256-4ec8-b321-d15e2c3cf267",
+    "name": "Vĩnh Phúc",
+    "description_vi": "Vùng trung du gần Hà Nội, nổi tiếng với Tam Đảo",
+    "description_en": "A midland region near Hanoi, known for Tam Dao"
+  },
+  {
+    "id_province": "a7150491-549c-4781-8f96-7623a81ef6fa",
+    "name": "Bắc Ninh",
+    "description_vi": "Vùng văn hóa quan họ đặc trưng",
+    "description_en": "Home to the distinctive Quan Ho folk singing culture"
+  },
+  {
+    "id_province": "759fa697-d332-4de3-8759-6db611d579f6",
+    "name": "Hải Dương",
+    "description_vi": "Vùng đất hiếu học, nổi tiếng bánh đậu xanh",
+    "description_en": "A land known for its scholarly tradition and mung bean cake"
+  },
+  {
+    "id_province": "392f42fb-4181-4655-93bc-5ad74dc4d699",
+    "name": "Hải Phòng",
+    "description_vi": "Thành phố cảng lớn của miền Bắc",
+    "description_en": "A major port city in northern Vietnam"
+  },
+  {
+    "id_province": "5cb8c5a0-53b4-4dfb-9b8c-7f547a9babe8",
+    "name": "Hưng Yên",
+    "description_vi": "Vùng đất truyền thống và làng nghề",
+    "description_en": "A land of tradition and craft villages"
+  },
+  {
+    "id_province": "97441f93-a078-453f-be84-ee4168406bf1",
+    "name": "Thái Bình",
+    "description_vi": "Vùng đồng bằng với truyền thống nông nghiệp",
+    "description_en": "A delta region with a strong agricultural tradition"
+  },
+  {
+    "id_province": "664952ad-6c85-4f2d-9a96-e01f86e0a0f6",
+    "name": "Hà Nam",
+    "description_vi": "Cửa ngõ phía nam của đồng bằng sông Hồng",
+    "description_en": "The southern gateway of the Red River Delta"
+  },
+  {
+    "id_province": "e55762ba-3d9c-4eac-93e4-b35b6e3d70ef",
+    "name": "Nam Định",
+    "description_vi": "Vùng đất giàu truyền thống văn hóa và dệt may",
+    "description_en": "A land rich in cultural tradition and textile heritage"
+  },
+  {
+    "id_province": "336b7b41-fa17-4f27-9958-5c948a7dd18c",
+    "name": "Ninh Bình",
+    "description_vi": "Nổi tiếng với Tràng An và Tam Cốc",
+    "description_en": "Famous for Trang An and Tam Coc"
+  },
+  {
+    "id_province": "1a98c41e-bc37-4269-a97b-4ecf3d12a600",
+    "name": "Điện Biên",
+    "description_vi": "Gắn liền với chiến thắng Điện Biên Phủ",
+    "description_en": "Renowned for the historic Dien Bien Phu victory"
+  },
+  {
+    "id_province": "c95652b8-9567-4063-8a5f-0f6b12f75c39",
+    "name": "Lai Châu",
+    "description_vi": "Tỉnh vùng cao với cảnh quan hoang sơ",
+    "description_en": "A highland province with pristine landscapes"
+  },
+  {
+    "id_province": "4d2519ec-e17c-4940-a426-baf5a99612d2",
+    "name": "Sơn La",
+    "description_vi": "Vùng núi cao với văn hóa dân tộc đa dạng",
+    "description_en": "A high mountain region with diverse ethnic cultures"
+  },
+  {
+    "id_province": "1b590654-3765-448c-9668-d1a17c4ea13a",
+    "name": "Hòa Bình",
+    "description_vi": "Cửa ngõ Tây Bắc với văn hóa Mường đặc sắc",
+    "description_en": "The gateway to the Northwest, known for Muong culture"
+  },
+  {
+    "id_province": "03530a14-a5f2-4aad-bd93-f127cb0718f4",
+    "name": "Thanh Hóa",
+    "description_vi": "Tỉnh lớn với nhiều di sản và bãi biển đẹp",
+    "description_en": "A large province with rich heritage and beautiful beaches"
+  },
+  {
+    "id_province": "2aa64231-5f3b-47ca-b94a-f73511ee66c0",
+    "name": "Nghệ An",
+    "description_vi": "Quê hương Chủ tịch Hồ Chí Minh",
+    "description_en": "The homeland of President Ho Chi Minh"
+  },
+  {
+    "id_province": "7b9b3190-cf4d-486b-a036-40e3ac6b69c9",
+    "name": "Hà Tĩnh",
+    "description_vi": "Vùng đất giàu truyền thống văn hóa",
+    "description_en": "A land rich in cultural tradition"
+  },
+  {
+    "id_province": "b7b14f00-b928-4dbe-9d45-d9b04c5265dc",
+    "name": "Quảng Bình",
+    "description_vi": "Nổi tiếng với Phong Nha - Kẻ Bàng",
+    "description_en": "Famous for Phong Nha - Ke Bang"
+  },
+  {
+    "id_province": "2cac5ef5-5966-404b-a1ec-6e449abc4d02",
+    "name": "Quảng Trị",
+    "description_vi": "Địa danh lịch sử thời chiến tranh",
+    "description_en": "A historic wartime landmark region"
+  },
+  {
+    "id_province": "38b3a2c6-815a-4a14-ab9e-1644acdde5cf",
+    "name": "Thừa Thiên Huế",
+    "description_vi": "Cố đô với di sản văn hóa thế giới",
+    "description_en": "The former imperial capital and a world cultural heritage site"
+  },
+  {
+    "id_province": "7f676e66-e5f4-4af6-a6e1-4549340e987d",
+    "name": "Đà Nẵng",
+    "description_vi": "Thành phố biển hiện đại và du lịch phát triển",
+    "description_en": "A modern coastal city with thriving tourism"
+  },
+  {
+    "id_province": "3d2723cf-66f7-4d1e-87da-a34617212260",
+    "name": "Quảng Nam",
+    "description_vi": "Vùng đất di sản với Hội An và Mỹ Sơn",
+    "description_en": "A heritage land home to Hoi An and My Son"
+  },
+  {
+    "id_province": "932fa77b-9017-4652-83d3-a60d45dd1866",
+    "name": "Quảng Ngãi",
+    "description_vi": "Vùng ven biển với đặc sản địa phương",
+    "description_en": "A coastal region known for local specialties"
+  },
+  {
+    "id_province": "1b808b6a-b876-4aed-b85b-8305b44ab82e",
+    "name": "Bình Định",
+    "description_vi": "Nổi tiếng với võ cổ truyền và biển đẹp",
+    "description_en": "Famous for traditional martial arts and beautiful beaches"
+  },
+  {
+    "id_province": "e99495c5-ac35-42b8-bd33-38fd623b66ac",
+    "name": "Phú Yên",
+    "description_vi": "Vùng biển đẹp với ghềnh đá đĩa",
+    "description_en": "A beautiful coastal region known for Ghenh Da Dia rock reef"
+  },
+  {
+    "id_province": "18a3009e-d1b5-45e5-a196-3b8ea92bb650",
+    "name": "Khánh Hòa",
+    "description_vi": "Nổi tiếng với Nha Trang",
+    "description_en": "Famous for Nha Trang"
+  },
+  {
+    "id_province": "0c7e24a7-3d55-4988-b735-466c2f51bfdb",
+    "name": "Ninh Thuận",
+    "description_vi": "Vùng khô hạn với văn hóa Chăm đặc sắc",
+    "description_en": "An arid region with distinctive Cham culture"
+  },
+  {
+    "id_province": "06d9e830-713f-4c42-8b79-2273bb06ba05",
+    "name": "Bình Thuận",
+    "description_vi": "Nổi tiếng với Mũi Né và thanh long",
+    "description_en": "Famous for Mui Ne and dragon fruit"
+  },
+  {
+    "id_province": "8a216a88-95da-4e01-99b3-207f4d056a65",
+    "name": "Kon Tum",
+    "description_vi": "Vùng cao nguyên với nhà rông và văn hóa bản địa",
+    "description_en": "A highland region known for communal houses and indigenous culture"
+  },
+  {
+    "id_province": "be400a01-938d-4372-81a1-a22cbb475821",
+    "name": "Gia Lai",
+    "description_vi": "Vùng cao nguyên với văn hóa cồng chiêng",
+    "description_en": "A highland region known for its gong culture"
+  },
+  {
+    "id_province": "cd8c13e2-15d8-48d1-bba3-c6a93bc36c80",
+    "name": "Đắk Lắk",
+    "description_vi": "Thủ phủ cà phê của Việt Nam",
+    "description_en": "Vietnam's coffee capital"
+  },
+  {
+    "id_province": "7212e883-b770-463f-a7d6-29d583469fe0",
+    "name": "Đắk Nông",
+    "description_vi": "Vùng cao nguyên với cảnh quan núi lửa",
+    "description_en": "A highland region with volcanic landscapes"
+  },
+  {
+    "id_province": "2a50e1e2-2aff-4430-a71a-2a59f80cf18f",
+    "name": "Lâm Đồng",
+    "description_vi": "Vùng cao nguyên với Đà Lạt",
+    "description_en": "A highland region home to Da Lat"
+  },
+  {
+    "id_province": "8adb497f-80b5-4d70-82a0-258b005c5844",
+    "name": "Bình Phước",
+    "description_vi": "Vùng đất đỏ bazan, nổi tiếng điều",
+    "description_en": "A red basalt soil region famous for cashew nuts"
+  },
+  {
+    "id_province": "a39f41f0-e4ab-4717-856f-e9cb40af7d24",
+    "name": "Tây Ninh",
+    "description_vi": "Tỉnh biên giới với núi Bà Đen",
+    "description_en": "A border province home to Ba Den Mountain"
+  },
+  {
+    "id_province": "7117589b-e05e-4be2-b5e9-a4e3dcfc2064",
+    "name": "Bình Dương",
+    "description_vi": "Trung tâm công nghiệp phát triển mạnh",
+    "description_en": "A rapidly developing industrial hub"
+  },
+  {
+    "id_province": "d8829970-9b65-4aa5-9386-1eb7ac25496b",
+    "name": "Đồng Nai",
+    "description_vi": "Khu công nghiệp phát triển mạnh",
+    "description_en": "A rapidly developing industrial region"
+  },
+  {
+    "id_province": "c649ea8c-fc74-4712-ae5e-789a6879b664",
+    "name": "Bà Rịa - Vũng Tàu",
+    "description_vi": "Tỉnh ven biển với du lịch phát triển",
+    "description_en": "A coastal province with thriving tourism"
+  },
+  {
+    "id_province": "230e26ed-0118-4f62-96b5-ac0eb3ca1c1b",
+    "name": "Hồ Chí Minh",
+    "description_vi": "Trung tâm kinh tế lớn nhất Việt Nam",
+    "description_en": "Vietnam's largest economic center"
+  },
+  {
+    "id_province": "11950e85-98e4-4e47-9595-96768c0751d8",
+    "name": "Long An",
+    "description_vi": "Cửa ngõ nối Đông Nam Bộ với miền Tây",
+    "description_en": "The gateway linking the Southeast to the Mekong Delta"
+  },
+  {
+    "id_province": "71579aaf-489e-428b-ba67-cdfc355a3220",
+    "name": "Tiền Giang",
+    "description_vi": "Vùng sông nước với cù lao và chợ nổi",
+    "description_en": "A riverine region known for islets and floating markets"
+  },
+  {
+    "id_province": "6f7018bd-e705-4610-a54e-c242f43b229b",
+    "name": "Bến Tre",
+    "description_vi": "Xứ dừa nổi tiếng của Việt Nam",
+    "description_en": "Vietnam's famous coconut land"
+  },
+  {
+    "id_province": "3b13a4c4-a7b4-444c-b0a5-2a86114f789f",
+    "name": "Trà Vinh",
+    "description_vi": "Vùng đất giao thoa văn hóa Khmer",
+    "description_en": "A land where Khmer culture flourishes"
+  },
+  {
+    "id_province": "e19d5ec8-fc4f-4ef4-a57b-34c407b90d8f",
+    "name": "Vĩnh Long",
+    "description_vi": "Nổi tiếng với vườn trái cây",
+    "description_en": "Famous for its fruit orchards"
+  },
+  {
+    "id_province": "91b22a92-226d-4314-b81e-cd4dcda01a29",
+    "name": "Đồng Tháp",
+    "description_vi": "Vùng sông nước với sen đặc trưng",
+    "description_en": "A riverine region famous for its lotus flowers"
+  },
+  {
+    "id_province": "a7bb7aa9-fe35-4d8c-952a-a6457043b7fe",
+    "name": "An Giang",
+    "description_vi": "Vùng núi và văn hóa đa dạng",
+    "description_en": "A region of mountains and diverse culture"
+  },
+  {
+    "id_province": "516ba327-e216-48e8-bc22-a1e470ff3ecf",
+    "name": "Kiên Giang",
+    "description_vi": "Nổi tiếng với Phú Quốc và biển đảo",
+    "description_en": "Famous for Phu Quoc and its islands"
+  },
+  {
+    "id_province": "bfbe113e-4e12-4caf-93b1-9577fefb5e20",
+    "name": "Cần Thơ",
+    "description_vi": "Trung tâm miền Tây với chợ nổi",
+    "description_en": "The heart of the Mekong Delta, known for floating markets"
+  },
+  {
+    "id_province": "8ed8ee0e-e77d-4345-b949-a21f40780734",
+    "name": "Hậu Giang",
+    "description_vi": "Vùng đồng bằng với hệ thống kênh rạch dày đặc",
+    "description_en": "A delta region with a dense network of canals"
+  },
+  {
+    "id_province": "9368cf5d-9d7a-4528-9609-e56ec0ffdd29",
+    "name": "Sóc Trăng",
+    "description_vi": "Vùng đất đa văn hóa Kinh Khmer Hoa",
+    "description_en": "A multicultural land shared by Kinh, Khmer, and Hoa communities"
+  },
+  {
+    "id_province": "15bd02b9-5895-4570-97c2-3fe929648345",
+    "name": "Bạc Liêu",
+    "description_vi": "Nổi tiếng với đờn ca tài tử và điện gió",
+    "description_en": "Famous for don ca tai tu music and wind power fields"
+  },
+  {
+    "id_province": "c169c9c4-1ef1-4544-bd70-e5c0f824691f",
+    "name": "Cà Mau",
+    "description_vi": "Điểm cực Nam của Việt Nam",
+    "description_en": "The southernmost point of Vietnam"
+  }
+]

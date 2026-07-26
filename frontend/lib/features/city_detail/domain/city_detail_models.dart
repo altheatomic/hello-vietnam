@@ -7,6 +7,7 @@ class CityDetailRequest {
     this.fallbackImages = const <String>[],
     this.fallbackImagePath,
     this.fallbackRating,
+    this.description,
   });
 
   final String id;
@@ -14,6 +15,10 @@ class CityDetailRequest {
   final List<String> fallbackImages;
   final String? fallbackImagePath;
   final double? fallbackRating;
+
+  /// Real translated description (e.g. description_en) from the backend,
+  /// when the caller already resolved a matching [RecommendDestination].
+  final String? description;
 }
 
 class CityDetailData {

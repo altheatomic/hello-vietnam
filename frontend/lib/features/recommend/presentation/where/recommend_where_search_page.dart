@@ -96,7 +96,8 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
         if (match != null) ...match.gallery,
       ],
       fallbackImagePath: match?.imagePath,
-      fallbackRating: match?.rating,
+      fallbackRating: match?.avgRating ?? match?.rating,
+      description: match?.description,
     );
 
     context.push(AppRoutes.cityDetailPath(request));

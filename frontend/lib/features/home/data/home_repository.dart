@@ -39,7 +39,15 @@ class HomeRepository {
   Future<List<Destination>> _fetchDestinations(int limit) async {
     final List<Map<String, dynamic>> rows = await _resolvedTableClient.list(
       'featured provinces',
-      () async => _client.from('province').select().limit(limit),
+      () async => _client
+          .from('province')
+          .select(
+            'id_province, id_city, province_id, id, '
+            'name, province_name, province, city, '
+            'area, region, zone, short_description, description, '
+            'average_rating, cover_image',
+          )
+          .limit(limit),
     );
 
     return rows
@@ -52,6 +60,7 @@ class HomeRepository {
             _text(row['id']),
           ]);
           final int seed = id.isEmpty ? rows.indexOf(row) : id.hashCode;
+          final String description = _text(row['description']);
           return Destination(
             id: id,
             name: _provinceName(row),
@@ -60,7 +69,7 @@ class HomeRepository {
               _text(row['region']),
               _text(row['zone']),
               _shortCategory(_text(row['short_description'])),
-              _shortCategory(_text(row['description'])),
+              _shortCategory(description),
               'Vietnam destination',
             ]),
             rating: _rowRating(row, fallbackSeed: seed),
@@ -68,6 +77,7 @@ class HomeRepository {
               _text(row['cover_image']),
               _destinationFallbackImage(seed),
             ]),
+            description: description.isEmpty ? null : description,
           );
         })
         .toList(growable: false);

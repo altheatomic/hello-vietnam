@@ -135,10 +135,7 @@ class FakeGateway implements AiChatGateway {
     return Promise.resolve(this.messagePage);
   }
 
-  deleteConversation(
-    authenticatedUserId: string,
-    id: string,
-  ): Promise<void> {
+  deleteConversation(authenticatedUserId: string, id: string): Promise<void> {
     this.deleted = {
       userId: authenticatedUserId,
       conversationId: id,
@@ -146,10 +143,7 @@ class FakeGateway implements AiChatGateway {
     return Promise.resolve();
   }
 
-  synthesizeSpeech(
-    text: string,
-    languageCode: string,
-  ): Promise<VbeeTtsResult> {
+  synthesizeSpeech(text: string, languageCode: string): Promise<VbeeTtsResult> {
     this.synthesized = { text, languageCode };
     return Promise.resolve({
       audioUrl: "https://audio.test/result.mp3",
@@ -197,30 +191,33 @@ Deno.test("non-Premium users cannot synthesize speech", async () => {
   assertEquals(gateway.synthesized, null);
 });
 
-Deno.test("expired Premium users can still list and delete history", async () => {
-  const gateway = new FakeGateway();
-  gateway.premium = false;
+Deno.test(
+  "expired Premium users can still list and delete history",
+  async () => {
+    const gateway = new FakeGateway();
+    gateway.premium = false;
 
-  const listResponse = await handleAiChatRequest(
-    { gateway },
-    post({ action: "list_conversations" }),
-    userId,
-  );
-  const deleteResponse = await handleAiChatRequest(
-    { gateway },
-    post({
-      action: "delete_conversation",
-      conversation_id: conversationId,
-      id_user: "attacker",
-    }),
-    userId,
-  );
+    const listResponse = await handleAiChatRequest(
+      { gateway },
+      post({ action: "list_conversations" }),
+      userId,
+    );
+    const deleteResponse = await handleAiChatRequest(
+      { gateway },
+      post({
+        action: "delete_conversation",
+        conversation_id: conversationId,
+        id_user: "attacker",
+      }),
+      userId,
+    );
 
-  assertEquals(listResponse.status, 200);
-  assertEquals(deleteResponse.status, 200);
-  assertEquals(gateway.premiumChecks, 0);
-  assertEquals(gateway.deleted, { userId, conversationId });
-});
+    assertEquals(listResponse.status, 200);
+    assertEquals(deleteResponse.status, 200);
+    assertEquals(gateway.premiumChecks, 0);
+    assertEquals(gateway.deleted, { userId, conversationId });
+  },
+);
 
 Deno.test("daily quota rejects the 101st successful message", async () => {
   const gateway = new FakeGateway();
@@ -233,10 +230,7 @@ Deno.test("daily quota rejects the 101st successful message", async () => {
   );
 
   assertEquals(response.status, 429);
-  assertEquals(
-    (await response.json()).error,
-    "AI_CHAT_DAILY_LIMIT_REACHED",
-  );
+  assertEquals((await response.json()).error, "AI_CHAT_DAILY_LIMIT_REACHED");
   assertEquals(gateway.deepSeekCalls, 0);
 });
 
@@ -282,94 +276,106 @@ Deno.test("an idempotent retry returns the committed exchange", async () => {
   assertEquals(gateway.committedInput, null);
 });
 
-Deno.test("send forwards only twelve history messages plus new input", async () => {
-  const gateway = new FakeGateway();
-  gateway.preparation = {
-    status: "ready",
-    history: Array.from({ length: 12 }, (_, index) => ({
-      role: index % 2 === 0 ? "user" as const : "assistant" as const,
-      content: `message-${index + 2}`,
-    })),
-  };
+Deno.test(
+  "send forwards only twelve history messages plus new input",
+  async () => {
+    const gateway = new FakeGateway();
+    gateway.preparation = {
+      status: "ready",
+      history: Array.from({ length: 12 }, (_, index) => ({
+        role: index % 2 === 0 ? ("user" as const) : ("assistant" as const),
+        content: `message-${index + 2}`,
+      })),
+    };
 
-  await handleAiChatRequest({ gateway }, sendRequest(), userId);
+    await handleAiChatRequest({ gateway }, sendRequest(), userId);
 
-  assertEquals(gateway.deepSeekMessages?.length, 14);
-  assertEquals(gateway.deepSeekMessages?.[1].content, "message-2");
-  assertEquals(gateway.deepSeekMessages?.at(-1)?.content, "Plan Hue");
-});
+    assertEquals(gateway.deepSeekMessages?.length, 14);
+    assertEquals(gateway.deepSeekMessages?.[1].content, "message-2");
+    assertEquals(gateway.deepSeekMessages?.at(-1)?.content, "Plan Hue");
+  },
+);
 
-Deno.test("send preparation receives ownership and history context once", async () => {
-  const gateway = new FakeGateway();
+Deno.test(
+  "send preparation receives ownership and history context once",
+  async () => {
+    const gateway = new FakeGateway();
 
-  await handleAiChatRequest({ gateway }, sendRequest(), userId);
+    await handleAiChatRequest({ gateway }, sendRequest(), userId);
 
-  assertEquals(gateway.prepareArgs, {
-    userId,
-    conversationId,
-    requestId,
-    allowNewConversation: false,
-    historyLimit: 12,
-  });
-});
+    assertEquals(gateway.prepareArgs, {
+      userId,
+      conversationId,
+      requestId,
+      allowNewConversation: false,
+      historyLimit: 12,
+    });
+  },
+);
 
-Deno.test("responses expose correlation and server timing without message content", async () => {
-  const gateway = new FakeGateway();
-  const metrics: AiChatRequestMetric[] = [];
-  let now = 0;
-  const request = sendRequest({
-    "x-request-id": "client-correlation-id",
-  });
+Deno.test(
+  "responses expose correlation and server timing without message content",
+  async () => {
+    const gateway = new FakeGateway();
+    const metrics: AiChatRequestMetric[] = [];
+    let now = 0;
+    const request = sendRequest({
+      "x-request-id": "client-correlation-id",
+    });
 
-  const response = await handleAiChatRequest(
-    {
-      gateway,
-      now: () => {
-        now += 5;
-        return now;
+    const response = await handleAiChatRequest(
+      {
+        gateway,
+        now: () => {
+          now += 5;
+          return now;
+        },
+        recordMetric: (metric) => metrics.push(metric),
       },
-      recordMetric: (metric) => metrics.push(metric),
-    },
-    request,
-    userId,
-  );
+      request,
+      userId,
+    );
 
-  assertEquals(response.headers.get("x-request-id"), "client-correlation-id");
-  assertEquals(
-    response.headers.get("server-timing")?.includes("deepseek"),
-    true,
-  );
-  assertEquals(metrics.length, 1);
-  assertEquals(metrics[0].model, "deepseek-chat");
-  assertEquals(metrics[0].inputTokens, 20);
-  assertEquals(metrics[0].outputTokens, 30);
-  assertEquals(JSON.stringify(metrics).includes("Plan Hue"), false);
-});
+    assertEquals(response.headers.get("x-request-id"), "client-correlation-id");
+    assertEquals(
+      response.headers.get("server-timing")?.includes("deepseek"),
+      true,
+    );
+    assertEquals(metrics.length, 1);
+    assertEquals(metrics[0].model, "deepseek-chat");
+    assertEquals(metrics[0].inputTokens, 20);
+    assertEquals(metrics[0].outputTokens, 30);
+    assertEquals(JSON.stringify(metrics).includes("Plan Hue"), false);
+  },
+);
 
-Deno.test("malformed model actions are absent from committed response", async () => {
-  const gateway = new FakeGateway();
-  gateway.deepSeekResult.content = JSON.stringify({
-    answer: "I can help explain it.",
-    action: {
-      key: "/admin/users",
-      payload: { url: "https://bad.test" },
-    },
-  });
+Deno.test(
+  "malformed model actions are absent from committed response",
+  async () => {
+    const gateway = new FakeGateway();
+    gateway.deepSeekResult.content = JSON.stringify({
+      answer: "I can help explain it.",
+      action: {
+        key: "/admin/users",
+        payload: { url: "https://bad.test" },
+      },
+    });
 
-  const response = await handleAiChatRequest(
-    { gateway },
-    sendRequest(),
-    userId,
-  );
-  const body = await response.json();
-  const assistant = body.messages.find(
-    (message: Record<string, unknown>) => message.role === "assistant",
-  );
+    const response = await handleAiChatRequest(
+      { gateway },
+      sendRequest(),
+      userId,
+    );
+    const body = await response.json();
+    const assistant = body.messages.find(
+      (message: Record<string, unknown>) => message.role === "assistant",
+    );
 
-  assertEquals(gateway.committedInput?.actionKey, null);
-  assertEquals(gateway.committedInput?.actionPayload, null);
-  assertEquals("action" in assistant, false);
-});
+    assertEquals(gateway.committedInput?.actionKey, null);
+    assertEquals(gateway.committedInput?.actionPayload, null);
+    assertEquals("action" in assistant, false);
+  },
+);
 
 Deno.test("list actions force page limits to 20 and 50", async () => {
   const gateway = new FakeGateway();
@@ -410,25 +416,28 @@ Deno.test("delete is always scoped to the authenticated user", async () => {
   assertEquals(gateway.deleted, { userId, conversationId });
 });
 
-Deno.test("tts returns the Vbee audio URL without exposing credentials", async () => {
-  const gateway = new FakeGateway();
+Deno.test(
+  "tts returns the Vbee audio URL without exposing credentials",
+  async () => {
+    const gateway = new FakeGateway();
 
-  const response = await handleAiChatRequest(
-    { gateway },
-    post({
-      action: "tts",
-      text: "Xin chao",
-      language_code: "vi-VN",
-    }),
-    userId,
-  );
+    const response = await handleAiChatRequest(
+      { gateway },
+      post({
+        action: "tts",
+        text: "Xin chao",
+        language_code: "vi-VN",
+      }),
+      userId,
+    );
 
-  assertEquals(response.status, 200);
-  assertEquals(await response.json(), {
-    audio_url: "https://audio.test/result.mp3",
-    request_id: "vbee-request",
-  });
-});
+    assertEquals(response.status, 200);
+    assertEquals(await response.json(), {
+      audio_url: "https://audio.test/result.mp3",
+      request_id: "vbee-request",
+    });
+  },
+);
 
 Deno.test("OPTIONS returns the shared CORS response", async () => {
   const response = await handleAiChatRequest(
@@ -456,12 +465,15 @@ function post(
 }
 
 function sendRequest(headers: Record<string, string> = {}): Request {
-  return post({
-    action: "send_message",
-    conversation_id: conversationId,
-    request_id: requestId,
-    content: "Plan Hue",
-  }, headers);
+  return post(
+    {
+      action: "send_message",
+      conversation_id: conversationId,
+      request_id: requestId,
+      content: "Plan Hue",
+    },
+    headers,
+  );
 }
 
 function existingExchange(): CommittedExchange {

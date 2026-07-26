@@ -24,6 +24,9 @@ class CityDetailPage extends StatelessWidget {
       favoriteName: request.name,
       showReviews: false,
       showWhatToExpect: false,
+      showTrailingGallery: false,
+      showFeedbackAction: false,
+      showRatingBadge: false,
       insertedSectionsBuilder: (context, detail) => <Widget>[
         CityDestinationsSection(idProvince: request.id),
       ],

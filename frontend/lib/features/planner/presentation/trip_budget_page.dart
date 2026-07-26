@@ -82,10 +82,25 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
     final wizard = widget.wizard;
     final idProvince = wizard?.idProvince;
     final nDays = wizard?.nDays;
+    final tripType = wizard?.tripType;
+    final isBusinessTrip = tripType == 'business';
 
-    if (idProvince == null || nDays == null) {
+    if (nDays == null) {
       _showError('Missing trip details. Please start from the beginning.');
       return;
+    }
+    if (isBusinessTrip) {
+      if (wizard?.targetLat == null || wizard?.targetLng == null) {
+        _showError(
+          'Missing business location. Please go back and enter an address.',
+        );
+        return;
+      }
+    } else {
+      if (idProvince == null) {
+        _showError('Missing trip details. Please start from the beginning.');
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
@@ -93,9 +108,11 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
     try {
       final response = await TripRepository().planTrip(
         TripPlanRequest(
-          idProvince: idProvince,
+          idProvince: isBusinessTrip ? null : idProvince,
           nDays: nDays,
           startDate: wizard?.startDate,
+          targetLat: isBusinessTrip ? wizard?.targetLat : null,
+          targetLng: isBusinessTrip ? wizard?.targetLng : null,
         ),
       );
       if (!mounted) return;

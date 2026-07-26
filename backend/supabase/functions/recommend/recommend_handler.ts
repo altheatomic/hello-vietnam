@@ -46,7 +46,7 @@ export async function handleRecommendRequest(req: Request): Promise<Response> {
     const action = stringValue(payload.action);
     switch (action) {
       case "getPersonalizedProvinces": {
-        const limit = positiveInt(payload.limit, 20);
+        const limit = positiveInt(payload.limit, 100);
         return proxyGet(
           `/api/recommend/provinces?id_user=${encodeURIComponent(userId)}` +
             `&limit=${limit}`,

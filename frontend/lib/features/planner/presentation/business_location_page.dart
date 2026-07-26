@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -53,10 +54,18 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
         'countrycodes': 'vn',
       });
 
-      final response = await http.get(
-        uri,
-        headers: {'User-Agent': 'HelloVietnam/1.0 (oanhlovescoding@gmail.com)'},
-      );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'User-Agent': 'HelloVietnam/1.0 (oanhlovescoding@gmail.com)',
+            },
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () =>
+                throw TimeoutException('Nominatim request timed out'),
+          );
 
       if (!mounted) return;
 
@@ -92,6 +101,8 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
 
       if (!mounted) return;
       context.push(AppRoutes.tripPlannerDuration, extra: wizard.toJson());
+    } on TimeoutException {
+      if (mounted) _showError('Could not find location, please try again');
     } catch (_) {
       if (mounted) _showError('Không thể kết nối, thử lại sau.');
     } finally {
