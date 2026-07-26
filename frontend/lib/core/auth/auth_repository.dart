@@ -5,10 +5,11 @@ import 'package:hellovietnam/features/loyalty/data/loyalty_award_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../media/cloudflare_media_repository.dart';
 import '../../features/notification/application/notification_inbox_controller.dart';
 import '../../features/notification/application/notification_preferences_controller.dart';
 import '../../features/notification/application/push_notification_service.dart';
+import '../config/app_identity.dart';
+import '../media/cloudflare_media_repository.dart';
 
 class CurrentUserProfileData {
   const CurrentUserProfileData({
@@ -215,7 +216,7 @@ class AuthRepository extends ChangeNotifier {
     try {
       final String redirectTo = kIsWeb
           ? Uri.base.origin
-          : 'com.example.hellovietnam://login-callback';
+          : AppIdentity.loginCallbackUrl;
 
       await _supabase.auth.signInWithOAuth(
         OAuthProvider.google,
@@ -304,7 +305,7 @@ class AuthRepository extends ChangeNotifier {
     try {
       await _supabase.auth.resetPasswordForEmail(
         email,
-        redirectTo: kIsWeb ? null : 'com.example.hellovietnam://reset-password',
+        redirectTo: kIsWeb ? null : AppIdentity.resetPasswordCallbackUrl,
       );
     } on AuthException catch (e) {
       debugPrint('Reset password error: ${e.message}');

@@ -61,16 +61,16 @@ void main() {
           .createStripeCheckout(
             planCode: '6m',
             voucherCode: 'LOYALTY10',
-            successUrl: 'com.example.hellovietnam://upgrade-payment?plan=6m',
-            cancelUrl: 'com.example.hellovietnam://upgrade-payment?plan=6m',
+            successUrl: 'com.hellovietnam.app://upgrade-payment?plan=6m',
+            cancelUrl: 'com.hellovietnam.app://upgrade-payment?plan=6m',
           );
 
       expect(capturedBody, <String, Object?>{
         'action': 'create_checkout',
         'planCode': '6m',
         'voucherCode': 'LOYALTY10',
-        'successUrl': 'com.example.hellovietnam://upgrade-payment?plan=6m',
-        'cancelUrl': 'com.example.hellovietnam://upgrade-payment?plan=6m',
+        'successUrl': 'com.hellovietnam.app://upgrade-payment?plan=6m',
+        'cancelUrl': 'com.hellovietnam.app://upgrade-payment?plan=6m',
       });
       expect(result.requiresCheckout, isTrue);
       expect(result.checkoutUrl, 'https://checkout.stripe.test/session');

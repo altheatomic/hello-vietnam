@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/core/config/app_identity.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/utils/maps_launcher.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
@@ -209,7 +210,7 @@ class _RealMap extends StatelessWidget {
       children: <Widget>[
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.example.hellovietnam',
+          userAgentPackageName: AppIdentity.androidApplicationId,
         ),
         MarkerLayer(
           markers: <Marker>[
