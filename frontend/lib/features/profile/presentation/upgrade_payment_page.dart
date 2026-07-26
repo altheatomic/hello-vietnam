@@ -6,6 +6,7 @@ import 'package:hellovietnam/core/config/app_constants.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/loyalty/data/loyalty_award_service.dart';
+import 'package:hellovietnam/features/profile/application/premium_entitlement_controller.dart';
 import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
 import 'package:hellovietnam/features/profile/domain/subscription_checkout_urls.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -114,15 +115,24 @@ class _PaymentFlowData {
   final SubscriptionPurchaseResult? purchaseResult;
 }
 
+typedef SubscriptionPurchaseAwarder =
+    Future<void> Function(SubscriptionPurchaseResult result);
+
 class UpgradePaymentPage extends StatefulWidget {
   const UpgradePaymentPage({
     super.key,
     required this.planId,
     this.checkoutSessionId,
+    this.repository,
+    this.entitlementController,
+    this.awardPurchase,
   });
 
   final String planId;
   final String? checkoutSessionId;
+  final SubscriptionRepository? repository;
+  final PremiumEntitlementController? entitlementController;
+  final SubscriptionPurchaseAwarder? awardPurchase;
 
   @override
   State<UpgradePaymentPage> createState() => _UpgradePaymentPageState();
@@ -144,7 +154,9 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
     ),
   ];
 
-  final SubscriptionRepository _repository = SubscriptionRepository();
+  late final SubscriptionRepository _repository;
+  late final PremiumEntitlementController _entitlementController;
+  late final SubscriptionPurchaseAwarder _awardPurchase;
   final TextEditingController _voucherController = TextEditingController();
 
   late Future<SubscriptionPlanInfo> _planFuture;
@@ -156,6 +168,10 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
   @override
   void initState() {
     super.initState();
+    _repository = widget.repository ?? SubscriptionRepository();
+    _entitlementController =
+        widget.entitlementController ?? PremiumEntitlementController.instance;
+    _awardPurchase = widget.awardPurchase ?? _awardWithLoyalty;
     _planFuture = _loadPlan();
     if (widget.checkoutSessionId?.trim().isNotEmpty == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -184,6 +200,7 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
       final SubscriptionPurchaseResult result = await _repository
           .confirmStripeCheckout(sessionId: sessionId);
       await _awardSubscriptionPurchase(result);
+      await _entitlementController.refresh(force: true);
       if (!mounted) return;
       final _PaymentMethod method = _methods.firstWhere(
         (_PaymentMethod item) => item.id == 'visa',
@@ -200,6 +217,7 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
               purchaseResult: result,
             ),
             formatMoney: _formatMoney,
+            entitlementController: _entitlementController,
           ),
         ),
       );
@@ -268,6 +286,10 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
   Future<void> _awardSubscriptionPurchase(
     SubscriptionPurchaseResult result,
   ) async {
+    await _awardPurchase(result);
+  }
+
+  Future<void> _awardWithLoyalty(SubscriptionPurchaseResult result) async {
     await LoyaltyAwardService.instance.award(
       actionType: 'subscription_purchase',
       referenceTable: 'payment',
@@ -302,6 +324,8 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
             finalAmountMinor: finalAmount,
           ),
           repository: _repository,
+          entitlementController: _entitlementController,
+          awardPurchase: _awardPurchase,
           formatMoney: _formatMoney,
         ),
       ),
@@ -1473,11 +1497,15 @@ class _PaymentConfirmationPage extends StatefulWidget {
   const _PaymentConfirmationPage({
     required this.data,
     required this.repository,
+    required this.entitlementController,
+    required this.awardPurchase,
     required this.formatMoney,
   });
 
   final _PaymentFlowData data;
   final SubscriptionRepository repository;
+  final PremiumEntitlementController entitlementController;
+  final SubscriptionPurchaseAwarder awardPurchase;
   final String Function(int amountMinor) formatMoney;
 
   @override
@@ -1513,6 +1541,7 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
       final SubscriptionPurchaseResult? result = checkout.purchaseResult;
       if (checkout.isCompleted && result != null) {
         await _awardSubscriptionPurchase(result);
+        await widget.entitlementController.refresh(force: true);
         _showSuccess(result);
         return;
       }
@@ -1572,6 +1601,7 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
         builder: (_) => _PaymentSuccessPage(
           data: successData,
           formatMoney: widget.formatMoney,
+          entitlementController: widget.entitlementController,
         ),
       ),
     );
@@ -1580,17 +1610,7 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
   Future<void> _awardSubscriptionPurchase(
     SubscriptionPurchaseResult result,
   ) async {
-    await LoyaltyAwardService.instance.award(
-      actionType: 'subscription_purchase',
-      referenceTable: 'payment',
-      referenceId: result.paymentId,
-      description: 'Purchased premium subscription',
-      metadata: <String, dynamic>{
-        'subscription_id': result.subscriptionId,
-        'final_amount_minor': result.finalAmountMinor,
-        if (result.voucherCode != null) 'voucher_code': result.voucherCode,
-      },
-    );
+    await widget.awardPurchase(result);
   }
 
   @override
@@ -2237,10 +2257,15 @@ class _BenefitsPreviewCard extends StatelessWidget {
 }
 
 class _PaymentSuccessPage extends StatelessWidget {
-  const _PaymentSuccessPage({required this.data, required this.formatMoney});
+  const _PaymentSuccessPage({
+    required this.data,
+    required this.formatMoney,
+    required this.entitlementController,
+  });
 
   final _PaymentFlowData data;
   final String Function(int amountMinor) formatMoney;
+  final PremiumEntitlementController entitlementController;
 
   String _dateLabel(DateTime date) {
     const List<String> months = <String>[
@@ -2262,16 +2287,27 @@ class _PaymentSuccessPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: entitlementController,
+      builder: (BuildContext context, Widget? child) => _buildContent(context),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final DateTime now = DateTime.now();
     final DateTime validUntil =
         data.purchaseResult?.subscriptionEndDate ??
         now.add(Duration(days: data.plan.durationDays));
-    final String transactionId =
-        data.purchaseResult?.paymentId
-            .replaceAll('-', '')
-            .substring(0, 10)
-            .toUpperCase() ??
-        'TXN${now.millisecondsSinceEpoch.toString().substring(4, 13)}';
+    final String rawTransactionId =
+        data.purchaseResult?.paymentId.replaceAll('-', '') ?? '';
+    final String transactionId = rawTransactionId.isEmpty
+        ? 'TXN${now.millisecondsSinceEpoch.toString().substring(4, 13)}'
+        : rawTransactionId
+              .substring(
+                0,
+                rawTransactionId.length < 10 ? rawTransactionId.length : 10,
+              )
+              .toUpperCase();
     final bool isDark = _paymentIsDark(context);
 
     return Scaffold(
@@ -2338,7 +2374,11 @@ class _PaymentSuccessPage extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              context.l10n.ui('Your premium subscription is now active'),
+              entitlementController.canUsePremium
+                  ? context.l10n.ui('Your premium subscription is now active')
+                  : context.l10n.ui(
+                      'Payment completed. We could not verify Premium yet.',
+                    ),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: _paymentMuted(context),
@@ -2346,7 +2386,14 @@ class _PaymentSuccessPage extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 24),
+            if (entitlementController.canUsePremium)
+              const _BenefitsActivatedCard()
+            else
+              _PremiumVerificationPendingCard(
+                onRetry: entitlementController.retry,
+              ),
+            const SizedBox(height: 28),
             _SuccessTransactionCard(
               data: data,
               transactionId: transactionId,
@@ -2354,8 +2401,6 @@ class _PaymentSuccessPage extends StatelessWidget {
               validUntilLabel: _dateLabel(validUntil),
               formatMoney: formatMoney,
             ),
-            const SizedBox(height: 28),
-            const _BenefitsActivatedCard(),
             const SizedBox(height: 28),
             _SecondaryActionButton(
               icon: Icons.download_rounded,
@@ -2402,6 +2447,46 @@ class _PaymentSuccessPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PremiumVerificationPendingCard extends StatelessWidget {
+  const _PremiumVerificationPendingCard({required this.onRetry});
+
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GlassPanel(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: <Widget>[
+          const Icon(
+            Icons.cloud_sync_outlined,
+            color: Color(0xFFF59E0B),
+            size: 32,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            context.l10n.ui(
+              'Your payment is saved. Retry Premium verification.',
+            ),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: _paymentText(context),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            key: const Key('payment-premium-retry'),
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text(context.l10n.ui('Retry')),
+          ),
+        ],
       ),
     );
   }

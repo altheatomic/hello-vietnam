@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/features/profile/application/premium_entitlement_controller.dart';
 import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
 
 const Color _primaryCyan = Color(0xFF2EB9F8);
@@ -60,7 +62,14 @@ class _PrivilegeItem {
 }
 
 class UpgradeAccountPage extends StatefulWidget {
-  const UpgradeAccountPage({super.key});
+  const UpgradeAccountPage({
+    super.key,
+    this.entitlementController,
+    this.repository,
+  });
+
+  final PremiumEntitlementController? entitlementController;
+  final SubscriptionRepository? repository;
 
   @override
   State<UpgradeAccountPage> createState() => _UpgradeAccountPageState();
@@ -108,27 +117,36 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
     ),
   ];
 
-  final SubscriptionRepository _repository = SubscriptionRepository();
+  late final SubscriptionRepository _repository;
+  late final PremiumEntitlementController _entitlementController;
   late final AnimationController _controller;
-  late final Future<CurrentSubscriptionInfo?> _currentSubscriptionFuture;
   late final Future<List<SubscriptionPaymentHistoryItem>> _paymentHistoryFuture;
   String _selectedPlanId = '6m';
 
   @override
   void initState() {
     super.initState();
+    _repository = widget.repository ?? SubscriptionRepository();
+    _entitlementController =
+        widget.entitlementController ?? PremiumEntitlementController.instance;
+    _entitlementController.addListener(_handleEntitlementChanged);
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1100),
     )..forward();
-    _currentSubscriptionFuture = _repository.loadCurrentSubscription();
     _paymentHistoryFuture = _repository.loadPaymentHistory();
+    unawaited(_entitlementController.refresh(force: true));
   }
 
   @override
   void dispose() {
+    _entitlementController.removeListener(_handleEntitlementChanged);
     _controller.dispose();
     super.dispose();
+  }
+
+  void _handleEntitlementChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onPlanSelected(String planId) {
@@ -136,12 +154,7 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
   }
 
   Future<void> _onContinue() async {
-    final CurrentSubscriptionInfo? subscription =
-        await _currentSubscriptionFuture;
-    final DateTime? endDate = subscription?.endDate;
-    final bool isActive =
-        endDate != null && endDate.isAfter(DateTime.now().toUtc());
-    if (isActive) {
+    if (_entitlementController.canUsePremium) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -261,7 +274,7 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
                         end: 0.58,
                         offset: const Offset(0, 0.06),
                         child: _CurrentPlanStatus(
-                          subscriptionFuture: _currentSubscriptionFuture,
+                          entitlementState: _entitlementController.state,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -271,8 +284,9 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
                         end: 0.6,
                         offset: const Offset(0, 0.06),
                         child: _SubscriptionDetailsCard(
-                          subscriptionFuture: _currentSubscriptionFuture,
+                          entitlementState: _entitlementController.state,
                           paymentHistoryFuture: _paymentHistoryFuture,
+                          onRetry: _entitlementController.retry,
                         ),
                       ),
                       const SizedBox(height: 28),
@@ -335,7 +349,8 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage>
               end: 1,
               offset: const Offset(0, 0.08),
               child: _BottomContinueBar(
-                subscriptionFuture: _currentSubscriptionFuture,
+                entitlementState: _entitlementController.state,
+                canUsePremium: _entitlementController.canUsePremium,
                 onContinue: () => _onContinue(),
               ),
             ),
@@ -611,9 +626,9 @@ class _PremiumBadge extends StatelessWidget {
 }
 
 class _CurrentPlanStatus extends StatelessWidget {
-  const _CurrentPlanStatus({required this.subscriptionFuture});
+  const _CurrentPlanStatus({required this.entitlementState});
 
-  final Future<CurrentSubscriptionInfo?> subscriptionFuture;
+  final PremiumEntitlementState entitlementState;
 
   String _planLabel(
     BuildContext context,
@@ -642,67 +657,65 @@ class _CurrentPlanStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<CurrentSubscriptionInfo?>(
-      future: subscriptionFuture,
-      builder:
-          (
-            BuildContext context,
-            AsyncSnapshot<CurrentSubscriptionInfo?> snapshot,
-          ) {
-            final String planLabel = _planLabel(context, snapshot.data);
-            return Center(
-              child: _GlassPanel(
-                borderRadius: 999,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: _primaryCyan.withValues(alpha: 0.14),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.workspace_premium_rounded,
-                        size: 17,
-                        color: _primaryCyan,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: Text(
-                        context.l10n.currentPlan(planLabel),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: _upgradeText(context),
-                        ),
-                      ),
-                    ),
-                  ],
+    final CurrentSubscriptionInfo? subscription =
+        entitlementState.status == PremiumEntitlementStatus.active
+        ? entitlementState.subscription
+        : null;
+    final String planLabel = switch (entitlementState.status) {
+      PremiumEntitlementStatus.loading => context.l10n.ui('Loading'),
+      PremiumEntitlementStatus.error => context.l10n.ui('Unverified'),
+      _ => _planLabel(context, subscription),
+    };
+    return Center(
+      child: _GlassPanel(
+        borderRadius: 999,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: _primaryCyan.withValues(alpha: 0.14),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.workspace_premium_rounded,
+                size: 17,
+                color: _primaryCyan,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                context.l10n.currentPlan(planLabel),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: _upgradeText(context),
                 ),
               ),
-            );
-          },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
 class _SubscriptionDetailsCard extends StatelessWidget {
   const _SubscriptionDetailsCard({
-    required this.subscriptionFuture,
+    required this.entitlementState,
     required this.paymentHistoryFuture,
+    required this.onRetry,
   });
 
-  final Future<CurrentSubscriptionInfo?> subscriptionFuture;
+  final PremiumEntitlementState entitlementState;
   final Future<List<SubscriptionPaymentHistoryItem>> paymentHistoryFuture;
+  final VoidCallback onRetry;
 
   String _dateLabel(DateTime? date) {
     if (date == null) return 'N/A';
@@ -738,131 +751,173 @@ class _SubscriptionDetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Object?>>(
-      future: Future.wait<Object?>(<Future<Object?>>[
-        subscriptionFuture,
-        paymentHistoryFuture,
-      ]),
-      builder: (BuildContext context, AsyncSnapshot<List<Object?>> snapshot) {
-        final CurrentSubscriptionInfo? subscription =
-            snapshot.data?[0] as CurrentSubscriptionInfo?;
-        final List<SubscriptionPaymentHistoryItem> payments =
-            snapshot.data?[1] as List<SubscriptionPaymentHistoryItem>? ??
-            const <SubscriptionPaymentHistoryItem>[];
-        final bool isPremium =
-            subscription?.endDate != null &&
-            subscription!.endDate!.isAfter(DateTime.now().toUtc());
+    if (entitlementState.status == PremiumEntitlementStatus.loading) {
+      return const _GlassPanel(
+        borderRadius: 18,
+        padding: EdgeInsets.all(28),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (entitlementState.status == PremiumEntitlementStatus.error) {
+      return _GlassPanel(
+        borderRadius: 18,
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          children: <Widget>[
+            const Icon(Icons.cloud_off_rounded, color: Color(0xFFF59E0B)),
+            const SizedBox(height: 10),
+            Text(
+              context.l10n.ui('Unable to verify Premium right now.'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: _upgradeText(context),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              key: const Key('premium-entitlement-retry'),
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(context.l10n.ui('Retry')),
+            ),
+          ],
+        ),
+      );
+    }
 
-        return _GlassPanel(
-          borderRadius: 18,
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
+    final CurrentSubscriptionInfo? subscription =
+        entitlementState.status == PremiumEntitlementStatus.active
+        ? entitlementState.subscription
+        : null;
+    return FutureBuilder<List<SubscriptionPaymentHistoryItem>>(
+      future: paymentHistoryFuture,
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<List<SubscriptionPaymentHistoryItem>> snapshot,
+          ) {
+            final List<SubscriptionPaymentHistoryItem> payments =
+                snapshot.data ?? const <SubscriptionPaymentHistoryItem>[];
+            final bool isPremium =
+                subscription?.endDate != null &&
+                subscription!.endDate!.isAfter(DateTime.now().toUtc());
+
+            return _GlassPanel(
+              borderRadius: 18,
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: isPremium
-                          ? const Color(0xFF10B981).withValues(alpha: 0.14)
-                          : _primaryCyan.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      isPremium
-                          ? Icons.verified_rounded
-                          : Icons.workspace_premium_outlined,
-                      color: isPremium ? const Color(0xFF10B981) : _primaryCyan,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
+                  Row(
+                    children: <Widget>[
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: isPremium
+                              ? const Color(0xFF10B981).withValues(alpha: 0.14)
+                              : _primaryCyan.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
                           isPremium
-                              ? context.l10n.ui('Premium active')
-                              : context.l10n.ui('Free account'),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            color: _upgradeText(context),
-                          ),
+                              ? Icons.verified_rounded
+                              : Icons.workspace_premium_outlined,
+                          color: isPremium
+                              ? const Color(0xFF10B981)
+                              : _primaryCyan,
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          _remainingLabel(context, subscription?.endDate),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: _upgradeMuted(context),
-                          ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              isPremium
+                                  ? context.l10n.ui('Premium active')
+                                  : context.l10n.ui('Free account'),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: _upgradeText(context),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              _remainingLabel(context, subscription?.endDate),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: _upgradeMuted(context),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: _SubscriptionMetric(
+                          label: context.l10n.ui('Plan'),
+                          value: _planName(context, subscription),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _SubscriptionMetric(
+                          label: context.l10n.ui('Valid until'),
+                          value: _dateLabel(subscription?.endDate),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.receipt_long_rounded,
+                        color: _upgradeText(context),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        context.l10n.ui('Payment history'),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: _upgradeText(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if (payments.isEmpty)
+                    Text(
+                      context.l10n.ui('No payment history yet.'),
+                      style: TextStyle(
+                        color: _upgradeMuted(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  else
+                    ...payments
+                        .take(4)
+                        .map(
+                          (SubscriptionPaymentHistoryItem item) =>
+                              _PaymentHistoryRow(
+                                item: item,
+                                dateLabel: _dateLabel,
+                              ),
+                        ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _SubscriptionMetric(
-                      label: context.l10n.ui('Plan'),
-                      value: _planName(context, subscription),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _SubscriptionMetric(
-                      label: context.l10n.ui('Valid until'),
-                      value: _dateLabel(subscription?.endDate),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: <Widget>[
-                  Icon(
-                    Icons.receipt_long_rounded,
-                    color: _upgradeText(context),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    context.l10n.ui('Payment history'),
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      color: _upgradeText(context),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              if (payments.isEmpty)
-                Text(
-                  context.l10n.ui('No payment history yet.'),
-                  style: TextStyle(
-                    color: _upgradeMuted(context),
-                    fontWeight: FontWeight.w600,
-                  ),
-                )
-              else
-                ...payments
-                    .take(4)
-                    .map(
-                      (SubscriptionPaymentHistoryItem item) =>
-                          _PaymentHistoryRow(item: item, dateLabel: _dateLabel),
-                    ),
-            ],
-          ),
-        );
-      },
+            );
+          },
     );
   }
 }
@@ -1299,11 +1354,13 @@ class _CompactPrivilegeRow extends StatelessWidget {
 
 class _BottomContinueBar extends StatelessWidget {
   const _BottomContinueBar({
-    required this.subscriptionFuture,
+    required this.entitlementState,
+    required this.canUsePremium,
     required this.onContinue,
   });
 
-  final Future<CurrentSubscriptionInfo?> subscriptionFuture;
+  final PremiumEntitlementState entitlementState;
+  final bool canUsePremium;
   final VoidCallback onContinue;
 
   @override
@@ -1340,29 +1397,21 @@ class _BottomContinueBar extends StatelessWidget {
               ),
             ),
           ),
-          child: FutureBuilder<CurrentSubscriptionInfo?>(
-            future: subscriptionFuture,
-            builder:
-                (
-                  BuildContext context,
-                  AsyncSnapshot<CurrentSubscriptionInfo?> snapshot,
-                ) {
-                  final CurrentSubscriptionInfo? subscription = snapshot.data;
-                  final DateTime? endDate = subscription?.endDate;
-                  final bool isActive =
-                      endDate != null &&
-                      endDate.isAfter(DateTime.now().toUtc());
-
-                  return _GradientButton(
-                    label: isActive
-                        ? context.l10n.ui(
-                            'Premium active until ${_compactDate(endDate)}',
-                          )
-                        : context.l10n.ui('Continue'),
-                    height: 56,
-                    onTap: isActive ? null : onContinue,
-                  );
-                },
+          child: _GradientButton(
+            key: const Key('upgrade-continue'),
+            label: canUsePremium
+                ? context.l10n.ui(
+                    'Premium active until ${_compactDate(entitlementState.subscription?.endDate)}',
+                  )
+                : entitlementState.status == PremiumEntitlementStatus.error
+                ? context.l10n.ui('Verify Premium to continue')
+                : entitlementState.status == PremiumEntitlementStatus.loading
+                ? context.l10n.ui('Checking Premium...')
+                : context.l10n.ui('Continue'),
+            height: 56,
+            onTap: entitlementState.status == PremiumEntitlementStatus.inactive
+                ? onContinue
+                : null,
           ),
         ),
       ),
@@ -1578,6 +1627,7 @@ class _ModalPrivilegeCard extends StatelessWidget {
 
 class _GradientButton extends StatelessWidget {
   const _GradientButton({
+    super.key,
     required this.label,
     required this.height,
     required this.onTap,

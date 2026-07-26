@@ -11,6 +11,7 @@ import '../features/notification/application/notification_inbox_controller.dart'
 import '../features/notification/application/push_notification_service.dart';
 import '../features/personalization/data/travel_preferences_repository.dart';
 import '../features/planner/data/trip_store.dart';
+import '../features/profile/application/premium_entitlement_controller.dart';
 import 'app_mobile.dart';
 import 'deep_link_state.dart';
 import 'theme.dart';
@@ -43,6 +44,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
       await app_storage.LocalStorage.instance.initialize();
       await AppLanguageController.instance.initialize();
       await ThemeController.instance.initialize();
+      PremiumEntitlementController.instance.initialize();
       await TravelPreferencesRepository.instance.initialize();
       await ReferenceDataCacheRepository.instance.initialize();
       await TripStore.instance.init();
