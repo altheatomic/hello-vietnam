@@ -36,6 +36,9 @@ class SharedItemDetailPage extends StatefulWidget {
     this.reviewContentType,
     this.showReviews = true,
     this.showWhatToExpect = true,
+    this.showTrailingGallery = true,
+    this.showFeedbackAction = true,
+    this.showRatingBadge = true,
     this.showShareAction,
   }) : assert(
          request != null || detail != null,
@@ -54,6 +57,16 @@ class SharedItemDetailPage extends StatefulWidget {
   final ReviewContentType? reviewContentType;
   final bool showReviews;
   final bool showWhatToExpect;
+
+  /// Whether to show the trailing photo gallery cards at the very bottom
+  /// of the page (duplicates images already shown in the hero carousel).
+  final bool showTrailingGallery;
+
+  /// Whether to show the thumbs-up icon next to the description box.
+  final bool showFeedbackAction;
+
+  /// Whether to show the star rating badge over the hero image carousel.
+  final bool showRatingBadge;
 
   /// Overrides whether the share action is shown, independent of
   /// [ItemDetailRequest.trackExploreBehavior]. Null falls back to the
@@ -355,6 +368,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     rating: _displayRating,
                     isFavorite: _isFavorite,
                     showShareAction: _effectiveShowShareAction,
+                    showRatingBadge: widget.showRatingBadge,
                     currentPage: _currentPage,
                     onFavoriteTap: _toggleFavorite,
                     onShareTap: _openShareComposer,
@@ -366,6 +380,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                   _QuickInfoCard(
                     description: _detail.description,
                     isExpanded: _descExpanded,
+                    showFeedbackAction: widget.showFeedbackAction,
                     onToggleExpanded: () {
                       setState(() => _descExpanded = !_descExpanded);
                     },
@@ -415,14 +430,15 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     ),
                     const SizedBox(height: 18),
                   ],
-                  ..._detail.images
-                      .take(4)
-                      .map(
-                        (String image) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _GalleryImageCard(imagePath: image),
+                  if (widget.showTrailingGallery)
+                    ..._detail.images
+                        .take(4)
+                        .map(
+                          (String image) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _GalleryImageCard(imagePath: image),
+                          ),
                         ),
-                      ),
                 ],
               ),
             ),
@@ -532,6 +548,7 @@ class _HeroImageCarousel extends StatelessWidget {
     required this.rating,
     required this.isFavorite,
     required this.showShareAction,
+    required this.showRatingBadge,
     required this.currentPage,
     required this.onPageChanged,
     required this.onFavoriteTap,
@@ -542,6 +559,7 @@ class _HeroImageCarousel extends StatelessWidget {
   final double rating;
   final bool isFavorite;
   final bool showShareAction;
+  final bool showRatingBadge;
   final int currentPage;
   final ValueChanged<int> onPageChanged;
   final VoidCallback onFavoriteTap;
@@ -613,11 +631,12 @@ class _HeroImageCarousel extends StatelessWidget {
                   currentIndex: currentPage,
                 ),
               ),
-              Positioned(
-                right: 14,
-                bottom: 14,
-                child: _RatingBadge(rating: rating),
-              ),
+              if (showRatingBadge)
+                Positioned(
+                  right: 14,
+                  bottom: 14,
+                  child: _RatingBadge(rating: rating),
+                ),
             ],
           ),
         ),
@@ -630,11 +649,13 @@ class _QuickInfoCard extends StatelessWidget {
   const _QuickInfoCard({
     required this.description,
     required this.isExpanded,
+    required this.showFeedbackAction,
     required this.onToggleExpanded,
   });
 
   final String description;
   final bool isExpanded;
+  final bool showFeedbackAction;
   final VoidCallback onToggleExpanded;
 
   @override
@@ -712,27 +733,29 @@ class _QuickInfoCard extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(width: 12),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF102832).withValues(alpha: 0.92)
-                  : Colors.white.withValues(alpha: 0.82),
-              border: isDark
-                  ? Border.all(
-                      color: AppColors.primaryLight.withValues(alpha: 0.14),
-                    )
-                  : null,
-              borderRadius: BorderRadius.circular(14),
+          if (showFeedbackAction) ...<Widget>[
+            const SizedBox(width: 12),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF102832).withValues(alpha: 0.92)
+                    : Colors.white.withValues(alpha: 0.82),
+                border: isDark
+                    ? Border.all(
+                        color: AppColors.primaryLight.withValues(alpha: 0.14),
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                Icons.thumb_up_alt_outlined,
+                size: 20,
+                color: isDark ? AppColors.primaryLight : AppColors.primary,
+              ),
             ),
-            child: Icon(
-              Icons.thumb_up_alt_outlined,
-              size: 20,
-              color: isDark ? AppColors.primaryLight : AppColors.primary,
-            ),
-          ),
+          ],
         ],
       ),
     );

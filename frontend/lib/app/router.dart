@@ -165,6 +165,7 @@ CityDetailRequest _cityDetailRequest(GoRouterState state) {
       fallbackImages: _stringListFromQuery(query['images']),
       fallbackImagePath: query['image'],
       fallbackRating: double.tryParse(query['rating'] ?? ''),
+      description: query['description'],
     );
   }
   return state.extra as CityDetailRequest;
@@ -310,6 +311,8 @@ class AppRoutes {
         'image': request.fallbackImagePath!,
       if (request.fallbackRating != null)
         'rating': request.fallbackRating!.toString(),
+      if (request.description != null && request.description!.isNotEmpty)
+        'description': request.description!,
     },
   ).toString();
 
