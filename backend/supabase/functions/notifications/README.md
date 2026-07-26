@@ -8,7 +8,7 @@ notifications through Firebase Cloud Messaging (FCM HTTP v1).
 ## 1. Firebase Android configuration
 
 1. Create a Firebase Android app whose package is
-   `com.example.hellovietnam`.
+   `com.hellovietnam.app`.
 2. Download `google-services.json` and place it at
    `frontend/android/app/google-services.json`.
 3. In Firebase Console, create a service-account private key JSON file.
