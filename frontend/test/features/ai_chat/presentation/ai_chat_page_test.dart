@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hellovietnam/core/network/supabase_table_client.dart';
 import 'package:hellovietnam/features/ai_chat/application/ai_chat_controller.dart';
 import 'package:hellovietnam/features/ai_chat/data/ai_chat_repository.dart';
 import 'package:hellovietnam/features/ai_chat/domain/ai_chat_models.dart';
 import 'package:hellovietnam/features/ai_chat/presentation/ai_chat_page.dart';
+import 'package:hellovietnam/features/profile/application/premium_entitlement_controller.dart';
+import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
 
 void main() {
   testWidgets('shows Premium gate and keeps history accessible', (
@@ -11,11 +14,14 @@ void main() {
   ) async {
     var upgradeCalls = 0;
     var historyCalls = 0;
+    final PremiumEntitlementController entitlement =
+        await _entitlementController(active: false);
+    addTearDown(entitlement.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
         home: AiChatPage(
-          premiumLoader: () async => false,
+          entitlementController: entitlement,
           onUpgrade: () => upgradeCalls++,
           onOpenHistory: () => historyCalls++,
         ),
@@ -32,13 +38,22 @@ void main() {
     expect(find.byKey(const Key('ai-chat-composer')), findsNothing);
   });
 
-  testWidgets('falls back to the Premium gate when status loading fails', (
+  testWidgets('shows retry instead of Premium gate when verification fails', (
     tester,
   ) async {
+    final PremiumEntitlementController entitlement =
+        PremiumEntitlementController(
+          loadSubscription: () async =>
+              throw const SupabaseTableException('network unavailable'),
+          currentUserId: () => 'user-1',
+        );
+    addTearDown(entitlement.dispose);
+    await entitlement.refresh();
+
     await tester.pumpWidget(
       MaterialApp(
         home: AiChatPage(
-          premiumLoader: () async => throw Exception('network unavailable'),
+          entitlementController: entitlement,
           onUpgrade: () {},
           onOpenHistory: () {},
         ),
@@ -46,7 +61,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Premium travel assistant'), findsOneWidget);
+    expect(find.byKey(const Key('ai-chat-premium-retry')), findsOneWidget);
+    expect(find.text('Premium travel assistant'), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
@@ -58,12 +74,15 @@ void main() {
       requestIdFactory: () => 'request-1',
     );
     addTearDown(controller.dispose);
+    final PremiumEntitlementController entitlement =
+        await _entitlementController(active: true);
+    addTearDown(entitlement.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
         home: AiChatPage(
           controller: controller,
-          premiumLoader: () async => true,
+          entitlementController: entitlement,
           onOpenHistory: () {},
         ),
       ),
@@ -104,6 +123,9 @@ void main() {
       audioPlayback: _FakeAudioPlayback(),
     );
     addTearDown(controller.dispose);
+    final PremiumEntitlementController entitlement =
+        await _entitlementController(active: true);
+    addTearDown(entitlement.dispose);
     AiChatSuggestedAction? openedAction;
 
     await tester.pumpWidget(
@@ -111,7 +133,7 @@ void main() {
         home: AiChatPage(
           conversationId: 'conversation-1',
           controller: controller,
-          premiumLoader: () async => true,
+          entitlementController: entitlement,
           onOpenAction: (action) => openedAction = action,
           onOpenHistory: () {},
         ),
@@ -136,13 +158,16 @@ void main() {
       audioPlayback: _FakeAudioPlayback(),
     );
     addTearDown(controller.dispose);
+    final PremiumEntitlementController entitlement =
+        await _entitlementController(active: true);
+    addTearDown(entitlement.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
         home: AiChatPage(
           conversationId: 'conversation-1',
           controller: controller,
-          premiumLoader: () async => true,
+          entitlementController: entitlement,
           onOpenHistory: () {},
         ),
       ),
@@ -155,6 +180,57 @@ void main() {
 
     expect(repository.ttsCalls, 1);
   });
+
+  testWidgets('inactive user can still read an existing conversation', (
+    WidgetTester tester,
+  ) async {
+    final PremiumEntitlementController entitlement =
+        await _entitlementController(active: false);
+    final _FakeRepository repository = _FakeRepository()
+      ..messagePage = AiChatMessagePage(
+        items: <AiChatMessage>[_assistantMessage()],
+        nextCursor: null,
+      );
+    final AiChatController chat = AiChatController(
+      repository: repository,
+      audioPlayback: _FakeAudioPlayback(),
+    );
+    addTearDown(entitlement.dispose);
+    addTearDown(chat.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AiChatPage(
+          conversationId: 'conversation-1',
+          controller: chat,
+          entitlementController: entitlement,
+          onOpenHistory: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Try the Imperial City.'), findsOneWidget);
+    expect(find.byKey(const Key('ai-chat-composer')), findsNothing);
+  });
+}
+
+Future<PremiumEntitlementController> _entitlementController({
+  required bool active,
+}) async {
+  final PremiumEntitlementController controller = PremiumEntitlementController(
+    loadSubscription: () async => active
+        ? CurrentSubscriptionInfo(
+            planCode: '6m',
+            planName: 'Premium 6 Months',
+            durationDays: 180,
+            endDate: DateTime.utc(2026, 12, 14),
+          )
+        : null,
+    currentUserId: () => 'user-1',
+  );
+  await controller.refresh();
+  return controller;
 }
 
 class _FakeRepository implements AiChatRepositoryContract {

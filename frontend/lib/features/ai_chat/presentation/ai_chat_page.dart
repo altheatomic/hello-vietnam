@@ -2,27 +2,23 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/router.dart';
 import '../../../core/language/app_language.dart';
-import '../../profile/data/subscription_repository.dart';
+import '../../profile/application/premium_entitlement_controller.dart';
 import '../application/ai_chat_action_catalog.dart';
 import '../application/ai_chat_controller.dart';
-import '../data/ai_chat_premium_access_cache.dart';
 import '../domain/ai_chat_models.dart';
 import 'ai_chat_list_change.dart';
 import 'widgets/ai_chat_bubble.dart';
 import 'widgets/ai_chat_composer.dart';
-
-typedef AiChatPremiumLoader = Future<bool> Function();
 
 class AiChatPage extends StatefulWidget {
   const AiChatPage({
     super.key,
     this.conversationId,
     this.controller,
-    this.premiumLoader,
+    this.entitlementController,
     this.onUpgrade,
     this.onOpenHistory,
     this.onOpenAction,
@@ -30,7 +26,7 @@ class AiChatPage extends StatefulWidget {
 
   final String? conversationId;
   final AiChatController? controller;
-  final AiChatPremiumLoader? premiumLoader;
+  final PremiumEntitlementController? entitlementController;
   final VoidCallback? onUpgrade;
   final VoidCallback? onOpenHistory;
   final ValueChanged<AiChatSuggestedAction>? onOpenAction;
@@ -42,10 +38,9 @@ class AiChatPage extends StatefulWidget {
 class _AiChatPageState extends State<AiChatPage> {
   late final AiChatController _controller;
   late final bool _ownsController;
+  late final PremiumEntitlementController _entitlementController;
   final ScrollController _scrollController = ScrollController();
 
-  bool _checkingPremium = true;
-  bool _isPremium = false;
   List<String> _lastMessageIds = const <String>[];
 
   @override
@@ -53,37 +48,19 @@ class _AiChatPageState extends State<AiChatPage> {
     super.initState();
     _ownsController = widget.controller == null;
     _controller = widget.controller ?? AiChatController();
+    _entitlementController =
+        widget.entitlementController ?? PremiumEntitlementController.instance;
     _controller.addListener(_handleControllerChanged);
+    _entitlementController.addListener(_handleEntitlementChanged);
     _scrollController.addListener(_handleScroll);
     final String? conversationId = widget.conversationId?.trim();
     if (conversationId != null && conversationId.isNotEmpty) {
       unawaited(_controller.loadConversation(conversationId));
     }
-    unawaited(_loadPremium());
   }
 
-  Future<void> _loadPremium() async {
-    bool isPremium = false;
-    try {
-      isPremium = await (widget.premiumLoader ?? _defaultPremiumLoader)();
-    } catch (_) {
-      isPremium = false;
-    }
-    if (!mounted) return;
-    setState(() {
-      _isPremium = isPremium;
-      _checkingPremium = false;
-    });
-  }
-
-  Future<bool> _defaultPremiumLoader() async {
-    final String? userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) return false;
-    return AiChatPremiumAccessCache.shared.load(
-      userId: userId,
-      loader: () async =>
-          (await SubscriptionRepository().loadCurrentSubscription()) != null,
-    );
+  void _handleEntitlementChanged() {
+    if (mounted) setState(() {});
   }
 
   void _handleControllerChanged() {
@@ -184,6 +161,7 @@ class _AiChatPageState extends State<AiChatPage> {
   @override
   void dispose() {
     _controller.removeListener(_handleControllerChanged);
+    _entitlementController.removeListener(_handleEntitlementChanged);
     _scrollController
       ..removeListener(_handleScroll)
       ..dispose();
@@ -195,6 +173,8 @@ class _AiChatPageState extends State<AiChatPage> {
   Widget build(BuildContext context) {
     final bool hasExistingConversation =
         widget.conversationId?.trim().isNotEmpty == true;
+    final PremiumEntitlementStatus status = _entitlementController.state.status;
+    final bool canUsePremium = _entitlementController.canUsePremium;
 
     return Scaffold(
       appBar: AppBar(
@@ -208,20 +188,34 @@ class _AiChatPageState extends State<AiChatPage> {
           ),
         ],
       ),
-      body: _checkingPremium
-          ? const Center(child: CircularProgressIndicator())
-          : !_isPremium && !hasExistingConversation
+      body: status == PremiumEntitlementStatus.loading
+          ? const Center(
+              key: Key('ai-chat-premium-loading'),
+              child: CircularProgressIndicator(),
+            )
+          : status == PremiumEntitlementStatus.inactive &&
+                !hasExistingConversation
           ? _PremiumGate(onUpgrade: _openUpgrade)
+          : !canUsePremium &&
+                status != PremiumEntitlementStatus.inactive &&
+                !hasExistingConversation
+          ? _PremiumVerificationError(onRetry: _entitlementController.retry)
           : ListenableBuilder(
               listenable: _controller,
               builder: (BuildContext context, Widget? child) {
                 final AiChatState currentState = _controller.state;
                 return Column(
                   children: <Widget>[
-                    if (!_isPremium)
+                    if (!canUsePremium &&
+                        status == PremiumEntitlementStatus.inactive)
                       _ExpiredPremiumNotice(onUpgrade: _openUpgrade),
+                    if (!canUsePremium &&
+                        status != PremiumEntitlementStatus.inactive)
+                      _PremiumVerificationNotice(
+                        onRetry: _entitlementController.retry,
+                      ),
                     Expanded(child: _buildMessages(currentState)),
-                    if (_isPremium)
+                    if (canUsePremium)
                       AiChatComposer(
                         key: const Key('ai-chat-composer'),
                         isSending: currentState.isSending,
@@ -278,7 +272,7 @@ class _AiChatPageState extends State<AiChatPage> {
           message: message,
           isFailed: state.isMessageFailed(message),
           isPlaying: state.playingMessageId == message.id,
-          canUsePremium: _isPremium,
+          canUsePremium: _entitlementController.canUsePremium,
           onRetry: _controller.retryLastSend,
           onSpeak: () => _controller.playMessage(
             messageId: message.id,
@@ -344,6 +338,89 @@ class _PremiumGate extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumVerificationError extends StatelessWidget {
+  const _PremiumVerificationError({required this.onRetry});
+
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.cloud_off_rounded, size: 48, color: colors.primary),
+              const SizedBox(height: 16),
+              Text(
+                context.l10n.ui('Unable to verify Premium right now.'),
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                context.l10n.ui(
+                  'Check your connection and retry. Your account has not been marked as Free.',
+                ),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: colors.onSurfaceVariant),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                key: const Key('ai-chat-premium-retry'),
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: Text(context.l10n.ui('Retry')),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumVerificationNotice extends StatelessWidget {
+  const _PremiumVerificationNotice({required this.onRetry});
+
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    return Material(
+      color: colors.tertiaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: <Widget>[
+            const Icon(Icons.cloud_off_rounded),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                context.l10n.ui(
+                  'Premium verification is temporarily unavailable.',
+                ),
+              ),
+            ),
+            TextButton(
+              key: const Key('ai-chat-premium-retry'),
+              onPressed: onRetry,
+              child: Text(context.l10n.ui('Retry')),
+            ),
+          ],
         ),
       ),
     );
