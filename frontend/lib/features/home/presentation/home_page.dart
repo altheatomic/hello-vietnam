@@ -474,6 +474,7 @@ class _HomePageState extends State<HomePage>
                                           ],
                                           fallbackImagePath: d.imagePath,
                                           fallbackRating: d.rating,
+                                          description: d.description,
                                         ),
                                       );
                                     },
@@ -513,6 +514,7 @@ class _HomePageState extends State<HomePage>
                               fallbackImages: <String>[d.imagePath],
                               fallbackImagePath: d.imagePath,
                               fallbackRating: d.rating,
+                              description: d.description,
                             ),
                           );
                         },
