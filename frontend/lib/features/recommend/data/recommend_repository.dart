@@ -123,8 +123,7 @@ class RecommendRepository {
         json['cover_image'] as String? ??
         (gallery.isNotEmpty ? gallery.first : '');
     final int placeCount = (json['place_count'] as num?)?.toInt() ?? 0;
-    final double avgRating =
-        (json['avg_rating'] as num?)?.toDouble() ?? 0;
+    final double avgRating = (json['avg_rating'] as num?)?.toDouble() ?? 0;
 
     return RecommendDestination(
       id: json['id_province'] as String? ?? '',

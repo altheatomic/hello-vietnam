@@ -97,6 +97,7 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
       ],
       fallbackImagePath: match?.imagePath,
       fallbackRating: match?.avgRating ?? match?.rating,
+      description: match?.description,
     );
 
     context.push(AppRoutes.cityDetailPath(request));

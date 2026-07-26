@@ -9,7 +9,7 @@ void main() async {
 
   await Supabase.initialize(
     url: Env.supabaseUrl,
-    anonKey: Env.supabaseAnonKey,
+    publishableKey: Env.supabaseAnonKey,
   );
 
   await ReferenceDataCacheRepository.instance.initialize();

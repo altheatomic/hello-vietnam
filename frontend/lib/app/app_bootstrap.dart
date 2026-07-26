@@ -37,7 +37,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
     try {
       await Supabase.initialize(
         url: Env.supabaseUrl,
-        anonKey: Env.supabaseAnonKey,
+        publishableKey: Env.supabaseAnonKey,
       );
 
       await app_storage.LocalStorage.instance.initialize();

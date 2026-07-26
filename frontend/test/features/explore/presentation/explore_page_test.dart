@@ -24,7 +24,7 @@ void main() {
     } catch (_) {
       await Supabase.initialize(
         url: Env.supabaseUrl,
-        anonKey: Env.supabaseAnonKey,
+        publishableKey: Env.supabaseAnonKey,
       );
     }
   });
