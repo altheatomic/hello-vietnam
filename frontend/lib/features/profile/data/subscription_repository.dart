@@ -235,8 +235,9 @@ class SubscriptionRepository {
   }
 
   Future<CurrentSubscriptionInfo?> loadCurrentSubscription() async {
-    final String? userId =
-        _currentUserIdProvider?.call() ?? _client.auth.currentUser?.id;
+    final String? userId = _currentUserIdProvider != null
+        ? _currentUserIdProvider()
+        : _client.auth.currentUser?.id;
     if (userId == null) return null;
 
     final List<Map<String, dynamic>> rows = await _resolvedTableClient.list(

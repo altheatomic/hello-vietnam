@@ -47,6 +47,20 @@ void main() {
     },
   );
 
+  test(
+    'loadCurrentSubscription returns null without querying when signed out',
+    () async {
+      final _FakeTableClient tableClient = _FakeTableClient();
+      final SubscriptionRepository repository = SubscriptionRepository(
+        currentUserIdProvider: () => null,
+        tableClient: tableClient,
+      );
+
+      expect(await repository.loadCurrentSubscription(), isNull);
+      expect(tableClient.listLabels, isEmpty);
+    },
+  );
+
   test('loadCurrentSubscription propagates table failures', () async {
     const SupabaseTableException failure = SupabaseTableException(
       'current subscription failed',
