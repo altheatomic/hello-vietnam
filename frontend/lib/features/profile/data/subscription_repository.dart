@@ -145,18 +145,23 @@ class SubscriptionCheckoutResult {
   bool get isCompleted => status == 'completed';
 }
 
+typedef SubscriptionCurrentUserId = String? Function();
+
 class SubscriptionRepository {
   SubscriptionRepository({
     SupabaseClient? client,
     SupabaseFunctionClient? functionClient,
     SupabaseTableClient? tableClient,
+    SubscriptionCurrentUserId? currentUserIdProvider,
   }) : _clientOverride = client,
        _functionClient = functionClient,
-       _tableClient = tableClient;
+       _tableClient = tableClient,
+       _currentUserIdProvider = currentUserIdProvider;
 
   final SupabaseClient? _clientOverride;
   final SupabaseFunctionClient? _functionClient;
   final SupabaseTableClient? _tableClient;
+  final SubscriptionCurrentUserId? _currentUserIdProvider;
 
   SupabaseClient get _client => _clientOverride ?? Supabase.instance.client;
 
@@ -230,40 +235,56 @@ class SubscriptionRepository {
   }
 
   Future<CurrentSubscriptionInfo?> loadCurrentSubscription() async {
-    final User? user = _client.auth.currentUser;
-    if (user == null) return null;
+    final String? userId =
+        _currentUserIdProvider?.call() ?? _client.auth.currentUser?.id;
+    if (userId == null) return null;
 
-    try {
-      final List<Map<String, dynamic>>
-      rows = await _resolvedTableClient.list('current subscription', () async {
+    final List<Map<String, dynamic>> rows = await _resolvedTableClient.list(
+      'current subscription',
+      () async {
         return _client
             .from('premium_subscription')
             .select(
               'end_date, subscription_plan:id_plan(code, name, duration_days)',
             )
-            .eq('id_user', user.id)
+            .eq('id_user', userId)
             .eq('status', 'active')
             .gt('end_date', DateTime.now().toUtc().toIso8601String())
             .order('end_date', ascending: false)
             .limit(1);
-      });
+      },
+    );
 
-      if (rows.isEmpty) return null;
+    if (rows.isEmpty) return null;
 
-      final Map<String, dynamic> row = rows.first;
-      final Object? rawPlan = row['subscription_plan'];
-      if (rawPlan is! Map) return null;
-
-      final Map<String, dynamic> plan = Map<String, dynamic>.from(rawPlan);
-      return CurrentSubscriptionInfo(
-        planCode: plan['code']?.toString() ?? '',
-        planName: plan['name']?.toString() ?? '',
-        durationDays: (plan['duration_days'] as num?)?.toInt() ?? 0,
-        endDate: DateTime.tryParse(row['end_date']?.toString() ?? ''),
+    final Map<String, dynamic> row = rows.first;
+    final Object? rawPlan = row['subscription_plan'];
+    if (rawPlan is! Map) {
+      throw const SupabaseTableException(
+        'Unexpected current subscription plan response.',
       );
-    } catch (_) {
-      return null;
     }
+
+    final Map<String, dynamic> plan = Map<String, dynamic>.from(rawPlan);
+    final DateTime? endDate = DateTime.tryParse(
+      row['end_date']?.toString() ?? '',
+    );
+    final Object? durationDays = plan['duration_days'];
+    if (endDate == null ||
+        plan['code'] == null ||
+        plan['name'] == null ||
+        durationDays is! num) {
+      throw const SupabaseTableException(
+        'Unexpected current subscription response.',
+      );
+    }
+
+    return CurrentSubscriptionInfo(
+      planCode: plan['code'].toString(),
+      planName: plan['name'].toString(),
+      durationDays: durationDays.toInt(),
+      endDate: endDate,
+    );
   }
 
   Future<List<SubscriptionPaymentHistoryItem>> loadPaymentHistory() async {
