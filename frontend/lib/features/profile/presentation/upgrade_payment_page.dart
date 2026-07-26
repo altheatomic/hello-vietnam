@@ -7,6 +7,7 @@ import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/loyalty/data/loyalty_award_service.dart';
 import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
+import 'package:hellovietnam/features/profile/domain/subscription_checkout_urls.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const Color _paymentDarkBackground = Color(0xFF020B10);
@@ -1532,19 +1533,12 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
   }
 
   String _checkoutReturnUrl(String planCode, {required bool success}) {
-    final String encodedPlan = Uri.encodeComponent(planCode);
-    if (!kIsWeb) {
-      if (success) {
-        return 'intent://upgrade-payment?plan=$encodedPlan&stripe_session_id={CHECKOUT_SESSION_ID}#Intent;scheme=com.example.hellovietnam;package=com.example.hellovietnam;end';
-      }
-      return 'intent://upgrade-payment?plan=$encodedPlan&stripe_cancelled=1#Intent;scheme=com.example.hellovietnam;package=com.example.hellovietnam;end';
-    }
-
-    final String origin = Uri.base.origin;
-    if (success) {
-      return '$origin/#/upgrade-payment?plan=$encodedPlan&stripe_session_id={CHECKOUT_SESSION_ID}';
-    }
-    return '$origin/#/upgrade-payment?plan=$encodedPlan&stripe_cancelled=1';
+    return subscriptionCheckoutReturnUrl(
+      planCode,
+      success: success,
+      isWeb: kIsWeb,
+      webOrigin: Uri.base.origin,
+    );
   }
 
   Future<void> _openCheckoutUrl(String checkoutUrl) async {
