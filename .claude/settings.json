@@ -158,7 +158,8 @@
       "Bash(python -m py_compile scripts/translate_province_descriptions.py services/recommend_service.py)",
       "Bash(python -m py_compile services/recommend_service.py routes/recommend.py)",
       "Bash(cd /c/Users/Asus/hellovietnam-remote && cat frontend/test/features/planner/presentation/business_location_page_test.dart 2>/dev/null || find frontend/test -iname \"business_location_page_test.dart\")",
-      "Bash(echo \"=== ItemDetail constructor - LOCAL \\(base state, unchanged\\) ===\" *)"
+      "Bash(echo \"=== ItemDetail constructor - LOCAL \\(base state, unchanged\\) ===\" *)",
+      "Bash(python -m py_compile cf_service/services/recommend_service.py)"
     ],
     "additionalDirectories": [
       "\\tmp",

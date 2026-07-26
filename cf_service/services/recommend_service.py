@@ -5,18 +5,20 @@ Province listing for the Recommend feature.
 Pipeline (no ML scoring — see routes/recommend.py::get_province_detail for
 the CB+CF ranked flow used once the user taps into a specific province):
   1. Fetch all provinces from old_province (name, description_en,
-     average_rating, review_count — all real columns, nothing computed)
-  2. Fetch eligible places (for cover image + place_count only), sorted by
-     rating so the first place seen per province is its best-rated one
-  3. Sort provinces by name with Vietnamese diacritics stripped (A-Z as
+     average_rating, review_count, cover_image — all real columns, nothing
+     computed)
+  2. Sort provinces by name with Vietnamese diacritics stripped (A-Z as
      shown on screen, not raw Vietnamese Unicode order)
+
+place_count is currently always 0 — it used to be derived from a
+place_localized_en query (best-rated place per province, for cover image +
+place_count), which has been removed now that cover_image comes straight
+from old_province. Re-add a place_count source separately if needed.
 """
 
 from __future__ import annotations
 
 import time  # TEMP — perf audit, remove after done
-
-from db.supabase_client import fetch_all_rows
 
 # Mirrors frontend/lib/core/utils/vietnamese_text_utils.dart
 # (_vietnameseDiacriticReplacements) character-for-character, so provinces
@@ -59,18 +61,6 @@ def remove_vietnamese_diacritics(text: str) -> str:
     return "".join(_VIETNAMESE_DIACRITIC_REPLACEMENTS.get(ch, ch) for ch in text)
 
 
-def _extract_gallery_urls(gallery_raw: list) -> list[str]:
-    urls: list[str] = []
-    for item in gallery_raw:
-        if isinstance(item, dict):
-            url = item.get("url") or item.get("image_url") or ""
-            if url:
-                urls.append(url)
-        elif isinstance(item, str) and item:
-            urls.append(item)
-    return urls
-
-
 def recommend_provinces(supabase, limit: int = 100) -> list[dict]:
     # TEMP — perf audit, remove after done
     _t0 = time.perf_counter()
@@ -79,7 +69,10 @@ def recommend_provinces(supabase, limit: int = 100) -> list[dict]:
     prov_resp = (
         supabase
         .table("old_province")
-        .select("id_province,name,description_en,average_rating,review_count")
+        .select(
+            "id_province,name,description_en,average_rating,review_count,"
+            "cover_image"
+        )
         .execute()
     )
     province_map: dict[str, dict] = {
@@ -89,52 +82,18 @@ def recommend_provinces(supabase, limit: int = 100) -> list[dict]:
     if not province_map:
         return []
 
-    # ── Step 2: Eligible places, sorted best-first, for cover image + count ───
-    def _build_places_query(start: int, end: int):
-        return (
-            supabase
-            .table("place_localized_en")
-            .select(
-                "id_place,old_province,cover_image,gallery,"
-                "average_rating,review_count,"
-                "place_subcategory!inner(is_itinerary_eligible)"
-            )
-            .eq("status", "active")
-            .eq("place_subcategory.is_itinerary_eligible", True)
-            .filter("latitude", "not.is", "null")
-            .filter("longitude", "not.is", "null")
-            .order("average_rating", desc=True)
-            .order("review_count", desc=True)
-            .range(start, end)
-        )
-
-    all_places = fetch_all_rows(_build_places_query)
-
-    # Places are fetched best-rated-first, so the first place seen per
-    # province is already its highest-rated (tie-broken by review_count).
-    place_count: dict[str, int] = {}
-    cover_by_province: dict[str, dict] = {}
-    for p in all_places:
-        prov_id = str(p.get("old_province") or "")
-        if not prov_id or prov_id not in province_map:
-            continue
-        place_count[prov_id] = place_count.get(prov_id, 0) + 1
-        if prov_id not in cover_by_province:
-            cover_by_province[prov_id] = p
-
-    # ── Step 3: Assemble + sort A-Z by diacritics-stripped name ────────────────
+    # ── Step 2: Assemble + sort A-Z by diacritics-stripped name ────────────────
     results: list[dict] = []
     for prov_id, province in province_map.items():
-        top_place = cover_by_province.get(prov_id, {})
-        gallery_urls = _extract_gallery_urls(top_place.get("gallery") or [])
+        cover_image = province.get("cover_image")
 
         results.append({
             "id_province":  prov_id,
             "name":         province.get("name"),
             "description":  province.get("description_en"),
-            "place_count":  place_count.get(prov_id, 0),
-            "cover_image":  top_place.get("cover_image"),
-            "gallery":      gallery_urls,
+            "place_count":  0,
+            "cover_image":  cover_image,
+            "gallery":      [cover_image] if cover_image else [],
             "avg_rating":   province.get("average_rating") or 0.0,
             "review_count": province.get("review_count") or 0,
         })
@@ -147,7 +106,7 @@ def recommend_provinces(supabase, limit: int = 100) -> list[dict]:
     elapsed_ms = round((time.perf_counter() - _t0) * 1000, 1)
     print(
         f"[TIMING] recommend_provinces: elapsed={elapsed_ms}ms "
-        f"total_places={len(all_places)} provinces={len(results)}"
+        f"provinces={len(results)}"
     )
 
     return results
