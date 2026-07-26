@@ -71,7 +71,7 @@ def _extract_gallery_urls(gallery_raw: list) -> list[str]:
     return urls
 
 
-def recommend_provinces(supabase, limit: int = 20) -> list[dict]:
+def recommend_provinces(supabase, limit: int = 100) -> list[dict]:
     # TEMP — perf audit, remove after done
     _t0 = time.perf_counter()
 
@@ -150,4 +150,4 @@ def recommend_provinces(supabase, limit: int = 20) -> list[dict]:
         f"total_places={len(all_places)} provinces={len(results)}"
     )
 
-    return results[:limit]
+    return results

@@ -79,7 +79,7 @@ class RecommendRepository {
   final SupabaseFunctionClient _functionClient;
 
   Future<List<RecommendDestination>> getPersonalizedProvinces({
-    int limit = 20,
+    int limit = 100,
   }) async {
     final Map<String, dynamic> data = await _invoke(<String, Object?>{
       'action': 'getPersonalizedProvinces',
