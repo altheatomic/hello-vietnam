@@ -66,49 +66,60 @@ class _FlyingCraneFlockState extends State<FlyingCraneFlock>
         : (isExiting
               ? const Duration(milliseconds: 600)
               : const Duration(milliseconds: 900));
+    final artworkWidth = widget.compact ? 180.0 : 290.0;
 
-    return AnimatedBuilder(
-      animation: _hoverController,
-      builder: (context, child) => Transform.translate(
-        offset: Offset(
-          0,
-          widget.reduceMotion ? 0 : -8 * _hoverController.value,
-        ),
-        child: child,
-      ),
-      child: AnimatedSlide(
-        key: const Key('journey-crane-flock'),
-        duration: duration,
-        curve: Curves.easeInOutCubic,
-        offset: isExiting
-            ? const Offset(-1.3, .18)
-            : (isVisible
-                  ? Offset.zero
-                  : (widget.reduceMotion
-                        ? const Offset(.08, -.04)
-                        : const Offset(1.2, -.55))),
-        child: AnimatedScale(
-          duration: duration,
-          curve: Curves.easeInOutCubic,
-          scale: isVisible ? 1 : .86,
-          child: AnimatedOpacity(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : artworkWidth;
+        final travelOffset =
+            ((availableWidth + artworkWidth) / 2 + 24) / artworkWidth;
+
+        return AnimatedBuilder(
+          animation: _hoverController,
+          builder: (context, child) => Transform.translate(
+            offset: Offset(
+              0,
+              widget.reduceMotion ? 0 : -8 * _hoverController.value,
+            ),
+            child: child,
+          ),
+          child: AnimatedSlide(
+            key: const Key('journey-crane-flock'),
             duration: duration,
-            curve: Curves.easeInOut,
-            opacity: isVisible ? 1 : 0,
-            child: SizedBox(
-              width: widget.compact ? 180 : 290,
-              child: Image.asset(
-                'assets/images/loading/vietnam_crane_flock.png',
-                fit: BoxFit.contain,
-                cacheWidth: _cacheWidth(context),
-                excludeFromSemantics: true,
-                errorBuilder: (context, error, stackTrace) =>
-                    const SizedBox.shrink(),
+            curve: Curves.easeInOutCubic,
+            offset: isExiting
+                ? Offset(widget.reduceMotion ? -.08 : -travelOffset, .18)
+                : (isVisible
+                      ? Offset.zero
+                      : (widget.reduceMotion
+                            ? const Offset(.08, -.04)
+                            : Offset(travelOffset, -.55))),
+            child: AnimatedScale(
+              duration: duration,
+              curve: Curves.easeInOutCubic,
+              scale: isVisible ? 1 : .86,
+              child: AnimatedOpacity(
+                duration: duration,
+                curve: Curves.easeInOut,
+                opacity: isVisible ? 1 : 0,
+                child: SizedBox(
+                  width: artworkWidth,
+                  child: Image.asset(
+                    'assets/images/loading/vietnam_crane_flock.png',
+                    fit: BoxFit.contain,
+                    cacheWidth: _cacheWidth(context),
+                    excludeFromSemantics: true,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox.shrink(),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

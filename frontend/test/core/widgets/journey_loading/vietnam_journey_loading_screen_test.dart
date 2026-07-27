@@ -245,6 +245,79 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('crane entrance starts beyond wide viewport right edges', (
+    tester,
+  ) async {
+    for (final width in <double>[1024, 1440]) {
+      await _craneBounds(
+        tester,
+        viewportWidth: width,
+        phase: JourneyLoadingPhase.covered,
+      );
+      final bounds = await _craneBounds(
+        tester,
+        viewportWidth: width,
+        phase: JourneyLoadingPhase.entering,
+      );
+
+      expect(
+        bounds.crane.left,
+        greaterThanOrEqualTo(bounds.viewport.right),
+        reason: 'entrance origin must be offscreen at ${width}px',
+      );
+    }
+  });
+
+  testWidgets('crane exit finishes beyond wide viewport left edges', (
+    tester,
+  ) async {
+    for (final width in <double>[1024, 1440]) {
+      await _craneBounds(
+        tester,
+        viewportWidth: width,
+        phase: JourneyLoadingPhase.waiting,
+      );
+      final bounds = await _craneBounds(
+        tester,
+        viewportWidth: width,
+        phase: JourneyLoadingPhase.exiting,
+        settle: const Duration(milliseconds: 600),
+      );
+
+      expect(
+        bounds.crane.right,
+        lessThanOrEqualTo(bounds.viewport.left),
+        reason: 'exit destination must be offscreen at ${width}px',
+      );
+    }
+  });
+
+  testWidgets('crane flight keeps its phone-size offscreen bounds', (
+    tester,
+  ) async {
+    final entrance = await _craneBounds(
+      tester,
+      viewportWidth: 390,
+      phase: JourneyLoadingPhase.covered,
+    );
+    expect(entrance.crane.left, greaterThanOrEqualTo(entrance.viewport.right));
+
+    final visible = await _craneBounds(
+      tester,
+      viewportWidth: 390,
+      phase: JourneyLoadingPhase.waiting,
+      settle: const Duration(milliseconds: 900),
+    );
+    final exit = await _craneBounds(
+      tester,
+      viewportWidth: 390,
+      phase: JourneyLoadingPhase.exiting,
+      settle: const Duration(milliseconds: 600),
+    );
+    expect(exit.crane.right, lessThanOrEqualTo(exit.viewport.left));
+    expect(visible.crane.width, 290);
+  });
 }
 
 JourneyLoadingTimeline _shortTimeline() => JourneyLoadingTimeline(
@@ -254,3 +327,39 @@ JourneyLoadingTimeline _shortTimeline() => JourneyLoadingTimeline(
 
 JourneyLoadingTimeline _exitTimeline() =>
     JourneyLoadingTimeline(minimumDuration: const Duration(milliseconds: 1));
+
+Future<({Rect crane, Rect viewport})> _craneBounds(
+  WidgetTester tester, {
+  required double viewportWidth,
+  required JourneyLoadingPhase phase,
+  Duration settle = Duration.zero,
+}) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = Size(viewportWidth, 800);
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: FlyingCraneFlock(
+            key: ValueKey(viewportWidth),
+            phase: phase,
+            reduceMotion: false,
+          ),
+        ),
+      ),
+    ),
+  );
+  if (settle > Duration.zero) await tester.pump(settle);
+
+  return (
+    crane: tester.getRect(
+      find.descendant(
+        of: find.byKey(const Key('journey-crane-flock')),
+        matching: find.byType(Image),
+      ),
+    ),
+    viewport: tester.getRect(find.byType(Scaffold)),
+  );
+}
