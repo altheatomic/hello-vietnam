@@ -20,32 +20,43 @@ import 'package:hellovietnam/features/personalization/domain/travel_preferences.
 import 'package:hellovietnam/features/personalization/presentation/widgets/travel_preferences_summary_card.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
+import 'package:hellovietnam/features/recommend/data/recommend_repository.dart';
 import 'package:hellovietnam/features/recommend/domain/recommend_destination.dart';
+import '../application/home_content_controller.dart';
 import '../data/home_repository.dart';
-import '../data/home_mock_data.dart';
+import '../data/home_feature_data.dart';
 import '../domain/destination.dart';
 import '../domain/dish.dart';
 import 'widgets/active_trip_card.dart';
 import 'widgets/home_banner.dart';
+import 'widgets/home_content_state.dart';
 import 'widgets/feature_grid.dart';
 import 'widgets/recommendation_section.dart';
 import 'widgets/recommendation_card.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, this.contentController});
+
+  final HomeContentController? contentController;
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final HomeRepository _homeRepository = HomeRepository();
+  final RecommendRepository _recommendRepository = RecommendRepository();
   final QuickLocationFlow _quickLocationFlow = QuickLocationFlow();
   late final AnimationController _galaxyTwinkleController;
-  List<Destination> _destinations = mockDestinations;
-  List<Dish> _dishes = mockDishes;
+  late final HomeContentController _contentController;
+  late final bool _ownsContentController;
+
+  List<Destination> get _destinations =>
+      _contentController.featured?.destinations ?? const <Destination>[];
+  List<Dish> get _dishes =>
+      _contentController.featured?.dishes ?? const <Dish>[];
 
   @override
   void initState() {
@@ -54,31 +65,48 @@ class _HomePageState extends State<HomePage>
       vsync: this,
       duration: const Duration(milliseconds: 2800),
     )..repeat();
-    _loadFeaturedContent();
+    _ownsContentController = widget.contentController == null;
+    _contentController =
+        widget.contentController ??
+        HomeContentController(
+          loadFeatured: _homeRepository.fetchFeaturedContent,
+          loadCandidates: _recommendRepository.getPersonalizedProvinces,
+        );
+    _contentController.addListener(_handleContentChanged);
+    WidgetsBinding.instance.addObserver(this);
+    _contentController.loadInitial();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _contentController.removeListener(_handleContentChanged);
+    if (_ownsContentController) {
+      _contentController.dispose();
+    }
     _galaxyTwinkleController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadFeaturedContent() async {
-    try {
-      final HomeFeaturedContent content = await _homeRepository
-          .fetchFeaturedContent();
-      if (!mounted) return;
-      setState(() {
-        if (content.destinations.isNotEmpty) {
-          _destinations = content.destinations;
-        }
-        if (content.dishes.isNotEmpty) {
-          _dishes = content.dishes;
-        }
-      });
-    } catch (_) {
-      // Keep bundled fallback cards when Supabase has no public read policy yet.
+  void _handleContentChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _contentController.refreshIfStale();
     }
+  }
+
+  Future<void> _handleRefresh() async {
+    final HomeRefreshOutcome outcome = await _contentController.refreshAll();
+    if (!mounted || !outcome.hasError) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Some Home content could not be refreshed.'),
+      ),
+    );
   }
 
   @override
@@ -127,443 +155,524 @@ class _HomePageState extends State<HomePage>
               ),
             ),
           ],
-          SingleChildScrollView(
-            padding: EdgeInsets.only(bottom: bottomContentPadding),
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Blue header section ────────────────────
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDark
-                          ? const <Color>[
-                              Color(0xFF020713),
-                              Color(0xFF05152C),
-                              Color(0xFF082A43),
-                              Color(0xFF03171D),
-                            ]
-                          : const <Color>[
-                              Color(0xFF69C9F1),
-                              AppColors.primary,
-                              Color(0xFF36D5C7),
-                            ],
-                      stops: isDark
-                          ? const <double>[0.0, 0.38, 0.72, 1.0]
-                          : null,
-                    ),
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(28),
-                    ),
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: AppColors.primaryDark.withValues(alpha: 0.22),
-                        blurRadius: 32,
-                        offset: const Offset(0, 16),
+          RefreshIndicator(
+            key: const Key('home-refresh'),
+            onRefresh: _handleRefresh,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(bottom: bottomContentPadding),
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Blue header section ────────────────────
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? const <Color>[
+                                Color(0xFF020713),
+                                Color(0xFF05152C),
+                                Color(0xFF082A43),
+                                Color(0xFF03171D),
+                              ]
+                            : const <Color>[
+                                Color(0xFF69C9F1),
+                                AppColors.primary,
+                                Color(0xFF36D5C7),
+                              ],
+                        stops: isDark
+                            ? const <double>[0.0, 0.38, 0.72, 1.0]
+                            : null,
                       ),
-                    ],
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.white.withValues(
-                          alpha: isDark ? 0.10 : 0.42,
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(28),
+                      ),
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: AppColors.primaryDark.withValues(alpha: 0.22),
+                          blurRadius: 32,
+                          offset: const Offset(0, 16),
+                        ),
+                      ],
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.white.withValues(
+                            alpha: isDark ? 0.10 : 0.42,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Stack(
-                    children: <Widget>[
-                      if (isDark)
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            child: CustomPaint(
-                              painter: _GalaxyHeaderPainter(
-                                twinkle: _galaxyTwinkleController,
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      children: <Widget>[
+                        if (isDark)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: CustomPaint(
+                                painter: _GalaxyHeaderPainter(
+                                  twinkle: _galaxyTwinkleController,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      if (!isDark)
-                        PositionedDirectional(
-                          top: statusBarHeight - 36,
-                          end: 112,
-                          child: _HomeSunHalo(pulse: _galaxyTwinkleController),
-                        ),
-                      if (!isDark)
-                        PositionedDirectional(
-                          top: statusBarHeight + 12,
-                          end: 56,
-                          child: _HomeDriftingClouds(
-                            drift: _galaxyTwinkleController,
+                        if (!isDark)
+                          PositionedDirectional(
+                            top: statusBarHeight - 36,
+                            end: 112,
+                            child: _HomeSunHalo(
+                              pulse: _galaxyTwinkleController,
+                            ),
                           ),
-                        ),
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          AppConstants.pagePadding,
-                          statusBarHeight + 12,
-                          AppConstants.pagePadding,
-                          20,
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    'Hello Vietnam',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontFamily: 'CDAIndependence',
-                                      fontSize: 27,
-                                      fontWeight: FontWeight.w600,
-                                      fontVariations: const <FontVariation>[
-                                        FontVariation('wght', 600),
-                                      ],
-                                      color: isDark
-                                          ? const Color(0xFFFFDFA3)
-                                          : AppColors.accentGold,
-                                      letterSpacing: 0,
-                                      shadows: <Shadow>[
-                                        Shadow(
-                                          color:
-                                              (isDark
-                                                      ? const Color(0xFF9B6DFF)
-                                                      : AppColors.primaryDark)
-                                                  .withValues(
-                                                    alpha: isDark ? 0.28 : 0.22,
-                                                  ),
-                                          blurRadius: isDark ? 16 : 12,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                        if (isDark)
+                        if (!isDark)
+                          PositionedDirectional(
+                            top: statusBarHeight + 12,
+                            end: 56,
+                            child: _HomeDriftingClouds(
+                              drift: _galaxyTwinkleController,
+                            ),
+                          ),
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            AppConstants.pagePadding,
+                            statusBarHeight + 12,
+                            AppConstants.pagePadding,
+                            20,
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      'Hello Vietnam',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontFamily: 'CDAIndependence',
+                                        fontSize: 27,
+                                        fontWeight: FontWeight.w600,
+                                        fontVariations: const <FontVariation>[
+                                          FontVariation('wght', 600),
+                                        ],
+                                        color: isDark
+                                            ? const Color(0xFFFFDFA3)
+                                            : AppColors.accentGold,
+                                        letterSpacing: 0,
+                                        shadows: <Shadow>[
                                           Shadow(
-                                            color: const Color(
-                                              0xFF4DDFFF,
-                                            ).withValues(alpha: 0.18),
-                                            blurRadius: 22,
-                                            offset: const Offset(0, 6),
+                                            color:
+                                                (isDark
+                                                        ? const Color(
+                                                            0xFF9B6DFF,
+                                                          )
+                                                        : AppColors.primaryDark)
+                                                    .withValues(
+                                                      alpha: isDark
+                                                          ? 0.28
+                                                          : 0.22,
+                                                    ),
+                                            blurRadius: isDark ? 16 : 12,
+                                            offset: const Offset(0, 4),
                                           ),
-                                      ],
+                                          if (isDark)
+                                            Shadow(
+                                              color: const Color(
+                                                0xFF4DDFFF,
+                                              ).withValues(alpha: 0.18),
+                                              blurRadius: 22,
+                                              offset: const Offset(0, 6),
+                                            ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                ListenableBuilder(
-                                  listenable:
-                                      NotificationInboxController.instance,
-                                  builder: (BuildContext context, Widget? child) {
-                                    final int unreadCount =
-                                        NotificationInboxController
-                                            .instance
-                                            .unreadCount;
+                                  const SizedBox(width: 12),
+                                  ListenableBuilder(
+                                    listenable:
+                                        NotificationInboxController.instance,
+                                    builder: (BuildContext context, Widget? child) {
+                                      final int unreadCount =
+                                          NotificationInboxController
+                                              .instance
+                                              .unreadCount;
 
-                                    return Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: <Widget>[
-                                        _HomeHeaderIconButton(
-                                          icon: Icons.place_outlined,
-                                          semanticLabel: 'Set location',
-                                          onPressed: () =>
-                                              _quickLocationFlow.start(context),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Stack(
-                                          clipBehavior: Clip.none,
-                                          children: <Widget>[
-                                            _HomeHeaderIconButton(
-                                              icon:
-                                                  Icons.notifications_outlined,
-                                              semanticLabel: 'Notifications',
-                                              onPressed: () => context.push(
-                                                AppRoutes.notification,
+                                      return Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: <Widget>[
+                                          _HomeHeaderIconButton(
+                                            icon: Icons.place_outlined,
+                                            semanticLabel: 'Set location',
+                                            onPressed: () => _quickLocationFlow
+                                                .start(context),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Stack(
+                                            clipBehavior: Clip.none,
+                                            children: <Widget>[
+                                              _HomeHeaderIconButton(
+                                                icon: Icons
+                                                    .notifications_outlined,
+                                                semanticLabel: 'Notifications',
+                                                onPressed: () => context.push(
+                                                  AppRoutes.notification,
+                                                ),
                                               ),
-                                            ),
-                                            if (unreadCount > 0)
-                                              Positioned(
-                                                top: -3,
-                                                right: -3,
-                                                child: Container(
-                                                  constraints:
-                                                      const BoxConstraints(
-                                                        minWidth: 18,
-                                                        minHeight: 18,
-                                                      ),
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 5,
-                                                        vertical: 2,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(
-                                                      0xFFFF3B30,
-                                                    ),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          999,
+                                              if (unreadCount > 0)
+                                                Positioned(
+                                                  top: -3,
+                                                  right: -3,
+                                                  child: Container(
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                          minWidth: 18,
+                                                          minHeight: 18,
                                                         ),
-                                                    border: Border.all(
-                                                      color: Colors.white,
-                                                      width: 1.5,
-                                                    ),
-                                                    boxShadow:
-                                                        const <BoxShadow>[
-                                                          BoxShadow(
-                                                            color: Color(
-                                                              0x26000000,
-                                                            ),
-                                                            blurRadius: 10,
-                                                            offset: Offset(
-                                                              0,
-                                                              4,
-                                                            ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 5,
+                                                          vertical: 2,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(
+                                                        0xFFFF3B30,
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            999,
                                                           ),
-                                                        ],
-                                                  ),
-                                                  alignment: Alignment.center,
-                                                  child: Text(
-                                                    unreadCount > 99
-                                                        ? '99+'
-                                                        : '$unreadCount',
-                                                    style: const TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                      color: Colors.white,
-                                                      height: 1,
-                                                      letterSpacing: 0,
+                                                      border: Border.all(
+                                                        color: Colors.white,
+                                                        width: 1.5,
+                                                      ),
+                                                      boxShadow:
+                                                          const <BoxShadow>[
+                                                            BoxShadow(
+                                                              color: Color(
+                                                                0x26000000,
+                                                              ),
+                                                              blurRadius: 10,
+                                                              offset: Offset(
+                                                                0,
+                                                                4,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                    ),
+                                                    alignment: Alignment.center,
+                                                    child: Text(
+                                                      unreadCount > 99
+                                                          ? '99+'
+                                                          : '$unreadCount',
+                                                      style: const TextStyle(
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        color: Colors.white,
+                                                        height: 1,
+                                                        letterSpacing: 0,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                          ],
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 18),
-
-                            // Search bar
-                            SearchBarWidget(
-                              hintText: strings.searchDestinations,
-                              readOnly: true,
-                              showFilterButton: false,
-                              onTap: () =>
-                                  context.push(AppRoutes.exploreSearch),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
-                // ── Active trip card (shown only when a trip is in progress) ──
-                ListenableBuilder(
-                  listenable: TripStore.instance,
-                  builder: (context, _) {
-                    final trip = TripStore.instance.activeTrip;
-                    if (trip == null) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppConstants.pagePadding,
-                        0,
-                        AppConstants.pagePadding,
-                        16,
-                      ),
-                      child: ActiveTripCard(
-                        trip: trip,
-                        onViewOrRoute: () {
-                          final int dayIndex = trip.relevantActivity.dayIndex;
-                          context.push(
-                            AppRoutes.tripPlannerDayDetailPath(dayIndex),
-                            extra: trip.days[dayIndex],
-                          );
-                        },
-                        onEnd: TripStore.instance.endTrip,
-                      ),
-                    );
-                  },
-                ),
-
-                // ── Banner ───────────────────────────────────
-                const Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppConstants.pagePadding,
-                  ),
-                  child: HomeBanner(),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Feature grid (8 buttons) ─────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppConstants.pagePadding,
-                  ),
-                  child: FeatureGrid(items: homeFeatures),
-                ),
-
-                const SizedBox(height: 12),
-
-                ListenableBuilder(
-                  listenable: TravelPreferencesRepository.instance,
-                  builder: (BuildContext context, Widget? child) {
-                    final UserTravelPreferences? preferences =
-                        TravelPreferencesRepository.instance.currentPreferences;
-                    if (preferences == null) {
-                      return const SizedBox.shrink();
-                    }
-
-                    final List<RecommendDestination> destinations =
-                        TravelRecommendationService.recommendedDestinations(
-                          preferences,
-                        ).take(4).toList(growable: false);
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.pagePadding,
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          TravelPreferencesSummaryCard(
-                            preferences: preferences,
-                            onRetune: () => context.push(
-                              AppRoutes.travelPreferencesOnboardingPath(
-                                returnTo: AppRoutes.home,
-                              ),
-                            ),
-                            buttonLabel: strings.retune,
-                          ),
-                          const SizedBox(height: 18),
-                          RecommendationSection(
-                            title: strings.pickedForYou,
-                            backgroundImage: AppConstants.destinationBgAsset,
-                            height: 290,
-                            children: destinations
-                                .map((RecommendDestination d) {
-                                  return _FavoriteRecommendationCard(
-                                    favoriteType: FavoriteType.city,
-                                    rawItemId: d.id,
-                                    fallbackName: d.name,
-                                    name: d.name,
-                                    category: d.tags.join(' · '),
-                                    rating: d.rating,
-                                    reviewCount: 0,
-                                    imagePath: d.imagePath,
-                                    onTap: () {
-                                      context.push(
-                                        AppRoutes.cityDetail,
-                                        extra: CityDetailRequest(
-                                          id: d.id,
-                                          name: d.name,
-                                          fallbackImages: <String>[
-                                            d.imagePath,
-                                            ...d.gallery,
-                                          ],
-                                          fallbackImagePath: d.imagePath,
-                                          fallbackRating: d.rating,
-                                          description: d.description,
-                                        ),
+                                            ],
+                                          ),
+                                        ],
                                       );
                                     },
-                                  );
-                                })
-                                .toList(growable: false),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 18),
+
+                              // Search bar
+                              SearchBarWidget(
+                                hintText: strings.searchDestinations,
+                                readOnly: true,
+                                showFilterButton: false,
+                                onTap: () =>
+                                    context.push(AppRoutes.exploreSearch),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                // ── Best Destination ─────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: RecommendationSection(
-                    title: strings.bestDestination,
-                    backgroundImage: AppConstants.destinationBgAsset,
-                    children: _destinations.map((d) {
-                      return _FavoriteRecommendationCard(
-                        favoriteType: FavoriteType.city,
-                        rawItemId: d.id,
-                        fallbackName: d.name,
-                        name: d.name,
-                        category: d.category,
-                        rating: d.rating,
-                        reviewCount: d.reviewCount,
-                        imagePath: d.imagePath,
-                        onTap: () {
-                          context.push(
-                            AppRoutes.cityDetail,
-                            extra: CityDetailRequest(
-                              id: d.id,
-                              name: d.name,
-                              fallbackImages: <String>[d.imagePath],
-                              fallbackImagePath: d.imagePath,
-                              fallbackRating: d.rating,
-                              description: d.description,
-                            ),
-                          );
-                        },
-                      );
-                    }).toList(),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 18),
+                  const SizedBox(height: 14),
 
-                // ── Best Dishes ──────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: RecommendationSection(
-                    title: strings.bestDishes,
-                    backgroundImage: AppConstants.dishesBgAsset,
-                    children: _dishes.map((d) {
-                      return _FavoriteRecommendationCard(
-                        favoriteType: FavoriteType.food,
-                        rawItemId: d.id,
-                        fallbackName: d.name,
-                        name: d.name,
-                        category: d.category,
-                        rating: d.rating,
-                        reviewCount: d.reviewCount,
-                        imagePath: d.imagePath,
-                        onTap: () {
-                          context.push(
-                            AppRoutes.detailPathForCategory(
-                              DetailCategory.food,
-                            ),
-                            extra: ItemDetailRequest(
-                              id: d.id,
-                              name: d.name,
-                              category: DetailCategory.food,
-                              fallbackImages: <String>[d.imagePath],
-                              fallbackImagePath: d.imagePath,
-                            ),
-                          );
-                        },
+                  // ── Active trip card (shown only when a trip is in progress) ──
+                  ListenableBuilder(
+                    listenable: TripStore.instance,
+                    builder: (context, _) {
+                      final trip = TripStore.instance.activeTrip;
+                      if (trip == null) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppConstants.pagePadding,
+                          0,
+                          AppConstants.pagePadding,
+                          16,
+                        ),
+                        child: ActiveTripCard(
+                          trip: trip,
+                          onViewOrRoute: () {
+                            final int dayIndex = trip.relevantActivity.dayIndex;
+                            context.push(
+                              AppRoutes.tripPlannerDayDetailPath(dayIndex),
+                              extra: trip.days[dayIndex],
+                            );
+                          },
+                          onEnd: TripStore.instance.endTrip,
+                        ),
                       );
-                    }).toList(),
+                    },
                   ),
-                ),
 
-                const SizedBox(height: 0),
-              ],
+                  // ── Banner ───────────────────────────────────
+                  const Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppConstants.pagePadding,
+                    ),
+                    child: HomeBanner(),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // ── Feature grid (8 buttons) ─────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.pagePadding,
+                    ),
+                    child: FeatureGrid(items: homeFeatures),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  ListenableBuilder(
+                    listenable: TravelPreferencesRepository.instance,
+                    builder: (BuildContext context, Widget? child) {
+                      final UserTravelPreferences? preferences =
+                          TravelPreferencesRepository
+                              .instance
+                              .currentPreferences;
+                      if (preferences == null) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final List<RecommendDestination> destinations =
+                          _contentController.candidates == null
+                          ? const <RecommendDestination>[]
+                          : TravelRecommendationService.rankDestinations(
+                              preferences: preferences,
+                              candidates: _contentController.candidates!,
+                            ).take(4).toList(growable: false);
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppConstants.pagePadding,
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            TravelPreferencesSummaryCard(
+                              preferences: preferences,
+                              onRetune: () => context.push(
+                                AppRoutes.travelPreferencesOnboardingPath(
+                                  returnTo: AppRoutes.home,
+                                ),
+                              ),
+                              buttonLabel: strings.retune,
+                            ),
+                            const SizedBox(height: 18),
+                            if (_contentController.candidates == null &&
+                                _contentController.isInitialLoading)
+                              const HomeRecommendationSkeleton(
+                                key: Key('home-picked-loading'),
+                              )
+                            else if (_contentController.personalizedError !=
+                                null)
+                              HomeContentError(
+                                key: const Key('home-picked-error'),
+                                message:
+                                    'Could not load personalized recommendations.',
+                                onRetry: () {
+                                  _contentController.retryPersonalized();
+                                },
+                              )
+                            else if (destinations.isNotEmpty)
+                              RecommendationSection(
+                                title: strings.pickedForYou,
+                                backgroundImage:
+                                    AppConstants.destinationBgAsset,
+                                height: 290,
+                                children: destinations
+                                    .map((RecommendDestination d) {
+                                      return _FavoriteRecommendationCard(
+                                        favoriteType: FavoriteType.city,
+                                        rawItemId: d.id,
+                                        fallbackName: d.name,
+                                        name: d.name,
+                                        category: d.tags.join(' · '),
+                                        rating: d.avgRating,
+                                        reviewCount: d.reviewCount,
+                                        imagePath: d.imagePath,
+                                        onTap: () {
+                                          context.push(
+                                            AppRoutes.cityDetail,
+                                            extra: CityDetailRequest(
+                                              id: d.id,
+                                              name: d.name,
+                                              fallbackImages: <String>[
+                                                d.imagePath,
+                                                ...d.gallery,
+                                              ],
+                                              fallbackImagePath: d.imagePath,
+                                              fallbackRating: d.avgRating,
+                                              description: d.description,
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    })
+                                    .toList(growable: false),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ── Best Destination ─────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: RecommendationSection(
+                      title: strings.bestDestination,
+                      backgroundImage: AppConstants.destinationBgAsset,
+                      children:
+                          _contentController.featured == null &&
+                              _contentController.isInitialLoading
+                          ? <Widget>[
+                              const SizedBox(
+                                width: 200,
+                                child: HomeRecommendationSkeleton(
+                                  key: Key('home-destinations-loading'),
+                                ),
+                              ),
+                            ]
+                          : _contentController.featuredError != null
+                          ? <Widget>[
+                              SizedBox(
+                                width: 200,
+                                child: HomeContentError(
+                                  key: const Key('home-destinations-error'),
+                                  message: 'Could not load destinations.',
+                                  onRetry: () {
+                                    _contentController.retryFeatured();
+                                  },
+                                ),
+                              ),
+                            ]
+                          : _destinations.map((d) {
+                              return _FavoriteRecommendationCard(
+                                favoriteType: FavoriteType.city,
+                                rawItemId: d.id,
+                                fallbackName: d.name,
+                                name: d.name,
+                                category: d.category,
+                                rating: d.rating,
+                                reviewCount: d.reviewCount,
+                                imagePath: d.imagePath,
+                                onTap: () {
+                                  context.push(
+                                    AppRoutes.cityDetail,
+                                    extra: CityDetailRequest(
+                                      id: d.id,
+                                      name: d.name,
+                                      fallbackImages: <String>[d.imagePath],
+                                      fallbackImagePath: d.imagePath,
+                                      fallbackRating: d.rating,
+                                      description: d.description,
+                                    ),
+                                  );
+                                },
+                              );
+                            }).toList(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // ── Best Dishes ──────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: RecommendationSection(
+                      title: strings.bestDishes,
+                      backgroundImage: AppConstants.dishesBgAsset,
+                      children:
+                          _contentController.featured == null &&
+                              _contentController.isInitialLoading
+                          ? <Widget>[
+                              const SizedBox(
+                                width: 200,
+                                child: HomeRecommendationSkeleton(
+                                  key: Key('home-dishes-loading'),
+                                ),
+                              ),
+                            ]
+                          : _contentController.featuredError != null
+                          ? <Widget>[
+                              SizedBox(
+                                width: 200,
+                                child: HomeContentError(
+                                  key: const Key('home-dishes-error'),
+                                  message: 'Could not load dishes.',
+                                  onRetry: () {
+                                    _contentController.retryFeatured();
+                                  },
+                                ),
+                              ),
+                            ]
+                          : _dishes.map((d) {
+                              return _FavoriteRecommendationCard(
+                                favoriteType: FavoriteType.food,
+                                rawItemId: d.id,
+                                fallbackName: d.name,
+                                name: d.name,
+                                category: d.category,
+                                rating: d.rating,
+                                reviewCount: d.reviewCount,
+                                imagePath: d.imagePath,
+                                onTap: () {
+                                  context.push(
+                                    AppRoutes.detailPathForCategory(
+                                      DetailCategory.food,
+                                    ),
+                                    extra: ItemDetailRequest(
+                                      id: d.id,
+                                      name: d.name,
+                                      category: DetailCategory.food,
+                                      fallbackImages: <String>[d.imagePath],
+                                      fallbackImagePath: d.imagePath,
+                                    ),
+                                  );
+                                },
+                              );
+                            }).toList(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 0),
+                ],
+              ),
             ),
           ),
           const Positioned.fill(child: AiChatHomeLauncher()),
