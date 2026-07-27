@@ -125,7 +125,9 @@ class _AppBootstrapState extends State<AppBootstrap> {
           themeMode: ThemeController.instance.themeMode,
           home: _error == null
               ? AppLoadingScreen(
-                  message: 'Opening Hello Vietnam',
+                  message: AppStrings.of(
+                    AppLanguageController.instance.language,
+                  ).ui('Opening Hello Vietnam'),
                   isComplete: _dataReady,
                   onExitComplete: _handleExitComplete,
                   timelineFactory: widget.timelineFactory,

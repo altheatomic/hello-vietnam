@@ -3,10 +3,40 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hellovietnam/app/app_bootstrap.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/storage/local_storage.dart' as app_storage;
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/core/widgets/journey_loading/journey_loading_timeline.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    await app_storage.LocalStorage.instance.initialize();
+  });
+
+  setUp(() async {
+    await AppLanguageController.instance.setLanguage(AppLanguage.english);
+  });
+
+  testWidgets('uses persisted Vietnamese for the bootstrap journey message', (
+    tester,
+  ) async {
+    final initialization = Completer<void>();
+    await AppLanguageController.instance.setLanguage(AppLanguage.vietnamese);
+
+    await tester.pumpWidget(
+      AppBootstrap(
+        initializeApp: () => initialization.future,
+        readyBuilder: _readyBuilder,
+        timelineFactory: _shortTimeline,
+      ),
+    );
+
+    expect(find.text('Đang mở Hello Vietnam'), findsOneWidget);
+    expect(find.text('Opening Hello Vietnam'), findsNothing);
+  });
+
   testWidgets('shows the animated loader while initialization is pending', (
     tester,
   ) async {
