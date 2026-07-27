@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 
 /// A single recommendation card (destination or dish).
 ///
@@ -12,6 +13,7 @@ class RecommendationCard extends StatelessWidget {
     required this.name,
     required this.category,
     required this.rating,
+    required this.reviewCount,
     required this.imagePath,
     this.isFavorite = false,
     this.onTap,
@@ -20,7 +22,8 @@ class RecommendationCard extends StatelessWidget {
 
   final String name;
   final String category;
-  final double rating;
+  final double? rating;
+  final int reviewCount;
   final String imagePath;
   final bool isFavorite;
   final VoidCallback? onTap;
@@ -28,6 +31,8 @@ class RecommendationCard extends StatelessWidget {
 
   bool get _isNetworkImage =>
       imagePath.startsWith('http://') || imagePath.startsWith('https://');
+
+  bool get _hasRating => rating != null && reviewCount > 0;
 
   @override
   Widget build(BuildContext context) {
@@ -145,20 +150,33 @@ class RecommendationCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(
-                        Icons.star_rounded,
-                        size: 16,
-                        color: AppColors.starColor,
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        rating.toStringAsFixed(2),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: primaryText,
+                      if (_hasRating) ...<Widget>[
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 16,
+                          color: AppColors.starColor,
                         ),
-                      ),
+                        const SizedBox(width: 2),
+                        Text(
+                          rating!.toStringAsFixed(2),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: primaryText,
+                          ),
+                        ),
+                      ] else
+                        Flexible(
+                          child: Text(
+                            context.l10n.reviewSummaryLabel(0),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: secondaryText,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 3),

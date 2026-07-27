@@ -461,6 +461,7 @@ class _HomePageState extends State<HomePage>
                                     name: d.name,
                                     category: d.tags.join(' · '),
                                     rating: d.rating,
+                                    reviewCount: 0,
                                     imagePath: d.imagePath,
                                     onTap: () {
                                       context.push(
@@ -504,6 +505,7 @@ class _HomePageState extends State<HomePage>
                         name: d.name,
                         category: d.category,
                         rating: d.rating,
+                        reviewCount: d.reviewCount,
                         imagePath: d.imagePath,
                         onTap: () {
                           context.push(
@@ -539,6 +541,7 @@ class _HomePageState extends State<HomePage>
                         name: d.name,
                         category: d.category,
                         rating: d.rating,
+                        reviewCount: d.reviewCount,
                         imagePath: d.imagePath,
                         onTap: () {
                           context.push(
@@ -972,6 +975,7 @@ class _FavoriteRecommendationCard extends StatefulWidget {
     required this.name,
     required this.category,
     required this.rating,
+    required this.reviewCount,
     required this.imagePath,
     required this.onTap,
   });
@@ -981,7 +985,8 @@ class _FavoriteRecommendationCard extends StatefulWidget {
   final String fallbackName;
   final String name;
   final String category;
-  final double rating;
+  final double? rating;
+  final int reviewCount;
   final String imagePath;
   final VoidCallback onTap;
 
@@ -1032,6 +1037,7 @@ class _FavoriteRecommendationCardState
           name: widget.name,
           category: widget.category,
           rating: widget.rating,
+          reviewCount: widget.reviewCount,
           imagePath: widget.imagePath,
           isFavorite: _controller.isFavorite(
             type: widget.favoriteType,
