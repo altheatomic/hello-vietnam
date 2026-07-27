@@ -331,6 +331,8 @@ class AppStrings {
   }
 
   static const Map<String, String> _viText = <String, String>{
+    'Opening Hello Vietnam': 'Đang mở Hello Vietnam',
+    'Preparing your Vietnam journey': 'Đang chuẩn bị hành trình Việt Nam',
     'Home': 'Trang chủ',
     'Planner': 'Lịch trình',
     'Saved': 'Đã lưu',
@@ -1041,7 +1043,7 @@ class AppStrings {
     'Destinations': 'Điểm đến',
     'No destinations available yet.': 'Hiện chưa có điểm đến.',
     'Generating your personalised itinerary…':
-        'Đang tạo lịch trình cá nhân hóa…',
+        'Đang tạo lịch trình dành riêng cho bạn…',
     'No plan ID — please generate again.':
         'Không tìm thấy mã lịch trình — vui lòng tạo lại.',
     'Could not save trip. Please try again.':

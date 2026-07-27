@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/widgets/journey_loading/vietnam_journey_loading_screen.dart';
 
 class AppLoadingScreen extends StatelessWidget {
   const AppLoadingScreen({
     super.key,
     this.message = 'Loading...',
     this.compact = false,
+    this.isComplete = false,
+    this.onExitComplete,
   });
 
   final String message;
   final bool compact;
+  final bool isComplete;
+  final VoidCallback? onExitComplete;
 
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color background = isDark
-        ? const Color(0xFF071A24)
-        : const Color(0xFFEAFBFF);
-    final Color panel = isDark ? const Color(0xFF102A36) : Colors.white;
     final Color text = isDark ? const Color(0xFFE6F7FF) : AppColors.textPrimary;
     final Color subText = isDark
         ? const Color(0xFF9BB7C5)
@@ -92,42 +93,10 @@ class AppLoadingScreen extends StatelessWidget {
       );
     }
 
-    return Scaffold(
-      backgroundColor: background,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? const <Color>[Color(0xFF071A24), Color(0xFF0B2B30)]
-                : const <Color>[Color(0xFFEAFBFF), Color(0xFFD9FFF8)],
-          ),
-        ),
-        child: Center(
-          child: Container(
-            width: 260,
-            padding: const EdgeInsets.fromLTRB(26, 30, 26, 28),
-            decoration: BoxDecoration(
-              color: panel.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.white,
-              ),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                  blurRadius: 32,
-                  offset: const Offset(0, 18),
-                ),
-              ],
-            ),
-            child: content,
-          ),
-        ),
-      ),
+    return VietnamJourneyLoadingScreen(
+      message: message,
+      isComplete: isComplete,
+      onExitComplete: onExitComplete,
     );
   }
 }
