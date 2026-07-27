@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/app/theme.dart';
+import 'package:hellovietnam/core/widgets/journey_loading/journey_loading_timeline.dart';
 import 'package:hellovietnam/core/widgets/journey_loading/vietnam_journey_loading_screen.dart';
 
 class AppLoadingScreen extends StatelessWidget {
@@ -9,12 +10,14 @@ class AppLoadingScreen extends StatelessWidget {
     this.compact = false,
     this.isComplete = false,
     this.onExitComplete,
+    this.timelineFactory,
   });
 
   final String message;
   final bool compact;
   final bool isComplete;
   final VoidCallback? onExitComplete;
+  final JourneyLoadingTimeline Function()? timelineFactory;
 
   @override
   Widget build(BuildContext context) {
@@ -97,6 +100,7 @@ class AppLoadingScreen extends StatelessWidget {
       message: message,
       isComplete: isComplete,
       onExitComplete: onExitComplete,
+      timelineFactory: timelineFactory,
     );
   }
 }
