@@ -2,28 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/widgets/journey_loading/journey_loading_timeline.dart';
+import 'package:hellovietnam/core/widgets/journey_loading/vietnam_journey_loading_screen.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_result_page.dart';
+
+typedef TripPlanLoader = Future<TripPlanResponse> Function(String idPlan);
 
 class TripResultLoader extends StatefulWidget {
   const TripResultLoader({
     super.key,
     required this.idPlan,
     required this.draft,
+    this.loadPlan,
+    this.timelineFactory,
   });
 
   final String? idPlan;
   final TripPlanResponse? draft;
+  final TripPlanLoader? loadPlan;
+  final JourneyLoadingTimeline Function()? timelineFactory;
 
   @override
   State<TripResultLoader> createState() => _TripResultLoaderState();
 }
 
 class _TripResultLoaderState extends State<TripResultLoader> {
-  TripPlanResponse? _plan;
+  TripPlanResponse? _loadedPlan;
   Object? _error;
-  bool _isLoading = false;
+  bool _showResult = false;
+  int _loadGeneration = 0;
 
   String? get _normalizedIdPlan {
     final String value = widget.idPlan?.trim() ?? '';
@@ -45,36 +54,46 @@ class _TripResultLoaderState extends State<TripResultLoader> {
   }
 
   Future<void> _load() async {
+    final int loadGeneration = ++_loadGeneration;
     final String? idPlan = _normalizedIdPlan;
     if (idPlan == null) {
       setState(() {
-        _plan = widget.draft;
+        _loadedPlan = widget.draft;
         _error = null;
-        _isLoading = false;
+        _showResult = widget.draft != null;
       });
       return;
     }
 
     setState(() {
-      _plan = null;
+      _loadedPlan = null;
       _error = null;
-      _isLoading = true;
+      _showResult = false;
     });
 
     try {
-      final TripPlanResponse plan = await TripRepository().getPlan(idPlan);
-      if (!mounted || idPlan != _normalizedIdPlan) return;
+      final TripPlanResponse plan =
+          await (widget.loadPlan?.call(idPlan) ??
+              TripRepository().getPlan(idPlan));
+      if (!mounted || loadGeneration != _loadGeneration) return;
       setState(() {
-        _plan = plan;
-        _isLoading = false;
+        _loadedPlan = plan;
       });
     } catch (error) {
-      if (!mounted || idPlan != _normalizedIdPlan) return;
+      if (!mounted || loadGeneration != _loadGeneration) return;
       setState(() {
         _error = error;
-        _isLoading = false;
+        _loadedPlan = null;
+        _showResult = false;
       });
     }
+  }
+
+  void _handleExitComplete() {
+    if (!mounted || _error != null || _loadedPlan == null || _showResult) {
+      return;
+    }
+    setState(() => _showResult = true);
   }
 
   void _goBack() {
@@ -87,10 +106,6 @@ class _TripResultLoaderState extends State<TripResultLoader> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     if (_error != null) {
       return _TripResultMessageView(
         message: 'Could not load trip. Please try again.',
@@ -99,9 +114,19 @@ class _TripResultLoaderState extends State<TripResultLoader> {
       );
     }
 
-    final TripPlanResponse? plan = _plan;
-    if (plan != null) {
+    final TripPlanResponse? plan = _loadedPlan;
+    if (_showResult && plan != null) {
       return TripResultPage(plan: plan);
+    }
+
+    if (_normalizedIdPlan != null) {
+      return VietnamJourneyLoadingScreen(
+        key: ValueKey<int>(_loadGeneration),
+        message: context.l10n.ui('Preparing your Vietnam journey'),
+        isComplete: plan != null,
+        onExitComplete: _handleExitComplete,
+        timelineFactory: widget.timelineFactory,
+      );
     }
 
     return _TripResultMessageView(
