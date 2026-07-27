@@ -208,6 +208,43 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('cloud curtain tolerates a zero-size startup frame', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Align(
+          child: SizedBox.shrink(
+            child: CloudCurtain(
+              phase: JourneyLoadingPhase.covered,
+              reduceMotion: false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('crane flock tolerates zero startup display metrics', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: MediaQuery(
+          data: MediaQueryData(devicePixelRatio: 0),
+          child: FlyingCraneFlock(
+            phase: JourneyLoadingPhase.covered,
+            reduceMotion: false,
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+  });
 }
 
 JourneyLoadingTimeline _shortTimeline() => JourneyLoadingTimeline(

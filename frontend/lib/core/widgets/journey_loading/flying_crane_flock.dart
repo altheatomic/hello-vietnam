@@ -100,10 +100,7 @@ class _FlyingCraneFlockState extends State<FlyingCraneFlock>
               child: Image.asset(
                 'assets/images/loading/vietnam_crane_flock.png',
                 fit: BoxFit.contain,
-                cacheWidth:
-                    ((widget.compact ? 180 : 290) *
-                            MediaQuery.devicePixelRatioOf(context))
-                        .round(),
+                cacheWidth: _cacheWidth(context),
                 excludeFromSemantics: true,
                 errorBuilder: (context, error, stackTrace) =>
                     const SizedBox.shrink(),
@@ -113,5 +110,12 @@ class _FlyingCraneFlockState extends State<FlyingCraneFlock>
         ),
       ),
     );
+  }
+
+  int? _cacheWidth(BuildContext context) {
+    final cacheWidth =
+        ((widget.compact ? 180 : 290) * MediaQuery.devicePixelRatioOf(context))
+            .round();
+    return cacheWidth > 0 ? cacheWidth : null;
   }
 }

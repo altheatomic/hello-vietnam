@@ -128,10 +128,13 @@ class CloudCurtain extends StatelessWidget {
     );
   }
 
-  int _cacheWidth(BuildContext context, double logicalWidth) =>
-      (logicalWidth * MediaQuery.devicePixelRatioOf(context)).round();
+  int? _cacheWidth(BuildContext context, double logicalWidth) {
+    final cacheWidth = (logicalWidth * MediaQuery.devicePixelRatioOf(context))
+        .round();
+    return cacheWidth > 0 ? cacheWidth : null;
+  }
 
-  Widget _asset(String path, {required int cacheWidth}) => Image.asset(
+  Widget _asset(String path, {required int? cacheWidth}) => Image.asset(
     path,
     fit: BoxFit.contain,
     cacheWidth: cacheWidth,
