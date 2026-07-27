@@ -1,19 +1,16 @@
-import 'package:hellovietnam/features/explore/data/explore_mock_data.dart';
-import 'package:hellovietnam/features/explore/domain/explore_item.dart';
-import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/personalization/domain/travel_preferences.dart';
-import 'package:hellovietnam/features/recommend/data/recommend_mock_data.dart';
 import 'package:hellovietnam/features/recommend/domain/recommend_destination.dart';
 
 class TravelRecommendationService {
   TravelRecommendationService._();
 
-  static List<RecommendDestination> recommendedDestinations(
-    UserTravelPreferences preferences,
-  ) {
+  static List<RecommendDestination> rankDestinations({
+    required UserTravelPreferences preferences,
+    required Iterable<RecommendDestination> candidates,
+  }) {
     final Map<String, int> keywordWeights = _keywordWeights(preferences);
     final List<RecommendDestination> destinations =
-        List<RecommendDestination>.from(mockRecommendDestinations);
+        List<RecommendDestination>.from(candidates);
 
     destinations.sort((RecommendDestination a, RecommendDestination b) {
       final int scoreA = _destinationScore(a, keywordWeights);
@@ -21,86 +18,13 @@ class TravelRecommendationService {
       if (scoreA != scoreB) {
         return scoreB.compareTo(scoreA);
       }
-      return b.rating.compareTo(a.rating);
+      final int ratingOrder = (b.avgRating ?? -1).compareTo(a.avgRating ?? -1);
+      if (ratingOrder != 0) {
+        return ratingOrder;
+      }
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
     return destinations;
-  }
-
-  static List<ExploreItem> recommendedExploreItems(
-    UserTravelPreferences preferences,
-  ) {
-    final Map<String, int> keywordWeights = _keywordWeights(preferences);
-    final List<ExploreItem> allItems = <ExploreItem>[
-      ...exploreFeatured,
-      ...exploreCategories.expand((category) => category.items),
-    ];
-
-    final Map<String, ExploreItem> deduped = <String, ExploreItem>{};
-    for (final ExploreItem item in allItems) {
-      deduped['${item.category.name}:${item.id}:${item.name}'] = item;
-    }
-
-    final List<ExploreItem> items = deduped.values.toList(growable: false);
-    items.sort((ExploreItem a, ExploreItem b) {
-      final int scoreA = _exploreScore(a, preferences, keywordWeights);
-      final int scoreB = _exploreScore(b, preferences, keywordWeights);
-      if (scoreA != scoreB) {
-        return scoreB.compareTo(scoreA);
-      }
-      return a.name.compareTo(b.name);
-    });
-    return items;
-  }
-
-  static List<ExploreCategory> orderedExploreCategories(
-    UserTravelPreferences preferences,
-  ) {
-    final List<DetailCategory> preferredOrder = preferences.preferredCategories;
-    final List<ExploreCategory> categories = List<ExploreCategory>.from(
-      exploreCategories,
-    );
-
-    categories.sort((ExploreCategory a, ExploreCategory b) {
-      final int indexA = preferredOrder.indexOf(_categoryForExplore(a));
-      final int indexB = preferredOrder.indexOf(_categoryForExplore(b));
-      return indexA.compareTo(indexB);
-    });
-    return categories;
-  }
-
-  static DetailCategory _categoryForExplore(ExploreCategory category) {
-    switch (category.id) {
-      case 'culture':
-        return DetailCategory.culture;
-      case 'food':
-        return DetailCategory.food;
-      case 'local_products':
-        return DetailCategory.localProducts;
-      case 'activities':
-      default:
-        return DetailCategory.activities;
-    }
-  }
-
-  static int _exploreScore(
-    ExploreItem item,
-    UserTravelPreferences preferences,
-    Map<String, int> keywordWeights,
-  ) {
-    int score = 0;
-    if (preferences.preferredCategories.take(2).contains(item.category)) {
-      score += 12;
-    } else if (preferences.preferredCategories.contains(item.category)) {
-      score += 6;
-    }
-
-    final String haystack = item.name.toLowerCase();
-    for (final MapEntry<String, int> entry in keywordWeights.entries) {
-      if (haystack.contains(entry.key)) {
-        score += entry.value;
-      }
-    }
-    return score;
   }
 
   static int _destinationScore(
@@ -123,8 +47,6 @@ class TravelRecommendationService {
         score += entry.value;
       }
     }
-
-    score += (destination.rating * 2).round();
     return score;
   }
 
