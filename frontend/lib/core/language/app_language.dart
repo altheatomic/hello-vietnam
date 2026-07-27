@@ -1117,6 +1117,10 @@ class AppStrings {
     'Sign in': 'Đăng nhập',
     'Could not open image': 'Không mở được ảnh',
     'AI Travel Assistant': 'Trợ lý du lịch AI',
+    'Hi! Planning a Vietnam trip? Ask me anything.':
+        'Xin chào! Bạn sắp khám phá Việt Nam? Cứ hỏi mình nhé.',
+    'Where shall we explore in Vietnam?':
+        'Mình cùng khám phá nơi nào ở Việt Nam?',
     'Chat history': 'Lịch sử trò chuyện',
     'Could not load this conversation': 'Không thể tải cuộc trò chuyện này',
     'How can I help with your Vietnam trip?':

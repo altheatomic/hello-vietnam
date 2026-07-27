@@ -5,6 +5,7 @@ import 'package:hellovietnam/features/ai_chat/application/ai_chat_controller.dar
 import 'package:hellovietnam/features/ai_chat/data/ai_chat_repository.dart';
 import 'package:hellovietnam/features/ai_chat/domain/ai_chat_models.dart';
 import 'package:hellovietnam/features/ai_chat/presentation/ai_chat_page.dart';
+import 'package:hellovietnam/features/ai_chat/presentation/widgets/liquid_glass_panel.dart';
 import 'package:hellovietnam/features/profile/application/premium_entitlement_controller.dart';
 import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
 
@@ -212,6 +213,69 @@ void main() {
 
     expect(find.text('Try the Imperial City.'), findsOneWidget);
     expect(find.byKey(const Key('ai-chat-composer')), findsNothing);
+  });
+
+  testWidgets('uses liquid glass surfaces and Lac bird identity', (
+    WidgetTester tester,
+  ) async {
+    final _FakeRepository repository = _FakeRepository()
+      ..messagePage = AiChatMessagePage(
+        items: <AiChatMessage>[_assistantMessage()],
+        nextCursor: null,
+      );
+    final AiChatController controller = AiChatController(
+      repository: repository,
+      audioPlayback: _FakeAudioPlayback(),
+    );
+    final PremiumEntitlementController entitlement =
+        await _entitlementController(active: true);
+    addTearDown(controller.dispose);
+    addTearDown(entitlement.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AiChatPage(
+          conversationId: 'conversation-1',
+          controller: controller,
+          entitlementController: entitlement,
+          onOpenHistory: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('ai-chat-liquid-background')), findsOneWidget);
+    expect(find.byKey(const Key('ai-chat-glass-app-bar')), findsOneWidget);
+    expect(find.byKey(const Key('ai-chat-glass-bubble')), findsOneWidget);
+    expect(find.byKey(const Key('lac-bird-avatar')), findsWidgets);
+    expect(find.byKey(const Key('ai-chat-glass-composer')), findsOneWidget);
+  });
+
+  testWidgets('uses an opaque pale-blue app bar in light mode', (
+    WidgetTester tester,
+  ) async {
+    final PremiumEntitlementController entitlement =
+        await _entitlementController(active: false);
+    addTearDown(entitlement.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.light(),
+        home: AiChatPage(
+          entitlementController: entitlement,
+          onUpgrade: () {},
+          onOpenHistory: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final LiquidGlassPanel appBarGlass = tester.widget<LiquidGlassPanel>(
+      find.byKey(const Key('ai-chat-glass-app-bar')),
+    );
+    expect(appBarGlass.tint, isNotNull);
+    expect(appBarGlass.tint!.a, greaterThan(0.85));
+    expect(appBarGlass.tint!.b, greaterThan(appBarGlass.tint!.r));
   });
 }
 

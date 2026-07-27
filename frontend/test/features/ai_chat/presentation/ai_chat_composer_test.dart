@@ -68,4 +68,25 @@ void main() {
     expect(sendCalls, 1);
     expect(input.controller?.text, isEmpty);
   });
+
+  testWidgets('uses a pale-blue send surface when disabled in light mode', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.light(),
+        home: Scaffold(
+          body: AiChatComposer(isSending: false, onSend: (_) async => true),
+        ),
+      ),
+    );
+
+    final AnimatedContainer surface = tester.widget<AnimatedContainer>(
+      find.byKey(const Key('ai-chat-send-surface')),
+    );
+    final BoxDecoration decoration = surface.decoration! as BoxDecoration;
+
+    expect(decoration.color, isNotNull);
+    expect(decoration.color!.computeLuminance(), greaterThan(0.75));
+  });
 }

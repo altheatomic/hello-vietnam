@@ -11,7 +11,10 @@ import '../application/ai_chat_controller.dart';
 import '../domain/ai_chat_models.dart';
 import 'ai_chat_list_change.dart';
 import 'widgets/ai_chat_bubble.dart';
+import 'widgets/ai_chat_background.dart';
 import 'widgets/ai_chat_composer.dart';
+import 'widgets/lac_bird_avatar.dart';
+import 'widgets/liquid_glass_panel.dart';
 
 class AiChatPage extends StatefulWidget {
   const AiChatPage({
@@ -176,55 +179,106 @@ class _AiChatPageState extends State<AiChatPage> {
     final PremiumEntitlementStatus status = _entitlementController.state.status;
     final bool canUsePremium = _entitlementController.canUsePremium;
 
+    final Widget content = status == PremiumEntitlementStatus.loading
+        ? const Center(
+            key: Key('ai-chat-premium-loading'),
+            child: CircularProgressIndicator(),
+          )
+        : status == PremiumEntitlementStatus.inactive &&
+              !hasExistingConversation
+        ? _PremiumGate(onUpgrade: _openUpgrade)
+        : !canUsePremium &&
+              status != PremiumEntitlementStatus.inactive &&
+              !hasExistingConversation
+        ? _PremiumVerificationError(onRetry: _entitlementController.retry)
+        : ListenableBuilder(
+            listenable: _controller,
+            builder: (BuildContext context, Widget? child) {
+              final AiChatState currentState = _controller.state;
+              return Column(
+                children: <Widget>[
+                  if (!canUsePremium &&
+                      status == PremiumEntitlementStatus.inactive)
+                    _ExpiredPremiumNotice(onUpgrade: _openUpgrade),
+                  if (!canUsePremium &&
+                      status != PremiumEntitlementStatus.inactive)
+                    _PremiumVerificationNotice(
+                      onRetry: _entitlementController.retry,
+                    ),
+                  Expanded(child: _buildMessages(currentState)),
+                  if (canUsePremium)
+                    AiChatComposer(
+                      key: const Key('ai-chat-composer'),
+                      isSending: currentState.isSending,
+                      onSend: _controller.send,
+                    ),
+                ],
+              );
+            },
+          );
+
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: isDark
+          ? const Color(0xFF020B12)
+          : const Color(0xFFF4FCFF),
       appBar: AppBar(
-        title: Text(context.l10n.ui('AI Travel Assistant')),
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: LiquidGlassPanel(
+          key: const Key('ai-chat-glass-app-bar'),
+          borderRadius: 0,
+          blur: 22,
+          tint: isDark
+              ? const Color(0xFF102C3B).withValues(alpha: 0.92)
+              : const Color(0xFFDDF4FF).withValues(alpha: 0.96),
+          borderColor: isDark
+              ? Colors.white.withValues(alpha: 0.16)
+              : colors.primary.withValues(alpha: 0.20),
+          child: const SizedBox.expand(),
+        ),
+        titleSpacing: 4,
+        title: Row(
+          children: <Widget>[
+            LiquidGlassPanel(
+              borderRadius: 16,
+              blur: 10,
+              padding: const EdgeInsets.all(4),
+              child: LacBirdAvatar(size: 28, color: colors.primary),
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                context.l10n.ui('AI Travel Assistant'),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
         actions: <Widget>[
-          IconButton(
-            key: const Key('ai-chat-history'),
-            tooltip: context.l10n.ui('Chat history'),
-            onPressed: _openHistory,
-            icon: const Icon(Icons.history_rounded),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 8),
+            child: LiquidGlassPanel(
+              borderRadius: 22,
+              blur: 12,
+              child: IconButton(
+                key: const Key('ai-chat-history'),
+                tooltip: context.l10n.ui('Chat history'),
+                onPressed: _openHistory,
+                icon: const Icon(Icons.history_rounded),
+              ),
+            ),
           ),
         ],
       ),
-      body: status == PremiumEntitlementStatus.loading
-          ? const Center(
-              key: Key('ai-chat-premium-loading'),
-              child: CircularProgressIndicator(),
-            )
-          : status == PremiumEntitlementStatus.inactive &&
-                !hasExistingConversation
-          ? _PremiumGate(onUpgrade: _openUpgrade)
-          : !canUsePremium &&
-                status != PremiumEntitlementStatus.inactive &&
-                !hasExistingConversation
-          ? _PremiumVerificationError(onRetry: _entitlementController.retry)
-          : ListenableBuilder(
-              listenable: _controller,
-              builder: (BuildContext context, Widget? child) {
-                final AiChatState currentState = _controller.state;
-                return Column(
-                  children: <Widget>[
-                    if (!canUsePremium &&
-                        status == PremiumEntitlementStatus.inactive)
-                      _ExpiredPremiumNotice(onUpgrade: _openUpgrade),
-                    if (!canUsePremium &&
-                        status != PremiumEntitlementStatus.inactive)
-                      _PremiumVerificationNotice(
-                        onRetry: _entitlementController.retry,
-                      ),
-                    Expanded(child: _buildMessages(currentState)),
-                    if (canUsePremium)
-                      AiChatComposer(
-                        key: const Key('ai-chat-composer'),
-                        isSending: currentState.isSending,
-                        onSend: _controller.send,
-                      ),
-                  ],
-                );
-              },
-            ),
+      body: Stack(
+        children: <Widget>[
+          const Positioned.fill(child: AiChatBackground()),
+          Positioned.fill(child: content),
+        ],
+      ),
     );
   }
 
@@ -244,11 +298,12 @@ class _AiChatPageState extends State<AiChatPage> {
               : () => _controller.loadConversation(widget.conversationId!),
         );
       }
-      return const _ChatStatus(
+      return _ChatStatus(
         icon: Icons.travel_explore_rounded,
-        title: 'How can I help with your Vietnam trip?',
-        subtitle:
-            'Ask for travel ideas, useful local information, or help finding an app feature.',
+        title: context.l10n.ui('Where shall we explore in Vietnam?'),
+        subtitle: context.l10n.ui(
+          'Ask for travel ideas, useful local information, or help finding an app feature.',
+        ),
       );
     }
 
@@ -268,18 +323,32 @@ class _AiChatPageState extends State<AiChatPage> {
         }
         final int messageIndex = state.isLoadingOlder ? index - 1 : index;
         final AiChatMessage message = state.messages[messageIndex];
-        return AiChatBubble(
-          message: message,
-          isFailed: state.isMessageFailed(message),
-          isPlaying: state.playingMessageId == message.id,
-          canUsePremium: _entitlementController.canUsePremium,
-          onRetry: _controller.retryLastSend,
-          onSpeak: () => _controller.playMessage(
-            messageId: message.id,
-            content: message.content,
-            languageCode: _speechLanguageCode(),
+        return TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 360),
+          curve: Curves.easeOutCubic,
+          tween: Tween<double>(begin: 0, end: 1),
+          builder: (BuildContext context, double value, Widget? child) {
+            return Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 8 * (1 - value)),
+                child: child,
+              ),
+            );
+          },
+          child: AiChatBubble(
+            message: message,
+            isFailed: state.isMessageFailed(message),
+            isPlaying: state.playingMessageId == message.id,
+            canUsePremium: _entitlementController.canUsePremium,
+            onRetry: _controller.retryLastSend,
+            onSpeak: () => _controller.playMessage(
+              messageId: message.id,
+              content: message.content,
+              languageCode: _speechLanguageCode(),
+            ),
+            onAction: _openAction,
           ),
-          onAction: _openAction,
         );
       },
     );

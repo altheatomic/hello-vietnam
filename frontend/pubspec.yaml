@@ -87,6 +87,7 @@ flutter:
     - assets/images/recommend/
     - assets/images/Auth_Image/
     - assets/images/popular_apps/
+    - assets/images/ai_chat/
     #  - assets/images/destinations/
     - assets/images/dishes/
 
