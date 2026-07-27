@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
+import 'package:hellovietnam/features/planner/data/planner_province.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/data/reference_data_cache_repository.dart';
@@ -15,18 +16,18 @@ class TripLocationPage extends StatefulWidget {
 }
 
 // Fallback shown when city_province table is empty / migration not yet applied.
-const List<_ProvinceItem> _kFallbackProvinces = <_ProvinceItem>[
-  _ProvinceItem(id: 'halong', name: 'Ha Long Bay', area: 'Quang Ninh'),
-  _ProvinceItem(id: 'hoian', name: 'Hoi An', area: 'Quang Nam'),
-  _ProvinceItem(id: 'dalat', name: 'Da Lat', area: 'Lam Dong'),
-  _ProvinceItem(id: 'phuquoc', name: 'Phu Quoc', area: 'Kien Giang'),
-  _ProvinceItem(id: 'sapa', name: 'Sapa', area: 'Lao Cai'),
-  _ProvinceItem(id: 'nhatrang', name: 'Nha Trang', area: 'Khanh Hoa'),
+const List<PlannerProvince> _kFallbackProvinces = <PlannerProvince>[
+  PlannerProvince(id: 'halong', name: 'Ha Long Bay', area: 'Quang Ninh'),
+  PlannerProvince(id: 'hoian', name: 'Hoi An', area: 'Quang Nam'),
+  PlannerProvince(id: 'dalat', name: 'Da Lat', area: 'Lam Dong'),
+  PlannerProvince(id: 'phuquoc', name: 'Phu Quoc', area: 'Kien Giang'),
+  PlannerProvince(id: 'sapa', name: 'Sapa', area: 'Lao Cai'),
+  PlannerProvince(id: 'nhatrang', name: 'Nha Trang', area: 'Khanh Hoa'),
 ];
 
 class _TripLocationPageState extends State<TripLocationPage> {
   final TextEditingController _searchController = TextEditingController();
-  List<_ProvinceItem> _provinces = <_ProvinceItem>[];
+  List<PlannerProvince> _provinces = <PlannerProvince>[];
   String? _selectedId;
   bool _isLoading = true;
 
@@ -57,16 +58,9 @@ class _TripLocationPageState extends State<TripLocationPage> {
 
       setState(() {
         _provinces = rows
-            .map(
-              (Map<String, dynamic> row) => _ProvinceItem(
-                id: (row['id_province'] as String? ?? '').trim(),
-                name: (row['name'] as String? ?? '').trim(),
-                area: (row['region_code'] as String? ?? '').trim(),
-                coverImage: row['cover_image'] as String?,
-              ),
-            )
+            .map(PlannerProvince.fromReferenceRecord)
             .where(
-              (_ProvinceItem item) =>
+              (PlannerProvince item) =>
                   item.id.isNotEmpty && item.name.isNotEmpty,
             )
             .take(100)
@@ -84,7 +78,7 @@ class _TripLocationPageState extends State<TripLocationPage> {
     }
   }
 
-  List<_ProvinceItem> get _filtered {
+  List<PlannerProvince> get _filtered {
     final query = _searchController.text;
     if (query.trim().isEmpty) return _provinces;
     return _provinces
@@ -167,20 +161,6 @@ class _TripLocationPageState extends State<TripLocationPage> {
 
 // ── Data model ────────────────────────────────────────────────────────────────
 
-class _ProvinceItem {
-  const _ProvinceItem({
-    required this.id,
-    required this.name,
-    required this.area,
-    this.coverImage,
-  });
-
-  final String id;
-  final String name;
-  final String area;
-  final String? coverImage;
-}
-
 // ── Widgets ───────────────────────────────────────────────────────────────────
 
 class _SearchField extends StatelessWidget {
@@ -247,7 +227,7 @@ class _DestinationCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final _ProvinceItem item;
+  final PlannerProvince item;
   final bool selected;
   final VoidCallback onTap;
 

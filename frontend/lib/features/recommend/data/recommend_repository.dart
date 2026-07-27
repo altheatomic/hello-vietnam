@@ -1,7 +1,10 @@
 import 'package:hellovietnam/core/config/env.dart';
+import 'package:hellovietnam/core/media/media_url_resolver.dart';
 import 'package:hellovietnam/core/network/supabase_function_client.dart';
 
 import '../domain/recommend_destination.dart';
+
+typedef RecommendMediaResolver = String Function(String rawValue);
 
 class ProvinceTopPlace {
   const ProvinceTopPlace({
@@ -26,13 +29,24 @@ class ProvinceTopPlace {
   final String? subcategoryName;
   final double tagMatch;
 
-  factory ProvinceTopPlace.fromJson(Map<String, dynamic> json) {
+  factory ProvinceTopPlace.fromJson(
+    Map<String, dynamic> json, {
+    RecommendMediaResolver mediaResolver = MediaUrlResolver.resolve,
+  }) {
+    final String coverImage = _resolveOptionalMedia(
+      json['cover_image'],
+      mediaResolver,
+    );
+    final String galleryUrl = _resolveOptionalMedia(
+      json['gallery_url'],
+      mediaResolver,
+    );
     return ProvinceTopPlace(
       idPlace: json['id_place'] as String? ?? '',
       name: json['name'] as String? ?? '',
       address: json['address'] as String?,
-      coverImage: json['cover_image'] as String?,
-      galleryUrl: json['gallery_url'] as String?,
+      coverImage: coverImage.isEmpty ? null : coverImage,
+      galleryUrl: galleryUrl.isEmpty ? null : galleryUrl,
       averageRating: (json['average_rating'] as num?)?.toDouble(),
       reviewCount: (json['review_count'] as num?)?.toInt(),
       subcategoryName: json['subcategory_name'] as String?,
@@ -56,9 +70,12 @@ class ProvinceDetail {
   final int placeCount;
   final List<ProvinceTopPlace> topPlaces;
 
-  factory ProvinceDetail.fromJson(Map<String, dynamic> json) {
-    final List<dynamic> rawPlaces =
-        json['top_places'] as List<dynamic>? ?? <dynamic>[];
+  factory ProvinceDetail.fromJson(
+    Map<String, dynamic> json, {
+    RecommendMediaResolver mediaResolver = MediaUrlResolver.resolve,
+  }) {
+    final List<Object?> rawPlaces =
+        json['top_places'] as List<Object?>? ?? const <Object?>[];
     return ProvinceDetail(
       idProvince: json['id_province'] as String? ?? '',
       name: json['name'] as String? ?? '',
@@ -66,17 +83,24 @@ class ProvinceDetail {
       placeCount: (json['place_count'] as num?)?.toInt() ?? 0,
       topPlaces: rawPlaces
           .whereType<Map<String, dynamic>>()
-          .map(ProvinceTopPlace.fromJson)
-          .toList(),
+          .map(
+            (Map<String, dynamic> row) =>
+                ProvinceTopPlace.fromJson(row, mediaResolver: mediaResolver),
+          )
+          .toList(growable: false),
     );
   }
 }
 
 class RecommendRepository {
-  RecommendRepository({SupabaseFunctionClient? functionClient})
-    : _functionClient = functionClient ?? SupabaseFunctionClient();
+  RecommendRepository({
+    SupabaseFunctionClient? functionClient,
+    RecommendMediaResolver mediaResolver = MediaUrlResolver.resolve,
+  }) : _functionClient = functionClient ?? SupabaseFunctionClient(),
+       _mediaResolver = mediaResolver;
 
   final SupabaseFunctionClient _functionClient;
+  final RecommendMediaResolver _mediaResolver;
 
   Future<List<RecommendDestination>> getPersonalizedProvinces({
     int limit = 100,
@@ -102,7 +126,7 @@ class RecommendRepository {
       'idProvince': idProvince,
       'limit': limit,
     });
-    return ProvinceDetail.fromJson(data);
+    return ProvinceDetail.fromJson(data, mediaResolver: _mediaResolver);
   }
 
   Future<Map<String, dynamic>> _invoke(Map<String, Object?> body) {
@@ -116,12 +140,17 @@ class RecommendRepository {
 
   RecommendDestination _destinationFromJson(Map<String, dynamic> json) {
     final List<String> gallery =
-        (json['gallery'] as List<dynamic>? ?? <dynamic>[])
+        (json['gallery'] as List<Object?>? ?? const <Object?>[])
             .whereType<String>()
-            .toList();
-    final String imagePath =
-        json['cover_image'] as String? ??
-        (gallery.isNotEmpty ? gallery.first : '');
+            .map(_resolveMedia)
+            .where((String value) => value.isNotEmpty)
+            .toList(growable: false);
+    final String coverImage = _resolveMedia(
+      json['cover_image']?.toString() ?? '',
+    );
+    final String imagePath = coverImage.isNotEmpty
+        ? coverImage
+        : (gallery.isNotEmpty ? gallery.first : '');
     final int placeCount = (json['place_count'] as num?)?.toInt() ?? 0;
     final double avgRating = (json['avg_rating'] as num?)?.toDouble() ?? 0;
 
@@ -137,8 +166,20 @@ class RecommendRepository {
       // (travel_recommendation_service.dart).
       rating: (json['final_score'] as num?)?.toDouble() ?? 0,
       avgRating: avgRating,
+      reviewCount: (json['review_count'] as num?)?.toInt() ?? 0,
       gallery: gallery,
       bestMonths: const <int>[],
     );
   }
+
+  String _resolveMedia(String rawValue) =>
+      _resolveOptionalMedia(rawValue, _mediaResolver);
+}
+
+String _resolveOptionalMedia(
+  Object? rawValue,
+  RecommendMediaResolver mediaResolver,
+) {
+  final String raw = rawValue?.toString().trim() ?? '';
+  return raw.isEmpty ? '' : mediaResolver(raw).trim();
 }
