@@ -68,6 +68,9 @@ class _VietnamJourneyLoadingScreenState
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final colorScheme = Theme.of(context).colorScheme;
+    final isExiting =
+        _timeline.phase == JourneyLoadingPhase.exiting ||
+        _timeline.phase == JourneyLoadingPhase.complete;
     final content = Stack(
       fit: StackFit.expand,
       children: [
@@ -100,6 +103,7 @@ class _VietnamJourneyLoadingScreenState
                   Semantics(
                     liveRegion: true,
                     label: widget.message,
+                    excludeSemantics: true,
                     child: Text(
                       widget.message,
                       textAlign: TextAlign.center,
@@ -129,12 +133,18 @@ class _VietnamJourneyLoadingScreenState
     return Semantics(
       key: const Key('journey-loading-screen'),
       container: true,
-      child: reduceMotion
-          ? KeyedSubtree(
-              key: const Key('journey-loading-reduced-motion'),
-              child: content,
-            )
-          : content,
+      child: AnimatedOpacity(
+        key: const Key('journey-loading-exit'),
+        duration: Duration(milliseconds: reduceMotion ? 120 : 600),
+        curve: Curves.easeInOut,
+        opacity: isExiting ? 0 : 1,
+        child: reduceMotion
+            ? KeyedSubtree(
+                key: const Key('journey-loading-reduced-motion'),
+                child: content,
+              )
+            : content,
+      ),
     );
   }
 }

@@ -61,7 +61,11 @@ class _FlyingCraneFlockState extends State<FlyingCraneFlock>
     final isExiting =
         widget.phase == JourneyLoadingPhase.exiting ||
         widget.phase == JourneyLoadingPhase.complete;
-    final duration = Duration(milliseconds: widget.reduceMotion ? 120 : 700);
+    final duration = widget.reduceMotion
+        ? const Duration(milliseconds: 120)
+        : (isExiting
+              ? const Duration(milliseconds: 600)
+              : const Duration(milliseconds: 900));
 
     return AnimatedBuilder(
       animation: _hoverController,
@@ -96,6 +100,10 @@ class _FlyingCraneFlockState extends State<FlyingCraneFlock>
               child: Image.asset(
                 'assets/images/loading/vietnam_crane_flock.png',
                 fit: BoxFit.contain,
+                cacheWidth:
+                    ((widget.compact ? 180 : 290) *
+                            MediaQuery.devicePixelRatioOf(context))
+                        .round(),
                 excludeFromSemantics: true,
                 errorBuilder: (context, error, stackTrace) =>
                     const SizedBox.shrink(),

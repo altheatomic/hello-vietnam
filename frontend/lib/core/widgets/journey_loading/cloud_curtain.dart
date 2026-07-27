@@ -15,6 +15,9 @@ class CloudCurtain extends StatelessWidget {
   static const _leftAsset = 'assets/images/loading/vietnam_cloud_left.png';
   static const _rightAsset = 'assets/images/loading/vietnam_cloud_right.png';
   static const _backAsset = 'assets/images/loading/vietnam_cloud_back.png';
+  static const _fullMotionDuration = Duration(milliseconds: 1200);
+  static const _reducedMotionDuration = Duration(milliseconds: 120);
+  static const _exitDuration = Duration(milliseconds: 600);
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +25,9 @@ class CloudCurtain extends StatelessWidget {
     final isExiting =
         phase == JourneyLoadingPhase.exiting ||
         phase == JourneyLoadingPhase.complete;
-    final duration = Duration(milliseconds: reduceMotion ? 120 : 800);
+    final duration = reduceMotion
+        ? _reducedMotionDuration
+        : (isExiting ? _exitDuration : _fullMotionDuration);
     final curve = reduceMotion ? Curves.easeOut : Curves.easeInOutCubic;
 
     return IgnorePointer(
@@ -34,6 +39,23 @@ class CloudCurtain extends StatelessWidget {
           return Stack(
             fit: StackFit.expand,
             children: [
+              Positioned.fill(
+                child: AnimatedOpacity(
+                  duration: duration,
+                  curve: curve,
+                  opacity: isCovered ? 1 : 0,
+                  child: DecoratedBox(
+                    key: const Key('journey-cloud-coverage'),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF0D8798), Color(0xFF1EB8C2)],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               Positioned(
                 top: height * .08,
                 left: -width * .12,
@@ -48,7 +70,10 @@ class CloudCurtain extends StatelessWidget {
                     duration: duration,
                     curve: curve,
                     opacity: isCovered ? .88 : (isExiting ? 0 : .42),
-                    child: _asset(_backAsset),
+                    child: _asset(
+                      _backAsset,
+                      cacheWidth: _cacheWidth(context, width * 1.24),
+                    ),
                   ),
                 ),
               ),
@@ -67,7 +92,10 @@ class CloudCurtain extends StatelessWidget {
                     duration: duration,
                     curve: curve,
                     opacity: isExiting ? 0 : 1,
-                    child: _asset(_leftAsset),
+                    child: _asset(
+                      _leftAsset,
+                      cacheWidth: _cacheWidth(context, width * .82),
+                    ),
                   ),
                 ),
               ),
@@ -86,7 +114,10 @@ class CloudCurtain extends StatelessWidget {
                     duration: duration,
                     curve: curve,
                     opacity: isExiting ? 0 : 1,
-                    child: _asset(_rightAsset),
+                    child: _asset(
+                      _rightAsset,
+                      cacheWidth: _cacheWidth(context, width * .82),
+                    ),
                   ),
                 ),
               ),
@@ -97,9 +128,13 @@ class CloudCurtain extends StatelessWidget {
     );
   }
 
-  Widget _asset(String path) => Image.asset(
+  int _cacheWidth(BuildContext context, double logicalWidth) =>
+      (logicalWidth * MediaQuery.devicePixelRatioOf(context)).round();
+
+  Widget _asset(String path, {required int cacheWidth}) => Image.asset(
     path,
     fit: BoxFit.contain,
+    cacheWidth: cacheWidth,
     excludeFromSemantics: true,
     errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
   );
