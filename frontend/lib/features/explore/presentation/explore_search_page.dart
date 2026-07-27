@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
@@ -22,6 +24,7 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
   List<ExploreProvince> _suggestions = <ExploreProvince>[];
   bool _isSearching = false;
   int _searchVersion = 0;
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -35,12 +38,14 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
-  Future<void> _onChanged(String query) async {
+  void _onChanged(String query) {
     final int version = ++_searchVersion;
     final String trimmed = query.trim();
+    _searchDebounce?.cancel();
     if (trimmed.isEmpty) {
       setState(() {
         _isSearching = false;
@@ -49,11 +54,19 @@ class _ExploreSearchPageState extends State<ExploreSearchPage> {
       return;
     }
 
-    setState(() => _isSearching = true);
+    setState(() {
+      _isSearching = true;
+      _suggestions = <ExploreProvince>[];
+    });
+    _searchDebounce = Timer(const Duration(milliseconds: 200), () {
+      unawaited(_searchLocal(trimmed, version));
+    });
+  }
 
+  Future<void> _searchLocal(String query, int version) async {
     try {
       final List<ExploreProvince> results = await ExploreRepository.instance
-          .searchProvinces(trimmed);
+          .searchProvinces(query);
       if (!mounted || version != _searchVersion) return;
       setState(() {
         _suggestions = results;

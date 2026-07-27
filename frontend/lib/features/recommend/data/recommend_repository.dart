@@ -10,6 +10,7 @@ class ProvinceTopPlace {
     this.address,
     this.coverImage,
     this.galleryUrl,
+    this.gallery = const <String>[],
     this.averageRating,
     this.reviewCount,
     this.subcategoryName,
@@ -21,6 +22,7 @@ class ProvinceTopPlace {
   final String? address;
   final String? coverImage;
   final String? galleryUrl;
+  final List<String> gallery;
   final double? averageRating;
   final int? reviewCount;
   final String? subcategoryName;
@@ -33,6 +35,9 @@ class ProvinceTopPlace {
       address: json['address'] as String?,
       coverImage: json['cover_image'] as String?,
       galleryUrl: json['gallery_url'] as String?,
+      gallery: (json['gallery'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<String>()
+          .toList(growable: false),
       averageRating: (json['average_rating'] as num?)?.toDouble(),
       reviewCount: (json['review_count'] as num?)?.toInt(),
       subcategoryName: json['subcategory_name'] as String?,
@@ -123,8 +128,7 @@ class RecommendRepository {
         json['cover_image'] as String? ??
         (gallery.isNotEmpty ? gallery.first : '');
     final int placeCount = (json['place_count'] as num?)?.toInt() ?? 0;
-    final double avgRating =
-        (json['avg_rating'] as num?)?.toDouble() ?? 0;
+    final double avgRating = (json['avg_rating'] as num?)?.toDouble() ?? 0;
 
     return RecommendDestination(
       id: json['id_province'] as String? ?? '',

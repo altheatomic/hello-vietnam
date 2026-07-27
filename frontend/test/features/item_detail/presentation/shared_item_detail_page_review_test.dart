@@ -211,6 +211,55 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('hero uses cover image and lower gallery uses gallery images', (
+    WidgetTester tester,
+  ) async {
+    const ItemDetail detail = ItemDetail(
+      id: 'gallery-source-test',
+      name: 'Gallery source test',
+      category: DetailCategory.activities,
+      images: <String>['legacy-cover.jpg', 'legacy-gallery.jpg'],
+      coverImage: 'cover.jpg',
+      galleryImages: <String>['gallery-1.jpg', 'gallery-2.jpg'],
+      rating: 4.5,
+      reviewCount: 0,
+      ratingLabel: 'Great',
+      description: 'Description',
+      whatToExpect: 'What to expect',
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SharedItemDetailPage(
+          detail: detail,
+          showReviews: false,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey<String>('detail-image:cover.jpg')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('detail-image:gallery-1.jpg')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('detail-image:gallery-2.jpg')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('detail-image:legacy-cover.jpg')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('detail-image:legacy-gallery.jpg')),
+      findsNothing,
+    );
+  });
 }
 
 class _FakeItemDetailRepository extends ItemDetailRepository {

@@ -4,6 +4,41 @@ import 'package:hellovietnam/features/reviews/data/review_repository.dart';
 import 'package:hellovietnam/features/reviews/domain/review_models.dart';
 
 void main() {
+  setUp(ReviewRepository.clearCache);
+
+  test('caches the first review summary for the same content', () async {
+    int callCount = 0;
+    final ReviewRepository repository = ReviewRepository(
+      functionClient: SupabaseFunctionClient(
+        invoker:
+            (String functionName, {Map<String, String>? headers, Object? body}) async {
+              callCount++;
+              return <String, Object?>{
+                'average_rating': 5.0,
+                'review_count': 1,
+                'rating_1_count': 0,
+                'rating_2_count': 0,
+                'rating_3_count': 0,
+                'rating_4_count': 0,
+                'rating_5_count': 1,
+              };
+            },
+      ),
+    );
+
+    await repository.loadSummary(
+      contentType: ReviewContentType.activity,
+      contentId: 'activity-1',
+    );
+    final RatingSummary second = await repository.loadSummary(
+      contentType: ReviewContentType.activity,
+      contentId: 'activity-1',
+    );
+
+    expect(callCount, 1);
+    expect(second.reviewCount, 1);
+  });
+
   test('loadReviews sends page, pageSize, and optional rating filter', () async {
     Object? capturedBody;
 

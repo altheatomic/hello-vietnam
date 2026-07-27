@@ -159,6 +159,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
         _detailError = null;
         _isDetailLoading = false;
       });
+      _warmImageCache(live);
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -166,6 +167,21 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
         _isDetailLoading = false;
       });
     }
+  }
+
+  void _warmImageCache(ItemDetail detail) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final Iterable<String> images = <String>{
+        ...detail.effectiveHeroImages,
+        ...detail.effectiveGalleryImages,
+      };
+      for (final String image in images) {
+        final String resolved = MediaUrlResolver.resolve(image);
+        if (!MediaUrlResolver.isNetwork(resolved)) continue;
+        unawaited(precacheImage(NetworkImage(resolved), context));
+      }
+    });
   }
 
   @override
@@ -351,7 +367,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                   _DetailHeader(title: _detail.name),
                   const SizedBox(height: 20),
                   _HeroImageCarousel(
-                    images: _detail.images,
+                    images: _detail.effectiveHeroImages,
                     rating: _displayRating,
                     isFavorite: _isFavorite,
                     showShareAction: _effectiveShowShareAction,
@@ -381,6 +397,9 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     const SizedBox(height: 14),
                     if (reviewContentType != null) ...<Widget>[
                       ReviewSection(
+                        key: ValueKey<String>(
+                          'reviews:${reviewContentType.apiValue}:${_detail.effectiveReviewContentId}',
+                        ),
                         contentType: reviewContentType,
                         contentId: _detail.effectiveReviewContentId,
                         itemTitle: _detail.name,
@@ -415,7 +434,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     ),
                     const SizedBox(height: 18),
                   ],
-                  ..._detail.images
+                  ..._detail.effectiveGalleryImages
                       .take(4)
                       .map(
                         (String image) => Padding(
@@ -574,6 +593,9 @@ class _HeroImageCarousel extends StatelessWidget {
                 onPageChanged: onPageChanged,
                 itemBuilder: (BuildContext context, int index) {
                   return _NetworkOrAssetImage(
+                    key: ValueKey<String>(
+                      'detail-image:${displayImages[index]}',
+                    ),
                     imagePath: displayImages[index],
                     borderRadius: 0,
                     showOverlay: true,
@@ -1290,6 +1312,7 @@ class _GalleryImageCard extends StatelessWidget {
         child: AspectRatio(
           aspectRatio: 16 / 10,
           child: _NetworkOrAssetImage(
+            key: ValueKey<String>('detail-image:$imagePath'),
             imagePath: imagePath,
             borderRadius: 0,
             showOverlay: false,
@@ -1324,6 +1347,7 @@ class _ThumbnailImage extends StatelessWidget {
 
 class _NetworkOrAssetImage extends StatelessWidget {
   const _NetworkOrAssetImage({
+    super.key,
     required this.imagePath,
     required this.borderRadius,
     required this.showOverlay,

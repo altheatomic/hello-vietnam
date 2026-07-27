@@ -99,26 +99,36 @@ async def get_province_detail(
         sum((p.get("average_rating") or 0.0) for p in places) / len(places), 1
     )
 
-    def _first_url(gallery_raw):
+    def _gallery_urls(gallery_raw):
+        urls = []
         for item in (gallery_raw or []):
             if isinstance(item, dict):
-                url = item.get("url") or item.get("image_url") or ""
+                url = (
+                    item.get("url")
+                    or item.get("image_url")
+                    or item.get("path")
+                    or item.get("key")
+                    or item.get("src")
+                    or ""
+                )
                 if url:
-                    return url
+                    urls.append(url)
             elif isinstance(item, str) and item:
-                return item
-        return None
+                urls.append(item)
+        return urls
 
     top_places = []
     for p in ranked[:limit]:
         sub      = p.get("place_subcategory") or {}
         sub_name = sub.get("name", "") if isinstance(sub, dict) else ""
+        gallery_urls = _gallery_urls(p.get("gallery"))
         top_places.append({
             "id_place":       str(p["id_place"]),
             "name":           p.get("name"),
             "address":        p.get("address"),
             "cover_image":    p.get("cover_image"),
-            "gallery_url":    _first_url(p.get("gallery")),
+            "gallery_url":    gallery_urls[0] if gallery_urls else None,
+            "gallery":        gallery_urls,
             "average_rating": p.get("average_rating"),
             "review_count":   p.get("review_count"),
             "subcategory_name": sub_name,
