@@ -125,4 +125,3 @@
 - [ ] **Step 4: Review the diff and report any environment-blocked checks**
 
   Run: `git diff --check; git status --short`
-
