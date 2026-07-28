@@ -574,4 +574,3 @@ Run the app on the configured device and verify:
 git add frontend
 git commit -m "feat: add Vietnam journey loading experience"
 ```
-
