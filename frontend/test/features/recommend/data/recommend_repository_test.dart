@@ -45,4 +45,19 @@ void main() {
       expect(result.single.reviewCount, 5);
     },
   );
+
+  test('resolves top-place gallery keys from province detail responses', () {
+    final ProvinceTopPlace place = ProvinceTopPlace.fromJson(<String, dynamic>{
+      'id_place': 'place-1',
+      'name': 'Gallery place',
+      'cover_image': 'places/place-1/cover.jpg',
+      'gallery': <String>['places/place-1/one.jpg', 'places/place-1/two.jpg'],
+    }, mediaResolver: (String raw) => 'https://media.test/$raw');
+
+    expect(place.coverImage, 'https://media.test/places/place-1/cover.jpg');
+    expect(place.gallery, <String>[
+      'https://media.test/places/place-1/one.jpg',
+      'https://media.test/places/place-1/two.jpg',
+    ]);
+  });
 }

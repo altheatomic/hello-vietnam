@@ -13,6 +13,7 @@ class ProvinceTopPlace {
     this.address,
     this.coverImage,
     this.galleryUrl,
+    this.gallery = const <String>[],
     this.averageRating,
     this.reviewCount,
     this.subcategoryName,
@@ -24,6 +25,7 @@ class ProvinceTopPlace {
   final String? address;
   final String? coverImage;
   final String? galleryUrl;
+  final List<String> gallery;
   final double? averageRating;
   final int? reviewCount;
   final String? subcategoryName;
@@ -41,12 +43,24 @@ class ProvinceTopPlace {
       json['gallery_url'],
       mediaResolver,
     );
+    final List<String> gallery =
+        (json['gallery'] as List<Object?>? ?? const <Object?>[])
+            .whereType<String>()
+            .map(
+              (String rawValue) =>
+                  _resolveOptionalMedia(rawValue, mediaResolver),
+            )
+            .where((String value) => value.isNotEmpty)
+            .toList(growable: false);
     return ProvinceTopPlace(
       idPlace: json['id_place'] as String? ?? '',
       name: json['name'] as String? ?? '',
       address: json['address'] as String?,
       coverImage: coverImage.isEmpty ? null : coverImage,
-      galleryUrl: galleryUrl.isEmpty ? null : galleryUrl,
+      galleryUrl: galleryUrl.isNotEmpty
+          ? galleryUrl
+          : (gallery.isNotEmpty ? gallery.first : null),
+      gallery: gallery,
       averageRating: (json['average_rating'] as num?)?.toDouble(),
       reviewCount: (json['review_count'] as num?)?.toInt(),
       subcategoryName: json['subcategory_name'] as String?,

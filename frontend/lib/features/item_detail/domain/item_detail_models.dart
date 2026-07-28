@@ -56,6 +56,8 @@ class ItemDetail {
   final String name;
   final DetailCategory category;
   final List<String> images;
+  final String? coverImage;
+  final List<String> galleryImages;
   final double rating;
   final bool isFavorite;
   final int reviewCount;
@@ -70,6 +72,8 @@ class ItemDetail {
     required this.name,
     required this.category,
     required this.images,
+    this.coverImage,
+    this.galleryImages = const <String>[],
     required this.rating,
     this.isFavorite = false,
     required this.reviewCount,
@@ -85,12 +89,27 @@ class ItemDetail {
       (reviewContentId != null && reviewContentId!.trim().isNotEmpty) ||
       _uuidPattern.hasMatch(id);
 
+  List<String> get effectiveHeroImages {
+    final String? cover = coverImage?.trim();
+    if (cover != null && cover.isNotEmpty) return <String>[cover];
+    return images.take(1).toList(growable: false);
+  }
+
+  List<String> get effectiveGalleryImages {
+    if (coverImage != null) return galleryImages;
+    if (galleryImages.isNotEmpty) return galleryImages;
+    if (images.length > 1) return images.skip(1).toList(growable: false);
+    return images;
+  }
+
   ItemDetail copyWith({
     String? id,
     String? reviewContentId,
     String? name,
     DetailCategory? category,
     List<String>? images,
+    String? coverImage,
+    List<String>? galleryImages,
     double? rating,
     bool? isFavorite,
     int? reviewCount,
@@ -105,6 +124,8 @@ class ItemDetail {
       name: name ?? this.name,
       category: category ?? this.category,
       images: images ?? this.images,
+      coverImage: coverImage ?? this.coverImage,
+      galleryImages: galleryImages ?? this.galleryImages,
       rating: rating ?? this.rating,
       isFavorite: isFavorite ?? this.isFavorite,
       reviewCount: reviewCount ?? this.reviewCount,

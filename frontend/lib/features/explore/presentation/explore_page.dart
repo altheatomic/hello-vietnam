@@ -11,6 +11,7 @@ import 'package:hellovietnam/features/explore/data/explore_repository.dart';
 import 'package:hellovietnam/features/explore/domain/explore_item.dart';
 import 'package:hellovietnam/features/explore/domain/explore_province.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
+import 'package:hellovietnam/features/item_detail/data/item_detail_repository.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/personalization/data/travel_preferences_repository.dart';
 import 'package:hellovietnam/features/personalization/domain/travel_preferences.dart';
@@ -762,17 +763,19 @@ class _ExploreItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        final ItemDetailRequest request = ItemDetailRequest(
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          fallbackImages: <String>[item.imagePath],
+          fallbackImagePath: item.imagePath,
+          trackExploreBehavior: true,
+          exploreProvinceId: item.provinceId,
+        );
+        ItemDetailRepository.instance.prefetch(request);
         context.push(
           AppRoutes.detailPathForCategory(item.category),
-          extra: ItemDetailRequest(
-            id: item.id,
-            name: item.name,
-            category: item.category,
-            fallbackImages: <String>[item.imagePath],
-            fallbackImagePath: item.imagePath,
-            trackExploreBehavior: true,
-            exploreProvinceId: item.provinceId,
-          ),
+          extra: request,
         );
       },
       child: ClipRRect(

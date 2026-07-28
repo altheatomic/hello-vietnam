@@ -130,6 +130,19 @@ const PROVINCE_DESCRIPTION_CANDIDATES = [
   "short_description",
   "summary",
 ];
+const PROVINCE_TRANSLATION_TABLE = "province_translation";
+const PROVINCE_TRANSLATION_ID_CANDIDATES = [
+  "id_province",
+  "province_id",
+  "id",
+];
+const PROVINCE_TRANSLATION_LANGUAGE_CANDIDATES = [
+  "language_code",
+  "lang_code",
+  "language",
+  "lang",
+  "locale",
+];
 
 const EVENT_SCORE_MAP: Record<ExploreEventType, number> = EVENT_SCORES;
 
@@ -144,14 +157,8 @@ const CATEGORY_CONFIGS: Record<ExploreCategoryKey, CategoryConfig> = {
     idCandidates: ["id_activity", "activity_id", "id"],
     provinceCandidates: ["id_province", "id_city", "province_id", "city_id"],
     nameCandidates: ["name", "title"],
-    imageCandidates: [
-      "cover_image",
-      "image_path",
-      "images_path",
-      "url_image",
-      "image",
-    ],
-    galleryCandidates: ["gallery", "images", "gallery_images"],
+    imageCandidates: ["cover_image"],
+    galleryCandidates: ["gallery"],
     descriptionCandidates: [
       "short_description",
       "description",
@@ -173,14 +180,8 @@ const CATEGORY_CONFIGS: Record<ExploreCategoryKey, CategoryConfig> = {
     idCandidates: ["id_culture", "culture_id", "id"],
     provinceCandidates: ["id_province", "id_city", "province_id", "city_id"],
     nameCandidates: ["name", "title"],
-    imageCandidates: [
-      "cover_image",
-      "image_path",
-      "images_path",
-      "url_image",
-      "image",
-    ],
-    galleryCandidates: ["gallery", "images", "gallery_images"],
+    imageCandidates: ["cover_image"],
+    galleryCandidates: ["gallery"],
     descriptionCandidates: [
       "short_description",
       "description",
@@ -203,14 +204,8 @@ const CATEGORY_CONFIGS: Record<ExploreCategoryKey, CategoryConfig> = {
     idCandidates: ["id_food", "food_id", "id"],
     provinceCandidates: ["id_province", "id_city", "province_id", "city_id"],
     nameCandidates: ["name", "title"],
-    imageCandidates: [
-      "cover_image",
-      "image_path",
-      "images_path",
-      "url_image",
-      "image",
-    ],
-    galleryCandidates: ["gallery", "images", "gallery_images"],
+    imageCandidates: ["cover_image"],
+    galleryCandidates: ["gallery"],
     descriptionCandidates: [
       "short_description",
       "description",
@@ -236,14 +231,8 @@ const CATEGORY_CONFIGS: Record<ExploreCategoryKey, CategoryConfig> = {
     idCandidates: ["id_local_product", "local_product_id", "id"],
     provinceCandidates: ["id_province", "id_city", "province_id", "city_id"],
     nameCandidates: ["name", "title"],
-    imageCandidates: [
-      "cover_image",
-      "image_path",
-      "images_path",
-      "url_image",
-      "image",
-    ],
-    galleryCandidates: ["gallery", "images", "gallery_images"],
+    imageCandidates: ["cover_image"],
+    galleryCandidates: ["gallery"],
     descriptionCandidates: [
       "short_description",
       "description",
@@ -340,7 +329,14 @@ export async function handleExploreRequest(req: Request): Promise<Response> {
       case "searchExploreProvinces": {
         const query = requiredString(payload.query, "query");
         const limit = clampPositiveInt(payload.limit, 8, 20);
-        return jsonResponse(await service.searchProvinces(query, limit));
+        const language = normalizedLanguage(payload.language);
+        return jsonResponse(
+          await service.searchProvinces(query, limit, language),
+        );
+      }
+      case "getExploreProvinces": {
+        const language = normalizedLanguage(payload.language);
+        return jsonResponse(await service.getProvinces(language));
       }
       case "getExploreCategoryItems": {
         const category = parseCategory(payload.category);
@@ -433,11 +429,25 @@ class ExploreService {
     };
   }
 
-  async searchProvinces(query: string, limit: number): Promise<JsonObject> {
+  async getProvinces(language: string | null): Promise<JsonObject> {
     const rows = await this.loadProvinceRows();
+    const translations = await this.loadProvinceTranslations(language);
+    const items = rows
+      .map((row) => mapProvinceRow(row, translations))
+      .filter((item): item is ProvinceSummary => item != null);
+    return { items };
+  }
+
+  async searchProvinces(
+    query: string,
+    limit: number,
+    language: string | null,
+  ): Promise<JsonObject> {
+    const rows = await this.loadProvinceRows();
+    const translations = await this.loadProvinceTranslations(language);
     const needle = normalizeSearch(query);
     const matches = rows
-      .map((row) => mapProvinceRow(row))
+      .map((row) => mapProvinceRow(row, translations))
       .filter((item): item is ProvinceSummary => item != null)
       .filter((item) => {
         const haystacks = [
@@ -554,6 +564,8 @@ class ExploreService {
       throw new Error(`Explore item is invalid: ${category}:${id}.`);
     }
 
+    const coverImage = collectCoverImage(row, config);
+    const galleryImages = collectGalleryImages(row, config);
     const images = collectItemImages(row, config);
     const description = translatedCandidateString(
       row,
@@ -573,6 +585,8 @@ class ExploreService {
         name: item.name,
         category,
         images,
+        coverImage,
+        galleryImages,
         rating: item.rating ?? 0,
         reviewCount: item.reviewCount,
         ratingLabel: ratingLabel(item.rating),
@@ -1260,6 +1274,35 @@ class ExploreService {
     return asRows(data);
   }
 
+  private async loadProvinceTranslations(
+    language: string | null,
+  ): Promise<Map<string, JsonObject>> {
+    if (!language) return new Map<string, JsonObject>();
+
+    const { data, error } = await this.client
+      .from(PROVINCE_TRANSLATION_TABLE)
+      .select("*");
+    if (error) {
+      if (isMissingTableError(error)) {
+        return new Map<string, JsonObject>();
+      }
+      throw new Error(`${PROVINCE_TRANSLATION_TABLE}: ${error.message}`);
+    }
+
+    const rows = asRows(data);
+    const idColumn = pickOptionalColumn(
+      rows,
+      PROVINCE_TRANSLATION_ID_CANDIDATES,
+    );
+    const languageColumn = pickOptionalColumn(
+      rows,
+      PROVINCE_TRANSLATION_LANGUAGE_CANDIDATES,
+    );
+    if (!idColumn) return new Map<string, JsonObject>();
+
+    return pickPreferredTranslations(rows, idColumn, languageColumn, language);
+  }
+
   private async resolveProvinceTableName(): Promise<string | null> {
     if (this.provinceTableName !== undefined) {
       return this.provinceTableName;
@@ -1416,13 +1459,18 @@ class ExploreService {
   }
 }
 
-function mapProvinceRow(row: JsonObject): ProvinceSummary | null {
+function mapProvinceRow(
+  row: JsonObject,
+  translations: Map<string, JsonObject> = new Map<string, JsonObject>(),
+): ProvinceSummary | null {
   const idColumn = pickOptionalColumn([row], PROVINCE_ID_CANDIDATES);
   const nameColumn = pickOptionalColumn([row], PROVINCE_NAME_CANDIDATES);
   if (!idColumn || !nameColumn) return null;
 
   const id = stringValue(row[idColumn]);
-  const name = stringValue(row[nameColumn]);
+  const translation = translations.get(id ?? "");
+  const translatedName = stringValue(translation?.["name"]);
+  const name = translatedName ?? stringValue(row[nameColumn]);
   if (!id || !name) return null;
 
   const areaColumn = pickOptionalColumn([row], PROVINCE_AREA_CANDIDATES);
@@ -1537,10 +1585,30 @@ function matchesExploreQuery(
 }
 
 function collectItemImages(row: JsonObject, config: CategoryConfig): string[] {
-  const images: string[] = [];
+  const coverImage = collectCoverImage(row, config);
+  return uniqueStrings([
+    ...(coverImage ? [coverImage] : []),
+    ...collectGalleryImages(row, config),
+  ]);
+}
+
+function collectCoverImage(
+  row: JsonObject,
+  config: CategoryConfig,
+): string | null {
   for (const key of config.imageCandidates) {
-    if (key in row) images.push(...imageTokens(row[key]));
+    if (!(key in row)) continue;
+    const image = firstImageToken(row[key]);
+    if (image) return image;
   }
+  return null;
+}
+
+function collectGalleryImages(
+  row: JsonObject,
+  config: CategoryConfig,
+): string[] {
+  const images: string[] = [];
   for (const key of config.galleryCandidates) {
     if (key in row) images.push(...imageTokens(row[key]));
   }
@@ -1568,7 +1636,14 @@ function imageTokens(value: unknown): string[] {
   }
   if (value && typeof value === "object") {
     const objectValue = value as Record<string, unknown>;
-    for (const candidate of ["url", "path", "src", "image", "imagePath"]) {
+    for (const candidate of [
+      "url",
+      "path",
+      "key",
+      "src",
+      "image",
+      "imagePath",
+    ]) {
       const token = stringValue(objectValue[candidate]);
       if (token) return [token];
     }
@@ -1907,7 +1982,7 @@ function firstImageToken(value: unknown): string | null {
 function firstGalleryToken(value: unknown): string | null {
   if (Array.isArray(value)) {
     for (const item of value) {
-      const parsed = stringValue(item);
+      const parsed = firstGalleryToken(item);
       if (parsed) return parsed;
     }
     return null;
@@ -1928,6 +2003,8 @@ function firstGalleryToken(value: unknown): string | null {
 
   if (value && typeof value === "object") {
     const objectValue = value as Record<string, unknown>;
+    const directKey = stringValue(objectValue.key);
+    if (directKey) return directKey;
     for (const candidate of ["images", "items", "gallery"]) {
       if (candidate in objectValue) {
         const parsed = firstGalleryToken(objectValue[candidate]);

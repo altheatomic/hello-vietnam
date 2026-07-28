@@ -83,13 +83,19 @@ class _RecommendedPlaceDetailPageState
             }
 
             final ProvinceTopPlace place = snapshot.data!;
-            final List<String> images = <String>[
-              if (place.coverImage?.trim().isNotEmpty == true)
-                place.coverImage!,
-              if (place.galleryUrl?.trim().isNotEmpty == true &&
-                  place.galleryUrl != place.coverImage)
-                place.galleryUrl!,
-            ];
+            final String? coverImage =
+                place.coverImage?.trim().isNotEmpty == true
+                ? place.coverImage!.trim()
+                : null;
+            final List<String> galleryImages = place.gallery
+                .map((String image) => image.trim())
+                .where(
+                  (String image) => image.isNotEmpty && image != coverImage,
+                )
+                .toList(growable: false);
+            final List<String> images = coverImage == null
+                ? galleryImages.take(1).toList(growable: false)
+                : <String>[coverImage];
             final String description = <String>[
               if (place.subcategoryName?.trim().isNotEmpty == true)
                 place.subcategoryName!,
@@ -103,6 +109,8 @@ class _RecommendedPlaceDetailPageState
                 name: place.name,
                 category: DetailCategory.activities,
                 images: images,
+                coverImage: coverImage,
+                galleryImages: galleryImages,
                 rating: place.averageRating ?? 0,
                 reviewCount: place.reviewCount ?? 0,
                 ratingLabel: (place.averageRating ?? 0).toStringAsFixed(1),
