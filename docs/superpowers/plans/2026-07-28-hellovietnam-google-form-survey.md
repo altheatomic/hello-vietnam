@@ -63,7 +63,7 @@ experience.setChoices([
   experience.createChoice('Đã trải nghiệm đầy đủ các chức năng chính.', profilePage),
   experience.createChoice('Đã trải nghiệm một số chức năng.', profilePage),
   experience.createChoice('Chỉ xem bản trình diễn.', profilePage),
-  experience.createChoice('Chưa trải nghiệm.', FormApp.PageNavigationType.SUBMIT),
+  experience.createChoice('Chưa trải nghiệm.', ineligiblePage),
 ]);
 ```
 
