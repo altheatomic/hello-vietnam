@@ -145,27 +145,12 @@
       "Bash(cp ../hellovietnam-remote/frontend/lib/features/profile/presentation/language_page.dart frontend/lib/features/profile/presentation/language_page.dart)",
       "Bash(cp ../hellovietnam-remote/frontend/lib/features/home/data/home_mock_data.dart frontend/lib/features/home/data/home_mock_data.dart)",
       "Read(//c/Users/Asus/hellovietnam-remote/frontend/lib/features/forum/presentation/**)",
-      "Bash(awk 'NR>=1180 && NR<=1220' frontend/lib/features/forum/presentation/widgets/forum_widgets.dart)",
-      "Bash(git status *)",
-      "Read(//c/Users/Asus/AppData/Local/Temp/claude/c--Users-Asus-hellovietnam/884fc7e8-7421-4ce2-b40b-dd486646062a/scratchpad/**)",
-      "Bash(grep -i MainActivity __TRACKED_VAR__/remote_diff.txt)",
-      "Bash(grep -i pbxproj __TRACKED_VAR__/remote_diff.txt)",
-      "Bash(grep -i 'trip_wizard\\\\|TripWizardData' __TRACKED_VAR__/remote_diff.txt __TRACKED_VAR__/local_diff.txt)",
-      "Bash(grep -i trip_plan_request __TRACKED_VAR__/remote_diff.txt)",
-      "Bash(SCRATCH=\"/c/Users/Asus/AppData/Local/Temp/claude/c--Users-Asus-hellovietnam/884fc7e8-7421-4ce2-b40b-dd486646062a/scratchpad\" *)",
-      "Bash(diff -u \"/c/Users/Asus/hellovietnam/frontend/lib/features/planner/presentation/business_location_page.dart\" \"/c/Users/Asus/hellovietnam-remote/frontend/lib/features/planner/presentation/business_location_page.dart\")",
-      "Read(//c/Users/Asus/hellovietnam-remote/frontend/lib/features/planner/presentation/**)",
-      "Bash(python -m py_compile scripts/translate_province_descriptions.py services/recommend_service.py)",
-      "Bash(python -m py_compile services/recommend_service.py routes/recommend.py)",
-      "Bash(cd /c/Users/Asus/hellovietnam-remote && cat frontend/test/features/planner/presentation/business_location_page_test.dart 2>/dev/null || find frontend/test -iname \"business_location_page_test.dart\")",
-      "Bash(echo \"=== ItemDetail constructor - LOCAL \\(base state, unchanged\\) ===\" *)",
-      "Bash(python -m py_compile cf_service/services/recommend_service.py)"
+      "Bash(awk 'NR>=1180 && NR<=1220' frontend/lib/features/forum/presentation/widgets/forum_widgets.dart)"
     ],
     "additionalDirectories": [
       "\\tmp",
       "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\auth\\presentation",
-      "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\item_detail\\presentation",
-      "C:\\Users\\Asus\\AppData\\Local\\Temp\\claude\\c--Users-Asus-hellovietnam\\884fc7e8-7421-4ce2-b40b-dd486646062a\\scratchpad"
+      "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\item_detail\\presentation"
     ]
   }
 }
