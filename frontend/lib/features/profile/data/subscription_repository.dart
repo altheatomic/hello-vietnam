@@ -551,54 +551,11 @@ class SubscriptionRepository {
     return 'Expires ${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 
-  Future<SubscriptionPurchaseResult> purchase({
-    required String planCode,
-    required String provider,
-    required String method,
-    String? voucherCode,
-  }) async {
-    final User? user = _client.auth.currentUser;
-    if (user == null) {
-      throw Exception('Please sign in before purchasing a subscription.');
-    }
-
-    final List<Map<String, dynamic>> rows = await _resolvedTableClient.list(
-      'subscription purchase',
-      () async {
-        return _client.rpc(
-          'purchase_subscription_with_voucher',
-          params: <String, dynamic>{
-            'p_plan_code': planCode,
-            'p_provider': provider,
-            'p_method': method,
-            'p_voucher_code': voucherCode,
-          },
-        );
-      },
-    );
-    if (rows.isEmpty) {
-      throw Exception('Subscription purchase did not return a result.');
-    }
-
-    final Map<String, dynamic> row = rows.first;
-    return SubscriptionPurchaseResult(
-      paymentId: row['id_payment'].toString(),
-      subscriptionId: row['id_subscription'].toString(),
-      originalAmountMinor: (row['original_amount_minor'] as num).toInt(),
-      discountMinor: (row['discount_minor'] as num).toInt(),
-      finalAmountMinor: (row['final_amount_minor'] as num).toInt(),
-      voucherCode: row['voucher_code'] as String?,
-      subscriptionEndDate: DateTime.tryParse(
-        row['subscription_end_date']?.toString() ?? '',
-      ),
-    );
-  }
-
   Future<SubscriptionCheckoutResult> createStripeCheckout({
     required String planCode,
     String? voucherCode,
-    required String successUrl,
-    required String cancelUrl,
+    required bool isWeb,
+    String? webOrigin,
   }) async {
     final Map<String, dynamic> data = await _resolvedFunctionClient.invokeJson(
       Env.subscriptionPaymentFunction,
@@ -606,8 +563,8 @@ class SubscriptionRepository {
         'action': 'create_checkout',
         'planCode': planCode,
         'voucherCode': voucherCode,
-        'successUrl': successUrl,
-        'cancelUrl': cancelUrl,
+        'platform': isWeb ? 'web' : 'android',
+        'webOrigin': isWeb ? webOrigin : null,
       },
     );
     return _checkoutResultFromResponse(data);

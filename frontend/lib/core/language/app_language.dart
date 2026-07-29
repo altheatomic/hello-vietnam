@@ -582,8 +582,13 @@ class AppStrings {
     'Payment Method': 'Phương thức thanh toán',
     'Change': 'Đổi',
     'Important Information': 'Thông tin quan trọng',
-    'Your subscription will automatically renew. You can cancel anytime from your account settings.':
-        'Gói đăng ký sẽ tự động gia hạn. Bạn có thể hủy bất cứ lúc nào trong cài đặt tài khoản.',
+    'TEST MODE · No real charge': 'CHẾ ĐỘ THỬ NGHIỆM · Không thu tiền thật',
+    'This is a one-time sandbox payment. Premium access does not renew automatically.':
+        'Đây là thanh toán thử nghiệm một lần. Quyền Premium không tự động gia hạn.',
+    'Payment synchronization is incomplete': 'Chưa hoàn tất đồng bộ thanh toán',
+    'Your checkout session is saved. Retry to verify the payment; you will not be charged again.':
+        'Phiên thanh toán đã được lưu. Hãy thử lại để xác minh; bạn sẽ không bị tính tiền lần nữa.',
+    'Retry verification': 'Thử xác minh lại',
     'I agree to the ': 'Tôi đồng ý với ',
     'Terms & Conditions': 'Điều khoản & Điều kiện',
     ' and ': ' và ',

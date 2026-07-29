@@ -153,22 +153,57 @@ void main() {
           .createStripeCheckout(
             planCode: '6m',
             voucherCode: 'LOYALTY10',
-            successUrl: 'com.hellovietnam.app://upgrade-payment?plan=6m',
-            cancelUrl: 'com.hellovietnam.app://upgrade-payment?plan=6m',
+            isWeb: false,
           );
 
       expect(capturedBody, <String, Object?>{
         'action': 'create_checkout',
         'planCode': '6m',
         'voucherCode': 'LOYALTY10',
-        'successUrl': 'com.hellovietnam.app://upgrade-payment?plan=6m',
-        'cancelUrl': 'com.hellovietnam.app://upgrade-payment?plan=6m',
+        'platform': 'android',
+        'webOrigin': null,
       });
       expect(result.requiresCheckout, isTrue);
       expect(result.checkoutUrl, 'https://checkout.stripe.test/session');
       expect(result.sessionId, 'cs_test_123');
     },
   );
+
+  test('createStripeCheckout sends only the current web origin', () async {
+    Object? capturedBody;
+
+    final SubscriptionRepository repository = SubscriptionRepository(
+      functionClient: SupabaseFunctionClient(
+        invoker:
+            (
+              String functionName, {
+              Map<String, String>? headers,
+              Object? body,
+            }) async {
+              capturedBody = body;
+              return <String, dynamic>{
+                'status': 'requires_checkout',
+                'checkoutUrl': 'https://checkout.stripe.test/session',
+                'sessionId': 'cs_test_web',
+              };
+            },
+      ),
+    );
+
+    await repository.createStripeCheckout(
+      planCode: '6m',
+      isWeb: true,
+      webOrigin: 'https://hello-vietnam.test',
+    );
+
+    expect(capturedBody, <String, Object?>{
+      'action': 'create_checkout',
+      'planCode': '6m',
+      'voucherCode': null,
+      'platform': 'web',
+      'webOrigin': 'https://hello-vietnam.test',
+    });
+  });
 
   test(
     'confirmStripeCheckout parses purchase payload from function client',
