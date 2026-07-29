@@ -79,7 +79,8 @@ Flutter không được:
 - Đọc raw request body.
 - Xác minh `Stripe-Signature` bằng webhook secret.
 - Chỉ xử lý event được allowlist.
-- Tìm `payment_attempt` theo Stripe Session ID.
+- Tìm `payment_attempt` theo `metadata.attempt_id`, rồi đối chiếu Stripe
+  Session ID với attempt.
 - Gọi cùng transaction finalize như callback.
 
 ### PostgreSQL
@@ -102,11 +103,15 @@ Bảng mới lưu snapshot tại thời điểm bắt đầu Checkout:
 - `plan_code text not null`
 - `plan_name text not null`
 - `duration_days integer not null check (duration_days > 0)`
+- `original_amount_minor bigint not null check (original_amount_minor >= 0)`
+- `discount_minor bigint not null check (discount_minor >= 0)`
 - `amount_minor bigint not null check (amount_minor >= 0)`
+- `voucher_code text null`
 - `currency text not null check (currency = 'USD')`
 - `stripe_session_id text unique`
 - `status text not null` với các giá trị `pending`, `paid`, `finalized`,
   `expired`, `failed`
+- `failure_reason text null`
 - `created_at`, `updated_at`, `finalized_at`
 
 RLS được bật. Client không có policy ghi hoặc đọc trực tiếp; mọi thao tác đi qua
@@ -178,7 +183,8 @@ giá đã được Stripe thu.
 
 ## Transaction finalize
 
-`finalize_verified_payment(attempt_id uuid)` thực hiện trong một transaction:
+`finalize_verified_payment(attempt_id uuid, stripe_session_id text,
+amount_total bigint, currency text)` thực hiện trong một transaction:
 
 1. Khóa attempt bằng `FOR UPDATE`.
 2. Nếu đã finalized, trả lại payment/subscription hiện có.
