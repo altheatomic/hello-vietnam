@@ -13,7 +13,7 @@ type JsonRecord = Record<string, unknown>;
 
 type StoreOptions = {
   serviceClient: SupabaseClient;
-  authClientFactory: (authorization: string) => SupabaseClient;
+  authClientFactory?: (authorization: string) => SupabaseClient;
 };
 
 type PricingSnapshot = {
@@ -27,17 +27,24 @@ type PricingSnapshot = {
 
 export class SupabaseStripePaymentStore implements SubscriptionPaymentStore {
   private readonly serviceClient: SupabaseClient;
-  private readonly authClientFactory: (authorization: string) => SupabaseClient;
+  private readonly authClientFactory:
+    | ((authorization: string) => SupabaseClient)
+    | null;
 
   constructor(options: StoreOptions) {
     this.serviceClient = options.serviceClient;
-    this.authClientFactory = options.authClientFactory;
+    this.authClientFactory = options.authClientFactory ?? null;
   }
 
   async authenticate(
     authorization: string | null,
   ): Promise<{ id: string } | null> {
-    if (!authorization?.startsWith("Bearer ")) return null;
+    if (
+      !authorization?.startsWith("Bearer ") ||
+      this.authClientFactory === null
+    ) {
+      return null;
+    }
     const client = this.authClientFactory(authorization);
     const { data, error } = await client.auth.getUser();
     if (error || !data.user) return null;
