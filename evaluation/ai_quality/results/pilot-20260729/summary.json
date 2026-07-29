@@ -1,0 +1,84 @@
+{
+  "ai_chat": {
+    "cases": 14,
+    "success_rate": 0.9285714285714286,
+    "error_count": 1,
+    "latency_ms": {
+      "mean": 3418.283,
+      "p50": 2404.5150000000003,
+      "p95": 8248.397649999995,
+      "p99": 14634.818729999992
+    },
+    "human_ratings_pending": 13,
+    "action_accuracy": 1.0,
+    "required_fact_coverage": 0.9285714285714286,
+    "automatic_pass_rate": 0.9285714285714286
+  },
+  "ai_search": {
+    "cases": 20,
+    "success_rate": 0.95,
+    "error_count": 1,
+    "latency_ms": {
+      "mean": 9277.349789473685,
+      "p50": 8273.421,
+      "p95": 14774.6555,
+      "p99": 15548.0471
+    },
+    "human_ratings_pending": 19,
+    "schema_valid_rate": 0.95,
+    "name_accuracy": 0.2,
+    "db_match_accuracy": 0.6,
+    "end_to_end_accuracy": 0.2,
+    "classification": {
+      "count": 20,
+      "accuracy": 0.95,
+      "macro_f1": 0.9666666666666667,
+      "per_class": {
+        "food": {
+          "support": 12,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "object": {
+          "support": 8,
+          "precision": 1.0,
+          "recall": 0.875,
+          "f1": 0.9333333333333333
+        }
+      }
+    },
+    "ece": 0.7452631578947366
+  },
+  "translation": {
+    "cases": 14,
+    "success_rate": 1.0,
+    "error_count": 0,
+    "latency_ms": {
+      "mean": 1159.4620714285713,
+      "p50": 1152.7959999999998,
+      "p95": 1365.5734,
+      "p99": 1379.05388
+    },
+    "human_ratings_pending": 14,
+    "mean_token_f1": 0.9256166056166056,
+    "mean_character_f_score": 0.9116533696946613,
+    "number_preservation_rate": 0.8571428571428571,
+    "automatic_pass_rate": 0.8571428571428571
+  },
+  "tts": {
+    "cases": 6,
+    "success_rate": 1.0,
+    "error_count": 0,
+    "latency_ms": {
+      "mean": 3019.5943333333335,
+      "p50": 2971.013,
+      "p95": 3305.64875,
+      "p99": 3392.11855
+    },
+    "human_ratings_pending": 6,
+    "audio_url_rate": 1.0,
+    "audio_reachable_rate": 1.0,
+    "automatic_pass_rate": 1.0
+  }
+}

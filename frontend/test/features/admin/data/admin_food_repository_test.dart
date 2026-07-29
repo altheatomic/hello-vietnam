@@ -10,29 +10,22 @@ void main() {
     () async {
       final _FakeFoodTableClient tableClient = _FakeFoodTableClient(
         responses: <String, Object?>{
-          'food columns': <Map<String, dynamic>>[
-            <String, dynamic>{
-              'id_food': 'sample',
-              'name': 'Sample',
-              'type': 'noodles',
-              'city': 'Ha Noi',
-              'image_path': null,
-              'description': null,
-            },
-          ],
           'food page': _FakePostgrestPage(
             data: <Map<String, dynamic>>[
               <String, dynamic>{
                 'id_food': 'food-1',
                 'name': 'Pho',
-                'type': 'noodles',
-                'city': 'Ha Noi',
+                'food_type_id': 'noodles',
+                'id_province': 'province-1',
                 'image_path': 'foods/pho.jpg',
                 'description': 'Noodle soup',
               },
             ],
             count: 42,
           ),
+          'province lookup': <Map<String, dynamic>>[
+            <String, dynamic>{'id_province': 'province-1', 'name': 'Ha Noi'},
+          ],
         },
       );
       final AdminFoodRepository repository = AdminFoodRepository(
@@ -59,7 +52,7 @@ void main() {
         sortDirection: 'descending',
       );
 
-      expect(tableClient.runLabels, <String>['food columns', 'food page']);
+      expect(tableClient.runLabels, <String>['food page', 'province lookup']);
       expect(result.totalCount, 42);
       expect(result.foods.single.id, 'food-1');
       expect(result.foods.single.name, 'Pho');

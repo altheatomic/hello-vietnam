@@ -236,32 +236,53 @@ class _AdminContentPageState extends State<AdminContentPage> {
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),
         border: Border.all(color: AppColors.divider),
       ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 420,
-            child: TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              decoration: adminInputDecoration(
-                hintText: 'Search ${_config.table} records',
-                suffixIcon: const Icon(Icons.search_rounded, size: 20),
-              ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final search = TextField(
+            controller: _searchController,
+            onChanged: _onSearchChanged,
+            decoration: adminInputDecoration(
+              hintText: 'Search ${_config.table} records',
+              suffixIcon: const Icon(Icons.search_rounded, size: 20),
             ),
-          ),
-          const Spacer(),
-          _MetricPill(
-            icon: _config.icon,
-            label: 'Total',
-            value: _totalCount.toString(),
-          ),
-          const SizedBox(width: 10),
-          _MetricPill(
-            icon: Icons.filter_alt_outlined,
-            label: 'Loaded',
-            value: _records.length.toString(),
-          ),
-        ],
+          );
+          final metrics = Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _MetricPill(
+                icon: _config.icon,
+                label: 'Total',
+                value: _totalCount.toString(),
+              ),
+              _MetricPill(
+                icon: Icons.filter_alt_outlined,
+                label: 'Loaded',
+                value: _records.length.toString(),
+              ),
+            ],
+          );
+
+          if (constraints.maxWidth < 760) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [search, const SizedBox(height: 12), metrics],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: search,
+                ),
+              ),
+              const SizedBox(width: 20),
+              metrics,
+            ],
+          );
+        },
       ),
     );
   }

@@ -152,6 +152,13 @@ async def get_saved_plans(id_user: str, supabase=Depends(get_supabase)):
 @router.post("/admin/cf/retrain")
 async def trigger_cf_retrain(background_tasks: BackgroundTasks):
     from jobs.cf_retrain import run_cf_retrain
+    try:
+        await get_pool()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503, detail=f"CF retrain database unavailable: {exc}"
+        ) from exc
+
     background_tasks.add_task(run_cf_retrain, triggered_by='admin')
     return {"status": "queued", "message": "CF re-train job started in background."}
 

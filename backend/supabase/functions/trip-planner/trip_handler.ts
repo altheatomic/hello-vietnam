@@ -149,20 +149,21 @@ async function getCfRetrainLogs(userId: string): Promise<Response> {
   const adminClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
   await requireRole(adminClient, userId, "admin");
 
-  const r = await fetch(`${CF_SERVICE_URL}/admin/cf/retrain/logs`);
-  const { data, error } = await parseUpstreamJson(r);
-  if (error != null) return error;
+  const { data, error } = await adminClient
+    .from("cf_retrain_log")
+    .select(
+      "id_log, triggered_by, started_at, finished_at, status, rows_written, error_msg",
+    )
+    .order("started_at", { ascending: false })
+    .limit(50);
 
-  if (!r.ok) {
+  if (error) {
     return jsonResponse(
-      { error: strVal((data as JsonObject)?.detail) ?? "Request failed." },
-      r.status,
+      { error: `Could not load CF retrain logs: ${error.message}` },
+      503,
     );
   }
-  // cf_service returns a bare JSON array here (unlike the other endpoints,
-  // which return objects) — wrap it so the response shape matches every
-  // other action's `{ ... }` contract that invokeJson() expects.
-  return jsonResponse({ logs: data });
+  return jsonResponse({ logs: data ?? [] });
 }
 
 async function proxyPost(path: string, body: unknown): Promise<Response> {

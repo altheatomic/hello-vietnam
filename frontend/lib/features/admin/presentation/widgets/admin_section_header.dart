@@ -30,26 +30,37 @@ class AdminSectionHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  if (subtitle case final sub?) ...[
-                    const SizedBox(height: 4),
-                    Text(sub, style: Theme.of(context).textTheme.bodyMedium),
-                  ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final titleBlock = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.headlineMedium),
+                if (subtitle case final sub?) ...[
+                  const SizedBox(height: 4),
+                  Text(sub, style: Theme.of(context).textTheme.bodyMedium),
                 ],
-              ),
-            ),
-            ?trailing,
-          ],
+              ],
+            );
+            final action = trailing;
+
+            if (action == null) return titleBlock;
+            if (constraints.maxWidth < 720) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [titleBlock, const SizedBox(height: 14), action],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: titleBlock),
+                const SizedBox(width: 20),
+                action,
+              ],
+            );
+          },
         ),
         const SizedBox(height: 24),
       ],
