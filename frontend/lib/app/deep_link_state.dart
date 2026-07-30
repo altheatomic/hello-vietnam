@@ -1,6 +1,8 @@
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 
+import '../core/config/app_identity.dart';
+
 class DeepLinkState extends ChangeNotifier {
   DeepLinkState._();
 
@@ -44,7 +46,7 @@ class DeepLinkState extends ChangeNotifier {
 }
 
 String? appRouteLocationFromDeepLink(Uri uri) {
-  final bool isAppLink = uri.scheme == 'com.example.hellovietnam';
+  final bool isAppLink = uri.scheme == AppIdentity.androidUrlScheme;
   if (!isAppLink) return null;
 
   final bool isUpgradePayment =

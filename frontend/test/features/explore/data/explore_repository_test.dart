@@ -12,7 +12,32 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
+    ExploreRepository.clearProvinceCache();
     await AppLanguageController.instance.setLanguage(AppLanguage.english);
+  });
+
+  test('loads translated province names once per app language and searches locally', () async {
+    int fetchCount = 0;
+    String? capturedLanguage;
+    final ExploreRepository repository = ExploreRepository(
+      provincesFetcher: ({String? language}) async {
+        fetchCount += 1;
+        capturedLanguage = language;
+        return <ExploreProvince>[
+          const ExploreProvince(id: '1', name: 'Côn Đảo'),
+          const ExploreProvince(id: '2', name: 'Đà Nẵng'),
+          const ExploreProvince(id: '3', name: 'Hà Nội'),
+        ];
+      },
+    );
+
+    final List<ExploreProvince> first = await repository.searchProvinces('con');
+    final List<ExploreProvince> second = await repository.searchProvinces('dao');
+
+    expect(capturedLanguage, 'en');
+    expect(fetchCount, 1);
+    expect(first.single.name, 'Côn Đảo');
+    expect(second.single.id, '1');
   });
 
   group('ExploreRepository cache', () {

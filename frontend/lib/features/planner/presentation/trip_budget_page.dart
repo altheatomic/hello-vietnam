@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/network/supabase_function_client.dart';
+import 'package:hellovietnam/core/widgets/journey_loading/vietnam_journey_loading_screen.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_request.dart';
+import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/planner_step_scaffold.dart';
-import 'package:hellovietnam/core/language/app_language.dart';
 
 class TripBudgetPage extends StatefulWidget {
-  const TripBudgetPage({super.key, this.wizard});
+  const TripBudgetPage({super.key, this.wizard, this.generateTrip});
 
   final TripWizardData? wizard;
+  final Future<TripPlanResponse> Function(TripPlanRequest request)?
+  generateTrip;
 
   @override
   State<TripBudgetPage> createState() => _TripBudgetPageState();
@@ -28,6 +33,9 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
   String? _selectedRange;
   bool _isFormatting = false;
   bool _isLoading = false;
+  bool _transitionFinished = false;
+  TripPlanResponse? _pendingResponse;
+  int _generation = 0;
 
   bool get _hasTypedBudget => _budgetController.text.trim().isNotEmpty;
   bool get _canGenerate =>
@@ -40,7 +48,19 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
   }
 
   @override
+  void didUpdateWidget(covariant TripBudgetPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_sameWizardData(oldWidget.wizard, widget.wizard) && _isLoading) {
+      _generation++;
+      _isLoading = false;
+      _transitionFinished = false;
+      _pendingResponse = null;
+    }
+  }
+
+  @override
   void dispose() {
+    _generation++;
     _budgetController
       ..removeListener(_handleBudgetChanged)
       ..dispose();
@@ -78,6 +98,8 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
   }
 
   Future<void> _generate() async {
+    if (_isLoading) return;
+
     final wizard = widget.wizard;
     final idProvince = wizard?.idProvince;
     final nDays = wizard?.nDays;
@@ -102,37 +124,85 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
       }
     }
 
-    setState(() => _isLoading = true);
+    final request = TripPlanRequest(
+      idProvince: isBusinessTrip ? null : idProvince,
+      nDays: nDays,
+      startDate: wizard?.startDate,
+      targetLat: isBusinessTrip ? wizard?.targetLat : null,
+      targetLng: isBusinessTrip ? wizard?.targetLng : null,
+    );
+    final int generation = ++_generation;
+    setState(() {
+      _isLoading = true;
+      _transitionFinished = false;
+      _pendingResponse = null;
+    });
 
     try {
-      final response = await TripRepository().planTrip(
-        TripPlanRequest(
-          idProvince: isBusinessTrip ? null : idProvince,
-          nDays: nDays,
-          startDate: wizard?.startDate,
-          targetLat: isBusinessTrip ? wizard?.targetLat : null,
-          targetLng: isBusinessTrip ? wizard?.targetLng : null,
-        ),
-      );
-      if (!mounted) return;
-      final String? idPlan = response.idPlan?.trim();
-
-      if (idPlan != null && idPlan.isNotEmpty) {
-        context.push(AppRoutes.tripPlannerResultPath(idPlan: idPlan));
-      } else {
-        context.push(AppRoutes.tripPlannerResultPath(), extra: response);
-      }
+      final response =
+          await (widget.generateTrip?.call(request) ??
+              TripRepository().planTrip(request));
+      if (!mounted || generation != _generation) return;
+      setState(() => _pendingResponse = response);
     } on NoTripCandidatesException {
       if (!mounted) return;
-      _showError(
-        'Không đủ địa điểm cho lựa chọn của bạn. Hãy thử chọn nhiều sở thích '
-        'hơn (bước 4) hoặc chọn ít ngày lại (bước 3).',
+      _failGeneration(
+        generation,
+        'Not enough places found for your selection. Try selecting more '
+        'interests (step 4) or fewer days (step 3).',
       );
-    } catch (e) {
+    } on SupabaseFunctionException catch (e) {
       if (!mounted) return;
-      _showError('Could not generate your trip. Please try again.');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (e.errorCode == 'no_candidates') {
+        _failGeneration(
+          generation,
+          'Not enough places found for your selection. Try selecting more '
+          'interests (step 4) or fewer days (step 3).',
+        );
+      } else {
+        _failGeneration(
+          generation,
+          'Could not generate your trip. Please try again.',
+        );
+      }
+    } catch (e) {
+      _failGeneration(
+        generation,
+        'Could not generate your trip. Please try again.',
+      );
+    }
+  }
+
+  void _failGeneration(int generation, String message) {
+    if (!mounted || generation != _generation) return;
+    setState(() {
+      _isLoading = false;
+      _transitionFinished = false;
+      _pendingResponse = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || generation != _generation || _isLoading) return;
+      _showError(message);
+    });
+  }
+
+  void _finishGenerationTransition() {
+    final response = _pendingResponse;
+    if (!mounted || !_isLoading || response == null || _transitionFinished) {
+      return;
+    }
+
+    _transitionFinished = true;
+    setState(() {
+      _isLoading = false;
+      _pendingResponse = null;
+    });
+
+    final String? idPlan = response.idPlan?.trim();
+    if (idPlan != null && idPlan.isNotEmpty) {
+      context.push(AppRoutes.tripPlannerResultPath(idPlan: idPlan));
+    } else {
+      context.push(AppRoutes.tripPlannerResultPath(), extra: response);
     }
   }
 
@@ -160,6 +230,14 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return VietnamJourneyLoadingScreen(
+        message: context.l10n.ui('Generating your personalised itinerary…'),
+        isComplete: _pendingResponse != null,
+        onExitComplete: _finishGenerationTransition,
+      );
+    }
+
     return PlannerStepScaffold(
       currentStep: 5,
       badgeIcon: Icons.account_balance_wallet_outlined,
@@ -167,18 +245,14 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
       subtitle: 'Pick one option below to continue',
       onBack: () => context.pop(),
       nextEnabled: _canGenerate,
-      nextLabel: _isLoading ? 'Generating...' : 'Generate',
-      onNext: _isLoading ? null : _generate,
+      nextLabel: 'Generate',
+      onNext: _generate,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            if (_isLoading) ...<Widget>[
-              const _LoadingBanner(),
-              const SizedBox(height: 20),
-            ],
             Text(
               context.l10n.ui('Option 1: Enter daily budget'),
               style: TextStyle(
@@ -258,46 +332,17 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
   }
 }
 
-class _LoadingBanner extends StatelessWidget {
-  const _LoadingBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final bool isDark = theme.brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: isDark
-            ? theme.colorScheme.surfaceContainerHighest
-            : const Color(0xFFF0FAFF),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? theme.colorScheme.outline : const Color(0xFFB8E9FF),
-        ),
-      ),
-      child: Row(
-        children: <Widget>[
-          const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              context.l10n.ui('Generating your personalised itinerary…'),
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+bool _sameWizardData(TripWizardData? first, TripWizardData? second) {
+  if (identical(first, second)) return true;
+  if (first == null || second == null) return false;
+  return first.idProvince == second.idProvince &&
+      first.provinceName == second.provinceName &&
+      first.startDate == second.startDate &&
+      first.nDays == second.nDays &&
+      first.tripType == second.tripType &&
+      first.targetLat == second.targetLat &&
+      first.targetLng == second.targetLng &&
+      first.businessAddress == second.businessAddress;
 }
 
 class _BudgetInputField extends StatelessWidget {

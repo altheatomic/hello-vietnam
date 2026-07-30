@@ -21,4 +21,37 @@ void main() {
       expect(updated.exploreProvinceId, 'province-48');
     },
   );
+
+  test('uses the legacy single image as gallery fallback', () {
+    const ItemDetail detail = ItemDetail(
+      id: 'legacy-detail',
+      name: 'Legacy detail',
+      category: DetailCategory.activities,
+      images: <String>['legacy-cover.jpg'],
+      rating: 0,
+      reviewCount: 0,
+      ratingLabel: '',
+      description: '',
+      whatToExpect: '',
+    );
+
+    expect(detail.effectiveGalleryImages, <String>['legacy-cover.jpg']);
+  });
+
+  test('does not reuse an explicit cover as gallery fallback', () {
+    const ItemDetail detail = ItemDetail(
+      id: 'place-detail',
+      name: 'Place detail',
+      category: DetailCategory.activities,
+      images: <String>['cover.jpg'],
+      coverImage: 'cover.jpg',
+      rating: 0,
+      reviewCount: 0,
+      ratingLabel: '',
+      description: '',
+      whatToExpect: '',
+    );
+
+    expect(detail.effectiveGalleryImages, isEmpty);
+  });
 }

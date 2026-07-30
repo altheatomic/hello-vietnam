@@ -172,8 +172,7 @@
     "additionalDirectories": [
       "\\tmp",
       "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\auth\\presentation",
-      "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\item_detail\\presentation",
-      "C:\\Users\\Asus\\AppData\\Local\\Temp\\claude\\c--Users-Asus-hellovietnam\\884fc7e8-7421-4ce2-b40b-dd486646062a\\scratchpad"
+      "C:\\Users\\Asus\\hellovietnam-remote\\frontend\\lib\\features\\item_detail\\presentation"
     ]
   }
 }

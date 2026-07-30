@@ -1,0 +1,14 @@
+{"id":"chat-01","prompt":"Tôi muốn lập lịch trình 3 ngày ở Đà Nẵng, hãy mở chức năng phù hợp cho tôi.","expected_action":"trip_planner","required_fact_groups":[]}
+{"id":"chat-02","prompt":"Giúp tôi dịch câu 'Tôi bị dị ứng hải sản' sang tiếng Anh và đưa tôi tới chức năng dịch.","expected_action":"translate","required_fact_groups":[["allergic","allergy"],["seafood"]]}
+{"id":"chat-03","prompt":"Tôi muốn khám phá các địa điểm nổi bật ở Huế trong ứng dụng.","expected_action":"explore","required_fact_groups":[["Huế","Hue"]]}
+{"id":"chat-04","prompt":"Hãy gợi ý địa điểm du lịch phù hợp với sở thích ẩm thực của tôi và mở mục đề xuất.","expected_action":"recommend","required_fact_groups":[]}
+{"id":"chat-05","prompt":"Tôi muốn hỏi kinh nghiệm đi Hà Giang từ cộng đồng, mở diễn đàn giúp tôi.","expected_action":"forum","required_fact_groups":[]}
+{"id":"chat-06","prompt":"Cho tôi xem lại các địa điểm tôi đã lưu.","expected_action":"wishlist","required_fact_groups":[]}
+{"id":"chat-07","prompt":"Tôi có ảnh một món ăn nhưng không biết tên, hãy đưa tôi tới tính năng nhận diện ảnh.","expected_action":"ai_recognition","required_fact_groups":[]}
+{"id":"chat-08","prompt":"Tôi muốn xem điểm thưởng và đổi ưu đãi của mình.","expected_action":"loyalty","required_fact_groups":[]}
+{"id":"chat-09","prompt":"Cho tôi xem danh sách các ứng dụng du lịch phổ biến.","expected_action":"popular_apps","required_fact_groups":[]}
+{"id":"chat-10","prompt":"Tôi muốn kiểm tra các thông báo mới.","expected_action":"notifications","required_fact_groups":[]}
+{"id":"chat-11","prompt":"Mở hồ sơ cá nhân để tôi thay đổi thông tin.","expected_action":"profile","required_fact_groups":[]}
+{"id":"chat-12","prompt":"Ứng dụng bị lỗi khi mở bản đồ, hãy đưa tôi tới nơi gửi báo cáo.","expected_action":"send_report","required_fact_groups":[]}
+{"id":"chat-13","prompt":"Tôi muốn nâng cấp tài khoản Premium.","expected_action":"upgrade_account","required_fact_groups":[]}
+{"id":"chat-14","prompt":"Khi tham quan chùa ở Việt Nam, tôi nên ăn mặc như thế nào? Chỉ trả lời hướng dẫn, không mở chức năng khác.","expected_action":null,"required_fact_groups":[["kín đáo","lịch sự","modest"],["vai","shoulder"],["đầu gối","knee","quần dài","quần short","long pants","shorts"]],"forbidden_terms":["bikini"]}

@@ -3,16 +3,18 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/features/profile/application/premium_entitlement_controller.dart';
 import 'package:hellovietnam/features/translate/data/openai_translation_service.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
 import 'package:hellovietnam/features/translate/data/offline_translation_service.dart';
 import 'package:hellovietnam/features/translate/data/tts_service.dart';
 
 enum TranslateMode { basic, premium }
 
 class TranslatePage extends StatefulWidget {
-  const TranslatePage({super.key});
+  const TranslatePage({super.key, this.entitlementController});
+
+  final PremiumEntitlementController? entitlementController;
 
   @override
   State<TranslatePage> createState() => _TranslatePageState();
@@ -105,46 +107,98 @@ class _TranslatePageState extends State<TranslatePage>
   TranslateMode _mode = TranslateMode.basic;
   bool _isCheckingPremium = false;
   bool _isDownloadingModel = false;
+  late final PremiumEntitlementController _entitlementController;
   late final AnimationController _swapButtonController;
   late final Animation<double> _swapIconTurn;
 
   Future<void> _handleModeChange(TranslateMode mode) async {
-    if (mode == TranslateMode.premium) {
-      setState(() => _isCheckingPremium = true);
-      try {
-        final SubscriptionRepository repo = SubscriptionRepository();
-        final CurrentSubscriptionInfo? sub = await repo
-            .loadCurrentSubscription();
-        if (sub != null &&
-            sub.endDate != null &&
-            sub.endDate!.isAfter(DateTime.now().toUtc())) {
-          setState(() => _mode = TranslateMode.premium);
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Cần tài khoản Premium để sử dụng tính năng này.',
-                ),
-              ),
-            );
-            context.push('/profile/upgrade');
-          }
-          setState(() => _mode = TranslateMode.basic);
-        }
-      } catch (e) {
-        setState(() => _mode = TranslateMode.basic);
-      } finally {
-        if (mounted) setState(() => _isCheckingPremium = false);
-      }
-    } else {
+    if (mode == TranslateMode.basic) {
       setState(() => _mode = TranslateMode.basic);
+      return;
     }
+
+    setState(() => _isCheckingPremium = true);
+    try {
+      if (_entitlementController.state.status ==
+          PremiumEntitlementStatus.loading) {
+        await _entitlementController.refresh();
+      }
+      if (!mounted) return;
+      _applyPremiumSelectionOutcome();
+    } finally {
+      if (mounted) setState(() => _isCheckingPremium = false);
+    }
+  }
+
+  void _applyPremiumSelectionOutcome() {
+    if (_entitlementController.canUsePremium) {
+      setState(() => _mode = TranslateMode.premium);
+      return;
+    }
+    setState(() => _mode = TranslateMode.basic);
+    if (_entitlementController.state.isConfirmedInactive) {
+      _showPremiumRequiredAndOpenUpgrade();
+      return;
+    }
+    _showPremiumVerificationRetry();
+  }
+
+  void _showPremiumRequiredAndOpenUpgrade() {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            context.l10n.ui(
+              'A Premium account is required to use this feature.',
+            ),
+          ),
+        ),
+      );
+    context.push('/profile/upgrade');
+  }
+
+  void _showPremiumVerificationRetry() {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.ui('Unable to verify Premium right now.')),
+          action: SnackBarAction(
+            key: const Key('translate-premium-retry'),
+            label: context.l10n.ui('Retry'),
+            onPressed: () => unawaited(_retryPremiumSelection()),
+          ),
+        ),
+      );
+  }
+
+  Future<void> _retryPremiumSelection() async {
+    if (mounted) setState(() => _isCheckingPremium = true);
+    try {
+      await _entitlementController.retry();
+      if (!mounted) return;
+      _applyPremiumSelectionOutcome();
+    } finally {
+      if (mounted) setState(() => _isCheckingPremium = false);
+    }
+  }
+
+  void _handleEntitlementChanged() {
+    if (!mounted ||
+        _mode != TranslateMode.premium ||
+        _entitlementController.canUsePremium) {
+      return;
+    }
+    setState(() => _mode = TranslateMode.basic);
   }
 
   @override
   void initState() {
     super.initState();
+    _entitlementController =
+        widget.entitlementController ?? PremiumEntitlementController.instance;
+    _entitlementController.addListener(_handleEntitlementChanged);
     _swapButtonController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 420),
@@ -156,6 +210,7 @@ class _TranslatePageState extends State<TranslatePage>
 
   @override
   void dispose() {
+    _entitlementController.removeListener(_handleEntitlementChanged);
     unawaited(_audioPlayer.dispose());
     unawaited(TtsService.instance.stop());
     _swapButtonController.dispose();

@@ -14,6 +14,7 @@ class RecommendDestination {
     required this.imagePath,
     required this.rating,
     this.avgRating,
+    this.reviewCount = 0,
     this.tags = const [],
     this.bestTimeTitle = '',
     this.bestTimeDetails = const [],
@@ -47,6 +48,9 @@ class RecommendDestination {
   /// provides it. `rating` above is a personalized ML relevance score, not
   /// a star rating — use this field wherever a genuine rating is needed.
   final double? avgRating;
+
+  /// Number of published reviews that produced [avgRating].
+  final int reviewCount;
 
   final List<String> tags;
 

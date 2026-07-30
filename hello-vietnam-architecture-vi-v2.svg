@@ -37,10 +37,10 @@
   <text x="75" y="65" class="title">KIẾN TRÚC HỆ THỐNG HELLOVIETNAM</text>
   <text x="75" y="100" class="subtitle">Ứng dụng gợi ý địa điểm, đề xuất nội dung và lập lịch trình cho người du lịch tự túc</text>
 
-  <!-- Presentation layer -->
+  <!-- Interface layer -->
   <rect x="60" y="130" width="1880" height="220" rx="28" fill="#eff6ff" stroke="#bfdbfe" stroke-width="2"/>
   <rect x="85" y="150" width="270" height="42" rx="21" fill="#dbeafe"/>
-  <text x="110" y="179" class="section">LỚP TRÌNH BÀY · FLUTTER</text>
+  <text x="110" y="179" class="section">LỚP GIAO DIỆN · FLUTTER</text>
 
   <g filter="url(#shadow)">
     <rect x="180" y="205" width="700" height="105" rx="20" fill="#ffffff" stroke="#60a5fa" stroke-width="2.5"/>
@@ -97,7 +97,7 @@
     <text x="810" y="738" class="boxText">Dữ liệu nghiệp vụ, gợi ý, lịch trình và thông báo</text>
   </g>
 
-  <!-- Presentation/backend flows -->
+  <!-- Interface/backend flows -->
   <path d="M470 310 C470 365 500 420 520 485" class="line"/>
   <g><rect x="420" y="360" width="150" height="34" rx="9" fill="#fff" stroke="#e2e8f0"/><text x="438" y="383" class="label">Yêu cầu nghiệp vụ</text></g>
   <path d="M730 310 C780 370 900 410 980 485" class="line"/>

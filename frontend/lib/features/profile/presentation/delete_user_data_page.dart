@@ -346,12 +346,12 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 36),
       children: <Widget>[
-        const Text(
+        Text(
           'Review and permanently delete images and media you uploaded. This does not delete forum posts or other personal data.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 16,
-            color: Color(0xFF2B2B2B),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.35,
           ),
         ),
@@ -502,12 +502,12 @@ class _DeleteUserDataPageState extends State<DeleteUserDataPage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 36),
       children: <Widget>[
-        const Text(
+        Text(
           'Selected uploaded media will be permanently deleted and cannot be undone.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 16,
-            color: Color(0xFF2B2B2B),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.35,
           ),
         ),
@@ -582,9 +582,9 @@ class _HeaderBar extends StatelessWidget {
               children: <Widget>[
                 IconButton(
                   onPressed: onBack,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.chevron_left,
-                    color: Color(0xFF1B1B1B),
+                    color: Theme.of(context).colorScheme.onSurface,
                     size: 30,
                   ),
                 ),
@@ -599,7 +599,7 @@ class _HeaderBar extends StatelessWidget {
             style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF121212),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],

@@ -4,6 +4,7 @@ import 'package:hellovietnam/core/config/env.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/core/storage/local_storage.dart' as app_storage;
+import 'package:hellovietnam/core/utils/vietnamese_text_utils.dart';
 import 'package:hellovietnam/features/explore/domain/explore_item.dart';
 import 'package:hellovietnam/features/explore/domain/explore_province.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
@@ -24,6 +25,9 @@ typedef ExploreCategoryItemsFetcher =
       required int offset,
       String? language,
     });
+
+typedef ExploreProvincesFetcher =
+    Future<List<ExploreProvince>> Function({String? language});
 
 class ExploreCategoryPageData {
   final List<ExploreItem> items;
@@ -87,11 +91,13 @@ class ExploreRepository {
     SupabaseFunctionClient? functionClient,
     ExploreSectionsFetcher? sectionsFetcher,
     ExploreCategoryItemsFetcher? categoryItemsFetcher,
+    ExploreProvincesFetcher? provincesFetcher,
     String? Function()? languageCodeProvider,
   }) : _client = client,
        _functionClient = functionClient,
        _sectionsFetcher = sectionsFetcher,
        _categoryItemsFetcher = categoryItemsFetcher,
+       _provincesFetcher = provincesFetcher,
        _languageCodeProvider = languageCodeProvider;
 
   static final ExploreRepository instance = ExploreRepository();
@@ -100,6 +106,7 @@ class ExploreRepository {
   final SupabaseFunctionClient? _functionClient;
   final ExploreSectionsFetcher? _sectionsFetcher;
   final ExploreCategoryItemsFetcher? _categoryItemsFetcher;
+  final ExploreProvincesFetcher? _provincesFetcher;
   final String? Function()? _languageCodeProvider;
 
   static const List<String> _categoryOrder = <String>[
@@ -109,6 +116,17 @@ class ExploreRepository {
     'local_products',
   ];
   static const String _storageKeyPrefix = 'explore_sections_cache_v1_';
+  static const String _provinceStorageKeyPrefix =
+      'explore_provinces_cache_v2_';
+  static final Map<String, List<ExploreProvince>> _provinceMemoryCache =
+      <String, List<ExploreProvince>>{};
+  static final Map<String, Future<List<ExploreProvince>>> _provinceRequests =
+      <String, Future<List<ExploreProvince>>>{};
+
+  static void clearProvinceCache() {
+    _provinceMemoryCache.clear();
+    _provinceRequests.clear();
+  }
 
   bool _isStorageReady = false;
 
@@ -263,19 +281,136 @@ class ExploreRepository {
     String query, {
     int limit = 8,
   }) async {
-    final String normalized = query.trim();
+    final String normalized = _normalizeSearch(query);
     if (normalized.isEmpty) return const <ExploreProvince>[];
 
+    List<ExploreProvince> provinces;
+    try {
+      provinces = await loadProvinces();
+    } catch (_) {
+      return _searchProvincesFallback(normalized, limit);
+    }
+    final List<ExploreProvince> matches = provinces
+        .where(
+          (ExploreProvince province) =>
+              _normalizeSearch(province.name).contains(normalized),
+        )
+        .toList();
+
+    matches.sort((ExploreProvince left, ExploreProvince right) {
+      final String leftName = _normalizeSearch(left.name);
+      final String rightName = _normalizeSearch(right.name);
+      final int leftRank = leftName.startsWith(normalized) ? 0 : 1;
+      final int rightRank = rightName.startsWith(normalized) ? 0 : 1;
+      if (leftRank != rightRank) return leftRank - rightRank;
+      return left.name.toLowerCase().compareTo(right.name.toLowerCase());
+    });
+    return matches.take(limit).toList(growable: false);
+  }
+
+  Future<List<ExploreProvince>> _searchProvincesFallback(
+    String normalizedQuery,
+    int limit,
+  ) async {
     final Map<String, dynamic> payload = await _resolvedFunctionClient
         .invokeJson(
           Env.exploreFunction,
           body: <String, dynamic>{
             'action': 'searchExploreProvinces',
-            'query': normalized,
+            'query': normalizedQuery,
             'limit': limit,
+            'language': _currentLanguageCode(),
           },
         );
+    return _asList(payload['items'])
+        .map((Object? row) => ExploreProvince.fromJson(_asMap(row)))
+        .where(
+          (ExploreProvince province) =>
+              province.name.isNotEmpty &&
+              _normalizeSearch(province.name).contains(normalizedQuery),
+        )
+        .toList(growable: false);
+  }
 
+  Future<List<ExploreProvince>> loadProvinces() async {
+    final String language = _currentLanguageCode() ?? 'en';
+    final List<ExploreProvince>? memory = _provinceMemoryCache[language];
+    if (memory != null) return memory;
+
+    final Future<List<ExploreProvince>>? pending = _provinceRequests[language];
+    if (pending != null) return pending;
+
+    final Future<List<ExploreProvince>> request = _loadProvinces(language);
+    _provinceRequests[language] = request;
+    try {
+      return await request;
+    } finally {
+      _provinceRequests.remove(language);
+    }
+  }
+
+  Future<List<ExploreProvince>> _loadProvinces(String language) async {
+    await _ensureStorageReady();
+    final String cacheKey = '$_provinceStorageKeyPrefix$language';
+    final String? cachedJson = app_storage.LocalStorage.instance.getString(
+      cacheKey,
+    );
+    if (cachedJson != null && cachedJson.isNotEmpty) {
+      try {
+        final Object? decoded = jsonDecode(cachedJson);
+        if (decoded is List) {
+          final List<ExploreProvince> cached = decoded
+              .whereType<Map>()
+              .map(
+                (Map<dynamic, dynamic> row) => ExploreProvince.fromJson(
+                  row.map(
+                    (dynamic key, dynamic value) =>
+                        MapEntry(key.toString(), value),
+                  ),
+                ),
+              )
+              .where((ExploreProvince province) => province.isResolved)
+              .toList(growable: false);
+          if (cached.isNotEmpty) {
+            _provinceMemoryCache[language] = cached;
+            return cached;
+          }
+        }
+      } catch (_) {
+        await app_storage.LocalStorage.instance.remove(cacheKey);
+      }
+    }
+
+    final ExploreProvincesFetcher? fetcher = _provincesFetcher;
+    final List<ExploreProvince> provinces = fetcher != null
+        ? await fetcher(language: language)
+        : await _fetchProvincesFromFunction(language);
+    final List<ExploreProvince> valid = provinces
+        .where((ExploreProvince province) => province.isResolved)
+        .toList(growable: false);
+    _provinceMemoryCache[language] = valid;
+    await app_storage.LocalStorage.instance.setString(
+      cacheKey,
+      jsonEncode(
+        valid
+            .map((ExploreProvince province) => province.toJson())
+            .toList(),
+      ),
+    );
+    return valid;
+  }
+
+  Future<List<ExploreProvince>> _fetchProvincesFromFunction(
+    String language,
+  ) async {
+    final Map<String, dynamic> payload = await _resolvedFunctionClient
+        .invokeJson(
+          Env.exploreFunction,
+          body: <String, dynamic>{
+            'action': 'getExploreProvinces',
+            'language': language,
+          },
+        );
     return _asList(payload['items'])
         .map((Object? row) => ExploreProvince.fromJson(_asMap(row)))
         .where((ExploreProvince province) => province.name.isNotEmpty)
@@ -498,5 +633,12 @@ class ExploreRepository {
         .replaceAllMapped(RegExp(r'[òóọỏõôồốộổỗơờớợởỡ]'), (_) => 'o')
         .replaceAllMapped(RegExp(r'[ùúụủũưừứựửữ]'), (_) => 'u')
         .replaceAllMapped(RegExp(r'[ỳýỵỷỹ]'), (_) => 'y');
+  }
+
+  static String _normalizeSearch(String value) {
+    return removeVietnameseDiacritics(value)
+        .toLowerCase()
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
   }
 }

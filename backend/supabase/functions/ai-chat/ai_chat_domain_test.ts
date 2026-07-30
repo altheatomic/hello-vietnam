@@ -173,7 +173,7 @@ Deno.test("raw routes and URLs are removed from an allowed action payload", () =
         route: "/trip-planner",
         url: "https://bad.test",
         nested: {
-          href: "com.example.hellovietnam://profile",
+          href: "com.hellovietnam.app://profile",
           days: 3,
         },
       },

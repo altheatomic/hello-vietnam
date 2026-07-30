@@ -12,6 +12,7 @@ import 'package:hellovietnam/features/explore/data/explore_tracking_service.dart
 import 'package:hellovietnam/features/explore/domain/explore_item.dart';
 import 'package:hellovietnam/features/explore/domain/explore_province.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
+import 'package:hellovietnam/features/item_detail/data/item_detail_repository.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
@@ -462,17 +463,19 @@ class _ResultCardState extends State<_ResultCard> {
 
     return GestureDetector(
       onTap: () {
+        final ItemDetailRequest request = ItemDetailRequest(
+          id: widget.item.id,
+          name: widget.item.name,
+          category: widget.category,
+          fallbackImages: itemImages,
+          fallbackImagePath: imageCount == 0 ? null : itemImages.first,
+          trackExploreBehavior: true,
+          exploreProvinceId: widget.item.provinceId,
+        );
+        ItemDetailRepository.instance.prefetch(request);
         context.push(
           AppRoutes.detailPathForCategory(widget.category),
-          extra: ItemDetailRequest(
-            id: widget.item.id,
-            name: widget.item.name,
-            category: widget.category,
-            fallbackImages: itemImages,
-            fallbackImagePath: imageCount == 0 ? null : itemImages.first,
-            trackExploreBehavior: true,
-            exploreProvinceId: widget.item.provinceId,
-          ),
+          extra: request,
         );
       },
       child: Padding(
