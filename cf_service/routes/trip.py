@@ -7,6 +7,7 @@ Dependency injection:
   - CF retrain endpoint → asyncpg conn (kept for background job compatibility)
 """
 
+import asyncio
 import datetime
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, model_validator
@@ -99,7 +100,9 @@ async def get_nearby_places(
     supabase=Depends(get_supabase),
 ):
     from db.place_repository import fetch_nearby_amenities
-    places = fetch_nearby_amenities(supabase, lat, lng, _NEARBY_SUBCATEGORIES, limit_per_category=limit)
+    places = await asyncio.to_thread(
+        fetch_nearby_amenities, supabase, lat, lng, _NEARBY_SUBCATEGORIES, limit_per_category=limit
+    )
     return {"places": places}
 
 
@@ -107,7 +110,7 @@ async def get_nearby_places(
 async def get_plan(id_plan: str, id_user: str, supabase=Depends(get_supabase)):
     from db.queries_plan import get_plan as _get_plan
 
-    plan = _get_plan(supabase, id_plan, id_user=id_user)
+    plan = await asyncio.to_thread(_get_plan, supabase, id_plan, id_user=id_user)
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found.")
     return plan
@@ -117,14 +120,15 @@ async def get_plan(id_plan: str, id_user: str, supabase=Depends(get_supabase)):
 async def list_plans(id_user: str, supabase=Depends(get_supabase)):
     from db.queries_plan import list_plans as _list_plans
 
-    return {"plans": _list_plans(supabase, id_user)}
+    plans = await asyncio.to_thread(_list_plans, supabase, id_user)
+    return {"plans": plans}
 
 
 @router.post("/api/trips/{id_plan}/clone")
 async def clone_trip(id_plan: str, req: SavePlanRequest, supabase=Depends(get_supabase)):
     from db.queries_plan import clone_plan
 
-    result = clone_plan(supabase, id_plan, req.id_user)
+    result = await asyncio.to_thread(clone_plan, supabase, id_plan, req.id_user)
     if not result:
         raise HTTPException(status_code=404, detail="Plan not found.")
     return result
@@ -134,7 +138,9 @@ async def clone_trip(id_plan: str, req: SavePlanRequest, supabase=Depends(get_su
 async def save_trip(id_plan: str, req: SavePlanRequest, supabase=Depends(get_supabase)):
     from db.queries_plan import mark_plan_saved
 
-    result = mark_plan_saved(supabase, id_plan, req.id_user, req.custom_title)
+    result = await asyncio.to_thread(
+        mark_plan_saved, supabase, id_plan, req.id_user, req.custom_title
+    )
     if not result:
         raise HTTPException(status_code=404, detail="Plan not found or not owned by user.")
     return result
@@ -144,7 +150,8 @@ async def save_trip(id_plan: str, req: SavePlanRequest, supabase=Depends(get_sup
 async def get_saved_plans(id_user: str, supabase=Depends(get_supabase)):
     from db.queries_plan import fetch_saved_plans
 
-    return {"plans": fetch_saved_plans(supabase, id_user)}
+    plans = await asyncio.to_thread(fetch_saved_plans, supabase, id_user)
+    return {"plans": plans}
 
 
 # ── Admin: CF retrain ─────────────────────────────────────────────────────────
