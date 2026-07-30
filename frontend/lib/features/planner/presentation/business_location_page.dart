@@ -156,7 +156,7 @@ class _BusinessLocationPageState extends State<BusinessLocationPage> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Đang tìm địa chỉ…',
+                    'Searching location...',
                     style: TextStyle(
                       fontSize: 14,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
