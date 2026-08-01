@@ -341,6 +341,10 @@ class AppStrings {
         'Có vẻ hôm nay đã trễ hơn ngày bắt đầu dự kiến của chuyến đi. Cập nhật lại để lịch trình được chính xác?',
     'Not now': 'Để sau',
     'Update': 'Cập nhật',
+    'End Trip': 'Kết thúc chuyến đi',
+    'Could not end trip. Please try again.':
+        'Không thể kết thúc chuyến đi. Vui lòng thử lại.',
+    'Trip marked as completed.': 'Đã đánh dấu chuyến đi hoàn thành.',
     'Could not update start date. Please try again.':
         'Không thể cập nhật ngày bắt đầu. Vui lòng thử lại.',
     'Select new start date': 'Chọn ngày bắt đầu mới',

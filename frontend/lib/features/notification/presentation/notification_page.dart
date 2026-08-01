@@ -2,11 +2,15 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/notification/domain/app_notification.dart';
 import 'package:hellovietnam/features/notification/presentation/notification_action_handler.dart';
 import 'package:hellovietnam/features/notification/presentation/notification_controller.dart';
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
+import 'package:hellovietnam/features/planner/data/trip_store.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key, this.controller});
@@ -276,6 +280,44 @@ class _NotificationPageState extends State<NotificationPage> {
     await NotificationActionHandler.open(context, notification);
   }
 
+  Future<void> _handleEndTrip(AppNotification notification) async {
+    final String? idPlan = notification.target.entityId;
+    if (idPlan == null || idPlan.isEmpty) return;
+
+    try {
+      await TripRepository().completeTrip(idPlan);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              context.l10n.ui('Could not end trip. Please try again.'),
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      return;
+    }
+
+    if (TripStore.instance.activeTrip?.idPlan == idPlan) {
+      TripStore.instance.endTrip();
+    }
+
+    if (!mounted) return;
+    await _controller.markAsRead(notification.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.ui('Trip marked as completed.')),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   Future<void> _clearAllNotifications() async {
     await _controller.clearAll();
     if (!mounted) {
@@ -409,6 +451,7 @@ class _NotificationPageState extends State<NotificationPage> {
                                   notification: notification,
                                   onTap: () =>
                                       _handleNotificationTap(notification),
+                                  onEndTrip: () => _handleEndTrip(notification),
                                 ),
                               );
                             },
@@ -653,10 +696,15 @@ class _AnimatedNotificationTile extends StatelessWidget {
 }
 
 class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({required this.notification, required this.onTap});
+  const _NotificationTile({
+    required this.notification,
+    required this.onTap,
+    required this.onEndTrip,
+  });
 
   final AppNotification notification;
   final VoidCallback onTap;
+  final VoidCallback onEndTrip;
 
   @override
   Widget build(BuildContext context) {
@@ -782,6 +830,14 @@ class _NotificationTile extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  if (notification.target.kind ==
+                      NotificationTargetKind.tripOverdueCheck) ...<Widget>[
+                    const SizedBox(height: 10),
+                    _TripOverdueCard(
+                      target: notification.target,
+                      onEndTrip: onEndTrip,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -790,6 +846,126 @@ class _NotificationTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Embedded trip summary shown inside a `tripOverdueCheck` notification.
+///
+/// Has its own [GestureDetector] (tap → trip detail page) nested inside the
+/// tile's outer [GestureDetector] (tap elsewhere → the usual notification
+/// action), and the "End Trip" button has a further-nested [GestureDetector]
+/// of its own. Flutter's gesture arena resolves nested tap recognizers to
+/// the innermost one hit — the outer tile's onTap never also fires when you
+/// tap this card or its button — so no manual event-stopping is needed;
+/// `HitTestBehavior.opaque` on both just guarantees full hit-test coverage
+/// of each region's bounds.
+class _TripOverdueCard extends StatelessWidget {
+  const _TripOverdueCard({required this.target, required this.onEndTrip});
+
+  final NotificationTarget target;
+  final VoidCallback onEndTrip;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String? customTitle = target.metadata['customTitle'];
+    final String tripTitle = (customTitle == null || customTitle.isEmpty)
+        ? context.l10n.ui('Your Vietnam Adventure')
+        : customTitle;
+    final DateTime? startAt = DateTime.tryParse(
+      target.metadata['startAt'] ?? '',
+    );
+    final DateTime? endAt = DateTime.tryParse(target.metadata['endAt'] ?? '');
+    final String dateRange = _formatTripDateRange(context, startAt, endAt);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => context.push(
+        AppRoutes.tripPlannerResultPath(idPlan: target.entityId),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              tripTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            if (dateRange.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 4),
+              Text(
+                dateRange,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onEndTrip,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: AppNotificationType.trip.accentColor.withValues(
+                        alpha: 0.5,
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    context.l10n.ui('End Trip'),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppNotificationType.trip.accentColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+const List<String> _shortMonthNames = <String>[
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+String _formatTripDateRange(
+  BuildContext context,
+  DateTime? startAt,
+  DateTime? endAt,
+) {
+  if (startAt == null || endAt == null) return '';
+  final int nDays = endAt.difference(startAt).inDays + 1;
+  final String startLabel = '${startAt.day} ${_shortMonthNames[startAt.month - 1]}';
+  final String endLabel = '${endAt.day} ${_shortMonthNames[endAt.month - 1]}';
+  final String daysLabel = context.l10n.ui(nDays == 1 ? 'day' : 'days');
+  return '$startLabel – $endLabel · $nDays $daysLabel';
 }
 
 class _ClearAllButton extends StatelessWidget {

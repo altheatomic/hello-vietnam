@@ -247,7 +247,19 @@ async def overdue_check(id_user: str, supabase=Depends(get_supabase)):
                 "p_title": "Have you completed your trip?",
                 "p_body": f"Your trip to {province_name} was due to end a few days ago.",
                 "p_icon": "calendar",
-                "p_target": {"kind": "tripOverdueCheck", "entityId": id_plan},
+                "p_target": {
+                    "kind": "tripOverdueCheck",
+                    "entityId": id_plan,
+                    # Snapshot at detection time so the notification's embedded
+                    # trip card can render without an extra fetch per item —
+                    # see Flutter's NotificationTarget.metadata (free-form,
+                    # already round-tripped through payload_jsonb as-is).
+                    "metadata": {
+                        "customTitle": plan.get("custom_title") or "",
+                        "startAt": plan.get("start_at") or "",
+                        "endAt": plan.get("end_at") or "",
+                    },
+                },
                 "p_is_push": True,
             }).execute()
             supabase.table("plan").update({

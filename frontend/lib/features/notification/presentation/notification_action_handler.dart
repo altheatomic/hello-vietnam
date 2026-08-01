@@ -5,6 +5,7 @@ import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/notification/domain/app_notification.dart';
+import 'package:hellovietnam/features/planner/presentation/widgets/trip_overdue_check.dart';
 
 class NotificationActionHandler {
   NotificationActionHandler._();
@@ -71,9 +72,16 @@ class NotificationActionHandler {
         context.go(AppRoutes.tripPlannerDayDetailPath(target.dayIndex ?? 0));
         return;
       case NotificationTargetKind.tripOverdueCheck:
-        // Home re-runs checkOverdueTrip() on every open, which will surface
-        // the same dialog again as long as the plan is still overdue.
-        context.go(AppRoutes.home);
+        // Home lives in a StatefulShellRoute.indexedStack branch, so
+        // context.go(home) alone does NOT re-run HomePage.initState() if
+        // Home was already mounted — the dialog would silently not appear.
+        // Run the check first, while this (still-mounted) context can show
+        // the dialog, THEN land on Home — not the other way around: once
+        // context.go(home) pops this page, `context` is unmounted by the
+        // time the network call resolves, so the dialog would silently
+        // never show.
+        await checkOverdueTrip(context);
+        if (context.mounted) context.go(AppRoutes.home);
         return;
       case NotificationTargetKind.voucherCenter:
         context.push(AppRoutes.voucher);
