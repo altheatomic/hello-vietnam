@@ -102,8 +102,15 @@ class TripRepository {
         .toList();
   }
 
-  Future<void> activateTrip(String idPlan) async {
-    await _invoke(<String, Object?>{'action': 'activateTrip', 'idPlan': idPlan});
+  /// Shifts a saved plan's start_at/end_at when the user starts the trip
+  /// later than originally planned, preserving its duration. [newStartAt]
+  /// must be an ISO 'YYYY-MM-DD' date string.
+  Future<void> rescheduleTrip(String idPlan, String newStartAt) async {
+    await _invoke(<String, Object?>{
+      'action': 'rescheduleTrip',
+      'idPlan': idPlan,
+      'newStartAt': newStartAt,
+    });
   }
 
   Future<void> completeTrip(String idPlan) async {

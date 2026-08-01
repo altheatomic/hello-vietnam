@@ -336,6 +336,16 @@ class AppStrings {
         'Bạn đã hoàn thành chuyến đi đến',
     'Not yet': 'Chưa',
     'Mark as completed': 'Đánh dấu đã hoàn thành',
+    'Update your start date?': 'Cập nhật lại ngày bắt đầu?',
+    "It looks like today is after this trip's planned start date. Update it to keep your itinerary accurate?":
+        'Có vẻ hôm nay đã trễ hơn ngày bắt đầu dự kiến của chuyến đi. Cập nhật lại để lịch trình được chính xác?',
+    'Not now': 'Để sau',
+    'Update': 'Cập nhật',
+    'Could not update start date. Please try again.':
+        'Không thể cập nhật ngày bắt đầu. Vui lòng thử lại.',
+    'Select new start date': 'Chọn ngày bắt đầu mới',
+    'Tap your new start date, then tap any later date to confirm':
+        'Chạm chọn ngày bắt đầu mới, sau đó chạm thêm một ngày bất kỳ để xác nhận',
     'Opening Hello Vietnam': 'Đang mở Hello Vietnam',
     'Preparing your Vietnam journey': 'Đang chuẩn bị hành trình Việt Nam',
     'Home': 'Trang chủ',

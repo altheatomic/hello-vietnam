@@ -59,6 +59,11 @@ class TripLifecycleRequest(BaseModel):
     id_user: str
 
 
+class RescheduleTripRequest(BaseModel):
+    id_user:       str
+    new_start_at:  str   # 'YYYY-MM-DD'
+
+
 # ── Trip planning ─────────────────────────────────────────────────────────────
 
 @router.post("/api/trips/plan")
@@ -160,13 +165,16 @@ async def get_saved_plans(id_user: str, supabase=Depends(get_supabase)):
 
 # ── Trip lifecycle (Trip Tracker) ───────────────────────────────────────────
 
-@router.post("/api/trips/{id_plan}/activate")
-async def activate_trip(
-    id_plan: str, req: TripLifecycleRequest, supabase=Depends(get_supabase)
+@router.post("/api/trips/{id_plan}/reschedule")
+async def reschedule_trip(
+    id_plan: str, req: RescheduleTripRequest, supabase=Depends(get_supabase)
 ):
-    from db.queries_plan import activate_plan
+    from db.queries_plan import reschedule_plan
 
-    result = await asyncio.to_thread(activate_plan, supabase, id_plan, req.id_user)
+    new_start_at = datetime.date.fromisoformat(req.new_start_at)
+    result = await asyncio.to_thread(
+        reschedule_plan, supabase, id_plan, req.id_user, new_start_at
+    )
     if not result:
         raise HTTPException(status_code=404, detail="Plan not found or not owned by user.")
     return result

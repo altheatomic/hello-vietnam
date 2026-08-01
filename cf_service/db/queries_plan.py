@@ -364,15 +364,41 @@ def _slot_to_time(slot: str) -> str:
     }.get(slot.lower(), "09:00")
 
 
-def activate_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
-    """Called when the user taps "Start Trip". Sets activated_at server-side
-    so trip state survives reinstalls and is visible outside the device
-    (SharedPreferences remains the source of truth for immediate UX; this is
-    the sync-up)."""
+def reschedule_plan(
+    supabase: Any,
+    id_plan: str,
+    id_user: str,
+    new_start_at: datetime.date,
+) -> dict:
+    """Called when the user starts a trip later than its planned start_at.
+    Shifts both start_at and end_at by the same offset so the trip's
+    duration (n_days) is preserved; plan_component never stores calendar
+    dates (only day-index + HH:MM), so nothing there needs updating."""
+    plan_resp = (
+        supabase
+        .table("plan")
+        .select("id_plan,start_at,end_at")
+        .eq("id_plan", id_plan)
+        .eq("id_user", id_user)
+        .limit(1)
+        .execute()
+    )
+    plan_rows = plan_resp.data or []
+    if not plan_rows:
+        return {}
+    plan_row = plan_rows[0]
+
+    old_start_at = datetime.date.fromisoformat(str(plan_row["start_at"]))
+    old_end_at = datetime.date.fromisoformat(str(plan_row["end_at"]))
+    new_end_at = new_start_at + (old_end_at - old_start_at)
+
     resp = (
         supabase
         .table("plan")
-        .update({"activated_at": datetime.datetime.utcnow().isoformat()})
+        .update({
+            "start_at": new_start_at.isoformat(),
+            "end_at": new_end_at.isoformat(),
+        })
         .eq("id_plan", id_plan)
         .eq("id_user", id_user)
         .execute()
@@ -380,7 +406,11 @@ def activate_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
     rows = resp.data or []
     if not rows:
         return {}
-    return {"id_plan": id_plan, "activated_at": rows[0]["activated_at"]}
+    return {
+        "id_plan": id_plan,
+        "start_at": rows[0]["start_at"],
+        "end_at": rows[0]["end_at"],
+    }
 
 
 def complete_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
@@ -420,9 +450,9 @@ def mark_overdue_notified(supabase: Any, id_plan: str, id_user: str) -> dict:
 def get_overdue_plans(supabase: Any, id_user: str, grace_days: int = 3) -> list:
     """Pure query logic, deliberately kept free of any HTTP/request concerns.
 
-    A plan is "overdue" when: it was activated, was never ended, hasn't
-    already triggered a notification, and its calendar end_at is more than
-    `grace_days` in the past.
+    A plan is "overdue" when: it was never ended, hasn't already triggered a
+    notification, and its calendar end_at is more than `grace_days` in the
+    past.
 
     This is the exact function a pg_cron-triggered job (or a Scheduled Edge
     Function) would call to upgrade from today's client-pull design to real
@@ -435,7 +465,6 @@ def get_overdue_plans(supabase: Any, id_user: str, grace_days: int = 3) -> list:
         .table("plan")
         .select("id_plan, custom_title, start_at, end_at, city_province")
         .eq("id_user", id_user)
-        .not_.is_("activated_at", "null")
         .is_("ended_at", "null")
         .is_("overdue_notified_at", "null")
         .lt("end_at", cutoff)

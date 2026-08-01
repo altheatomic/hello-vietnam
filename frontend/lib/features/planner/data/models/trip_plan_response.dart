@@ -27,21 +27,44 @@ import 'package:flutter/foundation.dart';
 ///   ]
 /// }
 class TripPlanResponse {
-  const TripPlanResponse({required this.idPlan, this.cityProvince, required this.days});
+  const TripPlanResponse({
+    required this.idPlan,
+    this.cityProvince,
+    this.startAt,
+    this.endAt,
+    required this.days,
+  });
 
   final String? idPlan;
   final String? cityProvince;
+  final DateTime? startAt;
+  final DateTime? endAt;
   final List<TripPlanDay> days;
 
   factory TripPlanResponse.fromJson(Map<String, dynamic> json) {
     final rawDays = json['days'] as List<dynamic>? ?? <dynamic>[];
+    final days = rawDays
+        .whereType<Map<String, dynamic>>()
+        .map(TripPlanDay.fromJson)
+        .toList();
+
+    // `getPlan` (loading a saved trip) returns start_at/end_at at the top
+    // level. `planTrip` (freshly generated, not yet reloaded) does not —
+    // fall back to the first/last day's calendar date, which is always
+    // present either way.
+    final DateTime? startAt =
+        DateTime.tryParse(json['start_at'] as String? ?? '') ??
+            (days.isNotEmpty ? DateTime.tryParse(days.first.date) : null);
+    final DateTime? endAt =
+        DateTime.tryParse(json['end_at'] as String? ?? '') ??
+            (days.isNotEmpty ? DateTime.tryParse(days.last.date) : null);
+
     return TripPlanResponse(
       idPlan: json['id_plan'] as String?,
       cityProvince: json['city_province'] as String?,
-      days:   rawDays
-          .whereType<Map<String, dynamic>>()
-          .map(TripPlanDay.fromJson)
-          .toList(),
+      startAt: startAt,
+      endAt: endAt,
+      days: days,
     );
   }
 }

@@ -301,17 +301,6 @@ class TripStore extends ChangeNotifier {
     _persist(); // fire-and-forget; failure is non-fatal
     _startTimer();
     notifyListeners();
-
-    // Sync activation to the server so it's visible outside this device
-    // (e.g. to the overdue check). Best-effort: a network failure must never
-    // block starting the trip locally — only log it.
-    if (idPlan != null) {
-      unawaited(
-        _repository.activateTrip(idPlan).catchError((Object e) {
-          debugPrint('TripStore.startTrip: activateTrip sync failed — $e');
-        }),
-      );
-    }
   }
 
   /// Ends the active trip, clears persistence, and cancels the refresh timer.

@@ -10,6 +10,7 @@ import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
+import 'package:hellovietnam/features/planner/presentation/widgets/start_date_picker_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TripResultPage extends StatefulWidget {
@@ -45,6 +46,73 @@ class _TripResultPageState extends State<TripResultPage> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Future<void> _handleStartTrip(List<TripPlannerDayData> days) async {
+    final String? idPlan = widget.plan.idPlan;
+    final DateTime? startAt = widget.plan.startAt;
+
+    if (idPlan != null && startAt != null) {
+      final DateTime now = DateTime.now();
+      final DateTime today = DateTime(now.year, now.month, now.day);
+      final DateTime startDateOnly = DateTime(
+        startAt.year,
+        startAt.month,
+        startAt.day,
+      );
+
+      if (today.isAfter(startDateOnly)) {
+        final bool? wantsUpdate = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext dialogContext) => AlertDialog(
+            title: Text(context.l10n.ui('Update your start date?')),
+            content: Text(
+              context.l10n.ui(
+                "It looks like today is after this trip's planned start date. Update it to keep your itinerary accurate?",
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(context.l10n.ui('Not now')),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(context.l10n.ui('Update')),
+              ),
+            ],
+          ),
+        );
+
+        if (wantsUpdate == true && mounted) {
+          final DateTime? newStart = await pickNewStartDate(
+            context,
+            firstSelectableDate: today,
+          );
+          if (newStart != null) {
+            try {
+              await TripRepository().rescheduleTrip(idPlan, _isoDate(newStart));
+            } catch (e) {
+              if (mounted) {
+                _showSnackBar(
+                  context.l10n.ui(
+                    'Could not update start date. Please try again.',
+                  ),
+                );
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (!mounted) return;
+    TripStore.instance.startTrip(
+      title: 'Your Vietnam Adventure',
+      days: days,
+      idPlan: idPlan,
+    );
+    context.go(AppRoutes.home);
   }
 
   void _handleShare() {
@@ -257,14 +325,7 @@ class _TripResultPageState extends State<TripResultPage> {
                     ),
                     const SizedBox(height: 12),
                     _StartTripButton(
-                      onTap: () {
-                        TripStore.instance.startTrip(
-                          title: 'Your Vietnam Adventure',
-                          days: days,
-                          idPlan: widget.plan.idPlan,
-                        );
-                        context.go(AppRoutes.home);
-                      },
+                      onTap: () => _handleStartTrip(days),
                     ),
                     const SizedBox(height: 24),
                     Row(
@@ -440,6 +501,11 @@ String _formatIsoDate(String iso) {
   if (month < 1 || month > 12) return iso;
   return '${months[month - 1]} $day, ${parts[0]}';
 }
+
+String _isoDate(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
 
 String _tripDateRange(List<TripPlanDay> days) {
   if (days.isEmpty) return '';

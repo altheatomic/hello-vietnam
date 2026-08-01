@@ -544,10 +544,12 @@ class _ExploreResultCardState extends State<ExploreResultCard> {
             const SizedBox(height: 8),
             Text(
               context.l10n.ui(widget.item.name),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),

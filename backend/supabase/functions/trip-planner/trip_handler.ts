@@ -67,8 +67,8 @@ export async function handleTripPlannerRequest(
         return clonePlan(userId, payload);
       case "savePlan":
         return savePlan(userId, payload);
-      case "activateTrip":
-        return activateTrip(userId, payload);
+      case "rescheduleTrip":
+        return rescheduleTrip(userId, payload);
       case "completeTrip":
         return completeTrip(userId, payload);
       case "markTripOverdueNotified":
@@ -147,9 +147,13 @@ async function savePlan(userId: string, p: JsonObject): Promise<Response> {
   });
 }
 
-async function activateTrip(userId: string, p: JsonObject): Promise<Response> {
+async function rescheduleTrip(userId: string, p: JsonObject): Promise<Response> {
   const id = reqStr(p.idPlan, "idPlan");
-  return proxyPost(`/api/trips/${id}/activate`, { id_user: userId });
+  const newStartAt = reqStr(p.newStartAt, "newStartAt");
+  return proxyPost(`/api/trips/${id}/reschedule`, {
+    id_user: userId,
+    new_start_at: newStartAt,
+  });
 }
 
 async function completeTrip(userId: string, p: JsonObject): Promise<Response> {
