@@ -418,7 +418,7 @@ class _RightPanel extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     Text(
-                      'Wanderly',
+                      'Vietnam',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.smooch(
                         fontSize: 96,
