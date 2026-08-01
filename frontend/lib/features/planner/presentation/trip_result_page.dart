@@ -44,100 +44,16 @@ class _TripResultPageState extends State<TripResultPage> {
   Future<void> _editTitle() async {
     final String? idPlan = widget.plan.idPlan;
     if (idPlan == null) return;
-    final TextEditingController controller = TextEditingController(text: _title);
-    String? errorText;
-    bool isSubmitting = false;
 
     final String? renamed = await showDialog<String>(
       context: context,
-      barrierDismissible: !isSubmitting,
-      builder: (BuildContext dialogContext) => StatefulBuilder(
-        builder: (BuildContext context, StateSetter setDialogState) => AlertDialog(
-          title: Text(context.l10n.ui('Edit trip name')),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            maxLength: 120,
-            decoration: InputDecoration(
-              labelText: context.l10n.ui('Trip name'),
-              errorText: errorText == null ? null : context.l10n.ui(errorText!),
-            ),
-            onSubmitted: isSubmitting
-                ? null
-                : (_) async {
-                    await _submitTitleRename(
-                      dialogContext,
-                      setDialogState,
-                      controller,
-                      idPlan,
-                      (String? value) => errorText = value,
-                      (bool value) => isSubmitting = value,
-                    );
-                  },
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
-              child: Text(context.l10n.ui('Cancel')),
-            ),
-            FilledButton(
-              onPressed: isSubmitting
-                  ? null
-                  : () => _submitTitleRename(
-                      dialogContext,
-                      setDialogState,
-                      controller,
-                      idPlan,
-                      (String? value) => errorText = value,
-                      (bool value) => isSubmitting = value,
-                    ),
-              child: Text(context.l10n.ui(isSubmitting ? 'Saving…' : 'Save')),
-            ),
-          ],
-        ),
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => _RenameTripDialog(
+        idPlan: idPlan,
+        initialTitle: _title,
       ),
     );
-    controller.dispose();
     if (renamed != null && mounted) setState(() => _title = renamed);
-  }
-
-  Future<void> _submitTitleRename(
-    BuildContext dialogContext,
-    StateSetter setDialogState,
-    TextEditingController controller,
-    String idPlan,
-    ValueChanged<String?> setError,
-    ValueChanged<bool> setSubmitting,
-  ) async {
-    final String value = controller.text.trim();
-    if (value.isEmpty) {
-      setDialogState(() => setError('Trip name cannot be empty.'));
-      return;
-    }
-    setDialogState(() {
-      setError(null);
-      setSubmitting(true);
-    });
-    try {
-      final String renamed = await TripRepository().renamePlan(idPlan, value);
-      if (dialogContext.mounted) Navigator.pop(dialogContext, renamed);
-    } on SupabaseFunctionException catch (error) {
-      if (!dialogContext.mounted) return;
-      setDialogState(() {
-        setSubmitting(false);
-        setError(
-          error.errorCode == 'duplicate_trip_title'
-              ? 'You already have a trip with this name.'
-              : 'Could not rename trip. Please try again.',
-        );
-      });
-    } catch (_) {
-      if (!dialogContext.mounted) return;
-      setDialogState(() {
-        setSubmitting(false);
-        setError('Could not rename trip. Please try again.');
-      });
-    }
   }
 
   Future<void> _handleSave() async {
@@ -647,6 +563,113 @@ String _tripDateRange(List<TripPlanDay> days) {
 }
 
 // ── Widgets ───────────────────────────────────────────────────────────────────
+
+class _RenameTripDialog extends StatefulWidget {
+  const _RenameTripDialog({
+    required this.idPlan,
+    required this.initialTitle,
+  });
+
+  final String idPlan;
+  final String initialTitle;
+
+  @override
+  State<_RenameTripDialog> createState() => _RenameTripDialogState();
+}
+
+class _RenameTripDialogState extends State<_RenameTripDialog> {
+  late final TextEditingController _controller;
+  String? _errorText;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialTitle);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
+
+    final String value = _controller.text.trim();
+    if (value.isEmpty) {
+      setState(() => _errorText = 'Trip name cannot be empty.');
+      return;
+    }
+
+    setState(() {
+      _errorText = null;
+      _isSubmitting = true;
+    });
+
+    try {
+      final String renamed = await TripRepository().renamePlan(
+        widget.idPlan,
+        value,
+      );
+      if (!mounted) return;
+      FocusScope.of(context).unfocus();
+      Navigator.of(context).pop(renamed);
+    } on SupabaseFunctionException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _errorText = error.errorCode == 'duplicate_trip_title'
+            ? 'You already have a trip with this name.'
+            : 'Could not rename trip. Please try again.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _errorText = 'Could not rename trip. Please try again.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope<String>(
+      canPop: !_isSubmitting,
+      child: AlertDialog(
+        title: Text(context.l10n.ui('Edit trip name')),
+        content: TextField(
+          controller: _controller,
+          autofocus: true,
+          maxLength: 120,
+          textInputAction: TextInputAction.done,
+          decoration: InputDecoration(
+            labelText: context.l10n.ui('Trip name'),
+            errorText: _errorText == null
+                ? null
+                : context.l10n.ui(_errorText!),
+          ),
+          onSubmitted: _isSubmitting ? null : (_) => _submit(),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: _isSubmitting
+                ? null
+                : () => Navigator.of(context).pop(),
+            child: Text(context.l10n.ui('Cancel')),
+          ),
+          FilledButton(
+            onPressed: _isSubmitting ? null : _submit,
+            child: Text(
+              context.l10n.ui(_isSubmitting ? 'Saving…' : 'Save'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _ActionButton extends StatelessWidget {
   const _ActionButton({required this.label, required this.onTap});
