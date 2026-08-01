@@ -186,7 +186,10 @@ def fetch_cf_scores_for_user(
     if not place_ids:
         return {}
 
-    chunk_size = 200
+    # Keep the PostgREST filter URL comfortably below reverse-proxy limits.
+    # UUID lists expand after URL encoding, and Cloudflare may answer an
+    # oversized request with an HTML 400 page that postgrest-py cannot decode.
+    chunk_size = 100
     result: dict[str, float] = {}
 
     for start in range(0, len(place_ids), chunk_size):
