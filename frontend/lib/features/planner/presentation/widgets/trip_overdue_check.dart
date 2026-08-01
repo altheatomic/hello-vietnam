@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
+
+enum _OverdueDialogAction { notYet, openItinerary, markCompleted }
 
 /// Client-pull check for trips left un-ended long after their planned end
 /// date (Option B — no push/pg_cron yet).
@@ -14,6 +18,10 @@ import 'package:hellovietnam/features/planner/data/trip_store.dart';
 /// caller changes.
 ///
 /// Call this once per Home open, after the user is known to be signed in.
+/// This is the ONLY place that should call it — tapping the corresponding
+/// bell notification deliberately does not re-trigger this dialog (see
+/// NotificationActionHandler's tripOverdueCheck case), so it surfaces at
+/// most once per app open, not on every notification tap.
 Future<void> checkOverdueTrip(
   BuildContext context, {
   TripRepository? repository,
@@ -30,42 +38,72 @@ Future<void> checkOverdueTrip(
 
   final OverdueTripPlan trip = overdue.first;
   final AppStrings strings = AppStrings.of(AppLanguageController.instance.language);
+  final String tripTitle = (trip.customTitle == null || trip.customTitle!.isEmpty)
+      ? strings.ui('Your Vietnam Adventure')
+      : trip.customTitle!;
 
-  final bool? markCompleted = await showDialog<bool>(
+  final _OverdueDialogAction? action = await showDialog<_OverdueDialogAction>(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext dialogContext) => AlertDialog(
       title: Text(strings.ui('Still on this trip?')),
-      content: Text(
-        '${strings.ui('Have you completed your trip to')} '
-        '${trip.provinceName}?',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            tripTitle,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${strings.ui('Have you completed your trip to')} '
+            '${trip.provinceName}?',
+          ),
+        ],
       ),
       actions: <Widget>[
         TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
+          onPressed: () => Navigator.of(
+            dialogContext,
+          ).pop(_OverdueDialogAction.notYet),
           child: Text(strings.ui('Not yet')),
         ),
+        OutlinedButton(
+          onPressed: () => Navigator.of(
+            dialogContext,
+          ).pop(_OverdueDialogAction.openItinerary),
+          child: Text(strings.ui('Open Itinerary')),
+        ),
         FilledButton(
-          onPressed: () => Navigator.of(dialogContext).pop(true),
+          onPressed: () => Navigator.of(
+            dialogContext,
+          ).pop(_OverdueDialogAction.markCompleted),
           child: Text(strings.ui('Mark as completed')),
         ),
       ],
     ),
   );
 
-  if (markCompleted == true) {
-    try {
-      await repo.completeTrip(trip.idPlan);
-    } catch (_) {
-      // Non-fatal: the next Home open will offer the check again since
-      // ended_at was never set server-side.
-    }
-    if (TripStore.instance.activeTrip?.idPlan == trip.idPlan) {
-      TripStore.instance.endTrip();
-    }
+  switch (action) {
+    case _OverdueDialogAction.markCompleted:
+      try {
+        await TripStore.instance.endTripByPlan(trip.idPlan);
+      } catch (_) {
+        // Non-fatal: the next Home open will offer the check again since
+        // ended_at was never confirmed set server-side.
+      }
+      return;
+    case _OverdueDialogAction.openItinerary:
+      if (context.mounted) {
+        context.push(AppRoutes.tripPlannerResultPath(idPlan: trip.idPlan));
+      }
+      return;
+    case _OverdueDialogAction.notYet:
+    case null:
+      // Writes nothing: the plan stays overdue server-side, so the next
+      // Home open will offer the check again until the trip is actually
+      // completed (or ended via the bell notification's "End Trip" button).
+      return;
   }
-  // "Not yet" writes nothing: the plan stays overdue server-side, so the
-  // next Home open (or the bell notification, if the user misses this
-  // dialog) will offer the check again until the trip is actually
-  // completed.
 }

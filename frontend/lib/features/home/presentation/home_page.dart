@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -438,7 +439,20 @@ class _HomePageState extends State<HomePage>
                               extra: trip.days[dayIndex],
                             );
                           },
-                          onEnd: TripStore.instance.endTrip,
+                          onEnd: () {
+                            final String? idPlan =
+                                TripStore.instance.activeTrip?.idPlan;
+                            if (idPlan == null) return;
+                            unawaited(
+                              TripStore.instance
+                                  .endTripByPlan(idPlan)
+                                  .catchError((Object e) {
+                                    debugPrint(
+                                      'HomePage: endTripByPlan failed — $e',
+                                    );
+                                  }),
+                            );
+                          },
                         ),
                       );
                     },

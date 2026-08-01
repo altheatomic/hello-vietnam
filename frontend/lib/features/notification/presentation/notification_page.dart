@@ -9,7 +9,6 @@ import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/notification/domain/app_notification.dart';
 import 'package:hellovietnam/features/notification/presentation/notification_action_handler.dart';
 import 'package:hellovietnam/features/notification/presentation/notification_controller.dart';
-import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
 
 class NotificationPage extends StatefulWidget {
@@ -24,13 +23,6 @@ class NotificationPage extends StatefulWidget {
 class _NotificationPageState extends State<NotificationPage> {
   late final NotificationController _controller;
   final ScrollController _scrollController = ScrollController();
-
-  /// Notification ids whose trip was ended in this session. Local-only —
-  /// not persisted, since target.metadata is a static enqueue-time snapshot
-  /// with no "ended" field. If the app is restarted, the End Trip button
-  /// reappears; tapping it again is a harmless no-op (complete_plan() has
-  /// no `ended_at IS NULL` guard, so it just re-writes the same timestamp).
-  final Set<String> _locallyCompletedTripIds = <String>{};
 
   @override
   void initState() {
@@ -292,7 +284,9 @@ class _NotificationPageState extends State<NotificationPage> {
     if (idPlan == null || idPlan.isEmpty) return;
 
     try {
-      await TripRepository().completeTrip(idPlan);
+      // Canonical End Trip action — same one used by the Trip Tracker card
+      // on Home and the overdue-check popup, so all three behave the same.
+      await TripStore.instance.endTripByPlan(idPlan);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -308,12 +302,7 @@ class _NotificationPageState extends State<NotificationPage> {
       return;
     }
 
-    if (TripStore.instance.activeTrip?.idPlan == idPlan) {
-      TripStore.instance.endTrip();
-    }
-
     if (!mounted) return;
-    setState(() => _locallyCompletedTripIds.add(notification.id));
     await _controller.markAsRead(notification.id);
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -367,7 +356,13 @@ class _NotificationPageState extends State<NotificationPage> {
           SafeArea(
             bottom: false,
             child: ListenableBuilder(
-              listenable: _controller,
+              // Also listens to TripStore so a trip completed via the Home
+              // Trip Tracker card or the overdue-check popup immediately
+              // hides this page's "End Trip" button/shows "Completed" too.
+              listenable: Listenable.merge(<Listenable>[
+                _controller,
+                TripStore.instance,
+              ]),
               builder: (BuildContext context, Widget? child) {
                 final List<AppNotification> notifications =
                     _controller.visibleNotifications;
@@ -474,8 +469,11 @@ class _NotificationPageState extends State<NotificationPage> {
                                   onTap: () =>
                                       _handleNotificationTap(notification),
                                   onEndTrip: () => _handleEndTrip(notification),
-                                  isTripCompleted: _locallyCompletedTripIds
-                                      .contains(notification.id),
+                                  isTripCompleted:
+                                      notification.target.entityId != null &&
+                                      TripStore.instance.isCompletedLocally(
+                                        notification.target.entityId!,
+                                      ),
                                 ),
                               );
                             },
@@ -878,17 +876,16 @@ class _NotificationTile extends StatelessWidget {
 
 /// Embedded trip summary shown inside a `tripOverdueCheck` notification.
 ///
-/// Has its own [GestureDetector] (tap → trip detail page) nested inside the
-/// tile's outer [GestureDetector] (tap elsewhere → the usual notification
-/// action), and the "End Trip" button has a further-nested [GestureDetector]
-/// of its own. Flutter's gesture arena resolves nested tap recognizers to
-/// the innermost one hit — the outer tile's onTap never also fires when you
-/// tap this card or its button — so no manual event-stopping is needed;
-/// `HitTestBehavior.opaque` on both just guarantees full hit-test coverage
-/// of each button's bounds. The card itself has no `onTap`. "Open Itinerary"
-/// replaces this root-level notification route with the Trip Planner shell
-/// location via [GoRouterHelper.go], avoiding two copies of the shell's
-/// branch Navigators being mounted with the same GlobalKeys.
+/// The card itself has no `onTap` — only its two pill buttons
+/// ("Open Itinerary" / "End Trip") are tappable, each with its own
+/// [GestureDetector] (`HitTestBehavior.opaque`) nested inside the tile's
+/// outer [GestureDetector] (tap elsewhere on the tile → the usual
+/// notification action). Flutter's gesture arena resolves nested tap
+/// recognizers to the innermost one hit, so the outer tile's onTap never
+/// also fires when a button is tapped — no manual event-stopping needed.
+/// "Open Itinerary" uses [GoRouterHelper.go] (not `push`) to avoid two
+/// copies of the shell's branch Navigators being mounted with the same
+/// GlobalKeys.
 class _TripOverdueCard extends StatelessWidget {
   const _TripOverdueCard({
     required this.target,

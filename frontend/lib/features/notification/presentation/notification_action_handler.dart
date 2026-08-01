@@ -5,7 +5,6 @@ import 'package:hellovietnam/features/city_detail/domain/city_detail_models.dart
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/notification/domain/app_notification.dart';
-import 'package:hellovietnam/features/planner/presentation/widgets/trip_overdue_check.dart';
 
 class NotificationActionHandler {
   NotificationActionHandler._();
@@ -72,18 +71,18 @@ class NotificationActionHandler {
         context.go(AppRoutes.tripPlannerDayDetailPath(target.dayIndex ?? 0));
         return;
       case NotificationTargetKind.tripOverdueCheck:
-        // Home lives in a StatefulShellRoute.indexedStack branch, so
-        // context.go(home) alone does NOT re-run HomePage.initState() if
-        // Home was already mounted — the dialog would silently not appear.
-        // Run the check directly here instead of relying on Home's
-        // lifecycle. Deliberately does NOT follow up with
-        // context.go(AppRoutes.home): calling `.go()` on a shell route
-        // immediately after a showDialog() pop collided with
-        // StatefulShellRoute.indexedStack's branch-Navigator GlobalKey
-        // (`!keyReservation.contains(key)` assertion in navigator.dart) —
-        // the dialog interaction is complete in itself; no forced
-        // navigation is needed afterwards.
-        await checkOverdueTrip(context);
+        // The "have you completed your trip?" dialog only shows once, on
+        // app open (see home_page.dart's checkOverdueTrip() call) — tapping
+        // this notification must NOT re-trigger it. Real actions live on
+        // the card's own "Open Itinerary"/"End Trip" buttons; tapping the
+        // notification body itself just opens the itinerary, matching the
+        // tap-to-open behavior of every other notification kind.
+        context.go(
+          AppRoutes.tripPlannerResultPath(
+            idPlan: target.entityId,
+            fromNotification: true,
+          ),
+        );
         return;
       case NotificationTargetKind.voucherCenter:
         context.push(AppRoutes.voucher);
