@@ -351,141 +351,148 @@ class _NotificationPageState extends State<NotificationPage> {
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Stack(
-        children: <Widget>[
-          const Positioned.fill(child: _NotificationBackground()),
-          SafeArea(
-            bottom: false,
-            child: ListenableBuilder(
-              // Also listens to TripStore so a trip completed via the Home
-              // Trip Tracker card or the overdue-check popup immediately
-              // hides this page's "End Trip" button/shows "Completed" too.
-              listenable: Listenable.merge(<Listenable>[
-                _controller,
-                TripStore.instance,
-              ]),
-              builder: (BuildContext context, Widget? child) {
-                final List<AppNotification> notifications =
-                    _controller.visibleNotifications;
+          children: <Widget>[
+            const Positioned.fill(child: _NotificationBackground()),
+            SafeArea(
+              bottom: false,
+              child: ListenableBuilder(
+                // Also listens to TripStore so a trip completed via the Home
+                // Trip Tracker card or the overdue-check popup immediately
+                // hides this page's "End Trip" button/shows "Completed" too.
+                listenable: Listenable.merge(<Listenable>[
+                  _controller,
+                  TripStore.instance,
+                ]),
+                builder: (BuildContext context, Widget? child) {
+                  final List<AppNotification> notifications =
+                      _controller.visibleNotifications;
 
-                return Column(
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-                      child: _NotificationHeader(
-                        activeFilterCount: _controller.activeFilterCount,
-                        onBack: _handleBack,
-                        onFilter: _openFilters,
-                      ),
-                    ),
-                    if (_controller.isLoading)
-                      Expanded(
-                        child: AppLoadingScreen(
-                          message: context.l10n.ui('Loading notifications'),
-                          compact: true,
+                  return Column(
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+                        child: _NotificationHeader(
+                          activeFilterCount: _controller.activeFilterCount,
+                          onBack: _handleBack,
+                          onFilter: _openFilters,
                         ),
-                      )
-                    else if (_controller.errorMessage != null &&
-                        notifications.isEmpty)
-                      Expanded(
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Text(
-                              context.l10n.ui(_controller.errorMessage!),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                      ),
+                      if (_controller.isLoading)
+                        Expanded(
+                          child: AppLoadingScreen(
+                            message: context.l10n.ui('Loading notifications'),
+                            compact: true,
+                          ),
+                        )
+                      else if (_controller.errorMessage != null &&
+                          notifications.isEmpty)
+                        Expanded(
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                              ),
+                              child: Text(
+                                context.l10n.ui(_controller.errorMessage!),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      )
-                    else if (notifications.isEmpty)
-                      const Expanded(child: _NotificationEmptyState())
-                    else
-                      Expanded(
-                        child: RefreshIndicator(
-                          onRefresh: _controller.refresh,
-                          child: ListView.separated(
-                            controller: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(
-                              parent: BouncingScrollPhysics(),
-                            ),
-                            padding: EdgeInsets.fromLTRB(
-                              16,
-                              10,
-                              16,
-                              topInset + 28,
-                            ),
-                            itemCount: notifications.length + 2,
-                            separatorBuilder:
-                                (BuildContext context, int index) =>
-                                    const SizedBox(height: 14),
-                            itemBuilder: (BuildContext context, int index) {
-                              if (index == notifications.length) {
-                                if (_controller.isLoadingMore) {
-                                  return const Center(
-                                    child: SizedBox.square(
-                                      dimension: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
+                        )
+                      else if (notifications.isEmpty)
+                        const Expanded(child: _NotificationEmptyState())
+                      else
+                        Expanded(
+                          child: RefreshIndicator(
+                            onRefresh: _controller.refresh,
+                            child: ListView.separated(
+                              controller: _scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(
+                                parent: BouncingScrollPhysics(),
+                              ),
+                              padding: EdgeInsets.fromLTRB(
+                                16,
+                                10,
+                                16,
+                                topInset + 28,
+                              ),
+                              itemCount: notifications.length + 2,
+                              separatorBuilder:
+                                  (BuildContext context, int index) =>
+                                      const SizedBox(height: 14),
+                              itemBuilder: (BuildContext context, int index) {
+                                if (index == notifications.length) {
+                                  if (_controller.isLoadingMore) {
+                                    return const Center(
+                                      child: SizedBox.square(
+                                        dimension: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  if (_controller.hasMore) {
+                                    return Center(
+                                      child: TextButton.icon(
+                                        onPressed: _controller.loadMore,
+                                        icon: const Icon(
+                                          Icons.expand_more_rounded,
+                                        ),
+                                        label: Text(
+                                          context.l10n.ui('Load more'),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return const SizedBox.shrink();
+                                }
+                                if (index == notifications.length + 1) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Center(
+                                      child: _ClearAllButton(
+                                        onTap: _clearAllNotifications,
                                       ),
                                     ),
                                   );
                                 }
-                                if (_controller.hasMore) {
-                                  return Center(
-                                    child: TextButton.icon(
-                                      onPressed: _controller.loadMore,
-                                      icon: const Icon(
-                                        Icons.expand_more_rounded,
-                                      ),
-                                      label: Text(context.l10n.ui('Load more')),
-                                    ),
-                                  );
-                                }
-                                return const SizedBox.shrink();
-                              }
-                              if (index == notifications.length + 1) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 6),
-                                  child: Center(
-                                    child: _ClearAllButton(
-                                      onTap: _clearAllNotifications,
-                                    ),
+
+                                final AppNotification notification =
+                                    notifications[index];
+                                return _AnimatedNotificationTile(
+                                  index: index,
+                                  child: _NotificationTile(
+                                    notification: notification,
+                                    onTap: () =>
+                                        _handleNotificationTap(notification),
+                                    onEndTrip: () =>
+                                        _handleEndTrip(notification),
+                                    isTripCompleted:
+                                        notification.isTripCompleted ||
+                                        (notification.target.entityId != null &&
+                                            TripStore.instance
+                                                .isCompletedLocally(
+                                                  notification.target.entityId!,
+                                                )),
                                   ),
                                 );
-                              }
-
-                              final AppNotification notification =
-                                  notifications[index];
-                              return _AnimatedNotificationTile(
-                                index: index,
-                                child: _NotificationTile(
-                                  notification: notification,
-                                  onTap: () =>
-                                      _handleNotificationTap(notification),
-                                  onEndTrip: () => _handleEndTrip(notification),
-                                  isTripCompleted:
-                                      notification.target.entityId != null &&
-                                      TripStore.instance.isCompletedLocally(
-                                        notification.target.entityId!,
-                                      ),
-                                ),
-                              );
-                            },
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -1021,7 +1028,9 @@ class _TripCardPillButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: filled ? color : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(999),
-          border: filled ? null : Border.all(color: color.withValues(alpha: 0.5)),
+          border: filled
+              ? null
+              : Border.all(color: color.withValues(alpha: 0.5)),
         ),
         child: Text(
           label,
@@ -1039,8 +1048,18 @@ class _TripCardPillButton extends StatelessWidget {
 }
 
 const List<String> _shortMonthNames = <String>[
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 String _formatTripDateRange(
@@ -1050,7 +1069,8 @@ String _formatTripDateRange(
 ) {
   if (startAt == null || endAt == null) return '';
   final int nDays = endAt.difference(startAt).inDays + 1;
-  final String startLabel = '${startAt.day} ${_shortMonthNames[startAt.month - 1]}';
+  final String startLabel =
+      '${startAt.day} ${_shortMonthNames[startAt.month - 1]}';
   final String endLabel = '${endAt.day} ${_shortMonthNames[endAt.month - 1]}';
   final String daysLabel = context.l10n.ui(nDays == 1 ? 'day' : 'days');
   return '$startLabel – $endLabel · $nDays $daysLabel';

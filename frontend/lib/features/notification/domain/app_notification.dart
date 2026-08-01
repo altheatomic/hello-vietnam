@@ -228,6 +228,7 @@ class AppNotification {
     required this.target,
     this.createdAt,
     this.isRead = false,
+    this.isTripCompleted = false,
     this.metadata = const <String, String>{},
   });
 
@@ -238,6 +239,7 @@ class AppNotification {
   final String description;
   final String timestampLabel;
   final bool isRead;
+  final bool isTripCompleted;
   final NotificationTarget target;
   final DateTime? createdAt;
   final Map<String, String> metadata;
@@ -250,6 +252,7 @@ class AppNotification {
     String? description,
     String? timestampLabel,
     bool? isRead,
+    bool? isTripCompleted,
     NotificationTarget? target,
     DateTime? createdAt,
     Map<String, String>? metadata,
@@ -262,6 +265,7 @@ class AppNotification {
       description: description ?? this.description,
       timestampLabel: timestampLabel ?? this.timestampLabel,
       isRead: isRead ?? this.isRead,
+      isTripCompleted: isTripCompleted ?? this.isTripCompleted,
       target: target ?? this.target,
       createdAt: createdAt ?? this.createdAt,
       metadata: metadata ?? this.metadata,
@@ -277,6 +281,7 @@ class AppNotification {
       'description': description,
       'timestampLabel': timestampLabel,
       'isRead': isRead,
+      'isTripCompleted': isTripCompleted,
       'target': target.toJson(),
       'createdAt': createdAt?.toIso8601String(),
       'metadata': metadata,
@@ -314,6 +319,10 @@ class AppNotification {
       isRead: json.containsKey('read_at')
           ? json['read_at'] != null
           : json['isRead'] as bool? ?? false,
+      isTripCompleted:
+          json['is_trip_completed'] as bool? ??
+          json['isTripCompleted'] as bool? ??
+          false,
       target: NotificationTarget.fromJson(targetJson),
       createdAt: createdAt,
       metadata: metadata,

@@ -74,9 +74,30 @@ export class SupabaseNotificationGateway implements NotificationGateway {
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
     const last = items.at(-1);
+    const overduePlanIds = [...new Set(
+      items.map(overduePlanId).filter((value): value is string => value != null),
+    )];
+    const completedPlanIds = new Set<string>();
+
+    if (overduePlanIds.length > 0) {
+      const { data: plans, error: plansError } = await this.client
+        .from("plan")
+        .select("id_plan,ended_at")
+        .eq("id_user", userId)
+        .in("id_plan", overduePlanIds);
+      throwIfError(plansError, "Could not load trip completion statuses.");
+      for (const plan of (plans ?? []) as DatabaseRow[]) {
+        if (plan.ended_at != null) completedPlanIds.add(String(plan.id_plan));
+      }
+    }
 
     return {
-      items,
+      items: items.map((item) => {
+        const idPlan = overduePlanId(item);
+        return idPlan == null
+          ? item
+          : { ...item, is_trip_completed: completedPlanIds.has(idPlan) };
+      }),
       nextCursor: hasMore && last
         ? `${String(last.created_at)}|${String(last.id_notification)}`
         : null,
@@ -145,6 +166,20 @@ export class SupabaseNotificationGateway implements NotificationGateway {
     throwIfError(error, "Could not update the notification preference.");
     return data as NotificationPreferenceRow;
   }
+}
+
+function overduePlanId(row: DatabaseRow): string | null {
+  const payload = asRecord(row.payload_jsonb);
+  const target = asRecord(payload.target);
+  if (target.kind !== "tripOverdueCheck") return null;
+  const value = typeof target.entityId === "string" ? target.entityId.trim() : "";
+  return value.length > 0 ? value : null;
+}
+
+function asRecord(value: unknown): DatabaseRow {
+  return value != null && typeof value === "object" && !Array.isArray(value)
+    ? value as DatabaseRow
+    : {};
 }
 
 function throwIfError(
