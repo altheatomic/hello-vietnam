@@ -13,6 +13,8 @@ Run locally:
   uvicorn main:app --reload --port 8000
 """
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -26,10 +28,17 @@ from routes.trip import router as trip_router
 from routes.events import router as events_router
 from routes.recommend import router as recommend_router
 
+EXECUTOR_MAX_WORKERS = 30
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    executor = ThreadPoolExecutor(max_workers=EXECUTOR_MAX_WORKERS)
+    loop = asyncio.get_running_loop()
+    loop.set_default_executor(executor)
+    app.state.executor = executor
     yield
+    executor.shutdown(wait=True)
     await close_pool()
 
 

@@ -167,7 +167,8 @@
       "Bash(PYTHONIOENCODING=utf-8 python _audit_province_counts.py)",
       "Bash(PYTHONIOENCODING=utf-8 python _audit_cf_coverage.py)",
       "Bash(python -c \"import asyncpg; print\\('ok'\\)\")",
-      "Bash(python -m py_compile config.py services/module2_algorithm.py services/schedule_builder.py)"
+      "Bash(python -m py_compile config.py services/module2_algorithm.py services/schedule_builder.py)",
+      "Bash(python -m py_compile main.py)"
     ],
     "additionalDirectories": [
       "\\tmp",
