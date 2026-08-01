@@ -146,7 +146,10 @@ class _TripResultPageState extends State<TripResultPage> {
 
   @override
   Widget build(BuildContext context) {
-    final days = _convertPlan(widget.plan);
+    final days = _convertPlan(
+      widget.plan,
+      idProvince: widget.plan.cityProvince ?? widget.wizard?.idProvince ?? '',
+    );
     final ThemeData theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
     final List<Color> pageColors = isDark
@@ -326,7 +329,10 @@ class _TripResultPageState extends State<TripResultPage> {
 
 // ── Conversion helpers ────────────────────────────────────────────────────────
 
-List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
+List<TripPlannerDayData> _convertPlan(
+  TripPlanResponse plan, {
+  required String idProvince,
+}) {
   const gradients = <List<Color>>[
     <Color>[Color(0xFFE9F0FD), Color(0xFFE7FAFD), Color(0xFFD6F7F6)],
     <Color>[Color(0xFFF4EAFB), Color(0xFFEBF7FB), Color(0xFFD6F0F7)],
@@ -368,6 +374,13 @@ List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
         lat: p.latitude ?? 0.0,
         lng: p.longitude ?? 0.0,
         imageUrl: imageUrl,
+        idPlace: p.idPlace,
+        idProvince: idProvince,
+        estimatedDurationMinutes: p.estimatedDurationMinutes,
+        minimumPrice: p.minimumPrice,
+        maximumPrice: p.maximumPrice,
+        timespan: p.timespan,
+        timeclose: p.timeclose,
       );
     }).toList();
 

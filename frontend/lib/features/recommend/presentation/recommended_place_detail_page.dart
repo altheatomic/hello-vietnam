@@ -56,10 +56,10 @@ class _RecommendedPlaceDetailPageState
   Future<ProvinceTopPlace> _load() async {
     final ProvinceDetail detail = await RecommendRepository()
         .getTopPlacesForProvince(widget.idProvince);
-    return detail.topPlaces.firstWhere(
-      (ProvinceTopPlace place) => place.idPlace == widget.idPlace,
-      orElse: () => throw StateError('Destination is no longer available.'),
-    );
+    for (final ProvinceTopPlace place in detail.topPlaces) {
+      if (place.idPlace == widget.idPlace) return place;
+    }
+    return RecommendRepository().getPlaceById(widget.idPlace);
   }
 
   @override
@@ -96,11 +96,16 @@ class _RecommendedPlaceDetailPageState
             final List<String> images = coverImage == null
                 ? galleryImages.take(1).toList(growable: false)
                 : <String>[coverImage];
-            final String description = <String>[
+            final String fallbackDescription = <String>[
               if (place.subcategoryName?.trim().isNotEmpty == true)
                 place.subcategoryName!,
               if (place.address?.trim().isNotEmpty == true) place.address!,
             ].join(' · ');
+
+            final String description =
+                place.shortDescription?.trim().isNotEmpty == true
+                ? place.shortDescription!.trim()
+                : fallbackDescription;
 
             return SharedItemDetailPage(
               detail: ItemDetail(

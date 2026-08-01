@@ -17,6 +17,7 @@ class ProvinceTopPlace {
     this.averageRating,
     this.reviewCount,
     this.subcategoryName,
+    this.shortDescription,
     this.tagMatch = 0,
   });
 
@@ -29,6 +30,7 @@ class ProvinceTopPlace {
   final double? averageRating;
   final int? reviewCount;
   final String? subcategoryName;
+  final String? shortDescription;
   final double tagMatch;
 
   factory ProvinceTopPlace.fromJson(
@@ -64,6 +66,7 @@ class ProvinceTopPlace {
       averageRating: (json['average_rating'] as num?)?.toDouble(),
       reviewCount: (json['review_count'] as num?)?.toInt(),
       subcategoryName: json['subcategory_name'] as String?,
+      shortDescription: json['short_description'] as String?,
       tagMatch: (json['tag_match'] as num?)?.toDouble() ?? 0,
     );
   }
@@ -141,6 +144,18 @@ class RecommendRepository {
       'limit': limit,
     });
     return ProvinceDetail.fromJson(data, mediaResolver: _mediaResolver);
+  }
+
+  Future<ProvinceTopPlace> getPlaceById(String idPlace) async {
+    final Map<String, dynamic> data = await _invoke(<String, Object?>{
+      'action': 'getPlaceById',
+      'idPlace': idPlace,
+    });
+    final Object? rawPlace = data['place'];
+    if (rawPlace is! Map<String, dynamic>) {
+      throw StateError('Destination is no longer available.');
+    }
+    return ProvinceTopPlace.fromJson(rawPlace, mediaResolver: _mediaResolver);
   }
 
   Future<Map<String, dynamic>> _invoke(Map<String, Object?> body) {

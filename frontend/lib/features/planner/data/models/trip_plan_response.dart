@@ -27,15 +27,17 @@ import 'package:flutter/foundation.dart';
 ///   ]
 /// }
 class TripPlanResponse {
-  const TripPlanResponse({required this.idPlan, required this.days});
+  const TripPlanResponse({required this.idPlan, this.cityProvince, required this.days});
 
   final String? idPlan;
+  final String? cityProvince;
   final List<TripPlanDay> days;
 
   factory TripPlanResponse.fromJson(Map<String, dynamic> json) {
     final rawDays = json['days'] as List<dynamic>? ?? <dynamic>[];
     return TripPlanResponse(
       idPlan: json['id_plan'] as String?,
+      cityProvince: json['city_province'] as String?,
       days:   rawDays
           .whereType<Map<String, dynamic>>()
           .map(TripPlanDay.fromJson)
@@ -82,6 +84,10 @@ class TripPlanPlace {
     this.longitude,
     this.estimatedTravelMinutes,
     this.estimatedDurationMinutes,
+    this.minimumPrice,
+    this.maximumPrice,
+    this.timespan,
+    this.timeclose,
     this.coverImage,
     this.gallery = const <Map<String, dynamic>>[],
     this.tagMatch,
@@ -102,6 +108,10 @@ class TripPlanPlace {
   final double? longitude;
   final int? estimatedTravelMinutes;
   final int? estimatedDurationMinutes;
+  final num? minimumPrice;
+  final num? maximumPrice;
+  final String? timespan;
+  final String? timeclose;
   final String? coverImage;
   /// List of {url, type, source} objects from the DB gallery jsonb column.
   final List<Map<String, dynamic>> gallery;
@@ -142,6 +152,10 @@ class TripPlanPlace {
       longitude:                  (json['longitude'] as num?)?.toDouble(),
       estimatedTravelMinutes:     (json['estimated_travel_minutes'] as num?)?.toInt(),
       estimatedDurationMinutes:   (json['estimated_duration_minutes'] as num?)?.toInt(),
+      minimumPrice:                json['minimum_price'] as num?,
+      maximumPrice:                json['maximum_price'] as num?,
+      timespan:                    json['timespan'] as String?,
+      timeclose:                   json['timeclose'] as String?,
       coverImage:                 json['cover_image'] as String?,
       gallery:                    gallery,
       tagMatch:                   (json['tag_match'] as num?)?.toDouble(),

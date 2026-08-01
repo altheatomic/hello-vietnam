@@ -10,6 +10,41 @@ from db.supabase_client import get_supabase
 router = APIRouter()
 
 
+def _gallery_urls(gallery_raw):
+    urls = []
+    for item in (gallery_raw or []):
+        if isinstance(item, dict):
+            url = (
+                item.get("url") or item.get("image_url") or item.get("path")
+                or item.get("key") or item.get("src") or ""
+            )
+            if url:
+                urls.append(url)
+        elif isinstance(item, str) and item:
+            urls.append(item)
+    return urls
+
+
+def _place_response(place: dict) -> dict:
+    sub = place.get("place_subcategory") or {}
+    gallery_urls = _gallery_urls(place.get("gallery"))
+    return {
+        "id_place": str(place["id_place"]),
+        "name": place.get("name"),
+        "short_description": place.get("short_description"),
+        "address": place.get("address"),
+        "cover_image": place.get("cover_image"),
+        "gallery_url": gallery_urls[0] if gallery_urls else None,
+        "gallery": gallery_urls,
+        "average_rating": place.get("average_rating"),
+        "review_count": place.get("review_count"),
+        "subcategory_name": sub.get("name", "") if isinstance(sub, dict) else "",
+        "tag_match": round(float(place.get("tag_match") or 0), 4),
+        "cf_score": round(float(place.get("cf_score") or 0), 4),
+        "final_score": round(float(place.get("final_score") or 0), 4),
+    }
+
+
 @router.get("/api/recommend/provinces")
 async def get_recommended_provinces(
     # id_user is required because the recommend edge function always sends
@@ -103,43 +138,9 @@ async def get_province_detail(
         sum((p.get("average_rating") or 0.0) for p in places) / len(places), 1
     )
 
-    def _gallery_urls(gallery_raw):
-        urls = []
-        for item in (gallery_raw or []):
-            if isinstance(item, dict):
-                url = (
-                    item.get("url")
-                    or item.get("image_url")
-                    or item.get("path")
-                    or item.get("key")
-                    or item.get("src")
-                    or ""
-                )
-                if url:
-                    urls.append(url)
-            elif isinstance(item, str) and item:
-                urls.append(item)
-        return urls
-
     top_places = []
     for p in ranked[:limit]:
-        sub      = p.get("place_subcategory") or {}
-        sub_name = sub.get("name", "") if isinstance(sub, dict) else ""
-        gallery_urls = _gallery_urls(p.get("gallery"))
-        top_places.append({
-            "id_place":       str(p["id_place"]),
-            "name":           p.get("name"),
-            "address":        p.get("address"),
-            "cover_image":    p.get("cover_image"),
-            "gallery_url":    gallery_urls[0] if gallery_urls else None,
-            "gallery":        gallery_urls,
-            "average_rating": p.get("average_rating"),
-            "review_count":   p.get("review_count"),
-            "subcategory_name": sub_name,
-            "tag_match":      round(float(p.get("tag_match") or 0), 4),
-            "cf_score":       round(float(p.get("cf_score") or 0), 4),
-            "final_score":    round(float(p.get("final_score") or 0), 4),
-        })
+        top_places.append(_place_response(p))
 
     return {
         "id_province": id_province,
@@ -148,3 +149,22 @@ async def get_province_detail(
         "place_count": len(places),
         "top_places":  top_places,
     }
+
+
+@router.get("/api/recommend/place/{id_place}")
+async def get_recommended_place(id_place: str, supabase=Depends(get_supabase)):
+    """Load one English-localized place directly, independent of top-20 rank."""
+    rows = (
+        supabase.table("place_localized_en")
+        .select(
+            "id_place,name,short_description,address,cover_image,gallery,"
+            "average_rating,review_count,place_subcategory(name)"
+        )
+        .eq("id_place", id_place)
+        .limit(1)
+        .execute()
+        .data or []
+    )
+    if not rows:
+        return {"place": None}
+    return {"place": _place_response(rows[0])}

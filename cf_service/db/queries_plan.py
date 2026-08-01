@@ -98,7 +98,11 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
         places_resp = (
             supabase
             .table("place_localized_en")
-            .select("id_place,name,latitude,longitude,cover_image,gallery")
+            .select(
+                "id_place,name,latitude,longitude,cover_image,gallery,"
+                "minimum_price,maximum_price,estimated_duration_minutes,"
+                "timespan,timeclose"
+            )
             .in_("id_place", place_ids)
             .execute()
         )
@@ -137,6 +141,11 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
             "longitude": place_data.get("longitude"),
             "cover_image": place_data.get("cover_image"),
             "gallery": place_data.get("gallery") or [],
+            "minimum_price": place_data.get("minimum_price"),
+            "maximum_price": place_data.get("maximum_price"),
+            "estimated_duration_minutes": place_data.get("estimated_duration_minutes"),
+            "timespan": place_data.get("timespan"),
+            "timeclose": place_data.get("timeclose"),
         })
 
     first_response_place = next(

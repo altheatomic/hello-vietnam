@@ -82,6 +82,8 @@ def _format_place(place: dict, order: int) -> dict:
         "longitude":                  place.get("longitude"),
         "estimated_travel_minutes":   place.get("estimated_travel_minutes"),
         "estimated_duration_minutes": place.get("estimated_duration_minutes"),
+        "minimum_price":              place.get("minimum_price"),
+        "maximum_price":              place.get("maximum_price"),
         "cover_image":                place.get("cover_image"),
         "gallery":                    place.get("gallery"),
         "tag_match":                  place.get("tag_match"),
@@ -334,6 +336,7 @@ class TripPlannerService:
 
         return {
             "id_plan": id_plan,
+            "city_province": id_province,
             "days": days,
             "debug": {
                 "filter_report":      filter_report,
