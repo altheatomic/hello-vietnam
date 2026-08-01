@@ -317,12 +317,13 @@ class AppRoutes {
   ).toString();
 
   static String recommendedPlaceDetailPath({
-    required String idProvince,
+    String? idProvince,
     required String idPlace,
   }) => Uri(
     path: recommendedPlaceDetail,
     queryParameters: <String, String>{
-      'idProvince': idProvince,
+      if (idProvince?.trim().isNotEmpty == true)
+        'idProvince': idProvince!.trim(),
       'idPlace': idPlace,
     },
   ).toString();
@@ -622,7 +623,7 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.recommendedPlaceDetail,
         builder: (c, s) => RecommendedPlaceDetailPage(
-          idProvince: s.uri.queryParameters['idProvince'] ?? '',
+          idProvince: s.uri.queryParameters['idProvince'],
           idPlace: s.uri.queryParameters['idPlace'] ?? '',
         ),
       ),

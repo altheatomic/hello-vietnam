@@ -118,13 +118,15 @@ class TripDayDetailPage extends StatelessWidget {
                                 padding: const EdgeInsets.only(bottom: 18),
                                 child: _ActivityDetailCard(
                                   activity: entry.value,
-                                  onImageTap:
-                                      entry.value.idPlace.isNotEmpty &&
-                                          entry.value.idProvince.isNotEmpty
+                                  onImageTap: entry.value.idPlace.isNotEmpty
                                       ? () => context.push(
                                           AppRoutes.recommendedPlaceDetailPath(
-                                            idProvince:
-                                                entry.value.idProvince,
+                                            idProvince: entry
+                                                    .value
+                                                    .idProvince
+                                                    .isNotEmpty
+                                                ? entry.value.idProvince
+                                                : null,
                                             idPlace: entry.value.idPlace,
                                           ),
                                         )

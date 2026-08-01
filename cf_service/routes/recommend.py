@@ -33,6 +33,13 @@ def _place_response(place: dict) -> dict:
         "name": place.get("name"),
         "short_description": place.get("short_description"),
         "address": place.get("address"),
+        "estimated_duration_minutes": place.get("estimated_duration_minutes"),
+        "minimum_price": place.get("minimum_price"),
+        "maximum_price": place.get("maximum_price"),
+        "phone": place.get("phone"),
+        "website": place.get("website"),
+        "timespan": place.get("timespan"),
+        "timeclose": place.get("timeclose"),
         "cover_image": place.get("cover_image"),
         "gallery_url": gallery_urls[0] if gallery_urls else None,
         "gallery": gallery_urls,
@@ -157,8 +164,10 @@ async def get_recommended_place(id_place: str, supabase=Depends(get_supabase)):
     rows = (
         supabase.table("place_localized_en")
         .select(
-            "id_place,name,short_description,address,cover_image,gallery,"
-            "average_rating,review_count,place_subcategory(name)"
+            "id_place,name,short_description,address,phone,website,"
+            "cover_image,gallery,average_rating,review_count,"
+            "estimated_duration_minutes,minimum_price,maximum_price,"
+            "timespan,timeclose,place_subcategory(name)"
         )
         .eq("id_place", id_place)
         .limit(1)
