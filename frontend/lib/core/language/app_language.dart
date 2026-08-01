@@ -342,6 +342,7 @@ class AppStrings {
     'Not now': 'Để sau',
     'Update': 'Cập nhật',
     'End Trip': 'Kết thúc chuyến đi',
+    'Open Itinerary': 'Xem lịch trình',
     'Could not end trip. Please try again.':
         'Không thể kết thúc chuyến đi. Vui lòng thử lại.',
     'Trip marked as completed.': 'Đã đánh dấu chuyến đi hoàn thành.',

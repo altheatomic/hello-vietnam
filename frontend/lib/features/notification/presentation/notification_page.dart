@@ -25,6 +25,13 @@ class _NotificationPageState extends State<NotificationPage> {
   late final NotificationController _controller;
   final ScrollController _scrollController = ScrollController();
 
+  /// Notification ids whose trip was ended in this session. Local-only —
+  /// not persisted, since target.metadata is a static enqueue-time snapshot
+  /// with no "ended" field. If the app is restarted, the End Trip button
+  /// reappears; tapping it again is a harmless no-op (complete_plan() has
+  /// no `ended_at IS NULL` guard, so it just re-writes the same timestamp).
+  final Set<String> _locallyCompletedTripIds = <String>{};
+
   @override
   void initState() {
     super.initState();
@@ -306,6 +313,7 @@ class _NotificationPageState extends State<NotificationPage> {
     }
 
     if (!mounted) return;
+    setState(() => _locallyCompletedTripIds.add(notification.id));
     await _controller.markAsRead(notification.id);
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -452,6 +460,8 @@ class _NotificationPageState extends State<NotificationPage> {
                                   onTap: () =>
                                       _handleNotificationTap(notification),
                                   onEndTrip: () => _handleEndTrip(notification),
+                                  isTripCompleted: _locallyCompletedTripIds
+                                      .contains(notification.id),
                                 ),
                               );
                             },
@@ -700,11 +710,13 @@ class _NotificationTile extends StatelessWidget {
     required this.notification,
     required this.onTap,
     required this.onEndTrip,
+    required this.isTripCompleted,
   });
 
   final AppNotification notification;
   final VoidCallback onTap;
   final VoidCallback onEndTrip;
+  final bool isTripCompleted;
 
   @override
   Widget build(BuildContext context) {
@@ -836,6 +848,7 @@ class _NotificationTile extends StatelessWidget {
                     _TripOverdueCard(
                       target: notification.target,
                       onEndTrip: onEndTrip,
+                      isCompleted: isTripCompleted,
                     ),
                   ],
                 ],
@@ -857,12 +870,25 @@ class _NotificationTile extends StatelessWidget {
 /// the innermost one hit — the outer tile's onTap never also fires when you
 /// tap this card or its button — so no manual event-stopping is needed;
 /// `HitTestBehavior.opaque` on both just guarantees full hit-test coverage
-/// of each region's bounds.
+/// of each button's bounds. Unlike the earlier design, the card itself has
+/// no `onTap` — "Open Itinerary" is a plain [context.push], deliberately
+/// never routed through `checkOverdueTrip()`/`showDialog()`/`context.go()`,
+/// which is the combination that can collide with
+/// `StatefulShellRoute.indexedStack`'s branch-Navigator `GlobalKey` when a
+/// modal route is popped right before a `.go()` shell relocation (the tap
+/// on the tile's header — icon/title/description — still goes through that
+/// path via `NotificationActionHandler.open()`; this card intentionally
+/// does not).
 class _TripOverdueCard extends StatelessWidget {
-  const _TripOverdueCard({required this.target, required this.onEndTrip});
+  const _TripOverdueCard({
+    required this.target,
+    required this.onEndTrip,
+    required this.isCompleted,
+  });
 
   final NotificationTarget target;
   final VoidCallback onEndTrip;
+  final bool isCompleted;
 
   @override
   Widget build(BuildContext context) {
@@ -877,73 +903,125 @@ class _TripOverdueCard extends StatelessWidget {
     final DateTime? endAt = DateTime.tryParse(target.metadata['endAt'] ?? '');
     final String dateRange = _formatTripDateRange(context, startAt, endAt);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => context.push(
-        AppRoutes.tripPlannerResultPath(idPlan: target.entityId),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              tripTitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: theme.colorScheme.onSurface,
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            tripTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface,
             ),
-            if (dateRange.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 4),
-              Text(
-                dateRange,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerRight,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onEndTrip,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: AppNotificationType.trip.accentColor.withValues(
-                        alpha: 0.5,
-                      ),
-                    ),
-                  ),
-                  child: Text(
-                    context.l10n.ui('End Trip'),
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: AppNotificationType.trip.accentColor,
-                    ),
-                  ),
-                ),
+          ),
+          if (dateRange.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 4),
+            Text(
+              dateRange,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
+          const SizedBox(height: 10),
+          if (isCompleted)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  context.l10n.ui('Completed'),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.tertiary,
+                  ),
+                ),
+              ),
+            )
+          else
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: _TripCardPillButton(
+                    label: context.l10n.ui('Open Itinerary'),
+                    filled: true,
+                    color: theme.colorScheme.primary,
+                    onTap: () => context.push(
+                      AppRoutes.tripPlannerResultPath(idPlan: target.entityId),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _TripCardPillButton(
+                    label: context.l10n.ui('End Trip'),
+                    filled: false,
+                    color: AppNotificationType.trip.accentColor,
+                    onTap: onEndTrip,
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TripCardPillButton extends StatelessWidget {
+  const _TripCardPillButton({
+    required this.label,
+    required this.filled,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool filled;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: filled ? color : theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(999),
+          border: filled ? null : Border.all(color: color.withValues(alpha: 0.5)),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: filled ? theme.colorScheme.onPrimary : color,
+          ),
         ),
       ),
     );
