@@ -102,6 +102,33 @@ class TripRepository {
         .toList();
   }
 
+  Future<void> activateTrip(String idPlan) async {
+    await _invoke(<String, Object?>{'action': 'activateTrip', 'idPlan': idPlan});
+  }
+
+  Future<void> completeTrip(String idPlan) async {
+    await _invoke(<String, Object?>{'action': 'completeTrip', 'idPlan': idPlan});
+  }
+
+  Future<void> markTripOverdueNotified(String idPlan) async {
+    await _invoke(<String, Object?>{
+      'action': 'markTripOverdueNotified',
+      'idPlan': idPlan,
+    });
+  }
+
+  /// Client-pull check for trips left un-ended long after their planned end
+  /// date — see cf_service `get_overdue_plans()` for the reusable query
+  /// this calls through.
+  Future<List<OverdueTripPlan>> checkOverdueTrips() async {
+    final data = await _invoke(<String, Object?>{'action': 'overdueTripCheck'});
+    final raw = data['plans'] as List<dynamic>? ?? <dynamic>[];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(OverdueTripPlan.fromJson)
+        .toList();
+  }
+
   Future<void> triggerCfRetrain() async {
     await _invoke(<String, Object?>{'action': 'triggerCfRetrain'});
   }

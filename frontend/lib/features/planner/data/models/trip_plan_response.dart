@@ -277,6 +277,34 @@ class CfRetrainLog {
   }
 }
 
+/// One plan overdue for the "Have you completed your trip?" check, from the
+/// `overdueTripCheck` action.
+class OverdueTripPlan {
+  const OverdueTripPlan({
+    required this.idPlan,
+    this.customTitle,
+    required this.startAt,
+    required this.endAt,
+    required this.provinceName,
+  });
+
+  final String idPlan;
+  final String? customTitle;
+  final String startAt;
+  final String endAt;
+  final String provinceName;
+
+  factory OverdueTripPlan.fromJson(Map<String, dynamic> json) {
+    return OverdueTripPlan(
+      idPlan:       json['id_plan']       as String? ?? '',
+      customTitle:  json['custom_title']  as String?,
+      startAt:      json['start_at']      as String? ?? '',
+      endAt:        json['end_at']        as String? ?? '',
+      provinceName: json['province_name'] as String? ?? '',
+    );
+  }
+}
+
 /// Nearby amenity from `GET /api/places/nearby`.
 class NearbyPlace {
   const NearbyPlace({

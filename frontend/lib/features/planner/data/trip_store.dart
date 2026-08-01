@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 
 // ── SharedPreferences keys (namespaced per user so a device switching ────────
@@ -186,6 +187,8 @@ class TripStore extends ChangeNotifier {
 
   static final TripStore instance = TripStore._();
 
+  final TripRepository _repository = TripRepository();
+
   ActiveTrip? _activeTrip;
   TripStatus? _lastStatus;
   Timer? _refreshTimer;
@@ -298,17 +301,37 @@ class TripStore extends ChangeNotifier {
     _persist(); // fire-and-forget; failure is non-fatal
     _startTimer();
     notifyListeners();
+
+    // Sync activation to the server so it's visible outside this device
+    // (e.g. to the overdue check). Best-effort: a network failure must never
+    // block starting the trip locally — only log it.
+    if (idPlan != null) {
+      unawaited(
+        _repository.activateTrip(idPlan).catchError((Object e) {
+          debugPrint('TripStore.startTrip: activateTrip sync failed — $e');
+        }),
+      );
+    }
   }
 
   /// Ends the active trip, clears persistence, and cancels the refresh timer.
   ///
   /// Call this on explicit user action (End Trip / Dismiss) or on logout.
   void endTrip() {
+    final String? idPlan = _activeTrip?.idPlan;
     _stopTimer();
     _activeTrip = null;
     _lastStatus = null;
     _clearPersistence(); // fire-and-forget
     notifyListeners();
+
+    if (idPlan != null) {
+      unawaited(
+        _repository.completeTrip(idPlan).catchError((Object e) {
+          debugPrint('TripStore.endTrip: completeTrip sync failed — $e');
+        }),
+      );
+    }
   }
 
   // ── Timer ───────────────────────────────────────────────────────────────────

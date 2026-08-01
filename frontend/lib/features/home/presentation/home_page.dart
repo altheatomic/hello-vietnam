@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/config/app_constants.dart';
@@ -27,6 +28,7 @@ import '../data/home_repository.dart';
 import '../data/home_feature_data.dart';
 import '../domain/destination.dart';
 import '../domain/dish.dart';
+import 'package:hellovietnam/features/planner/presentation/widgets/trip_overdue_check.dart';
 import 'widgets/active_trip_card.dart';
 import 'widgets/home_banner.dart';
 import 'widgets/home_content_state.dart';
@@ -75,6 +77,12 @@ class _HomePageState extends State<HomePage>
     _contentController.addListener(_handleContentChanged);
     WidgetsBinding.instance.addObserver(this);
     _contentController.loadInitial();
+
+    if (Supabase.instance.client.auth.currentUser != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) checkOverdueTrip(context);
+      });
+    }
   }
 
   @override

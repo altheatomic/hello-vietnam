@@ -55,6 +55,10 @@ class SavePlanRequest(BaseModel):
     custom_title: Optional[str] = None
 
 
+class TripLifecycleRequest(BaseModel):
+    id_user: str
+
+
 # ── Trip planning ─────────────────────────────────────────────────────────────
 
 @router.post("/api/trips/plan")
@@ -151,6 +155,52 @@ async def get_saved_plans(id_user: str, supabase=Depends(get_supabase)):
     from db.queries_plan import fetch_saved_plans
 
     plans = await asyncio.to_thread(fetch_saved_plans, supabase, id_user)
+    return {"plans": plans}
+
+
+# ── Trip lifecycle (Trip Tracker) ───────────────────────────────────────────
+
+@router.post("/api/trips/{id_plan}/activate")
+async def activate_trip(
+    id_plan: str, req: TripLifecycleRequest, supabase=Depends(get_supabase)
+):
+    from db.queries_plan import activate_plan
+
+    result = await asyncio.to_thread(activate_plan, supabase, id_plan, req.id_user)
+    if not result:
+        raise HTTPException(status_code=404, detail="Plan not found or not owned by user.")
+    return result
+
+
+@router.post("/api/trips/{id_plan}/complete")
+async def complete_trip(
+    id_plan: str, req: TripLifecycleRequest, supabase=Depends(get_supabase)
+):
+    from db.queries_plan import complete_plan
+
+    result = await asyncio.to_thread(complete_plan, supabase, id_plan, req.id_user)
+    if not result:
+        raise HTTPException(status_code=404, detail="Plan not found or not owned by user.")
+    return result
+
+
+@router.post("/api/trips/{id_plan}/overdue-notified")
+async def mark_trip_overdue_notified(
+    id_plan: str, req: TripLifecycleRequest, supabase=Depends(get_supabase)
+):
+    from db.queries_plan import mark_overdue_notified
+
+    result = await asyncio.to_thread(mark_overdue_notified, supabase, id_plan, req.id_user)
+    if not result:
+        raise HTTPException(status_code=404, detail="Plan not found or not owned by user.")
+    return result
+
+
+@router.get("/api/trips/overdue-check")
+async def overdue_check(id_user: str, supabase=Depends(get_supabase)):
+    from db.queries_plan import get_overdue_plans
+
+    plans = await asyncio.to_thread(get_overdue_plans, supabase, id_user)
     return {"plans": plans}
 
 

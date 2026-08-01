@@ -364,6 +364,114 @@ def _slot_to_time(slot: str) -> str:
     }.get(slot.lower(), "09:00")
 
 
+def activate_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
+    """Called when the user taps "Start Trip". Sets activated_at server-side
+    so trip state survives reinstalls and is visible outside the device
+    (SharedPreferences remains the source of truth for immediate UX; this is
+    the sync-up)."""
+    resp = (
+        supabase
+        .table("plan")
+        .update({"activated_at": datetime.datetime.utcnow().isoformat()})
+        .eq("id_plan", id_plan)
+        .eq("id_user", id_user)
+        .execute()
+    )
+    rows = resp.data or []
+    if not rows:
+        return {}
+    return {"id_plan": id_plan, "activated_at": rows[0]["activated_at"]}
+
+
+def complete_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
+    """Called when the user taps "End Trip" (manual) or confirms "Mark as
+    completed" from the overdue check dialog."""
+    resp = (
+        supabase
+        .table("plan")
+        .update({"ended_at": datetime.datetime.utcnow().isoformat()})
+        .eq("id_plan", id_plan)
+        .eq("id_user", id_user)
+        .execute()
+    )
+    rows = resp.data or []
+    if not rows:
+        return {}
+    return {"id_plan": id_plan, "ended_at": rows[0]["ended_at"]}
+
+
+def mark_overdue_notified(supabase: Any, id_plan: str, id_user: str) -> dict:
+    """Called when the user dismisses the overdue check dialog with "Not
+    yet" — prevents asking again on every subsequent Home open."""
+    resp = (
+        supabase
+        .table("plan")
+        .update({"overdue_notified_at": datetime.datetime.utcnow().isoformat()})
+        .eq("id_plan", id_plan)
+        .eq("id_user", id_user)
+        .execute()
+    )
+    rows = resp.data or []
+    if not rows:
+        return {}
+    return {"id_plan": id_plan, "overdue_notified_at": rows[0]["overdue_notified_at"]}
+
+
+def get_overdue_plans(supabase: Any, id_user: str, grace_days: int = 3) -> list:
+    """Pure query logic, deliberately kept free of any HTTP/request concerns.
+
+    A plan is "overdue" when: it was activated, was never ended, hasn't
+    already triggered a notification, and its calendar end_at is more than
+    `grace_days` in the past.
+
+    This is the exact function a pg_cron-triggered job (or a Scheduled Edge
+    Function) would call to upgrade from today's client-pull design to real
+    push notifications later — only the caller changes (an HTTP route today,
+    a scheduled job invocation later), not this logic.
+    """
+    cutoff = (datetime.date.today() - datetime.timedelta(days=grace_days)).isoformat()
+    resp = (
+        supabase
+        .table("plan")
+        .select("id_plan, custom_title, start_at, end_at, city_province")
+        .eq("id_user", id_user)
+        .not_.is_("activated_at", "null")
+        .is_("ended_at", "null")
+        .is_("overdue_notified_at", "null")
+        .lt("end_at", cutoff)
+        .order("end_at")
+        .execute()
+    )
+    rows = resp.data or []
+    if not rows:
+        return []
+
+    province_ids = list({str(r["city_province"]) for r in rows if r.get("city_province")})
+    province_map: dict[str, dict] = {}
+    if province_ids:
+        provinces_resp = (
+            supabase
+            .table("city_province")
+            .select("id_city,name")
+            .in_("id_city", province_ids)
+            .execute()
+        )
+        province_map = {
+            str(p["id_city"]): p for p in (provinces_resp.data or [])
+        }
+
+    return [
+        {
+            "id_plan": str(r["id_plan"]),
+            "custom_title": r.get("custom_title"),
+            "start_at": str(r["start_at"]),
+            "end_at": str(r["end_at"]),
+            "province_name": province_map.get(str(r.get("city_province") or ""), {}).get("name") or "",
+        }
+        for r in rows
+    ]
+
+
 def list_plans(supabase: Any, id_user: str) -> list:
     resp = (
         supabase

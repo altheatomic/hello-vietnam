@@ -67,6 +67,14 @@ export async function handleTripPlannerRequest(
         return clonePlan(userId, payload);
       case "savePlan":
         return savePlan(userId, payload);
+      case "activateTrip":
+        return activateTrip(userId, payload);
+      case "completeTrip":
+        return completeTrip(userId, payload);
+      case "markTripOverdueNotified":
+        return markTripOverdueNotified(userId, payload);
+      case "overdueTripCheck":
+        return overdueTripCheck(userId);
       case "triggerCfRetrain":
         return triggerCfRetrain(userId);
       case "getCfRetrainLogs":
@@ -137,6 +145,28 @@ async function savePlan(userId: string, p: JsonObject): Promise<Response> {
     id_user: userId,
     custom_title: strVal(p.customTitle),
   });
+}
+
+async function activateTrip(userId: string, p: JsonObject): Promise<Response> {
+  const id = reqStr(p.idPlan, "idPlan");
+  return proxyPost(`/api/trips/${id}/activate`, { id_user: userId });
+}
+
+async function completeTrip(userId: string, p: JsonObject): Promise<Response> {
+  const id = reqStr(p.idPlan, "idPlan");
+  return proxyPost(`/api/trips/${id}/complete`, { id_user: userId });
+}
+
+async function markTripOverdueNotified(
+  userId: string,
+  p: JsonObject,
+): Promise<Response> {
+  const id = reqStr(p.idPlan, "idPlan");
+  return proxyPost(`/api/trips/${id}/overdue-notified`, { id_user: userId });
+}
+
+async function overdueTripCheck(userId: string): Promise<Response> {
+  return proxyGet(`/api/trips/overdue-check?id_user=${userId}`);
 }
 
 async function triggerCfRetrain(userId: string): Promise<Response> {
