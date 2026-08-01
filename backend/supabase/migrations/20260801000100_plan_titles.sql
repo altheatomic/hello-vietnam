@@ -1,3 +1,5 @@
+create extension if not exists unaccent with schema extensions;
+
 alter table public.plan
   add column if not exists category_label text,
   add column if not exists interest_option_codes text[] not null default '{}';
@@ -65,10 +67,9 @@ begin
      and tio.is_active = true;
 
   v_category_label := coalesce(nullif(btrim(v_category_label), ''), 'General');
-  v_base_title := left(
-    v_province_name || '_' || p_n_days::text || 'days_' || v_category_label,
-    120
-  );
+  v_base_title := left(extensions.unaccent(
+    v_province_name || '_' || p_n_days::text || 'days_' || v_category_label
+  ), 120);
   v_title := v_base_title;
 
   while exists (
