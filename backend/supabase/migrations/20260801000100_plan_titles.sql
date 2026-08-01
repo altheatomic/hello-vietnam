@@ -31,7 +31,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_id_plan uuid := gen_random_uuid();
+  v_id_plan uuid := uuid_generate_v4();
   v_province_name text;
   v_category_label text;
   v_base_title text;

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
