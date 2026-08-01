@@ -29,6 +29,7 @@ import 'package:flutter/foundation.dart';
 class TripPlanResponse {
   const TripPlanResponse({
     required this.idPlan,
+    this.customTitle,
     this.cityProvince,
     this.startAt,
     this.endAt,
@@ -36,6 +37,7 @@ class TripPlanResponse {
   });
 
   final String? idPlan;
+  final String? customTitle;
   final String? cityProvince;
   final DateTime? startAt;
   final DateTime? endAt;
@@ -61,6 +63,7 @@ class TripPlanResponse {
 
     return TripPlanResponse(
       idPlan: json['id_plan'] as String?,
+      customTitle: json['custom_title'] as String?,
       cityProvince: json['city_province'] as String?,
       startAt: startAt,
       endAt: endAt,

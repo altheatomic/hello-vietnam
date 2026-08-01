@@ -70,6 +70,11 @@ class NotificationActionHandler {
       case NotificationTargetKind.tripPlannerDayDetail:
         context.go(AppRoutes.tripPlannerDayDetailPath(target.dayIndex ?? 0));
         return;
+      case NotificationTargetKind.tripOverdueCheck:
+        // Home re-runs checkOverdueTrip() on every open, which will surface
+        // the same dialog again as long as the plan is still overdue.
+        context.go(AppRoutes.home);
+        return;
       case NotificationTargetKind.voucherCenter:
         context.push(AppRoutes.voucher);
         return;

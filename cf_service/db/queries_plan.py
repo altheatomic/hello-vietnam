@@ -16,22 +16,36 @@ from typing import Any
 def save_plan(
     supabase: Any,
     id_user: str,
-    id_province: str,
+    id_province: str | None,
     n_days: int,
     start_at: datetime.date,
     days: list,
-) -> str:
-    id_plan = str(uuid.uuid4())
+    interest_option_codes: list[str] | None = None,
+) -> dict:
     end_at = start_at + datetime.timedelta(days=n_days - 1)
-
-    supabase.table("plan").insert({
-        "id_plan": id_plan,
-        "id_user": id_user,
-        "duration": str(n_days),
-        "start_at": start_at.isoformat(),
-        "end_at": end_at.isoformat(),
-        "city_province": id_province,
+    first_place = next(
+        (
+            place
+            for day in days
+            for place in day.get("places", [])
+            if place.get("type") != "lunch_break" and place.get("id_place")
+        ),
+        {},
+    )
+    rpc_resp = supabase.rpc("create_plan_with_default_title", {
+        "p_id_user": id_user,
+        "p_id_province": id_province,
+        "p_business_old_province": first_place.get("old_province"),
+        "p_n_days": n_days,
+        "p_start_at": start_at.isoformat(),
+        "p_end_at": end_at.isoformat(),
+        "p_interest_option_codes": interest_option_codes or [],
     }).execute()
+    rpc_rows = rpc_resp.data or []
+    if not rpc_rows:
+        raise RuntimeError("create_plan_with_default_title returned no plan")
+    id_plan = str(rpc_rows[0]["id_plan"])
+    custom_title = str(rpc_rows[0]["custom_title"])
 
     rows = []
     for day in days:
@@ -57,14 +71,14 @@ def save_plan(
     if rows:
         supabase.table("plan_component").insert(rows).execute()
 
-    return id_plan
+    return {"id_plan": id_plan, "custom_title": custom_title}
 
 
 def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
     query = (
         supabase
         .table("plan")
-        .select("id_plan, duration, start_at, end_at, city_province, created_at")
+        .select("id_plan,custom_title,duration,start_at,end_at,city_province,created_at")
         .eq("id_plan", id_plan)
     )
     if id_user:
@@ -156,6 +170,7 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
 
     return {
         "id_plan": str(plan_row["id_plan"]),
+        "custom_title": plan_row.get("custom_title"),
         "start_at": str(plan_row["start_at"]),
         "end_at": str(plan_row["end_at"]),
         "city_province": str(plan_row.get("city_province") or ""),
@@ -192,6 +207,48 @@ def mark_plan_saved(
     if not (resp.data or []):
         return {}
     return {"id_plan": id_plan, "status": "saved"}
+
+
+class DuplicateTripTitleError(Exception):
+    pass
+
+
+def rename_plan(
+    supabase: Any,
+    id_plan: str,
+    id_user: str,
+    custom_title: str,
+) -> dict:
+    title = custom_title.strip()
+    if not title or len(title) > 120:
+        raise ValueError("Trip title must be between 1 and 120 characters.")
+
+    try:
+        resp = (
+            supabase.table("plan")
+            .update({"custom_title": title})
+            .eq("id_plan", id_plan)
+            .eq("id_user", id_user)
+            .execute()
+        )
+    except Exception as exc:
+        code = getattr(exc, "code", None)
+        if code is None and isinstance(getattr(exc, "args", None), tuple):
+            code = next(
+                (
+                    arg.get("code")
+                    for arg in exc.args
+                    if isinstance(arg, dict) and arg.get("code")
+                ),
+                None,
+            )
+        if str(code) == "23505" or "23505" in str(exc):
+            raise DuplicateTripTitleError(title) from exc
+        raise
+
+    if not (resp.data or []):
+        return {}
+    return {"id_plan": id_plan, "custom_title": title}
 
 
 def fetch_saved_plans(supabase: Any, id_user: str) -> list:
@@ -430,29 +487,16 @@ def complete_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
     return {"id_plan": id_plan, "ended_at": rows[0]["ended_at"]}
 
 
-def mark_overdue_notified(supabase: Any, id_plan: str, id_user: str) -> dict:
-    """Called when the user dismisses the overdue check dialog with "Not
-    yet" — prevents asking again on every subsequent Home open."""
-    resp = (
-        supabase
-        .table("plan")
-        .update({"overdue_notified_at": datetime.datetime.utcnow().isoformat()})
-        .eq("id_plan", id_plan)
-        .eq("id_user", id_user)
-        .execute()
-    )
-    rows = resp.data or []
-    if not rows:
-        return {}
-    return {"id_plan": id_plan, "overdue_notified_at": rows[0]["overdue_notified_at"]}
-
-
 def get_overdue_plans(supabase: Any, id_user: str, grace_days: int = 3) -> list:
-    """Pure query logic, deliberately kept free of any HTTP/request concerns.
+    """Pure query logic, deliberately kept free of any HTTP/request concerns
+    (including the "have we already enqueued a bell notification for this
+    plan?" side-effect — that lives in the route, not here).
 
-    A plan is "overdue" when: it was never ended, hasn't already triggered a
-    notification, and its calendar end_at is more than `grace_days` in the
-    past.
+    A plan is "overdue" when: it was never ended and its calendar end_at is
+    more than `grace_days` in the past. Deliberately NOT filtered on
+    overdue_notified_at — the Home dialog should keep re-asking on every
+    open until the trip is actually completed; overdue_notified_at only
+    gates the one-time bell notification, handled by the caller.
 
     This is the exact function a pg_cron-triggered job (or a Scheduled Edge
     Function) would call to upgrade from today's client-pull design to real
@@ -463,10 +507,9 @@ def get_overdue_plans(supabase: Any, id_user: str, grace_days: int = 3) -> list:
     resp = (
         supabase
         .table("plan")
-        .select("id_plan, custom_title, start_at, end_at, city_province")
+        .select("id_plan, custom_title, start_at, end_at, city_province, overdue_notified_at")
         .eq("id_user", id_user)
         .is_("ended_at", "null")
-        .is_("overdue_notified_at", "null")
         .lt("end_at", cutoff)
         .order("end_at")
         .execute()
@@ -496,6 +539,7 @@ def get_overdue_plans(supabase: Any, id_user: str, grace_days: int = 3) -> list:
             "start_at": str(r["start_at"]),
             "end_at": str(r["end_at"]),
             "province_name": province_map.get(str(r.get("city_province") or ""), {}).get("name") or "",
+            "overdue_notified_at": r.get("overdue_notified_at"),
         }
         for r in rows
     ]

@@ -26,6 +26,112 @@ class TripResultPage extends StatefulWidget {
 class _TripResultPageState extends State<TripResultPage> {
   bool _isSaving = false;
   bool _isSharing = false;
+  late String _title;
+
+  @override
+  void initState() {
+    super.initState();
+    _title = widget.plan.customTitle ?? 'Your Vietnam Adventure';
+  }
+
+  Future<void> _editTitle() async {
+    final String? idPlan = widget.plan.idPlan;
+    if (idPlan == null) return;
+    final TextEditingController controller = TextEditingController(text: _title);
+    String? errorText;
+    bool isSubmitting = false;
+
+    final String? renamed = await showDialog<String>(
+      context: context,
+      barrierDismissible: !isSubmitting,
+      builder: (BuildContext dialogContext) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setDialogState) => AlertDialog(
+          title: Text(context.l10n.ui('Edit trip name')),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLength: 120,
+            decoration: InputDecoration(
+              labelText: context.l10n.ui('Trip name'),
+              errorText: errorText == null ? null : context.l10n.ui(errorText!),
+            ),
+            onSubmitted: isSubmitting
+                ? null
+                : (_) async {
+                    await _submitTitleRename(
+                      dialogContext,
+                      setDialogState,
+                      controller,
+                      idPlan,
+                      (String? value) => errorText = value,
+                      (bool value) => isSubmitting = value,
+                    );
+                  },
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
+              child: Text(context.l10n.ui('Cancel')),
+            ),
+            FilledButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () => _submitTitleRename(
+                      dialogContext,
+                      setDialogState,
+                      controller,
+                      idPlan,
+                      (String? value) => errorText = value,
+                      (bool value) => isSubmitting = value,
+                    ),
+              child: Text(context.l10n.ui(isSubmitting ? 'Saving…' : 'Save')),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+    if (renamed != null && mounted) setState(() => _title = renamed);
+  }
+
+  Future<void> _submitTitleRename(
+    BuildContext dialogContext,
+    StateSetter setDialogState,
+    TextEditingController controller,
+    String idPlan,
+    ValueChanged<String?> setError,
+    ValueChanged<bool> setSubmitting,
+  ) async {
+    final String value = controller.text.trim();
+    if (value.isEmpty) {
+      setDialogState(() => setError('Trip name cannot be empty.'));
+      return;
+    }
+    setDialogState(() {
+      setError(null);
+      setSubmitting(true);
+    });
+    try {
+      final String renamed = await TripRepository().renamePlan(idPlan, value);
+      if (dialogContext.mounted) Navigator.pop(dialogContext, renamed);
+    } on SupabaseFunctionException catch (error) {
+      if (!dialogContext.mounted) return;
+      setDialogState(() {
+        setSubmitting(false);
+        setError(
+          error.errorCode == 'duplicate_trip_title'
+              ? 'You already have a trip with this name.'
+              : 'Could not rename trip. Please try again.',
+        );
+      });
+    } catch (_) {
+      if (!dialogContext.mounted) return;
+      setDialogState(() {
+        setSubmitting(false);
+        setError('Could not rename trip. Please try again.');
+      });
+    }
+  }
 
   Future<void> _handleSave() async {
     final idPlan = widget.plan.idPlan;
@@ -108,7 +214,7 @@ class _TripResultPageState extends State<TripResultPage> {
 
     if (!mounted) return;
     TripStore.instance.startTrip(
-      title: 'Your Vietnam Adventure',
+      title: _title,
       days: days,
       idPlan: idPlan,
     );
@@ -274,14 +380,28 @@ class _TripResultPageState extends State<TripResultPage> {
                   children: <Widget>[
                     _BackButtonCircle(onTap: () => context.pop()),
                     const SizedBox(height: 18),
-                    Text(
-                      context.l10n.ui('Your Vietnam Adventure'),
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        height: 1.08,
-                      ),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: GestureDetector(
+                            onDoubleTap: _editTitle,
+                            child: Text(
+                              _title,
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                height: 1.08,
+                              ),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: context.l10n.ui('Edit trip name'),
+                          onPressed: _editTitle,
+                          icon: const Icon(Icons.edit_outlined),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 10),
                     if (dateRange.isNotEmpty) ...<Widget>[

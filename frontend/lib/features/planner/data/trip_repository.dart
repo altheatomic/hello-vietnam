@@ -93,6 +93,15 @@ class TripRepository {
     });
   }
 
+  Future<String> renamePlan(String idPlan, String customTitle) async {
+    final data = await _invoke(<String, Object?>{
+      'action': 'renamePlan',
+      'idPlan': idPlan,
+      'customTitle': customTitle,
+    });
+    return data['custom_title'] as String;
+  }
+
   Future<List<SavedPlanItem>> listSavedPlans() async {
     final data = await _invoke(<String, Object?>{'action': 'listSavedPlans'});
     final raw = data['plans'] as List<dynamic>? ?? <dynamic>[];
@@ -115,13 +124,6 @@ class TripRepository {
 
   Future<void> completeTrip(String idPlan) async {
     await _invoke(<String, Object?>{'action': 'completeTrip', 'idPlan': idPlan});
-  }
-
-  Future<void> markTripOverdueNotified(String idPlan) async {
-    await _invoke(<String, Object?>{
-      'action': 'markTripOverdueNotified',
-      'idPlan': idPlan,
-    });
   }
 
   /// Client-pull check for trips left un-ended long after their planned end

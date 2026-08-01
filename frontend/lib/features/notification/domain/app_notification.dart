@@ -90,6 +90,7 @@ enum NotificationTargetKind {
   tripPlannerResult,
   tripPlannerSaved,
   tripPlannerDayDetail,
+  tripOverdueCheck,
   voucherCenter,
   upgradeAccount,
   rankBenefits,

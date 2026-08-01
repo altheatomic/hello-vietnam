@@ -732,6 +732,13 @@ class AppStrings {
     'Leisure Trip': 'Du lịch',
     'Business Trip': 'Công tác',
     'Your Vietnam Adventure': 'Hành trình Việt Nam',
+    'Edit trip name': 'Đổi tên chuyến đi',
+    'Trip name': 'Tên chuyến đi',
+    'Trip name cannot be empty.': 'Tên chuyến đi không được để trống.',
+    'You already have a trip with this name.':
+        'Bạn đã có một chuyến đi với tên này.',
+    'Could not rename trip. Please try again.':
+        'Không thể đổi tên chuyến đi. Vui lòng thử lại.',
     'Personalized Itinerary': 'Lịch trình cá nhân hóa',
     "Let's create your perfect trip": 'Cùng tạo chuyến đi hoàn hảo của bạn',
     'Trip Type': 'Loại chuyến đi',

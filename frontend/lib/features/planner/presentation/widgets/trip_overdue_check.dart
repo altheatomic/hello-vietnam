@@ -33,6 +33,7 @@ Future<void> checkOverdueTrip(
 
   final bool? markCompleted = await showDialog<bool>(
     context: context,
+    barrierDismissible: false,
     builder: (BuildContext dialogContext) => AlertDialog(
       title: Text(strings.ui('Still on this trip?')),
       content: Text(
@@ -62,11 +63,9 @@ Future<void> checkOverdueTrip(
     if (TripStore.instance.activeTrip?.idPlan == trip.idPlan) {
       TripStore.instance.endTrip();
     }
-  } else {
-    try {
-      await repo.markTripOverdueNotified(trip.idPlan);
-    } catch (_) {
-      // Non-fatal: worst case the user is asked again next time.
-    }
   }
+  // "Not yet" writes nothing: the plan stays overdue server-side, so the
+  // next Home open (or the bell notification, if the user misses this
+  // dialog) will offer the check again until the trip is actually
+  // completed.
 }

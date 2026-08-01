@@ -55,6 +55,11 @@ class SavePlanRequest(BaseModel):
     custom_title: Optional[str] = None
 
 
+class RenamePlanRequest(BaseModel):
+    id_user:      str
+    custom_title: str
+
+
 class TripLifecycleRequest(BaseModel):
     id_user: str
 
@@ -155,6 +160,33 @@ async def save_trip(id_plan: str, req: SavePlanRequest, supabase=Depends(get_sup
     return result
 
 
+@router.patch("/api/trips/{id_plan}/title")
+async def rename_trip(id_plan: str, req: RenamePlanRequest, supabase=Depends(get_supabase)):
+    from db.queries_plan import DuplicateTripTitleError, rename_plan
+
+    try:
+        result = await asyncio.to_thread(
+            rename_plan, supabase, id_plan, req.id_user, req.custom_title
+        )
+    except DuplicateTripTitleError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error_code": "duplicate_trip_title",
+                "message": "You already have a trip with this name.",
+            },
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "invalid_trip_title", "message": str(exc)},
+        ) from exc
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Plan not found or not owned by user.")
+    return result
+
+
 @router.get("/api/trips/saved")
 async def get_saved_plans(id_user: str, supabase=Depends(get_supabase)):
     from db.queries_plan import fetch_saved_plans
@@ -192,23 +224,39 @@ async def complete_trip(
     return result
 
 
-@router.post("/api/trips/{id_plan}/overdue-notified")
-async def mark_trip_overdue_notified(
-    id_plan: str, req: TripLifecycleRequest, supabase=Depends(get_supabase)
-):
-    from db.queries_plan import mark_overdue_notified
-
-    result = await asyncio.to_thread(mark_overdue_notified, supabase, id_plan, req.id_user)
-    if not result:
-        raise HTTPException(status_code=404, detail="Plan not found or not owned by user.")
-    return result
-
-
 @router.get("/api/trips/overdue-check")
 async def overdue_check(id_user: str, supabase=Depends(get_supabase)):
     from db.queries_plan import get_overdue_plans
 
     plans = await asyncio.to_thread(get_overdue_plans, supabase, id_user)
+
+    def _enqueue_first_time_notifications():
+        # Side effect deliberately kept out of get_overdue_plans() (which
+        # stays a pure query reusable by a future pg_cron job): the first
+        # time a plan is seen overdue, drop a real row into `notification`
+        # (so it's reachable from the bell if the Home dialog is missed)
+        # and mark it so we never enqueue a duplicate for the same plan.
+        for plan in plans:
+            if plan.get("overdue_notified_at"):
+                continue
+            id_plan = plan["id_plan"]
+            province_name = plan.get("province_name") or "your destination"
+            supabase.rpc("enqueue_user_notification", {
+                "p_id_user": id_user,
+                "p_notification_type": "trip",
+                "p_title": "Have you completed your trip?",
+                "p_body": f"Your trip to {province_name} was due to end a few days ago.",
+                "p_icon": "calendar",
+                "p_target": {"kind": "tripOverdueCheck", "entityId": id_plan},
+                "p_is_push": True,
+            }).execute()
+            supabase.table("plan").update({
+                "overdue_notified_at": datetime.datetime.utcnow().isoformat(),
+            }).eq("id_plan", id_plan).eq("id_user", id_user).execute()
+
+    if plans:
+        await asyncio.to_thread(_enqueue_first_time_notifications)
+
     return {"plans": plans}
 
 

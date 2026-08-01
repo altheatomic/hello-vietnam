@@ -98,7 +98,7 @@ def fetch_places_near_point(
 
     select_fields = (
         "id_place,id_place_subcategory,name,short_description,"
-        "status,cover_image,gallery,address,phone,website,latitude,longitude,"
+        "status,cover_image,gallery,address,phone,website,old_province,latitude,longitude,"
         "average_rating,review_count,minimum_price,maximum_price,"
         "estimated_duration_minutes,timespan,timeclose,"
         "place_subcategory!inner(name,place_category,is_itinerary_eligible)"
@@ -147,7 +147,7 @@ def fetch_places_required_filter(
 ) -> list[dict]:
     select_fields = (
         "id_place,id_place_subcategory,name,short_description,"
-        "status,cover_image,gallery,address,phone,website,latitude,longitude,"
+        "status,cover_image,gallery,address,phone,website,old_province,latitude,longitude,"
         "average_rating,review_count,minimum_price,maximum_price,"
         "estimated_duration_minutes,timespan,timeclose,"
         "place_subcategory!inner(name,place_category,is_itinerary_eligible)"

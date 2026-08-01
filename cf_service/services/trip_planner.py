@@ -72,6 +72,7 @@ def _format_place(place: dict, order: int) -> dict:
         "order":                      order,
         "id_place":                   str(place["id_place"]),
         "name":                       place.get("name"),
+        "old_province":               place.get("old_province"),
         "slot":                       place.get("slot"),
         "start_time":                 place.get("start_time"),
         "end_time":                   place.get("end_time"),
@@ -320,9 +321,14 @@ class TripPlannerService:
                 "No eligible places were available for this trip."
             )
         if save:
-            id_plan = await asyncio.to_thread(
-                save_plan, supabase, id_user, id_province, n_days, start_at, days
+            saved_plan = await asyncio.to_thread(
+                save_plan, supabase, id_user, id_province, n_days, start_at,
+                days, interest_option_ids
             )
+            id_plan = saved_plan["id_plan"]
+            custom_title = saved_plan["custom_title"]
+        else:
+            custom_title = None
 
         timing_ms["save_plan"] = round((time.perf_counter() - _t_save_0) * 1000, 1)
         timing_ms["total"] = round((time.perf_counter() - _t_start) * 1000, 1)
@@ -336,6 +342,7 @@ class TripPlannerService:
 
         return {
             "id_plan": id_plan,
+            "custom_title": custom_title,
             "city_province": id_province,
             "days": days,
             "debug": {
