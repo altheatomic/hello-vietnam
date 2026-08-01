@@ -75,13 +75,15 @@ class NotificationActionHandler {
         // Home lives in a StatefulShellRoute.indexedStack branch, so
         // context.go(home) alone does NOT re-run HomePage.initState() if
         // Home was already mounted — the dialog would silently not appear.
-        // Run the check first, while this (still-mounted) context can show
-        // the dialog, THEN land on Home — not the other way around: once
-        // context.go(home) pops this page, `context` is unmounted by the
-        // time the network call resolves, so the dialog would silently
-        // never show.
+        // Run the check directly here instead of relying on Home's
+        // lifecycle. Deliberately does NOT follow up with
+        // context.go(AppRoutes.home): calling `.go()` on a shell route
+        // immediately after a showDialog() pop collided with
+        // StatefulShellRoute.indexedStack's branch-Navigator GlobalKey
+        // (`!keyReservation.contains(key)` assertion in navigator.dart) —
+        // the dialog interaction is complete in itself; no forced
+        // navigation is needed afterwards.
         await checkOverdueTrip(context);
-        if (context.mounted) context.go(AppRoutes.home);
         return;
       case NotificationTargetKind.voucherCenter:
         context.push(AppRoutes.voucher);

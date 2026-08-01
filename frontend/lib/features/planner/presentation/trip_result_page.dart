@@ -15,10 +15,16 @@ import 'package:hellovietnam/features/planner/presentation/widgets/start_date_pi
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TripResultPage extends StatefulWidget {
-  const TripResultPage({super.key, required this.plan, this.wizard});
+  const TripResultPage({
+    super.key,
+    required this.plan,
+    this.wizard,
+    this.onBack,
+  });
 
   final TripPlanResponse plan;
   final TripWizardData? wizard;
+  final VoidCallback? onBack;
 
   @override
   State<TripResultPage> createState() => _TripResultPageState();
@@ -379,7 +385,9 @@ class _TripResultPageState extends State<TripResultPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    _BackButtonCircle(onTap: () => context.pop()),
+                    _BackButtonCircle(
+                      onTap: widget.onBack ?? () => context.pop(),
+                    ),
                     const SizedBox(height: 18),
                     Row(
                       children: <Widget>[

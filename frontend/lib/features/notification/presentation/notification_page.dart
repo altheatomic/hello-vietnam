@@ -341,13 +341,27 @@ class _NotificationPageState extends State<NotificationPage> {
       );
   }
 
+  void _handleBack() {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go(AppRoutes.home);
+  }
+
   @override
   Widget build(BuildContext context) {
     final double topInset = MediaQuery.of(context).padding.top;
+    final bool canPop = context.canPop();
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(
+    return PopScope<void>(
+      canPop: canPop,
+      onPopInvokedWithResult: (bool didPop, void result) {
+        if (!didPop && !canPop) context.go(AppRoutes.home);
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Stack(
         children: <Widget>[
           const Positioned.fill(child: _NotificationBackground()),
           SafeArea(
@@ -364,7 +378,7 @@ class _NotificationPageState extends State<NotificationPage> {
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
                       child: _NotificationHeader(
                         activeFilterCount: _controller.activeFilterCount,
-                        onBack: () => Navigator.of(context).maybePop(),
+                        onBack: _handleBack,
                         onFilter: _openFilters,
                       ),
                     ),
@@ -474,6 +488,7 @@ class _NotificationPageState extends State<NotificationPage> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -870,15 +885,10 @@ class _NotificationTile extends StatelessWidget {
 /// the innermost one hit — the outer tile's onTap never also fires when you
 /// tap this card or its button — so no manual event-stopping is needed;
 /// `HitTestBehavior.opaque` on both just guarantees full hit-test coverage
-/// of each button's bounds. Unlike the earlier design, the card itself has
-/// no `onTap` — "Open Itinerary" is a plain [context.push], deliberately
-/// never routed through `checkOverdueTrip()`/`showDialog()`/`context.go()`,
-/// which is the combination that can collide with
-/// `StatefulShellRoute.indexedStack`'s branch-Navigator `GlobalKey` when a
-/// modal route is popped right before a `.go()` shell relocation (the tap
-/// on the tile's header — icon/title/description — still goes through that
-/// path via `NotificationActionHandler.open()`; this card intentionally
-/// does not).
+/// of each button's bounds. The card itself has no `onTap`. "Open Itinerary"
+/// replaces this root-level notification route with the Trip Planner shell
+/// location via [GoRouterHelper.go], avoiding two copies of the shell's
+/// branch Navigators being mounted with the same GlobalKeys.
 class _TripOverdueCard extends StatelessWidget {
   const _TripOverdueCard({
     required this.target,
@@ -964,8 +974,11 @@ class _TripOverdueCard extends StatelessWidget {
                     label: context.l10n.ui('Open Itinerary'),
                     filled: true,
                     color: theme.colorScheme.primary,
-                    onTap: () => context.push(
-                      AppRoutes.tripPlannerResultPath(idPlan: target.entityId),
+                    onTap: () => context.go(
+                      AppRoutes.tripPlannerResultPath(
+                        idPlan: target.entityId,
+                        fromNotification: true,
+                      ),
                     ),
                   ),
                 ),

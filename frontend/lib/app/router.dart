@@ -355,13 +355,17 @@ class AppRoutes {
 
   /// Builds a restorable result location for a persisted plan, or marks the
   /// location as a process-local draft when [idPlan] is absent.
-  static String tripPlannerResultPath({String? idPlan}) {
+  static String tripPlannerResultPath({
+    String? idPlan,
+    bool fromNotification = false,
+  }) {
     final String normalizedId = idPlan?.trim() ?? '';
     return Uri(
       path: tripPlannerResult,
       queryParameters: <String, String>{
         if (normalizedId.isNotEmpty) 'idPlan': normalizedId,
         if (normalizedId.isEmpty) 'draft': 'true',
+        if (fromNotification) 'from': 'notification',
       },
     ).toString();
   }
@@ -971,6 +975,8 @@ GoRouter buildRouter() {
                     builder: (context, state) => TripResultLoader(
                       idPlan: state.uri.queryParameters['idPlan'],
                       draft: _tripPlanFromExtra(state.extra),
+                      returnToNotification:
+                          state.uri.queryParameters['from'] == 'notification',
                     ),
                     routes: [
                       GoRoute(
