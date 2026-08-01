@@ -14,6 +14,13 @@ Optional filters (rating, budget) are applied in services/filters.py.
 from typing import Any
 
 from services.module3_optimizer import haversine_km
+from services.ttl_cache import TtlCache
+
+
+_PROVINCE_PLACES_CACHE = TtlCache[tuple[str, int], list[dict]](
+    ttl_seconds=120,
+    max_entries=128,
+)
 
 # Display names for subcategories shown to English-language users.
 _SUBCATEGORY_EN: dict[str, str] = {
@@ -145,6 +152,11 @@ def fetch_places_required_filter(
     province_id: str,
     limit: int = 500,
 ) -> list[dict]:
+    cache_key = (str(province_id), limit)
+    cached = _PROVINCE_PLACES_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
     select_fields = (
         "id_place,id_place_subcategory,name,short_description,"
         "status,cover_image,gallery,address,phone,website,old_province,latitude,longitude,"
@@ -166,4 +178,6 @@ def fetch_places_required_filter(
         .execute()
     )
 
-    return response.data or []
+    rows = response.data or []
+    _PROVINCE_PLACES_CACHE.set(cache_key, rows)
+    return rows

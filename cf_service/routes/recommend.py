@@ -3,11 +3,15 @@ routes/recommend.py
 Personalized province recommendation endpoints.
 """
 
+import asyncio
+
 from fastapi import APIRouter, Depends
 
 from db.supabase_client import get_supabase
+from services.ttl_cache import TtlCache
 
 router = APIRouter()
+_PLACE_DETAIL_CACHE = TtlCache[str, dict](ttl_seconds=120, max_entries=512)
 
 
 def _gallery_urls(gallery_raw):
@@ -63,7 +67,7 @@ async def get_recommended_provinces(
     supabase=Depends(get_supabase),
 ):
     from services.recommend_service import recommend_provinces
-    results = recommend_provinces(supabase, limit=limit)
+    results = await asyncio.to_thread(recommend_provinces, supabase, limit)
     return {"provinces": results}
 
 
@@ -73,6 +77,17 @@ async def get_province_detail(
     id_user: str,
     limit: int = 20,
     supabase=Depends(get_supabase),
+):
+    return await asyncio.to_thread(
+        _get_province_detail_sync, supabase, id_province, id_user, limit
+    )
+
+
+def _get_province_detail_sync(
+    supabase,
+    id_province: str,
+    id_user: str,
+    limit: int,
 ):
     from db.place_repository import fetch_places_required_filter
     from services.module1_algorithm import (
@@ -161,6 +176,13 @@ async def get_province_detail(
 @router.get("/api/recommend/place/{id_place}")
 async def get_recommended_place(id_place: str, supabase=Depends(get_supabase)):
     """Load one English-localized place directly, independent of top-20 rank."""
+    return await asyncio.to_thread(_get_recommended_place_sync, supabase, id_place)
+
+
+def _get_recommended_place_sync(supabase, id_place: str):
+    cached = _PLACE_DETAIL_CACHE.get(id_place)
+    if cached is not None:
+        return cached
     rows = (
         supabase.table("place_localized_en")
         .select(
@@ -176,4 +198,6 @@ async def get_recommended_place(id_place: str, supabase=Depends(get_supabase)):
     )
     if not rows:
         return {"place": None}
-    return {"place": _place_response(rows[0])}
+    result = {"place": _place_response(rows[0])}
+    _PLACE_DETAIL_CACHE.set(id_place, result)
+    return result

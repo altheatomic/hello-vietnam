@@ -127,23 +127,42 @@ class TripPlannerService:
 
         # ── [Filtering] ───────────────────────────────────────────────────────
         if target_lat is not None and target_lng is not None:
-            required_places = await asyncio.to_thread(
+            places_future = asyncio.to_thread(
                 fetch_places_near_point, supabase, target_lat, target_lng
             )
-            print(f"[DEBUG] business trip: target=({target_lat},{target_lng}) "
-                  f"candidates={len(required_places)}")
         else:
-            required_places = await asyncio.to_thread(
+            places_future = asyncio.to_thread(
                 fetch_places_required_filter, supabase, id_province
             )
 
-        user_profile = await asyncio.to_thread(fetch_user_travel_profile, supabase, id_user)
+        required_places, user_profile = await asyncio.gather(
+            places_future,
+            asyncio.to_thread(fetch_user_travel_profile, supabase, id_user),
+        )
+        if target_lat is not None and target_lng is not None:
+            print(f"[DEBUG] business trip: target=({target_lat},{target_lng}) "
+                  f"candidates={len(required_places)}")
         filtered_places, filter_report = filter_places_with_fallback(
             required_places, user_profile or {}, n_days
         )
 
         # ── [Module 1 – TagMatch] ─────────────────────────────────────────────
-        tags = await asyncio.to_thread(fetch_active_tags, supabase)
+        place_ids = [str(p["id_place"]) for p in filtered_places]
+        (
+            tags,
+            place_tag_rows,
+            interest_tag_rows,
+            already_rated,
+            cf_scores,
+            onboarding_choices,
+        ) = await asyncio.gather(
+            asyncio.to_thread(fetch_active_tags, supabase),
+            asyncio.to_thread(fetch_place_tags_for_places, supabase, place_ids),
+            asyncio.to_thread(fetch_user_interest_tags, supabase, id_user),
+            asyncio.to_thread(fetch_already_rated_places, supabase, id_user),
+            asyncio.to_thread(fetch_cf_scores_for_user, supabase, id_user, place_ids),
+            asyncio.to_thread(fetch_user_onboarding_choices, supabase, id_user),
+        )
         tag_map = build_tag_map(tags)
         # {id_tag (str) → tag_code} for rows that only carry UUID (no nested tag object)
         id_tag_map = {
@@ -152,14 +171,8 @@ class TripPlannerService:
             if tag.get("id_tag") and tag.get("tag_code")
         }
 
-        place_ids = [str(p["id_place"]) for p in filtered_places]
-        place_tag_rows = await asyncio.to_thread(
-            fetch_place_tags_for_places, supabase, place_ids
-        )
         places_with_tags = attach_place_tags_to_places(filtered_places, place_tag_rows)
 
-        interest_tag_rows = await asyncio.to_thread(fetch_user_interest_tags, supabase, id_user)
-        already_rated = await asyncio.to_thread(fetch_already_rated_places, supabase, id_user)
         user_interest_state = build_user_interest_state_from_rows(
             interest_tag_rows, tag_map, id_tag_map
         )
@@ -189,11 +202,15 @@ class TripPlannerService:
                     for i, o in enumerate(active_options)
                 ]
 
-                option_tag_rows = await asyncio.to_thread(
-                    fetch_trip_interest_option_tags, supabase, active_option_ids
-                )
-                option_subcategory_rows = await asyncio.to_thread(
-                    fetch_trip_interest_option_subcategories, supabase, active_option_ids
+                option_tag_rows, option_subcategory_rows = await asyncio.gather(
+                    asyncio.to_thread(
+                        fetch_trip_interest_option_tags, supabase, active_option_ids
+                    ),
+                    asyncio.to_thread(
+                        fetch_trip_interest_option_subcategories,
+                        supabase,
+                        active_option_ids,
+                    ),
                 )
 
                 trip_profile = build_trip_interest_profile(
@@ -223,7 +240,6 @@ class TripPlannerService:
         ranked = [p for p in ranked if str(p["id_place"]) not in already_rated]
 
         # ── [CF Blend] ────────────────────────────────────────────────────────
-        cf_scores = await asyncio.to_thread(fetch_cf_scores_for_user, supabase, id_user, place_ids)
         alpha = compute_alpha(cf_scores, len(filtered_places))
 
         for place in ranked:
@@ -236,9 +252,6 @@ class TripPlannerService:
         ranked.sort(key=lambda p: -p["final_score"])
 
         # ── [Diversity] ───────────────────────────────────────────────────────
-        onboarding_choices = await asyncio.to_thread(
-            fetch_user_onboarding_choices, supabase, id_user
-        )
         user_selected_interests = [
             c["option_code"] for c in onboarding_choices if c.get("option_code")
         ]
@@ -255,7 +268,8 @@ class TripPlannerService:
 
         # ── [Module 2 – Greedy Repair] ────────────────────────────────────────
         pace_level = (user_profile or {}).get("pace_level")
-        m2_result = build_module2_result(
+        m2_result = await asyncio.to_thread(
+            build_module2_result,
             top_places,
             start_date=str(start_at),
             end_date=str(end_date),
@@ -272,7 +286,8 @@ class TripPlannerService:
 
         for day_cluster in day_clusters:
             day_places = day_cluster["places"]
-            best_route, schedule_result = optimize_day_route(
+            best_route, schedule_result = await asyncio.to_thread(
+                optimize_day_route,
                 start_point, day_places, sa_runs=sa_runs
             )
 
