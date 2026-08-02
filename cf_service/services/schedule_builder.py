@@ -10,20 +10,30 @@ Two functions, two contracts:
 Opening-time rules:
   1. (idx > 0 only) Add travel time → advance clock
   2. (idx > 0 only) Add buffer_minutes → advance clock
-  3. If place not yet open, wait for opening (recorded as total_wait_minutes);
-     if the wait itself would straddle noon, take lunch first, then finish
-     waiting out the remainder of the opening time (case kept from before).
-  4. PRE-VISIT noon gate (applies to every place, including idx == 0) — this
-     is a hard "no visit interval may touch 12:00-13:30" guarantee, checked
-     BEFORE the visit is allowed to start, not after it has already
-     overrun:
-       a. If current_time is already within [12:00, 13:30) → splice a lunch
-          break right now, from current_time to 13:30.
-       b. Else if current_time < 12:00 but current_time + duration > 12:00
-          (the visit would straddle noon) → splice a lunch break from
-          current_time to 13:30 BEFORE starting the visit (the visit does
-          not begin, then get interrupted — it simply starts after lunch).
-     Only fires once per day (guarded by had_lunch).
+  3. Lunch break — SOFT constraint (minimised deviation, not a hard block):
+     evaluated once per day (guarded by had_lunch), BEFORE the opening-wait
+     check, using two candidate insertion points:
+       Option A — right after the CURRENT activity ends, i.e. at `current`,
+                  BEFORE travel to the next place.
+       Option B — right before the NEXT activity's own flow begins, i.e.
+                  after travel + buffer have already been added.
+     (For idx == 0 there is no prior activity in this route, so travel =
+     buffer = 0 and Option A/B collapse to the same instant.)
+     Trigger: only fires on the first step where proceeding without a break
+     would carry the (possibly wait-adjusted) visit past lunch_start —
+     i.e. max(option_b_start, opening_time) + duration > 12:00. This defers
+     the break until it is actually needed, instead of forcing it onto the
+     first place of the day.
+     deviation(break_start) = max(0, mins(12:00) - mins(break_start))
+                             + max(0, mins(break_start) + 90 - mins(13:30))
+     (0 if the 90-minute break lands entirely inside [12:00, 13:30);
+     otherwise the number of minutes it protrudes outside the window.)
+     Whichever option has the lower deviation is chosen (ties → Option A).
+     The break always lasts a full lunch_dur (90 min) wherever it lands —
+     unlike the old hard-block version, it is no longer truncated/anchored
+     to a fixed 12:00-13:30 window.
+  4. If place still not open after the lunch decision, wait for opening
+     (recorded as total_wait_minutes).
   5. Visit the place; if end_time > close_time → violation (+1000 penalty)
 
 Day-end cutoff rules (day_end, default 20:00):
@@ -44,6 +54,7 @@ _DEFAULT_DURATION = 60
 _EARTH_RADIUS_KM  = 6371.0
 _VIOLATION_PENALTY = 1000
 _DROP_PENALTY      = 1500
+_LUNCH_DEVIATION_PENALTY_PER_MIN = 3   # cost per minute the 90-min lunch break lands outside [12:00, 13:30)
 
 # Defaults shared by both functions
 _DAY_START    = datetime.time(8,  0)
@@ -109,6 +120,19 @@ def _slot(t: datetime.time) -> str:
     return "evening"
 
 
+def _lunch_deviation_minutes(
+    break_start: datetime.time, lunch_start: datetime.time, lunch_dur: int
+) -> int:
+    """Minutes the [break_start, break_start+lunch_dur) interval protrudes
+    outside the ideal [lunch_start, lunch_start+lunch_dur) window. 0 if it
+    lands entirely inside."""
+    bs = _mins(break_start)
+    ls = _mins(lunch_start)
+    early = max(0, ls - bs)
+    late  = max(0, (bs + lunch_dur) - (ls + lunch_dur))
+    return early + late
+
+
 # ── Shared speculative step — used by both functions ──────────────────────────
 
 def _simulate_place_step(
@@ -125,88 +149,76 @@ def _simulate_place_step(
     """
     Simulate one place visit without mutating anything.
 
-    Order: travel → buffer (idx > 0 only) → opening-wait (may itself splice
-    lunch if the wait straddles noon) → PRE-VISIT noon gate → visit.
-
-    The pre-visit noon gate is a hard guarantee that no visit interval is
-    ever allowed to touch [12:00, 13:30): it is evaluated right before the
-    visit is allowed to start (not after it has already overrun), using the
-    place's own estimated duration to look ahead.
+    Order: [lunch decision] → travel → buffer (idx > 0 only) → opening-wait
+    → visit, where the lunch break is spliced in at whichever of the two
+    candidate points (Option A, before travel; Option B, after travel+buffer)
+    minimises deviation from [12:00, 13:30) — see module docstring.
 
     Returns a dict with:
-      sim_current    — clock after travel + buffer + lunch + wait + visit
-      visit_start    — clock at which visit begins
-      visit_end      — clock at which visit ends (= visit_start + duration)
-      sim_had_lunch  — whether lunch has been consumed after this step
-      travel         — travel minutes (0 for idx == 0)
-      wait           — wait minutes for opening
-      lunch_entry    — lunch_break dict to splice, or None
-      lunch_cost     — minutes of clock consumed by lunch (for cost fn)
+      sim_current      — clock after travel + buffer + lunch + wait + visit
+      visit_start       — clock at which visit begins
+      visit_end         — clock at which visit ends (= visit_start + duration)
+      sim_had_lunch     — whether lunch has been consumed after this step
+      travel            — travel minutes (0 for idx == 0)
+      wait              — wait minutes for opening
+      lunch_entry       — lunch_break dict to splice, or None
+      lunch_cost        — minutes of clock consumed by lunch (for cost fn)
+      lunch_deviation   — minutes the chosen break protrudes outside
+                           [12:00, 13:30); 0 if no break this step
     """
-    sim_current   = current
-    sim_had_lunch = had_lunch
-    travel        = 0
-    wait          = 0
-    lunch_entry   = None
-    lunch_cost    = 0
-    lunch_window_end = _add(lunch_start, lunch_dur)
+    sim_had_lunch   = had_lunch
+    lunch_entry     = None
+    lunch_cost      = 0
+    lunch_deviation = 0
 
-    if idx > 0:
-        # 1. Travel
-        travel      = _travel_min(prev, place)
-        sim_current = _add(sim_current, travel)
+    travel      = _travel_min(prev, place) if idx > 0 else 0
+    step_buffer = buffer if idx > 0 else 0
+    dur         = int(place.get("estimated_duration_minutes") or 0) or default_dur
+    open_t      = _parse_hhmm(place.get("timespan"))
 
-        # 2. Buffer
-        sim_current = _add(sim_current, buffer)
+    # Candidate lunch insertion points.
+    option_a_start = current                               # right after current activity, before travel
+    option_b_start = _add(current, travel + step_buffer)    # right after travel+buffer, before opening-wait
 
-    # 3. Opening wait
-    open_t = _parse_hhmm(place.get("timespan"))
-    if open_t and sim_current < open_t:
-        # If noon falls during the wait, take lunch first
-        if not sim_had_lunch and _mins(open_t) > _mins(lunch_start):
-            actual_ls   = lunch_start if _mins(sim_current) <= _mins(lunch_start) else sim_current
-            lunch_end   = _add(actual_ls, lunch_dur)
-            lunch_cost  = _mins(lunch_end) - _mins(sim_current)
-            lunch_entry = {
-                "type":       "lunch_break",
-                "start_time": _fmt(actual_ls),
-                "end_time":   _fmt(lunch_end),
-                "slot":       "afternoon",
-            }
-            sim_had_lunch = True
-            sim_current   = lunch_end
-        if sim_current < open_t:
-            wait        = _mins(open_t) - _mins(sim_current)
-            sim_current = open_t
-
-    # 4. PRE-VISIT noon gate — evaluated BEFORE the visit is allowed to
-    #    start, using the projected end time, so a visit is never allowed
-    #    to begin if it would touch [12:00, 13:30) at any point.
-    dur = int(place.get("estimated_duration_minutes") or 0) or default_dur
+    lunch_needed = False
     if not sim_had_lunch:
-        estimated_end = _add(sim_current, dur)
-        if lunch_start <= sim_current < lunch_window_end:
-            # 4a. Already inside the window — break now, finish out the window.
-            lunch_cost  = _mins(lunch_window_end) - _mins(sim_current)
-            lunch_entry = {
-                "type":       "lunch_break",
-                "start_time": _fmt(sim_current),
-                "end_time":   _fmt(lunch_window_end),
-                "slot":       "afternoon",
-            }
-            sim_had_lunch = True
-            sim_current   = lunch_window_end
-        elif sim_current < lunch_start and estimated_end > lunch_start:
-            # 4b. Visit would straddle noon — break first, visit starts after.
-            lunch_cost  = _mins(lunch_window_end) - _mins(sim_current)
-            lunch_entry = {
-                "type":       "lunch_break",
-                "start_time": _fmt(sim_current),
-                "end_time":   _fmt(lunch_window_end),
-                "slot":       "afternoon",
-            }
-            sim_had_lunch = True
-            sim_current   = lunch_window_end
+        naive_arrival = _mins(option_b_start)
+        naive_visit_start = max(naive_arrival, _mins(open_t)) if open_t else naive_arrival
+        lunch_needed = (naive_visit_start + dur) > _mins(lunch_start)
+
+    if lunch_needed:
+        dev_a = _lunch_deviation_minutes(option_a_start, lunch_start, lunch_dur)
+        dev_b = _lunch_deviation_minutes(option_b_start, lunch_start, lunch_dur)
+        use_a = dev_a <= dev_b
+
+        chosen_start    = option_a_start if use_a else option_b_start
+        lunch_deviation = dev_a if use_a else dev_b
+        lunch_end       = _add(chosen_start, lunch_dur)
+
+        lunch_entry = {
+            "type":             "lunch_break",
+            "start_time":       _fmt(chosen_start),
+            "end_time":         _fmt(lunch_end),
+            "slot":             "afternoon",
+            "deviation_minutes": lunch_deviation,
+        }
+        lunch_cost    = lunch_dur
+        sim_had_lunch = True
+
+        if use_a:
+            # Order: lunch → travel → buffer → opening-wait → visit
+            sim_current = _add(lunch_end, travel + step_buffer)
+        else:
+            # Order: travel → buffer → lunch → opening-wait → visit
+            sim_current = lunch_end
+    else:
+        sim_current = option_b_start
+
+    # Opening wait (after the lunch decision, whichever branch was taken)
+    wait = 0
+    if open_t and sim_current < open_t:
+        wait        = _mins(open_t) - _mins(sim_current)
+        sim_current = open_t
 
     # Visit
     visit_start = sim_current
@@ -221,6 +233,7 @@ def _simulate_place_step(
         "wait":          wait,
         "lunch_entry":   lunch_entry,
         "lunch_cost":    lunch_cost,
+        "lunch_deviation": lunch_deviation,
     }
 
 
@@ -241,8 +254,9 @@ def route_cost_with_schedule(
 
     Cost = total_travel_minutes
          + total_wait_minutes
-         + violation_count  × 1000
-         + dropped_count    × 1500
+         + violation_count       × 1000
+         + dropped_count         × 1500
+         + lunch_deviation_total × 3 (_LUNCH_DEVIATION_PENALTY_PER_MIN)
     """
     if not route:
         return 0.0
@@ -266,6 +280,7 @@ def route_cost_with_schedule(
 
         # Commit cost
         total_cost += step["travel"] + step["wait"] + step["lunch_cost"]
+        total_cost += step["lunch_deviation"] * _LUNCH_DEVIATION_PENALTY_PER_MIN
 
         # Closing-time violation
         close_t = _parse_hhmm(place.get("timeclose"))
@@ -305,11 +320,14 @@ def build_day_schedule(
         total_wait_minutes    – sum of time spent waiting for places to open (dropped excluded)
         violation_count       – places where visit would end after closing time
         dropped_count         – places cut because projected end_time > day_end
+        lunch_deviation_minutes – minutes the lunch break landed outside [12:00, 13:30)
+                                   (0 if it fit perfectly, or no lunch was needed)
     """
     if not places:
         return {
             "schedule": [], "total_travel_minutes": 0,
             "total_wait_minutes": 0, "violation_count": 0, "dropped_count": 0,
+            "lunch_deviation_minutes": 0,
         }
 
     schedule      : list[dict]   = []
@@ -319,6 +337,7 @@ def build_day_schedule(
     total_wait    : int           = 0
     violations    : int           = 0
     dropped_count : int           = 0
+    lunch_deviation_minutes : int = 0
     prev                          = start_point
 
     for idx, place in enumerate(places):
@@ -345,6 +364,7 @@ def build_day_schedule(
         # Splice lunch if this step triggered one
         if step["lunch_entry"]:
             schedule.append(step["lunch_entry"])
+            lunch_deviation_minutes += step["lunch_deviation"]
         had_lunch = step["sim_had_lunch"]
 
         # Travel + wait stats
@@ -397,4 +417,5 @@ def build_day_schedule(
         "total_wait_minutes":   total_wait,
         "violation_count":      violations,
         "dropped_count":        dropped_count,
+        "lunch_deviation_minutes": lunch_deviation_minutes,
     }
