@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.hellovietnam.app",
+      "sha256_cert_fingerprints": [
+        "1B:F7:AA:B2:03:EC:B1:68:A9:13:59:1E:18:78:11:E8:F7:05:12:0B:B0:9B:27:E4:93:84:C7:91:E7:09:BD:EA",
+        "54:AB:41:70:6B:25:14:C2:22:6C:3D:D1:17:B7:D2:7E:69:25:5D:6D:D9:56:76:DA:79:91:12:46:B7:AA:CD:77"
+      ]
+    }
+  }
+]

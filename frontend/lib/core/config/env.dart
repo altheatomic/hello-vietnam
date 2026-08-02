@@ -27,6 +27,14 @@ class Env {
     'TRIP_PLANNER_FUNCTION',
     defaultValue: 'trip-planner',
   );
+  static const tripShareFunction = String.fromEnvironment(
+    'TRIP_SHARE_FUNCTION',
+    defaultValue: 'trip-share',
+  );
+  static const shareWebHost = String.fromEnvironment(
+    'SHARE_WEB_HOST',
+    defaultValue: '',
+  );
   static const recommendFunction = String.fromEnvironment(
     'RECOMMEND_FUNCTION',
     defaultValue: 'recommend',

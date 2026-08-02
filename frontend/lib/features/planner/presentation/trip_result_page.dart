@@ -12,6 +12,7 @@ import 'package:hellovietnam/features/planner/data/trip_store.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/start_date_picker_sheet.dart';
+import 'package:hellovietnam/features/planner/presentation/widgets/trip_share_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TripResultPage extends StatefulWidget {
@@ -144,35 +145,16 @@ class _TripResultPageState extends State<TripResultPage> {
     context.go(AppRoutes.home);
   }
 
-  void _handleShare() {
+  Future<void> _handleShare() async {
     final plan = widget.plan;
     if (plan.idPlan == null) {
       _showSnackBar(context.l10n.ui('Save the trip first before sharing.'));
       return;
     }
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext ctx) => AlertDialog(
-        title: Text(context.l10n.ui('Share to Forum')),
-        content: Text(
-          context.l10n.ui(
-            'Share this trip plan as a forum post? Other users can save it to their own trips.',
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(context.l10n.ui('Cancel')),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await _shareToForum();
-            },
-            child: Text(context.l10n.ui('Share')),
-          ),
-        ],
-      ),
+    await showTripShareSheet(
+      context,
+      idPlan: plan.idPlan!,
+      onShareToForum: _shareToForum,
     );
   }
 
