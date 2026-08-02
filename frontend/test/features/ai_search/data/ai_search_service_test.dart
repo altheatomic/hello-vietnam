@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hellovietnam/core/config/env.dart';
 import 'package:hellovietnam/features/ai_search/data/ai_search_service.dart';
-import 'package:hellovietnam/features/ai_search/domain/ai_recognition_result.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:image_picker/image_picker.dart';

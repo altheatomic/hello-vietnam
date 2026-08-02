@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:hellovietnam/features/ai_search/application/ai_recognition_map_coordinator.dart';
 import 'package:hellovietnam/features/ai_search/data/ai_recognition_history_repository.dart';
 import 'package:hellovietnam/features/ai_search/domain/ai_recognition_result.dart';
