@@ -145,7 +145,11 @@ class _AiSearchPageState extends State<AiSearchPage> {
     });
 
     try {
-      final AiSearchResult result = await _aiSearchService.analyzeImage(file);
+      final AiSearchResult result = await _aiSearchService.analyzeImage(
+        file,
+        targetLanguageCode: context.languageController.languageCode,
+        targetLanguageName: context.languageController.language.englishName,
+      );
       if (!mounted) return;
       setState(() {
         _activeRecognitionData = _RecognitionData.fromAiSearchResult(result);

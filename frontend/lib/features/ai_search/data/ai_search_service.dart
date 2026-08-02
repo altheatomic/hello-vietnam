@@ -29,7 +29,11 @@ class AiSearchService {
 
   final EdgeFunctionClient _edgeFunctionClient;
 
-  Future<AiSearchResult> analyzeImage(XFile file) async {
+  Future<AiSearchResult> analyzeImage(
+    XFile file, {
+    required String targetLanguageCode,
+    required String targetLanguageName,
+  }) async {
     final Uint8List bytes = await file.readAsBytes();
     if (bytes.isEmpty) {
       throw AiSearchException('Anh tai len dang rong.');
@@ -43,6 +47,12 @@ class AiSearchService {
           'imageBase64': base64Encode(bytes),
           'mimeType': _inferMimeType(file),
           'fileName': file.name,
+          'targetLanguageCode': targetLanguageCode.trim().isEmpty
+              ? 'en'
+              : targetLanguageCode.trim(),
+          'targetLanguageName': targetLanguageName.trim().isEmpty
+              ? 'English'
+              : targetLanguageName.trim(),
         },
       );
       return AiSearchResult.fromJson(data);

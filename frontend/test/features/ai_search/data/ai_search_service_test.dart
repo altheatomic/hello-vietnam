@@ -135,6 +135,8 @@ void main() {
 
       final AiSearchResult result = await service.analyzeImage(
         XFile.fromData(Uint8List.fromList(<int>[1, 2, 3]), name: 'photo.png'),
+        targetLanguageCode: 'vi',
+        targetLanguageName: 'Vietnamese',
       );
 
       expect(capturedRequest?.url.path, endsWith('/functions/v1/ai-search'));
@@ -148,6 +150,8 @@ void main() {
       expect(body['imageBase64'], base64Encode(<int>[1, 2, 3]));
       expect(body['mimeType'], 'image/jpeg');
       expect(body['fileName'], isA<String>());
+      expect(body['targetLanguageCode'], 'vi');
+      expect(body['targetLanguageName'], 'Vietnamese');
       expect(result.detectedName, 'Bun bo Hue');
       expect(result.databaseMatch?.id, 'food-bun-bo-hue');
       expect(result.databaseMatch?.name, 'Bún bò Huế');

@@ -146,25 +146,29 @@ class AiSearchResult {
   };
 
   factory AiSearchResult.fromJson(Map<String, dynamic> json) {
+    final String legacyResultType = _readString(json['result_type']);
+    final AiRecognitionKind kind = AiRecognitionKind.parse(
+      json['result_kind'] is String ? json['result_kind'] as String : null,
+      legacyResultType: legacyResultType,
+    );
     final AiRecognitionTextAnalysis? textAnalysis =
-        AiRecognitionTextAnalysis.tryParse(json['text_analysis']);
+        kind == AiRecognitionKind.signText
+        ? AiRecognitionTextAnalysis.tryParse(json['text_analysis'])
+        : null;
     final String detectedName = _readString(json['detected_name']).isNotEmpty
         ? _readString(json['detected_name'])
         : textAnalysis?.originalText ?? '';
-    final String mapQuery = _readString(json['map_query']).isNotEmpty
+    final String requestedMapQuery = _readString(json['map_query']);
+    final String mapQuery = _supportsMap(kind) && requestedMapQuery.isNotEmpty
         ? _readString(json['map_query'])
         : textAnalysis?.mapQuery ?? '';
-    final bool canOpenMap = json['can_open_map'] is bool
+    final bool canOpenMap = _supportsMap(kind) && json['can_open_map'] is bool
         ? json['can_open_map'] == true
         : textAnalysis?.canOpenMap ?? false;
-    final String legacyResultType = _readString(json['result_type']);
 
     return AiSearchResult(
       schemaVersion: (json['schema_version'] as num?)?.toInt() ?? 1,
-      kind: AiRecognitionKind.parse(
-        json['result_kind'] is String ? json['result_kind'] as String : null,
-        legacyResultType: legacyResultType,
-      ),
+      kind: kind,
       confidence: (json['confidence'] as num?)?.toDouble() ?? 0,
       confidenceBand: _readString(json['confidence_band']),
       detectedName: detectedName,
@@ -188,7 +192,9 @@ class AiSearchResult {
       mapQuery: mapQuery,
       canOpenMap: canOpenMap,
       textAnalysis: textAnalysis,
-      databaseMatch: AiSearchDatabaseMatch.tryParse(json['db_match']),
+      databaseMatch: kind == AiRecognitionKind.food
+          ? AiSearchDatabaseMatch.tryParse(json['db_match'])
+          : null,
     );
   }
 
@@ -220,6 +226,11 @@ class AiSearchResult {
     if (databaseMatch != null) 'db_match': databaseMatch!.toJson(),
   };
 }
+
+bool _supportsMap(AiRecognitionKind kind) =>
+    kind == AiRecognitionKind.landmark ||
+    kind == AiRecognitionKind.culturalObject ||
+    kind == AiRecognitionKind.signText;
 
 class AiSearchDatabaseMatch {
   const AiSearchDatabaseMatch({

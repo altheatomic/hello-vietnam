@@ -113,7 +113,7 @@ class _FakeHistoryStore implements AiRecognitionHistoryStore {
   }
 
   @override
-  Future<AiRecognitionHistoryEntry> save({
+  Future<AiRecognitionHistoryEntry?> save({
     required AiSearchResult result,
     required Uint8List imageBytes,
   }) {
