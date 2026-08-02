@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
@@ -11,13 +12,20 @@ import 'package:hellovietnam/features/planner/data/trip_store.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/trip_share_sheet.dart';
+import 'package:hellovietnam/features/planner/presentation/widgets/start_date_picker_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TripResultPage extends StatefulWidget {
-  const TripResultPage({super.key, required this.plan, this.wizard});
+  const TripResultPage({
+    super.key,
+    required this.plan,
+    this.wizard,
+    this.onBack,
+  });
 
   final TripPlanResponse plan;
   final TripWizardData? wizard;
+  final VoidCallback? onBack;
 
   @override
   State<TripResultPage> createState() => _TripResultPageState();
@@ -26,6 +34,28 @@ class TripResultPage extends StatefulWidget {
 class _TripResultPageState extends State<TripResultPage> {
   bool _isSaving = false;
   bool _isSharing = false;
+  late String _title;
+
+  @override
+  void initState() {
+    super.initState();
+    _title = widget.plan.customTitle ?? 'Your Vietnam Adventure';
+  }
+
+  Future<void> _editTitle() async {
+    final String? idPlan = widget.plan.idPlan;
+    if (idPlan == null) return;
+
+    final String? renamed = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => _RenameTripDialog(
+        idPlan: idPlan,
+        initialTitle: _title,
+      ),
+    );
+    if (renamed != null && mounted) setState(() => _title = renamed);
+  }
 
   Future<void> _handleSave() async {
     final idPlan = widget.plan.idPlan;
@@ -46,6 +76,73 @@ class _TripResultPageState extends State<TripResultPage> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Future<void> _handleStartTrip(List<TripPlannerDayData> days) async {
+    final String? idPlan = widget.plan.idPlan;
+    final DateTime? startAt = widget.plan.startAt;
+
+    if (idPlan != null && startAt != null) {
+      final DateTime now = DateTime.now();
+      final DateTime today = DateTime(now.year, now.month, now.day);
+      final DateTime startDateOnly = DateTime(
+        startAt.year,
+        startAt.month,
+        startAt.day,
+      );
+
+      if (today.isAfter(startDateOnly)) {
+        final bool? wantsUpdate = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext dialogContext) => AlertDialog(
+            title: Text(context.l10n.ui('Update your start date?')),
+            content: Text(
+              context.l10n.ui(
+                "It looks like today is after this trip's planned start date. Update it to keep your itinerary accurate?",
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(context.l10n.ui('Not now')),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(context.l10n.ui('Update')),
+              ),
+            ],
+          ),
+        );
+
+        if (wantsUpdate == true && mounted) {
+          final DateTime? newStart = await pickNewStartDate(
+            context,
+            firstSelectableDate: today,
+          );
+          if (newStart != null) {
+            try {
+              await TripRepository().rescheduleTrip(idPlan, _isoDate(newStart));
+            } catch (e) {
+              if (mounted) {
+                _showSnackBar(
+                  context.l10n.ui(
+                    'Could not update start date. Please try again.',
+                  ),
+                );
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (!mounted) return;
+    TripStore.instance.startTrip(
+      title: _title,
+      days: days,
+      idPlan: idPlan,
+    );
+    context.go(AppRoutes.home);
   }
 
   Future<void> _handleShare() async {
@@ -128,7 +225,10 @@ class _TripResultPageState extends State<TripResultPage> {
 
   @override
   Widget build(BuildContext context) {
-    final days = _convertPlan(widget.plan);
+    final days = _convertPlan(
+      widget.plan,
+      idProvince: widget.plan.cityProvince ?? widget.wizard?.idProvince ?? '',
+    );
     final ThemeData theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
     final List<Color> pageColors = isDark
@@ -183,16 +283,32 @@ class _TripResultPageState extends State<TripResultPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    _BackButtonCircle(onTap: () => context.pop()),
+                    _BackButtonCircle(
+                      onTap: widget.onBack ?? () => context.pop(),
+                    ),
                     const SizedBox(height: 18),
-                    Text(
-                      context.l10n.ui('Your Vietnam Adventure'),
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        height: 1.08,
-                      ),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: GestureDetector(
+                            onDoubleTap: _editTitle,
+                            child: Text(
+                              _title,
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                height: 1.08,
+                              ),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: context.l10n.ui('Edit trip name'),
+                          onPressed: _editTitle,
+                          icon: const Icon(Icons.edit_outlined),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 10),
                     if (dateRange.isNotEmpty) ...<Widget>[
@@ -236,14 +352,7 @@ class _TripResultPageState extends State<TripResultPage> {
                     ),
                     const SizedBox(height: 12),
                     _StartTripButton(
-                      onTap: () {
-                        TripStore.instance.startTrip(
-                          title: 'Your Vietnam Adventure',
-                          days: days,
-                          idPlan: widget.plan.idPlan,
-                        );
-                        context.go(AppRoutes.home);
-                      },
+                      onTap: () => _handleStartTrip(days),
                     ),
                     const SizedBox(height: 24),
                     Row(
@@ -308,7 +417,10 @@ class _TripResultPageState extends State<TripResultPage> {
 
 // ── Conversion helpers ────────────────────────────────────────────────────────
 
-List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
+List<TripPlannerDayData> _convertPlan(
+  TripPlanResponse plan, {
+  required String idProvince,
+}) {
   const gradients = <List<Color>>[
     <Color>[Color(0xFFE9F0FD), Color(0xFFE7FAFD), Color(0xFFD6F7F6)],
     <Color>[Color(0xFFF4EAFB), Color(0xFFEBF7FB), Color(0xFFD6F0F7)],
@@ -350,6 +462,13 @@ List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
         lat: p.latitude ?? 0.0,
         lng: p.longitude ?? 0.0,
         imageUrl: imageUrl,
+        idPlace: p.idPlace,
+        idProvince: idProvince,
+        estimatedDurationMinutes: p.estimatedDurationMinutes,
+        minimumPrice: p.minimumPrice,
+        maximumPrice: p.maximumPrice,
+        timespan: p.timespan,
+        timeclose: p.timeclose,
       );
     }).toList();
 
@@ -410,6 +529,11 @@ String _formatIsoDate(String iso) {
   return '${months[month - 1]} $day, ${parts[0]}';
 }
 
+String _isoDate(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
+
 String _tripDateRange(List<TripPlanDay> days) {
   if (days.isEmpty) return '';
   final String startDate = days.first.date;
@@ -421,6 +545,113 @@ String _tripDateRange(List<TripPlanDay> days) {
 }
 
 // ── Widgets ───────────────────────────────────────────────────────────────────
+
+class _RenameTripDialog extends StatefulWidget {
+  const _RenameTripDialog({
+    required this.idPlan,
+    required this.initialTitle,
+  });
+
+  final String idPlan;
+  final String initialTitle;
+
+  @override
+  State<_RenameTripDialog> createState() => _RenameTripDialogState();
+}
+
+class _RenameTripDialogState extends State<_RenameTripDialog> {
+  late final TextEditingController _controller;
+  String? _errorText;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialTitle);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
+
+    final String value = _controller.text.trim();
+    if (value.isEmpty) {
+      setState(() => _errorText = 'Trip name cannot be empty.');
+      return;
+    }
+
+    setState(() {
+      _errorText = null;
+      _isSubmitting = true;
+    });
+
+    try {
+      final String renamed = await TripRepository().renamePlan(
+        widget.idPlan,
+        value,
+      );
+      if (!mounted) return;
+      FocusScope.of(context).unfocus();
+      Navigator.of(context).pop(renamed);
+    } on SupabaseFunctionException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _errorText = error.errorCode == 'duplicate_trip_title'
+            ? 'You already have a trip with this name.'
+            : 'Could not rename trip. Please try again.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _errorText = 'Could not rename trip. Please try again.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope<String>(
+      canPop: !_isSubmitting,
+      child: AlertDialog(
+        title: Text(context.l10n.ui('Edit trip name')),
+        content: TextField(
+          controller: _controller,
+          autofocus: true,
+          maxLength: 120,
+          textInputAction: TextInputAction.done,
+          decoration: InputDecoration(
+            labelText: context.l10n.ui('Trip name'),
+            errorText: _errorText == null
+                ? null
+                : context.l10n.ui(_errorText!),
+          ),
+          onSubmitted: _isSubmitting ? null : (_) => _submit(),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: _isSubmitting
+                ? null
+                : () => Navigator.of(context).pop(),
+            child: Text(context.l10n.ui('Cancel')),
+          ),
+          FilledButton(
+            onPressed: _isSubmitting ? null : _submit,
+            child: Text(
+              context.l10n.ui(_isSubmitting ? 'Saving…' : 'Save'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _ActionButton extends StatelessWidget {
   const _ActionButton({required this.label, required this.onTap});

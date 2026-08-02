@@ -331,6 +331,26 @@ class AppStrings {
   }
 
   static const Map<String, String> _viText = <String, String>{
+    'Still on this trip?': 'Bạn vẫn đang trong chuyến đi?',
+    'Have you completed your trip to':
+        'Bạn đã hoàn thành chuyến đi đến',
+    'Not yet': 'Chưa',
+    'Mark as completed': 'Đánh dấu đã hoàn thành',
+    'Update your start date?': 'Cập nhật lại ngày bắt đầu?',
+    "It looks like today is after this trip's planned start date. Update it to keep your itinerary accurate?":
+        'Có vẻ hôm nay đã trễ hơn ngày bắt đầu dự kiến của chuyến đi. Cập nhật lại để lịch trình được chính xác?',
+    'Not now': 'Để sau',
+    'Update': 'Cập nhật',
+    'End Trip': 'Kết thúc chuyến đi',
+    'Open Itinerary': 'Xem lịch trình',
+    'Could not end trip. Please try again.':
+        'Không thể kết thúc chuyến đi. Vui lòng thử lại.',
+    'Trip marked as completed.': 'Đã đánh dấu chuyến đi hoàn thành.',
+    'Could not update start date. Please try again.':
+        'Không thể cập nhật ngày bắt đầu. Vui lòng thử lại.',
+    'Select new start date': 'Chọn ngày bắt đầu mới',
+    'Tap your new start date, then tap any later date to confirm':
+        'Chạm chọn ngày bắt đầu mới, sau đó chạm thêm một ngày bất kỳ để xác nhận',
     'Opening Hello Vietnam': 'Đang mở Hello Vietnam',
     'Preparing your Vietnam journey': 'Đang chuẩn bị hành trình Việt Nam',
     'Home': 'Trang chủ',
@@ -722,6 +742,13 @@ class AppStrings {
     'Leisure Trip': 'Du lịch',
     'Business Trip': 'Công tác',
     'Your Vietnam Adventure': 'Hành trình Việt Nam',
+    'Edit trip name': 'Đổi tên chuyến đi',
+    'Trip name': 'Tên chuyến đi',
+    'Trip name cannot be empty.': 'Tên chuyến đi không được để trống.',
+    'You already have a trip with this name.':
+        'Bạn đã có một chuyến đi với tên này.',
+    'Could not rename trip. Please try again.':
+        'Không thể đổi tên chuyến đi. Vui lòng thử lại.',
     'Personalized Itinerary': 'Lịch trình cá nhân hóa',
     "Let's create your perfect trip": 'Cùng tạo chuyến đi hoàn hảo của bạn',
     'Trip Type': 'Loại chuyến đi',
@@ -1043,6 +1070,17 @@ class AppStrings {
     'Share': 'Chia sẻ',
     'Share to Forum': 'Chia sẻ lên Diễn đàn',
     'Get Directions': 'Chỉ đường',
+    'Duration': 'Thời lượng',
+    'Price': 'Giá',
+    'Open': 'Mở cửa',
+    'Phone': 'Điện thoại',
+    'Website': 'Trang web',
+    'Address': 'Địa chỉ',
+    'From': 'Từ',
+    'Up to': 'Tối đa',
+    'min': 'phút',
+    'h': ' giờ',
+    'm': ' phút',
     'Create Trip on Google Maps': 'Tạo chuyến đi trên Google Maps',
     'Back to trip planner': 'Quay lại Lịch trình',
     'Destinations': 'Điểm đến',

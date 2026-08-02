@@ -15,12 +15,14 @@ class TripResultLoader extends StatefulWidget {
     super.key,
     required this.idPlan,
     required this.draft,
+    this.returnToNotification = false,
     this.loadPlan,
     this.timelineFactory,
   });
 
   final String? idPlan;
   final TripPlanResponse? draft;
+  final bool returnToNotification;
   final TripPlanLoader? loadPlan;
   final JourneyLoadingTimeline Function()? timelineFactory;
 
@@ -97,6 +99,10 @@ class _TripResultLoaderState extends State<TripResultLoader> {
   }
 
   void _goBack() {
+    if (widget.returnToNotification) {
+      context.go(AppRoutes.notification);
+      return;
+    }
     if (context.canPop()) {
       context.pop();
       return;
@@ -116,7 +122,18 @@ class _TripResultLoaderState extends State<TripResultLoader> {
 
     final TripPlanResponse? plan = _loadedPlan;
     if (_showResult && plan != null) {
-      return TripResultPage(plan: plan);
+      return PopScope<void>(
+        canPop: !widget.returnToNotification,
+        onPopInvokedWithResult: (bool didPop, void result) {
+          if (!didPop && widget.returnToNotification) {
+            context.go(AppRoutes.notification);
+          }
+        },
+        child: TripResultPage(
+          plan: plan,
+          onBack: widget.returnToNotification ? _goBack : null,
+        ),
+      );
     }
 
     if (_normalizedIdPlan != null) {

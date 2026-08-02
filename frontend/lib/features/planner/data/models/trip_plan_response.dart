@@ -27,19 +27,47 @@ import 'package:flutter/foundation.dart';
 ///   ]
 /// }
 class TripPlanResponse {
-  const TripPlanResponse({required this.idPlan, required this.days});
+  const TripPlanResponse({
+    required this.idPlan,
+    this.customTitle,
+    this.cityProvince,
+    this.startAt,
+    this.endAt,
+    required this.days,
+  });
 
   final String? idPlan;
+  final String? customTitle;
+  final String? cityProvince;
+  final DateTime? startAt;
+  final DateTime? endAt;
   final List<TripPlanDay> days;
 
   factory TripPlanResponse.fromJson(Map<String, dynamic> json) {
     final rawDays = json['days'] as List<dynamic>? ?? <dynamic>[];
+    final days = rawDays
+        .whereType<Map<String, dynamic>>()
+        .map(TripPlanDay.fromJson)
+        .toList();
+
+    // `getPlan` (loading a saved trip) returns start_at/end_at at the top
+    // level. `planTrip` (freshly generated, not yet reloaded) does not —
+    // fall back to the first/last day's calendar date, which is always
+    // present either way.
+    final DateTime? startAt =
+        DateTime.tryParse(json['start_at'] as String? ?? '') ??
+            (days.isNotEmpty ? DateTime.tryParse(days.first.date) : null);
+    final DateTime? endAt =
+        DateTime.tryParse(json['end_at'] as String? ?? '') ??
+            (days.isNotEmpty ? DateTime.tryParse(days.last.date) : null);
+
     return TripPlanResponse(
       idPlan: json['id_plan'] as String?,
-      days:   rawDays
-          .whereType<Map<String, dynamic>>()
-          .map(TripPlanDay.fromJson)
-          .toList(),
+      customTitle: json['custom_title'] as String?,
+      cityProvince: json['city_province'] as String?,
+      startAt: startAt,
+      endAt: endAt,
+      days: days,
     );
   }
 }
@@ -82,6 +110,10 @@ class TripPlanPlace {
     this.longitude,
     this.estimatedTravelMinutes,
     this.estimatedDurationMinutes,
+    this.minimumPrice,
+    this.maximumPrice,
+    this.timespan,
+    this.timeclose,
     this.coverImage,
     this.gallery = const <Map<String, dynamic>>[],
     this.tagMatch,
@@ -102,6 +134,10 @@ class TripPlanPlace {
   final double? longitude;
   final int? estimatedTravelMinutes;
   final int? estimatedDurationMinutes;
+  final num? minimumPrice;
+  final num? maximumPrice;
+  final String? timespan;
+  final String? timeclose;
   final String? coverImage;
   /// List of {url, type, source} objects from the DB gallery jsonb column.
   final List<Map<String, dynamic>> gallery;
@@ -142,6 +178,10 @@ class TripPlanPlace {
       longitude:                  (json['longitude'] as num?)?.toDouble(),
       estimatedTravelMinutes:     (json['estimated_travel_minutes'] as num?)?.toInt(),
       estimatedDurationMinutes:   (json['estimated_duration_minutes'] as num?)?.toInt(),
+      minimumPrice:                json['minimum_price'] as num?,
+      maximumPrice:                json['maximum_price'] as num?,
+      timespan:                    json['timespan'] as String?,
+      timeclose:                   json['timeclose'] as String?,
       coverImage:                 json['cover_image'] as String?,
       gallery:                    gallery,
       tagMatch:                   (json['tag_match'] as num?)?.toDouble(),
@@ -259,6 +299,34 @@ class CfRetrainLog {
       status:      json['status']       as String? ?? '',
       rowsWritten: (json['rows_written'] as num?)?.toInt(),
       errorMsg:    json['error_msg']    as String?,
+    );
+  }
+}
+
+/// One plan overdue for the "Have you completed your trip?" check, from the
+/// `overdueTripCheck` action.
+class OverdueTripPlan {
+  const OverdueTripPlan({
+    required this.idPlan,
+    this.customTitle,
+    required this.startAt,
+    required this.endAt,
+    required this.provinceName,
+  });
+
+  final String idPlan;
+  final String? customTitle;
+  final String startAt;
+  final String endAt;
+  final String provinceName;
+
+  factory OverdueTripPlan.fromJson(Map<String, dynamic> json) {
+    return OverdueTripPlan(
+      idPlan:       json['id_plan']       as String? ?? '',
+      customTitle:  json['custom_title']  as String?,
+      startAt:      json['start_at']      as String? ?? '',
+      endAt:        json['end_at']        as String? ?? '',
+      provinceName: json['province_name'] as String? ?? '',
     );
   }
 }

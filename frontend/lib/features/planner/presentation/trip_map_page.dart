@@ -81,6 +81,9 @@ class _TripMapPageState extends State<TripMapPage> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       body: Stack(
         children: <Widget>[
@@ -91,18 +94,24 @@ class _TripMapPageState extends State<TripMapPage> {
           ),
 
           // Decorative blur orbs
-          const Positioned(
+          Positioned(
             top: -90,
             right: -60,
             child: IgnorePointer(
-              child: _DecorativeOrb(size: 220, color: Color(0x332BC3FF)),
+              child: _DecorativeOrb(
+                size: 220,
+                color: Color(isDark ? 0x332BC3FF : 0x662BC3FF),
+              ),
             ),
           ),
-          const Positioned(
+          Positioned(
             bottom: 240,
             left: -40,
             child: IgnorePointer(
-              child: _DecorativeOrb(size: 180, color: Color(0x3356E2D5)),
+              child: _DecorativeOrb(
+                size: 180,
+                color: Color(isDark ? 0x2856E2D5 : 0x5556E2D5),
+              ),
             ),
           ),
 
@@ -123,19 +132,23 @@ class _TripMapPageState extends State<TripMapPage> {
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surface.withValues(alpha: 0.96),
+                            color: theme.colorScheme.surface.withValues(
+                              alpha: 0.96,
+                            ),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
-                              color: const Color(0xFFD8F2FF),
+                              color: isDark
+                                  ? theme.colorScheme.outline
+                                  : const Color(0xFFD8F2FF),
                               width: 1.2,
                             ),
-                            boxShadow: const <BoxShadow>[
+                            boxShadow: <BoxShadow>[
                               BoxShadow(
-                                color: Color(0x220F2C4F),
+                                color: isDark
+                                    ? Colors.black26
+                                    : const Color(0x220F2C4F),
                                 blurRadius: 22,
-                                offset: Offset(0, 12),
+                                offset: const Offset(0, 12),
                               ),
                             ],
                           ),
@@ -261,18 +274,20 @@ class _ResultSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       height: 290,
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.98),
+        color: theme.colorScheme.surface.withValues(alpha: 0.98),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x240F2C4F),
+            color: isDark ? Colors.black38 : const Color(0x240F2C4F),
             blurRadius: 24,
-            offset: Offset(0, -4),
+            offset: const Offset(0, -4),
           ),
         ],
       ),
@@ -354,17 +369,22 @@ class _NearbyPlaceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFDDE8F3), width: 1.4),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFDDE8F3),
+          width: 1.4,
+        ),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x180F2C4F),
+            color: isDark ? Colors.black26 : const Color(0x180F2C4F),
             blurRadius: 14,
-            offset: Offset(0, 6),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -374,7 +394,7 @@ class _NearbyPlaceTile extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFF4F6FA),
+              color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Center(
@@ -412,16 +432,20 @@ class _NearbyPlaceTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
+              color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: const Color(0xFFC7DFFF)),
+              border: Border.all(
+                color: const Color(
+                  0xFF2EBEFB,
+                ).withValues(alpha: isDark ? 0.6 : 1),
+              ),
             ),
             child: Text(
               place.eta,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF286EF0),
+                color: Color(0xFF2EBEFB),
               ),
             ),
           ),

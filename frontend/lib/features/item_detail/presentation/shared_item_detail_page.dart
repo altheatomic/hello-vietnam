@@ -38,6 +38,7 @@ class SharedItemDetailPage extends StatefulWidget {
     this.showWhatToExpect = true,
     this.showTrailingGallery = true,
     this.showFeedbackAction = true,
+    this.quickInfoMetadata = const <String>[],
     this.showRatingBadge = true,
     this.showShareAction,
   }) : assert(
@@ -64,6 +65,10 @@ class SharedItemDetailPage extends StatefulWidget {
 
   /// Whether to show the thumbs-up icon next to the description box.
   final bool showFeedbackAction;
+
+  /// Optional detail lines rendered below the description. Empty by default,
+  /// so existing detail pages retain their current layout.
+  final List<String> quickInfoMetadata;
 
   /// Whether to show the star rating badge over the hero image carousel.
   final bool showRatingBadge;
@@ -395,6 +400,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                   const SizedBox(height: 18),
                   _QuickInfoCard(
                     description: _detail.description,
+                    metadata: widget.quickInfoMetadata,
                     isExpanded: _descExpanded,
                     showFeedbackAction: widget.showFeedbackAction,
                     onToggleExpanded: () {
@@ -670,12 +676,14 @@ class _HeroImageCarousel extends StatelessWidget {
 class _QuickInfoCard extends StatelessWidget {
   const _QuickInfoCard({
     required this.description,
+    this.metadata = const <String>[],
     required this.isExpanded,
     required this.showFeedbackAction,
     required this.onToggleExpanded,
   });
 
   final String description;
+  final List<String> metadata;
   final bool isExpanded;
   final bool showFeedbackAction;
   final VoidCallback onToggleExpanded;
@@ -746,6 +754,20 @@ class _QuickInfoCard extends StatelessWidget {
                                 ? AppColors.primaryLight
                                 : AppColors.primary,
                             decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (metadata.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 12),
+                      ...metadata.map(
+                        (String line) => Padding(
+                          padding: const EdgeInsets.only(top: 5),
+                          child: Text(
+                            line,
+                            style: descriptionStyle.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),

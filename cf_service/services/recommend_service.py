@@ -20,6 +20,11 @@ from __future__ import annotations
 
 import time  # TEMP — perf audit, remove after done
 
+from services.ttl_cache import TtlCache
+
+
+_PROVINCES_CACHE = TtlCache[int, list[dict]](ttl_seconds=600, max_entries=8)
+
 # Mirrors frontend/lib/core/utils/vietnamese_text_utils.dart
 # (_vietnameseDiacriticReplacements) character-for-character, so provinces
 # sort in the same order they're displayed in (diacritics stripped).
@@ -62,6 +67,10 @@ def remove_vietnamese_diacritics(text: str) -> str:
 
 
 def recommend_provinces(supabase, limit: int = 100) -> list[dict]:
+    cached = _PROVINCES_CACHE.get(limit)
+    if cached is not None:
+        return cached
+
     # TEMP — perf audit, remove after done
     _t0 = time.perf_counter()
 
@@ -109,4 +118,5 @@ def recommend_provinces(supabase, limit: int = 100) -> list[dict]:
         f"provinces={len(results)}"
     )
 
+    _PROVINCES_CACHE.set(limit, results)
     return results

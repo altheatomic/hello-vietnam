@@ -132,12 +132,14 @@ class _TripInterestPageState extends State<TripInterestPage> {
       if (!mounted || generation != _generation) return;
       setState(() => _pendingResponse = response);
     } on NoTripCandidatesException {
+      if (!mounted) return;
       _failGeneration(
         generation,
         'Not enough places found for your selection. Try selecting more '
         'interests (step 4) or fewer days (step 3).',
       );
     } on SupabaseFunctionException catch (e) {
+      if (!mounted) return;
       if (e.errorCode == 'no_candidates') {
         _failGeneration(
           generation,

@@ -7,14 +7,24 @@ Two functions, two contracts:
   build_day_schedule()       — mutates place dicts (adds travel/time fields),
                                called ONCE on the final best route
 
-Opening-time rules (per place, idx > 0):
-  1. Check noon AT current_time (= previous place's raw end_time) BEFORE doing
-     anything else for this place → splice lunch_break here if not yet taken
-  2. Add travel time → advance clock
-  3. Add buffer_minutes → advance clock
-  4. If place not yet open, wait (recorded as total_wait_minutes)
+Opening-time rules:
+  1. (idx > 0 only) Add travel time → advance clock
+  2. (idx > 0 only) Add buffer_minutes → advance clock
+  3. If place not yet open, wait for opening (recorded as total_wait_minutes);
+     if the wait itself would straddle noon, take lunch first, then finish
+     waiting out the remainder of the opening time (case kept from before).
+  4. PRE-VISIT noon gate (applies to every place, including idx == 0) — this
+     is a hard "no visit interval may touch 12:00-13:30" guarantee, checked
+     BEFORE the visit is allowed to start, not after it has already
+     overrun:
+       a. If current_time is already within [12:00, 13:30) → splice a lunch
+          break right now, from current_time to 13:30.
+       b. Else if current_time < 12:00 but current_time + duration > 12:00
+          (the visit would straddle noon) → splice a lunch break from
+          current_time to 13:30 BEFORE starting the visit (the visit does
+          not begin, then get interrupted — it simply starts after lunch).
+     Only fires once per day (guarded by had_lunch).
   5. Visit the place; if end_time > close_time → violation (+1000 penalty)
-  (idx == 0: no travel/buffer/noon-check precede the first place)
 
 Day-end cutoff rules (day_end, default 20:00):
   - After computing a place's projected end_time (post travel + wait + duration),
@@ -71,6 +81,14 @@ def _parse_hhmm(s) -> datetime.time | None:
 
 
 def _add(t: datetime.time, minutes: int) -> datetime.time:
+    """
+    Known limitation: wraps silently past 24h (returns a bare time-of-day,
+    e.g. 25:00 -> 01:00), which can defeat the visit_end > day_end drop
+    check for abnormally large `minutes`. Input duration is expected to
+    stay sane — see the clamp on estimated_duration_minutes in
+    services/module2_algorithm.py's estimate_duration_minutes()
+    (MAX_SINGLE_PLACE_DURATION_MINUTES in config.py).
+    """
     base = datetime.datetime.combine(datetime.date.today(), t)
     return (base + datetime.timedelta(minutes=minutes)).time()
 
@@ -107,9 +125,13 @@ def _simulate_place_step(
     """
     Simulate one place visit without mutating anything.
 
-    Order (idx > 0): noon-check at raw current_time → travel → buffer →
-    opening-wait → visit. The noon-check fires BEFORE travel/buffer so lunch
-    lands right when the previous place finished, not after arriving at this one.
+    Order: travel → buffer (idx > 0 only) → opening-wait (may itself splice
+    lunch if the wait straddles noon) → PRE-VISIT noon gate → visit.
+
+    The pre-visit noon gate is a hard guarantee that no visit interval is
+    ever allowed to touch [12:00, 13:30): it is evaluated right before the
+    visit is allowed to start (not after it has already overrun), using the
+    place's own estimated duration to look ahead.
 
     Returns a dict with:
       sim_current    — clock after travel + buffer + lunch + wait + visit
@@ -127,52 +149,17 @@ def _simulate_place_step(
     wait          = 0
     lunch_entry   = None
     lunch_cost    = 0
+    lunch_window_end = _add(lunch_start, lunch_dur)
 
     if idx > 0:
-        # 1. Noon check — right at the moment the previous place finished,
-        #    before travelling/buffering toward this one.
-        if not sim_had_lunch and sim_current >= lunch_start:
-            actual_ls   = sim_current if sim_current > lunch_start else lunch_start
-            lunch_end   = _add(actual_ls, lunch_dur)
-            lunch_cost  = _mins(lunch_end) - _mins(sim_current)
-            lunch_entry = {
-                "type":       "lunch_break",
-                "start_time": _fmt(actual_ls),
-                "end_time":   _fmt(lunch_end),
-                "slot":       "afternoon",
-            }
-            sim_had_lunch = True
-            sim_current   = lunch_end
-
-        # 2. Travel
+        # 1. Travel
         travel      = _travel_min(prev, place)
         sim_current = _add(sim_current, travel)
 
-        # 3. Buffer
+        # 2. Buffer
         sim_current = _add(sim_current, buffer)
 
-        # 3.5. Second noon check — catches the case where the previous place
-        #      finished before noon (so check 1 didn't fire) but travel +
-        #      buffer pushes arrival at this place into the lunch window.
-        #      lunch_end is fixed at lunch_start + lunch_dur (not sim_current
-        #      + lunch_dur) so a late arrival inside the window doesn't tack
-        #      on a fresh full-length break — it just finishes out the window.
-        lunch_window_end = _add(lunch_start, lunch_dur)
-        if (
-            not sim_had_lunch
-            and lunch_start <= sim_current < lunch_window_end
-        ):
-            lunch_cost  = _mins(lunch_window_end) - _mins(sim_current)
-            lunch_entry = {
-                "type":       "lunch_break",
-                "start_time": _fmt(sim_current),
-                "end_time":   _fmt(lunch_window_end),
-                "slot":       "afternoon",
-            }
-            sim_had_lunch = True
-            sim_current   = lunch_window_end
-
-    # 4. Opening wait
+    # 3. Opening wait
     open_t = _parse_hhmm(place.get("timespan"))
     if open_t and sim_current < open_t:
         # If noon falls during the wait, take lunch first
@@ -192,8 +179,36 @@ def _simulate_place_step(
             wait        = _mins(open_t) - _mins(sim_current)
             sim_current = open_t
 
+    # 4. PRE-VISIT noon gate — evaluated BEFORE the visit is allowed to
+    #    start, using the projected end time, so a visit is never allowed
+    #    to begin if it would touch [12:00, 13:30) at any point.
+    dur = int(place.get("estimated_duration_minutes") or 0) or default_dur
+    if not sim_had_lunch:
+        estimated_end = _add(sim_current, dur)
+        if lunch_start <= sim_current < lunch_window_end:
+            # 4a. Already inside the window — break now, finish out the window.
+            lunch_cost  = _mins(lunch_window_end) - _mins(sim_current)
+            lunch_entry = {
+                "type":       "lunch_break",
+                "start_time": _fmt(sim_current),
+                "end_time":   _fmt(lunch_window_end),
+                "slot":       "afternoon",
+            }
+            sim_had_lunch = True
+            sim_current   = lunch_window_end
+        elif sim_current < lunch_start and estimated_end > lunch_start:
+            # 4b. Visit would straddle noon — break first, visit starts after.
+            lunch_cost  = _mins(lunch_window_end) - _mins(sim_current)
+            lunch_entry = {
+                "type":       "lunch_break",
+                "start_time": _fmt(sim_current),
+                "end_time":   _fmt(lunch_window_end),
+                "slot":       "afternoon",
+            }
+            sim_had_lunch = True
+            sim_current   = lunch_window_end
+
     # Visit
-    dur         = int(place.get("estimated_duration_minutes") or 0) or default_dur
     visit_start = sim_current
     visit_end   = _add(visit_start, dur)
 

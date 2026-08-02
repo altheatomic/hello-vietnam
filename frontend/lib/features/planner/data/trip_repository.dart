@@ -100,12 +100,48 @@ class TripRepository {
     });
   }
 
+  Future<String> renamePlan(String idPlan, String customTitle) async {
+    final data = await _invoke(<String, Object?>{
+      'action': 'renamePlan',
+      'idPlan': idPlan,
+      'customTitle': customTitle,
+    });
+    return data['custom_title'] as String;
+  }
+
   Future<List<SavedPlanItem>> listSavedPlans() async {
     final data = await _invoke(<String, Object?>{'action': 'listSavedPlans'});
     final raw = data['plans'] as List<dynamic>? ?? <dynamic>[];
     return raw
         .whereType<Map<String, dynamic>>()
         .map(SavedPlanItem.fromJson)
+        .toList();
+  }
+
+  /// Shifts a saved plan's start_at/end_at when the user starts the trip
+  /// later than originally planned, preserving its duration. [newStartAt]
+  /// must be an ISO 'YYYY-MM-DD' date string.
+  Future<void> rescheduleTrip(String idPlan, String newStartAt) async {
+    await _invoke(<String, Object?>{
+      'action': 'rescheduleTrip',
+      'idPlan': idPlan,
+      'newStartAt': newStartAt,
+    });
+  }
+
+  Future<void> completeTrip(String idPlan) async {
+    await _invoke(<String, Object?>{'action': 'completeTrip', 'idPlan': idPlan});
+  }
+
+  /// Client-pull check for trips left un-ended long after their planned end
+  /// date — see cf_service `get_overdue_plans()` for the reusable query
+  /// this calls through.
+  Future<List<OverdueTripPlan>> checkOverdueTrips() async {
+    final data = await _invoke(<String, Object?>{'action': 'overdueTripCheck'});
+    final raw = data['plans'] as List<dynamic>? ?? <dynamic>[];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(OverdueTripPlan.fromJson)
         .toList();
   }
 

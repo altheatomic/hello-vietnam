@@ -320,12 +320,13 @@ class AppRoutes {
   ).toString();
 
   static String recommendedPlaceDetailPath({
-    required String idProvince,
+    String? idProvince,
     required String idPlace,
   }) => Uri(
     path: recommendedPlaceDetail,
     queryParameters: <String, String>{
-      'idProvince': idProvince,
+      if (idProvince?.trim().isNotEmpty == true)
+        'idProvince': idProvince!.trim(),
       'idPlace': idPlace,
     },
   ).toString();
@@ -357,13 +358,17 @@ class AppRoutes {
 
   /// Builds a restorable result location for a persisted plan, or marks the
   /// location as a process-local draft when [idPlan] is absent.
-  static String tripPlannerResultPath({String? idPlan}) {
+  static String tripPlannerResultPath({
+    String? idPlan,
+    bool fromNotification = false,
+  }) {
     final String normalizedId = idPlan?.trim() ?? '';
     return Uri(
       path: tripPlannerResult,
       queryParameters: <String, String>{
         if (normalizedId.isNotEmpty) 'idPlan': normalizedId,
         if (normalizedId.isEmpty) 'draft': 'true',
+        if (fromNotification) 'from': 'notification',
       },
     ).toString();
   }
@@ -636,7 +641,7 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.recommendedPlaceDetail,
         builder: (c, s) => RecommendedPlaceDetailPage(
-          idProvince: s.uri.queryParameters['idProvince'] ?? '',
+          idProvince: s.uri.queryParameters['idProvince'],
           idPlace: s.uri.queryParameters['idPlace'] ?? '',
         ),
       ),
@@ -984,6 +989,8 @@ GoRouter buildRouter() {
                     builder: (context, state) => TripResultLoader(
                       idPlan: state.uri.queryParameters['idPlan'],
                       draft: _tripPlanFromExtra(state.extra),
+                      returnToNotification:
+                          state.uri.queryParameters['from'] == 'notification',
                     ),
                     routes: [
                       GoRoute(

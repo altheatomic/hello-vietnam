@@ -68,6 +68,14 @@ export async function handleTripPlannerRequest(
         return clonePlan(userId, payload);
       case "savePlan":
         return savePlan(userId, payload);
+      case "renamePlan":
+        return renamePlan(userId, payload);
+      case "rescheduleTrip":
+        return rescheduleTrip(userId, payload);
+      case "completeTrip":
+        return completeTrip(userId, payload);
+      case "overdueTripCheck":
+        return overdueTripCheck(userId);
       case "triggerCfRetrain":
         return triggerCfRetrain(userId);
       case "getCfRetrainLogs":
@@ -176,6 +184,33 @@ async function savePlan(userId: string, p: JsonObject): Promise<Response> {
   });
 }
 
+async function renamePlan(userId: string, p: JsonObject): Promise<Response> {
+  const id = reqStr(p.idPlan, "idPlan");
+  const customTitle = reqStr(p.customTitle, "customTitle");
+  return proxyRequest("PATCH", `/api/trips/${id}/title`, {
+    id_user: userId,
+    custom_title: customTitle,
+  });
+}
+
+async function rescheduleTrip(userId: string, p: JsonObject): Promise<Response> {
+  const id = reqStr(p.idPlan, "idPlan");
+  const newStartAt = reqStr(p.newStartAt, "newStartAt");
+  return proxyPost(`/api/trips/${id}/reschedule`, {
+    id_user: userId,
+    new_start_at: newStartAt,
+  });
+}
+
+async function completeTrip(userId: string, p: JsonObject): Promise<Response> {
+  const id = reqStr(p.idPlan, "idPlan");
+  return proxyPost(`/api/trips/${id}/complete`, { id_user: userId });
+}
+
+async function overdueTripCheck(userId: string): Promise<Response> {
+  return proxyGet(`/api/trips/overdue-check?id_user=${userId}`);
+}
+
 async function triggerCfRetrain(userId: string): Promise<Response> {
   const adminClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
   await requireRole(adminClient, userId, "admin");
@@ -204,9 +239,17 @@ async function getCfRetrainLogs(userId: string): Promise<Response> {
 }
 
 async function proxyPost(path: string, body: unknown): Promise<Response> {
+  return proxyRequest("POST", path, body);
+}
+
+async function proxyRequest(
+  method: "POST" | "PATCH",
+  path: string,
+  body: unknown,
+): Promise<Response> {
   console.log(`[trip-planner] cf_service_host=${new URL(CF_SERVICE_URL).host}`);
   const r = await fetch(`${CF_SERVICE_URL}${path}`, {
-    method: "POST",
+    method,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });

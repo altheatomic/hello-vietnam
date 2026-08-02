@@ -63,8 +63,9 @@ class _SavedTripsPageState extends State<SavedTripsPage> {
     _loadSavedTrips();
   }
 
-  void _openItinerary(String idPlan) {
-    context.push(AppRoutes.tripPlannerResultPath(idPlan: idPlan));
+  Future<void> _openItinerary(String idPlan) async {
+    await context.push(AppRoutes.tripPlannerResultPath(idPlan: idPlan));
+    if (mounted) await _loadSavedTrips();
   }
 
   Future<void> _loadSavedTrips() async {

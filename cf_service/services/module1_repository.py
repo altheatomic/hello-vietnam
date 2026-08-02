@@ -22,10 +22,27 @@ from __future__ import annotations
 
 from typing import Any
 
+from services.ttl_cache import TtlCache
+
+
+_ACTIVE_TAGS_CACHE = TtlCache[str, list[dict]](ttl_seconds=300, max_entries=1)
+_TRIP_OPTIONS_CACHE = TtlCache[tuple[str, ...], list[dict]](
+    ttl_seconds=300, max_entries=128
+)
+_TRIP_OPTION_TAGS_CACHE = TtlCache[tuple[str, ...], list[dict]](
+    ttl_seconds=300, max_entries=128
+)
+_TRIP_OPTION_SUBCATEGORIES_CACHE = TtlCache[tuple[str, ...], list[dict]](
+    ttl_seconds=300, max_entries=128
+)
+
 
 # ── Tag master data ───────────────────────────────────────────────────────────
 
 def fetch_active_tags(supabase: Any) -> list[dict]:
+    cached = _ACTIVE_TAGS_CACHE.get("active")
+    if cached is not None:
+        return cached
     response = (
         supabase
         .table("tag")
@@ -33,7 +50,9 @@ def fetch_active_tags(supabase: Any) -> list[dict]:
         .eq("is_active", True)
         .execute()
     )
-    return response.data or []
+    rows = response.data or []
+    _ACTIVE_TAGS_CACHE.set("active", rows)
+    return rows
 
 
 def build_tag_map(tags: list[dict]) -> dict[str, dict]:
@@ -167,7 +186,10 @@ def fetch_cf_scores_for_user(
     if not place_ids:
         return {}
 
-    chunk_size = 200
+    # Keep the PostgREST filter URL comfortably below reverse-proxy limits.
+    # UUID lists expand after URL encoding, and Cloudflare may answer an
+    # oversized request with an HTML 400 page that postgrest-py cannot decode.
+    chunk_size = 100
     result: dict[str, float] = {}
 
     for start in range(0, len(place_ids), chunk_size):
@@ -211,6 +233,10 @@ def fetch_trip_interest_options_by_ids(
     request-scoped flow, bypasses trip_interest_choice table."""
     if not option_ids:
         return []
+    cache_key = tuple(option_ids)
+    cached = _TRIP_OPTIONS_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
     rows: list[dict] = []
     for start_index in range(0, len(option_ids), chunk_size):
         chunk = option_ids[start_index:start_index + chunk_size]
@@ -230,6 +256,7 @@ def fetch_trip_interest_options_by_ids(
             .execute()
         )
         rows.extend(response.data or [])
+    _TRIP_OPTIONS_CACHE.set(cache_key, rows)
     return rows
 
 
@@ -301,6 +328,10 @@ def fetch_trip_interest_option_tags(
 ) -> list[dict]:
     if not option_ids:
         return []
+    cache_key = tuple(option_ids)
+    cached = _TRIP_OPTION_TAGS_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
 
     rows: list[dict] = []
     for start in range(0, len(option_ids), chunk_size):
@@ -327,6 +358,7 @@ def fetch_trip_interest_option_tags(
             .execute()
         )
         rows.extend(response.data or [])
+    _TRIP_OPTION_TAGS_CACHE.set(cache_key, rows)
     return rows
 
 
@@ -337,6 +369,10 @@ def fetch_trip_interest_option_subcategories(
 ) -> list[dict]:
     if not option_ids:
         return []
+    cache_key = tuple(option_ids)
+    cached = _TRIP_OPTION_SUBCATEGORIES_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
 
     rows: list[dict] = []
     for start in range(0, len(option_ids), chunk_size):
@@ -362,4 +398,5 @@ def fetch_trip_interest_option_subcategories(
             .execute()
         )
         rows.extend(response.data or [])
+    _TRIP_OPTION_SUBCATEGORIES_CACHE.set(cache_key, rows)
     return rows

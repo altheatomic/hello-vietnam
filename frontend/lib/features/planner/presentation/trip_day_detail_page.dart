@@ -118,6 +118,19 @@ class TripDayDetailPage extends StatelessWidget {
                                 padding: const EdgeInsets.only(bottom: 18),
                                 child: _ActivityDetailCard(
                                   activity: entry.value,
+                                  onImageTap: entry.value.idPlace.isNotEmpty
+                                      ? () => context.push(
+                                          AppRoutes.recommendedPlaceDetailPath(
+                                            idProvince: entry
+                                                    .value
+                                                    .idProvince
+                                                    .isNotEmpty
+                                                ? entry.value.idProvince
+                                                : null,
+                                            idPlace: entry.value.idPlace,
+                                          ),
+                                        )
+                                      : null,
                                   onDirections: () => context.push(
                                     AppRoutes.tripPlannerMapPath(
                                       dayIndex,
@@ -143,10 +156,12 @@ class _ActivityDetailCard extends StatelessWidget {
   const _ActivityDetailCard({
     required this.activity,
     required this.onDirections,
+    this.onImageTap,
   });
 
   final TripPlannerActivityData activity;
   final VoidCallback onDirections;
+  final VoidCallback? onImageTap;
 
   @override
   Widget build(BuildContext context) {
@@ -174,12 +189,16 @@ class _ActivityDetailCard extends StatelessWidget {
         children: <Widget>[
           _TimePill(time: activity.time),
           const SizedBox(height: 18),
-          ClipRRect(
+          Material(
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(20),
-            child: SizedBox(
-              height: 112,
-              width: double.infinity,
-              child: activity.imageUrl != null
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onImageTap,
+              child: SizedBox(
+                height: 112,
+                width: double.infinity,
+                child: activity.imageUrl != null
                   ? Builder(
                       builder: (BuildContext context) {
                         debugPrint(
@@ -199,7 +218,8 @@ class _ActivityDetailCard extends StatelessWidget {
                         );
                       },
                     )
-                  : _ImagePlaceholder(),
+                    : _ImagePlaceholder(),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -214,6 +234,16 @@ class _ActivityDetailCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _CategoryChip(label: context.l10n.ui(activity.tag)),
+          if (_activityFacts(context, activity).isNotEmpty) ...<Widget>[
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _activityFacts(context, activity)
+                  .map((String fact) => _FactChip(label: fact))
+                  .toList(growable: false),
+            ),
+          ],
           const SizedBox(height: 14),
           Text(
             context.l10n.ui(activity.description),
@@ -230,6 +260,82 @@ class _ActivityDetailCard extends StatelessWidget {
             onTap: onDirections,
           ),
         ],
+      ),
+    );
+  }
+}
+
+List<String> _activityFacts(
+  BuildContext context,
+  TripPlannerActivityData activity,
+) {
+  final List<String> facts = <String>[];
+  final int? duration = activity.estimatedDurationMinutes;
+  if (duration != null && duration > 0) {
+    final int hours = duration ~/ 60;
+    final int minutes = duration % 60;
+    final String value = hours == 0
+        ? '$minutes ${context.l10n.ui('min')}'
+        : minutes == 0
+        ? '$hours${context.l10n.ui('h')}'
+        : '$hours${context.l10n.ui('h')} $minutes${context.l10n.ui('m')}';
+    facts.add('${context.l10n.ui('Duration')}: $value');
+  }
+
+  final num? minimum = activity.minimumPrice;
+  final num? maximum = activity.maximumPrice;
+  if (minimum != null || maximum != null) {
+    final String value;
+    if (minimum != null && maximum != null) {
+      value = '${_formatVnd(minimum)} - ${_formatVnd(maximum)}';
+    } else if (minimum != null) {
+      value = '${context.l10n.ui('From')} ${_formatVnd(minimum)}';
+    } else {
+      value = '${context.l10n.ui('Up to')} ${_formatVnd(maximum!)}';
+    }
+    facts.add('${context.l10n.ui('Price')}: $value');
+  }
+
+  final String? opens = activity.timespan?.trim();
+  final String? closes = activity.timeclose?.trim();
+  if (opens?.isNotEmpty == true && closes?.isNotEmpty == true) {
+    facts.add('${context.l10n.ui('Open')} $opens - $closes');
+  }
+  return facts;
+}
+
+String _formatVnd(num value) {
+  final String digits = value.round().toString();
+  final StringBuffer result = StringBuffer();
+  for (int index = 0; index < digits.length; index++) {
+    result.write(digits[index]);
+    final int remaining = digits.length - index - 1;
+    if (remaining > 0 && remaining % 3 == 0) result.write(',');
+  }
+  return '$result VND';
+}
+
+class _FactChip extends StatelessWidget {
+  const _FactChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: colors.onSurfaceVariant,
+          fontSize: 13.5,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

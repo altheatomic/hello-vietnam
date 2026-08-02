@@ -17,6 +17,14 @@ class ProvinceTopPlace {
     this.averageRating,
     this.reviewCount,
     this.subcategoryName,
+    this.shortDescription,
+    this.estimatedDurationMinutes,
+    this.minimumPrice,
+    this.maximumPrice,
+    this.phone,
+    this.website,
+    this.timespan,
+    this.timeclose,
     this.tagMatch = 0,
   });
 
@@ -29,6 +37,14 @@ class ProvinceTopPlace {
   final double? averageRating;
   final int? reviewCount;
   final String? subcategoryName;
+  final String? shortDescription;
+  final int? estimatedDurationMinutes;
+  final num? minimumPrice;
+  final num? maximumPrice;
+  final String? phone;
+  final String? website;
+  final String? timespan;
+  final String? timeclose;
   final double tagMatch;
 
   factory ProvinceTopPlace.fromJson(
@@ -64,6 +80,15 @@ class ProvinceTopPlace {
       averageRating: (json['average_rating'] as num?)?.toDouble(),
       reviewCount: (json['review_count'] as num?)?.toInt(),
       subcategoryName: json['subcategory_name'] as String?,
+      shortDescription: json['short_description'] as String?,
+      estimatedDurationMinutes:
+          (json['estimated_duration_minutes'] as num?)?.toInt(),
+      minimumPrice: json['minimum_price'] as num?,
+      maximumPrice: json['maximum_price'] as num?,
+      phone: json['phone'] as String?,
+      website: json['website'] as String?,
+      timespan: json['timespan'] as String?,
+      timeclose: json['timeclose'] as String?,
       tagMatch: (json['tag_match'] as num?)?.toDouble() ?? 0,
     );
   }
@@ -141,6 +166,18 @@ class RecommendRepository {
       'limit': limit,
     });
     return ProvinceDetail.fromJson(data, mediaResolver: _mediaResolver);
+  }
+
+  Future<ProvinceTopPlace> getPlaceById(String idPlace) async {
+    final Map<String, dynamic> data = await _invoke(<String, Object?>{
+      'action': 'getPlaceById',
+      'idPlace': idPlace,
+    });
+    final Object? rawPlace = data['place'];
+    if (rawPlace is! Map<String, dynamic>) {
+      throw StateError('Destination is no longer available.');
+    }
+    return ProvinceTopPlace.fromJson(rawPlace, mediaResolver: _mediaResolver);
   }
 
   Future<Map<String, dynamic>> _invoke(Map<String, Object?> body) {

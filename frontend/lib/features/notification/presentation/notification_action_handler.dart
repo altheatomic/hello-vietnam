@@ -70,6 +70,20 @@ class NotificationActionHandler {
       case NotificationTargetKind.tripPlannerDayDetail:
         context.go(AppRoutes.tripPlannerDayDetailPath(target.dayIndex ?? 0));
         return;
+      case NotificationTargetKind.tripOverdueCheck:
+        // The "have you completed your trip?" dialog only shows once, on
+        // app open (see home_page.dart's checkOverdueTrip() call) — tapping
+        // this notification must NOT re-trigger it. Real actions live on
+        // the card's own "Open Itinerary"/"End Trip" buttons; tapping the
+        // notification body itself just opens the itinerary, matching the
+        // tap-to-open behavior of every other notification kind.
+        context.go(
+          AppRoutes.tripPlannerResultPath(
+            idPlan: target.entityId,
+            fromNotification: true,
+          ),
+        );
+        return;
       case NotificationTargetKind.voucherCenter:
         context.push(AppRoutes.voucher);
         return;
