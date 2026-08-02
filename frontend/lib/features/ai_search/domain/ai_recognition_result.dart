@@ -147,8 +147,13 @@ class AiSearchResult {
 
   factory AiSearchResult.fromJson(Map<String, dynamic> json) {
     final String legacyResultType = _readString(json['result_type']);
+    final Object? rawKind = json['result_kind'];
     final AiRecognitionKind kind = AiRecognitionKind.parse(
-      json['result_kind'] is String ? json['result_kind'] as String : null,
+      rawKind == null
+          ? null
+          : rawKind is String
+          ? rawKind
+          : '__invalid_result_kind__',
       legacyResultType: legacyResultType,
     );
     final AiRecognitionTextAnalysis? textAnalysis =

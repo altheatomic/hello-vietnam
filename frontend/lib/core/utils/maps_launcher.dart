@@ -73,7 +73,7 @@ Future<bool> openGoogleMapsDirections({
     'api': '1',
     'origin': '$originLat,$originLng',
     'destination': '$destLat,$destLng',
-    if (waypointsParam != null) 'waypoints': waypointsParam,
+    if (waypointsParam is String) 'waypoints': waypointsParam,
     'travelmode': 'driving',
   });
   return launchUrl(uri, mode: LaunchMode.externalApplication);

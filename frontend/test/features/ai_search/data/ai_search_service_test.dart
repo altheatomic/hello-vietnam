@@ -61,6 +61,17 @@ void main() {
     expect(result.isHistoryEligible, isFalse);
   });
 
+  test('non-string schema v2 kind is unsupported', () {
+    final AiSearchResult result = AiSearchResult.fromJson(<String, dynamic>{
+      'result_kind': 42,
+      'result_type': 'food',
+      'confidence': 0.9,
+    });
+
+    expect(result.kind, AiRecognitionKind.unsupported);
+    expect(result.isFood, isFalse);
+  });
+
   test('AI search result JSON round-trip preserves recognition data', () {
     const AiSearchResult original = AiSearchResult(
       kind: AiRecognitionKind.food,

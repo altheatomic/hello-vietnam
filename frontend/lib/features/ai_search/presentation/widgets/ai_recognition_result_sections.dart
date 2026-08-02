@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/ai_search/domain/ai_recognition_result.dart';
 
 class AiRecognitionResultSections extends StatelessWidget {
@@ -62,8 +63,28 @@ class _FoodSection extends StatelessWidget {
     return _SectionColumn(
       key: const Key('ai-result-food'),
       children: <Widget>[
-        if (result.summary.isNotEmpty)
-          _ResultCard(title: 'About this dish', child: Text(result.summary)),
+        if (result.primaryTags.isNotEmpty)
+          _ResultCard(
+            title: 'Main ingredients',
+            child: _TagWrap(result.primaryTags),
+          ),
+        if (result.secondaryTags.isNotEmpty)
+          _ResultCard(
+            title: 'Taste profile',
+            child: _TagWrap(result.secondaryTags),
+          ),
+        if (result.bestTime.isNotEmpty)
+          _ResultCard(
+            title: 'Best time to enjoy',
+            child: Text(result.bestTime),
+          ),
+        if (result.note.isNotEmpty)
+          _ResultCard(title: 'Food note', child: Text(result.note)),
+        if (result.culturalSignificance.isNotEmpty)
+          _ResultCard(
+            title: 'Cultural significance',
+            child: Text(result.culturalSignificance),
+          ),
         if (result.priceRange.isNotEmpty)
           _ResultCard(
             key: const Key('ai-result-price-card'),
@@ -170,6 +191,7 @@ class _SignTextSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppStrings strings = context.l10n;
     final AiRecognitionTextAnalysis? text = result.textAnalysis;
     if (text == null || text.originalText.trim().isEmpty) {
       return const _UnclearSectionContent();
@@ -178,8 +200,13 @@ class _SignTextSection extends StatelessWidget {
     return _SectionColumn(
       key: const Key('ai-result-sign-text'),
       children: <Widget>[
+        if (text.canOpenMap && text.mapQuery.trim().isNotEmpty)
+          _MapButton(
+            buttonKey: const Key('ai-sign-map-button'),
+            onPressed: onOpenMap,
+          ),
         _ResultCard(
-          title: 'Original text',
+          title: strings.ui('Original Text'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -191,7 +218,7 @@ class _SignTextSection extends StatelessWidget {
                   key: const Key('ai-sign-copy-original-button'),
                   onPressed: onCopyOriginal,
                   icon: const Icon(Icons.copy_outlined, size: 17),
-                  label: const Text('Copy'),
+                  label: Text(strings.ui('Copy')),
                 ),
               ),
             ],
@@ -199,7 +226,7 @@ class _SignTextSection extends StatelessWidget {
         ),
         if (text.translatedText.trim().isNotEmpty)
           _ResultCard(
-            title: 'Translation',
+            title: strings.ui('Translation'),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -212,13 +239,13 @@ class _SignTextSection extends StatelessWidget {
                       key: const Key('ai-sign-copy-translation-button'),
                       onPressed: onCopyTranslation,
                       icon: const Icon(Icons.copy_outlined, size: 17),
-                      label: const Text('Copy'),
+                      label: Text(strings.ui('Copy')),
                     ),
                     OutlinedButton.icon(
                       key: const Key('ai-sign-listen-button'),
                       onPressed: onListen,
                       icon: const Icon(Icons.volume_up_outlined, size: 17),
-                      label: const Text('Listen'),
+                      label: Text(strings.ui('Listen')),
                     ),
                   ],
                 ),
@@ -232,11 +259,6 @@ class _SignTextSection extends StatelessWidget {
             child: const Text(
               'Follow local traffic signs and instructions. This explanation is for travel context only.',
             ),
-          ),
-        if (text.canOpenMap && text.mapQuery.trim().isNotEmpty)
-          _MapButton(
-            key: const Key('ai-sign-map-button'),
-            onPressed: onOpenMap,
           ),
       ],
     );
@@ -269,8 +291,9 @@ class _UnclearSectionContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppStrings strings = context.l10n;
     return _ResultCard(
-      title: 'Could not recognize clearly',
+      title: strings.ui('Could Not Recognize Clearly'),
       child: const Text(
         'Try a brighter, closer photo with one clear subject in frame.',
       ),
@@ -289,11 +312,12 @@ class _UnsupportedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppStrings strings = context.l10n;
     return _SectionColumn(
       key: const Key('ai-result-unsupported'),
       children: <Widget>[
         _ResultCard(
-          title: 'Image type not supported',
+          title: strings.ui('Image Type Not Supported'),
           child: const Text(
             'This feature currently focuses on Vietnamese food, landmarks, cultural objects, and readable signs. We do not identify people or sensitive documents.',
           ),
@@ -312,6 +336,7 @@ class _RetryActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppStrings strings = context.l10n;
     return Wrap(
       spacing: 10,
       runSpacing: 8,
@@ -320,13 +345,13 @@ class _RetryActions extends StatelessWidget {
           key: const Key('ai-retake-photo-button'),
           onPressed: onTakePhoto,
           icon: const Icon(Icons.camera_alt_outlined),
-          label: const Text('Take another photo'),
+          label: Text(strings.ui('Take Another Photo')),
         ),
         OutlinedButton.icon(
           key: const Key('ai-choose-image-button'),
           onPressed: onChooseImage,
           icon: const Icon(Icons.photo_library_outlined),
-          label: const Text('Choose another image'),
+          label: Text(strings.ui('Choose Another Image')),
         ),
       ],
     );
@@ -334,19 +359,21 @@ class _RetryActions extends StatelessWidget {
 }
 
 class _MapButton extends StatelessWidget {
-  const _MapButton({super.key, required this.onPressed});
+  const _MapButton({this.buttonKey, required this.onPressed});
 
+  final Key? buttonKey;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
+    final AppStrings strings = context.l10n;
     return Align(
       alignment: Alignment.centerLeft,
       child: FilledButton.icon(
-        key: const Key('ai-result-map-button'),
+        key: buttonKey ?? const Key('ai-result-map-button'),
         onPressed: onPressed,
         icon: const Icon(Icons.map_outlined),
-        label: const Text('Find on map'),
+        label: Text(strings.ui('Find on Map')),
       ),
     );
   }
@@ -359,18 +386,16 @@ class _SectionColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            for (int index = 0; index < children.length; index++) ...<Widget>[
-              if (index > 0) const SizedBox(height: 12),
-              children[index],
-            ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 4, 6, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (int index = 0; index < children.length; index++) ...<Widget>[
+            if (index > 0) const SizedBox(height: 12),
+            children[index],
           ],
-        ),
+        ],
       ),
     );
   }
@@ -427,6 +452,34 @@ class _BulletList extends StatelessWidget {
             (String item) => Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Text('• $item'),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _TagWrap extends StatelessWidget {
+  const _TagWrap(this.tags);
+
+  final List<String> tags;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color accent = Theme.of(context).colorScheme.primary;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: tags
+          .map(
+            (String tag) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: accent.withValues(alpha: 0.24)),
+              ),
+              child: Text(tag),
             ),
           )
           .toList(growable: false),

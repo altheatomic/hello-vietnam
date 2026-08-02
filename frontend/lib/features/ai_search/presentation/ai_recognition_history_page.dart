@@ -197,10 +197,7 @@ class _AiRecognitionHistoryPageState extends State<AiRecognitionHistoryPage> {
       0,
       100,
     );
-    final String category = _displayCategory(
-      entry.result.categoryText,
-      entry.result.resultType,
-    );
+    final String category = _displayCategory(entry.result);
 
     return Material(
       color: colors.surface,
@@ -304,12 +301,25 @@ class _AiRecognitionHistoryPageState extends State<AiRecognitionHistoryPage> {
     );
   }
 
-  String _displayCategory(String categoryText, String resultType) {
-    final String category = categoryText.trim().isNotEmpty
-        ? categoryText.trim()
-        : resultType.trim();
-    if (category.isEmpty) return 'Object';
-    return '${category[0].toUpperCase()}${category.substring(1)}';
+  String _displayCategory(AiSearchResult result) {
+    switch (result.kind) {
+      case AiRecognitionKind.food:
+        final String category = result.categoryText.trim();
+        if (category.isNotEmpty) {
+          return '${category[0].toUpperCase()}${category.substring(1)}';
+        }
+        return 'Food';
+      case AiRecognitionKind.landmark:
+        return 'Landmark';
+      case AiRecognitionKind.culturalObject:
+        return 'Cultural Object';
+      case AiRecognitionKind.signText:
+        return 'Street Sign';
+      case AiRecognitionKind.unclear:
+        return 'Unclear';
+      case AiRecognitionKind.unsupported:
+        return 'Not Supported';
+    }
   }
 
   String _formatTimestamp(BuildContext context, DateTime timestamp) {

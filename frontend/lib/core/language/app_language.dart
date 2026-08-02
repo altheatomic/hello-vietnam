@@ -1206,5 +1206,17 @@ class AppStrings {
     'Open Popular Apps': 'Mở ứng dụng phổ biến',
     'Open Notifications': 'Mở thông báo',
     'Open Profile': 'Mở hồ sơ',
+    'Possible Match': 'Có thể khớp',
+    'Landmark': 'Điểm tham quan',
+    'Cultural Object': 'Vật thể văn hóa',
+    'Street Sign': 'Biển hiệu đường',
+    'Original Text': 'Văn bản gốc',
+    'Find on Map': 'Tìm trên bản đồ',
+    'Continue Without Location': 'Tiếp tục không có vị trí',
+    'Open Settings': 'Mở Cài đặt',
+    'Take Another Photo': 'Chụp ảnh khác',
+    'Choose Another Image': 'Chọn ảnh khác',
+    'Could Not Recognize Clearly': 'Không thể nhận diện rõ',
+    'Image Type Not Supported': 'Loại ảnh chưa được hỗ trợ',
   };
 }
