@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/storage/local_storage.dart';
@@ -28,12 +29,7 @@ void main() {
         ),
       ],
     );
-    await tester.pumpWidget(
-      AppLanguageScope(
-        controller: AppLanguageController.instance,
-        child: MaterialApp(home: NotificationPage(controller: controller)),
-      ),
-    );
+    await tester.pumpWidget(_notificationTestApp(controller: controller));
 
     await tester.pumpAndSettle();
 
@@ -57,12 +53,7 @@ void main() {
         ),
       ],
     );
-    await tester.pumpWidget(
-      AppLanguageScope(
-        controller: AppLanguageController.instance,
-        child: MaterialApp(home: NotificationPage(controller: controller)),
-      ),
-    );
+    await tester.pumpWidget(_notificationTestApp(controller: controller));
     await tester.pumpAndSettle();
 
     await tester.fling(
@@ -84,13 +75,7 @@ void main() {
       ],
     );
     await tester.pumpWidget(
-      AppLanguageScope(
-        controller: AppLanguageController.instance,
-        child: MaterialApp(
-          theme: buildDarkTheme(),
-          home: NotificationPage(controller: controller),
-        ),
-      ),
+      _notificationTestApp(controller: controller, theme: buildDarkTheme()),
     );
     await tester.pump();
 
@@ -115,12 +100,7 @@ void main() {
         repository: _FailingLoadMoreNotificationRepository(),
       ),
     );
-    await tester.pumpWidget(
-      AppLanguageScope(
-        controller: AppLanguageController.instance,
-        child: MaterialApp(home: NotificationPage(controller: controller)),
-      ),
-    );
+    await tester.pumpWidget(_notificationTestApp(controller: controller));
     await tester.pumpAndSettle();
 
     await controller.loadMore();
@@ -129,6 +109,26 @@ void main() {
     expect(find.text('already-loaded'), findsWidgets);
     expect(find.textContaining('next page failed'), findsNothing);
   });
+}
+
+Widget _notificationTestApp({
+  required NotificationController controller,
+  ThemeData? theme,
+}) {
+  final GoRouter router = GoRouter(
+    routes: <RouteBase>[
+      GoRoute(
+        path: '/',
+        builder: (BuildContext context, GoRouterState state) =>
+            NotificationPage(controller: controller),
+      ),
+    ],
+  );
+
+  return AppLanguageScope(
+    controller: AppLanguageController.instance,
+    child: MaterialApp.router(theme: theme, routerConfig: router),
+  );
 }
 
 NotificationController _controllerWithPages(
