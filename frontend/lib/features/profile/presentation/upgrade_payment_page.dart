@@ -8,7 +8,6 @@ import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/loyalty/data/loyalty_award_service.dart';
 import 'package:hellovietnam/features/profile/application/premium_entitlement_controller.dart';
 import 'package:hellovietnam/features/profile/data/subscription_repository.dart';
-import 'package:hellovietnam/features/profile/domain/subscription_checkout_urls.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const Color _paymentDarkBackground = Color(0xFF020B10);
@@ -163,6 +162,8 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
   SubscriptionPlanInfo? _plan;
   VoucherPreview? _voucherPreview;
   String? _selectedMethodId = 'visa';
+  String? _pendingCheckoutSessionId;
+  bool _checkoutSyncFailed = false;
   bool _isConfirmingCheckout = false;
 
   @override
@@ -174,8 +175,9 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
     _awardPurchase = widget.awardPurchase ?? _awardWithLoyalty;
     _planFuture = _loadPlan();
     if (widget.checkoutSessionId?.trim().isNotEmpty == true) {
+      _pendingCheckoutSessionId = widget.checkoutSessionId!.trim();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _confirmReturnedCheckout(widget.checkoutSessionId!.trim());
+        _confirmReturnedCheckout(_pendingCheckoutSessionId!);
       });
     }
   }
@@ -188,13 +190,20 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
 
   Future<SubscriptionPlanInfo> _loadPlan() async {
     final SubscriptionPlanInfo plan = await _repository.loadPlan(widget.planId);
-    _plan = plan;
+    if (mounted) {
+      setState(() => _plan = plan);
+    } else {
+      _plan = plan;
+    }
     return plan;
   }
 
   Future<void> _confirmReturnedCheckout(String sessionId) async {
     if (_isConfirmingCheckout) return;
-    setState(() => _isConfirmingCheckout = true);
+    setState(() {
+      _isConfirmingCheckout = true;
+      _checkoutSyncFailed = false;
+    });
     try {
       final SubscriptionPlanInfo plan = await _planFuture;
       final SubscriptionPurchaseResult result = await _repository
@@ -221,18 +230,18 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
           ),
         ),
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(error.toString().replaceFirst('Exception: ', '')),
-          ),
-        );
+      setState(() => _checkoutSyncFailed = true);
     } finally {
       if (mounted) setState(() => _isConfirmingCheckout = false);
     }
+  }
+
+  void _retryReturnedCheckout() {
+    final String? sessionId = _pendingCheckoutSessionId;
+    if (sessionId == null || sessionId.isEmpty) return;
+    _confirmReturnedCheckout(sessionId);
   }
 
   String _formatMoney(int amountMinor) {
@@ -387,6 +396,8 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                     message: 'Confirming payment',
                     compact: true,
                   )
+                : _checkoutSyncFailed
+                ? _StripeSyncFailure(onRetry: _retryReturnedCheckout)
                 : FutureBuilder<SubscriptionPlanInfo>(
                     future: _planFuture,
                     builder:
@@ -443,41 +454,99 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                         },
                   ),
           ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
-              child: SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: _selectedMethodId == null || _plan == null
-                      ? null
-                      : () => _continueToConfirmation(_plan!),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF11BED4),
-                    disabledBackgroundColor: isDark
-                        ? Colors.white.withValues(alpha: 0.12)
-                        : const Color(0xFFD9E6EA),
-                    elevation: 8,
-                    shadowColor: const Color(0x6611BED4),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+          if (_pendingCheckoutSessionId == null)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton(
+                    key: const Key('payment-continue'),
+                    onPressed: _selectedMethodId == null || _plan == null
+                        ? null
+                        : () => _continueToConfirmation(_plan!),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF11BED4),
+                      disabledBackgroundColor: isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : const Color(0xFFD9E6EA),
+                      elevation: 8,
+                      shadowColor: const Color(0x6611BED4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    context.l10n.ui('Continue'),
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                    child: Text(
+                      context.l10n.ui('Continue'),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _StripeSyncFailure extends StatelessWidget {
+  const _StripeSyncFailure({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      key: const Key('stripe-sync-error'),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: _GlassPanel(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Icon(
+                  Icons.sync_problem_rounded,
+                  color: Color(0xFFF59E0B),
+                  size: 48,
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  context.l10n.ui('Payment synchronization is incomplete'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: _paymentText(context),
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  context.l10n.ui(
+                    'Your checkout session is saved. Retry to verify the payment; you will not be charged again.',
+                  ),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: _paymentMuted(context), height: 1.45),
+                ),
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  key: const Key('stripe-sync-retry'),
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(context.l10n.ui('Retry verification')),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1521,13 +1590,13 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
     if (!_agreed || _isProcessing) return;
     setState(() => _isProcessing = true);
     try {
-      final SubscriptionCheckoutResult
-      checkout = await widget.repository.createStripeCheckout(
-        planCode: widget.data.plan.code,
-        voucherCode: widget.data.voucherCode,
-        successUrl: _checkoutReturnUrl(widget.data.plan.code, success: true),
-        cancelUrl: _checkoutReturnUrl(widget.data.plan.code, success: false),
-      );
+      final SubscriptionCheckoutResult checkout = await widget.repository
+          .createStripeCheckout(
+            planCode: widget.data.plan.code,
+            voucherCode: widget.data.voucherCode,
+            isWeb: kIsWeb,
+            webOrigin: kIsWeb ? Uri.base.origin : null,
+          );
       if (!mounted) return;
       if (checkout.requiresCheckout) {
         final String? checkoutUrl = checkout.checkoutUrl;
@@ -1559,15 +1628,6 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
-  }
-
-  String _checkoutReturnUrl(String planCode, {required bool success}) {
-    return subscriptionCheckoutReturnUrl(
-      planCode,
-      success: success,
-      isWeb: kIsWeb,
-      webOrigin: Uri.base.origin,
-    );
   }
 
   Future<void> _openCheckoutUrl(String checkoutUrl) async {
@@ -1670,6 +1730,29 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3CD),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0xFFF59E0B)),
+                    ),
+                    child: Text(
+                      context.l10n.ui('TEST MODE · No real charge'),
+                      style: const TextStyle(
+                        color: Color(0xFF92400E),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                   ),
                 ),
@@ -2094,7 +2177,7 @@ class _ImportantInfoCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   context.l10n.ui(
-                    'Your subscription will automatically renew. You can cancel anytime from your account settings.',
+                    'This is a one-time sandbox payment. Premium access does not renew automatically.',
                   ),
                   style: TextStyle(
                     color: isDark

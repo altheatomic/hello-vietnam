@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(20);
+select plan(25);
 
 select ok(
     not has_function_privilege(
@@ -228,6 +228,68 @@ select is(
     ),
     1::bigint,
     'duplicate finalize creates one entitlement'
+);
+
+select has_table('public', 'subscription_payment_loyalty_award');
+select has_function(
+    'public',
+    'award_subscription_payment_loyalty',
+    array['uuid']
+);
+select ok(
+    has_function_privilege(
+        'service_role',
+        'public.award_subscription_payment_loyalty(uuid)',
+        'EXECUTE'
+    ),
+    'service role can award subscription loyalty'
+);
+select ok(
+    not has_function_privilege(
+        'authenticated',
+        'public.award_subscription_payment_loyalty(uuid)',
+        'EXECUTE'
+    ),
+    'authenticated cannot award subscription loyalty'
+);
+
+set local role service_role;
+
+select public.award_subscription_payment_loyalty(
+    (
+        select id_payment
+        from public.payment
+        where provider = 'stripe'
+          and external_ref = 'cs_test_atomic_1'
+    )
+);
+
+select public.award_subscription_payment_loyalty(
+    (
+        select id_payment
+        from public.payment
+        where provider = 'stripe'
+          and external_ref = 'cs_test_atomic_1'
+    )
+);
+
+reset role;
+
+select is(
+    (
+        select count(*)
+        from public.loyalty_transaction
+        where source_type = 'subscription_purchase'
+          and reference_table = 'payment'
+          and reference_id = (
+              select id_payment
+              from public.payment
+              where provider = 'stripe'
+                and external_ref = 'cs_test_atomic_1'
+          )
+    ),
+    1::bigint,
+    'duplicate loyalty award creates one transaction'
 );
 
 insert into public.payment_attempt (

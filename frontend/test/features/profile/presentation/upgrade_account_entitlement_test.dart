@@ -172,6 +172,87 @@ void main() {
     expect(find.textContaining('Premium Benefits Activated'), findsOneWidget);
     expect(find.byKey(const Key('payment-premium-retry')), findsNothing);
   });
+
+  testWidgets('failed Stripe synchronization retains session for retry', (
+    WidgetTester tester,
+  ) async {
+    final PremiumEntitlementController controller =
+        PremiumEntitlementController(
+          loadSubscription: () async => activeSubscription(),
+          currentUserId: () => 'user-1',
+        );
+    final _RetryPaymentRepository repository = _RetryPaymentRepository();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UpgradePaymentPage(
+          planId: '6m',
+          checkoutSessionId: 'cs_test_retry',
+          repository: repository,
+          entitlementController: controller,
+          awardPurchase: (_) async {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('stripe-sync-error')), findsOneWidget);
+    expect(find.byKey(const Key('stripe-sync-retry')), findsOneWidget);
+    expect(repository.sessionIds, <String>['cs_test_retry']);
+
+    await tester.tap(find.byKey(const Key('stripe-sync-retry')));
+    await tester.pumpAndSettle();
+
+    expect(repository.sessionIds, <String>['cs_test_retry', 'cs_test_retry']);
+    expect(find.textContaining('Premium Benefits Activated'), findsOneWidget);
+  });
+
+  testWidgets('payment confirmation clearly identifies Stripe Sandbox', (
+    WidgetTester tester,
+  ) async {
+    final PremiumEntitlementController controller =
+        PremiumEntitlementController(
+          loadSubscription: () async => null,
+          currentUserId: () => 'user-1',
+        );
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UpgradePaymentPage(
+          planId: '6m',
+          repository: _FakePaymentRepository(),
+          entitlementController: controller,
+          awardPurchase: (_) async {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<ElevatedButton>(find.byKey(const Key('payment-continue')))
+          .onPressed,
+      isNotNull,
+    );
+    await tester.tap(find.byKey(const Key('payment-continue')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Confirm Payment'), findsWidgets);
+    expect(find.textContaining('No real charge'), findsOneWidget);
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'This is a one-time sandbox payment. Premium access does not renew automatically.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('automatically renew. You can cancel'),
+      findsNothing,
+    );
+  });
 }
 
 class _FakeUpgradeRepository extends SubscriptionRepository {
@@ -200,5 +281,20 @@ class _FakePaymentRepository extends SubscriptionRepository {
       voucherCode: null,
       subscriptionEndDate: DateTime.utc(2026, 12, 14),
     );
+  }
+}
+
+class _RetryPaymentRepository extends _FakePaymentRepository {
+  final List<String> sessionIds = <String>[];
+
+  @override
+  Future<SubscriptionPurchaseResult> confirmStripeCheckout({
+    required String sessionId,
+  }) async {
+    sessionIds.add(sessionId);
+    if (sessionIds.length == 1) {
+      throw Exception('Temporary synchronization failure');
+    }
+    return super.confirmStripeCheckout(sessionId: sessionId);
   }
 }
