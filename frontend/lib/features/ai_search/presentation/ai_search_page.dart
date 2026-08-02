@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../data/ai_recognition_history_repository.dart';
 import '../data/ai_search_service.dart';
+import '../domain/ai_recognition_result.dart';
 
 enum _AiSearchView { initial, analyzing, resultFood, resultObject }
 

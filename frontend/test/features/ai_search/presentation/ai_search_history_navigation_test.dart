@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hellovietnam/features/ai_search/data/ai_recognition_history_repository.dart';
 import 'package:hellovietnam/features/ai_search/data/ai_search_service.dart';
+import 'package:hellovietnam/features/ai_search/domain/ai_recognition_result.dart';
 import 'package:hellovietnam/features/ai_search/presentation/ai_search_page.dart';
 
 void main() {
@@ -43,7 +44,7 @@ void main() {
             createdAt: DateTime.utc(2026, 7, 23),
             thumbnailBytes: Uint8List.fromList(_transparentPixel),
             result: const AiSearchResult(
-              resultType: 'food',
+              kind: AiRecognitionKind.food,
               confidence: 0.94,
               detectedName: 'History Bun Bo Hue',
               subtitle: 'Vietnamese noodle soup',

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hellovietnam/features/ai_search/data/ai_recognition_history_repository.dart';
 import 'package:hellovietnam/features/ai_search/data/ai_search_service.dart';
+import 'package:hellovietnam/features/ai_search/domain/ai_recognition_result.dart';
 import 'package:hellovietnam/features/ai_search/presentation/ai_recognition_history_page.dart';
 
 void main() {
@@ -126,7 +127,7 @@ AiRecognitionHistoryEntry _entry(Uint8List thumbnailBytes) {
     createdAt: DateTime.utc(2026, 7, 23, 8, 30),
     thumbnailBytes: thumbnailBytes,
     result: const AiSearchResult(
-      resultType: 'food',
+      kind: AiRecognitionKind.food,
       confidence: 0.93,
       detectedName: 'Bun bo Hue',
       subtitle: 'Vietnamese dish',

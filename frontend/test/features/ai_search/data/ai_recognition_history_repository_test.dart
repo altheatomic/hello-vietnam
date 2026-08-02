@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hellovietnam/features/ai_search/data/ai_recognition_history_repository.dart';
 import 'package:hellovietnam/features/ai_search/data/ai_search_service.dart';
+import 'package:hellovietnam/features/ai_search/domain/ai_recognition_result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -139,7 +140,7 @@ Future<Uint8List> _createTestImage() async {
 
 AiSearchResult _result(String name) {
   return AiSearchResult(
-    resultType: 'food',
+    kind: AiRecognitionKind.food,
     confidence: 0.93,
     detectedName: name,
     subtitle: 'Vietnamese dish',

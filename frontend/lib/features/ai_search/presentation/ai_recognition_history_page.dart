@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/ai_recognition_history_repository.dart';
+import '../domain/ai_recognition_result.dart';
 
 class AiRecognitionHistoryPage extends StatefulWidget {
   const AiRecognitionHistoryPage({
