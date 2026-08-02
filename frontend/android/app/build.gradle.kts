@@ -5,6 +5,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val shareWebHost = providers.gradleProperty("shareWebHost")
+    .orElse(providers.environmentVariable("SHARE_WEB_HOST"))
+    .orElse("share.hellovietnam.invalid")
+    .get()
+
 if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
 }
@@ -33,6 +38,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["shareWebHost"] = shareWebHost
     }
 
     buildTypes {

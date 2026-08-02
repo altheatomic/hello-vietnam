@@ -2,6 +2,7 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 
 import '../core/config/app_identity.dart';
+import '../core/config/env.dart';
 
 class DeepLinkState extends ChangeNotifier {
   DeepLinkState._();
@@ -27,7 +28,7 @@ class DeepLinkState extends ChangeNotifier {
     final String? paymentLocation = appRouteLocationFromDeepLink(uri);
     if (paymentLocation != null) {
       _pendingUpgradePaymentLocation = paymentLocation;
-      debugPrint('Stripe return link detected - will navigate to payment page');
+      debugPrint('App link detected - will navigate to its destination');
       notifyListeners();
     }
   }
@@ -45,9 +46,37 @@ class DeepLinkState extends ChangeNotifier {
   }
 }
 
-String? appRouteLocationFromDeepLink(Uri uri) {
+String? appRouteLocationFromDeepLink(Uri uri, {Set<String>? shareHosts}) {
+  final Set<String> trustedShareHosts =
+      shareHosts ??
+      <String>{if (Env.shareWebHost.trim().isNotEmpty) Env.shareWebHost.trim()};
+  final bool isSharedTripLink =
+      uri.scheme == 'https' &&
+      trustedShareHosts.contains(uri.host) &&
+      uri.pathSegments.length == 2 &&
+      uri.pathSegments.first == 'trip' &&
+      uri.pathSegments.last.trim().isNotEmpty;
+  if (isSharedTripLink) {
+    return Uri(
+      path: '/shared-trip',
+      queryParameters: <String, String>{'token': uri.pathSegments.last},
+    ).toString();
+  }
+
   final bool isAppLink = uri.scheme == AppIdentity.androidUrlScheme;
   if (!isAppLink) return null;
+
+  final bool isSharedTripFallback =
+      uri.host == 'shared-trip' ||
+      uri.path == '/shared-trip' ||
+      uri.path == '/shared-trip/';
+  final String? shareToken = uri.queryParameters['token']?.trim();
+  if (isSharedTripFallback && shareToken != null && shareToken.isNotEmpty) {
+    return Uri(
+      path: '/shared-trip',
+      queryParameters: <String, String>{'token': shareToken},
+    ).toString();
+  }
 
   final bool isUpgradePayment =
       uri.host == 'upgrade-payment' ||

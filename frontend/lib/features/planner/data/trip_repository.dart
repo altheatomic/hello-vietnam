@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:hellovietnam/core/config/env.dart';
 import 'package:hellovietnam/core/network/supabase_function_client.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models/trip_plan_request.dart';
 import 'models/trip_plan_response.dart';
+import 'models/trip_share_link.dart';
 
 class NoTripCandidatesException implements Exception {
   const NoTripCandidatesException();
@@ -13,10 +17,13 @@ class TripRepository {
   TripRepository({
     SupabaseFunctionClient? functionClient,
     SupabaseClient? client,
+    http.Client? httpClient,
   }) : _functionClient =
-           functionClient ?? SupabaseFunctionClient(client: client);
+           functionClient ?? SupabaseFunctionClient(client: client),
+       _httpClient = httpClient ?? http.Client();
 
   final SupabaseFunctionClient _functionClient;
+  final http.Client _httpClient;
 
   Future<TripPlanResponse> planTrip(TripPlanRequest request) async {
     try {
@@ -113,6 +120,91 @@ class TripRepository {
         .whereType<Map<String, dynamic>>()
         .map(CfRetrainLog.fromJson)
         .toList();
+  }
+
+  Future<CreatedTripShare> createShareLink(
+    String idPlan, {
+    int expiryDays = 30,
+    bool allowCopy = true,
+  }) async {
+    final data = await _shareInvoke(<String, Object?>{
+      'action': 'create',
+      'idPlan': idPlan,
+      'expiryDays': expiryDays,
+      'allowCopy': allowCopy,
+    });
+    return CreatedTripShare.fromJson(data);
+  }
+
+  Future<List<TripShareLink>> listShareLinks({String? idPlan}) async {
+    final data = await _shareInvoke(<String, Object?>{
+      'action': 'list',
+      if (idPlan != null && idPlan.trim().isNotEmpty) 'idPlan': idPlan.trim(),
+    });
+    final raw = data['links'] as List<dynamic>? ?? <dynamic>[];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(TripShareLink.fromJson)
+        .toList();
+  }
+
+  Future<void> revokeShareLink(String idShare) async {
+    await _shareInvoke(<String, Object?>{
+      'action': 'revoke',
+      'idShare': idShare,
+    });
+  }
+
+  Future<String> copySharedPlan(String token) async {
+    final data = await _shareInvoke(<String, Object?>{
+      'action': 'copy',
+      'token': token,
+    });
+    return data['id_plan'] as String;
+  }
+
+  Future<PublicSharedTrip> getPublicSharedPlan(String token) async {
+    final Uri uri = Uri.parse(
+      '${Env.supabaseUrl}/functions/v1/${Env.tripShareFunction}/public/'
+      '${Uri.encodeComponent(token.trim())}',
+    );
+    final http.Response response;
+    try {
+      response = await _httpClient
+          .get(
+            uri,
+            headers: const <String, String>{'apikey': Env.supabaseAnonKey},
+          )
+          .timeout(const Duration(seconds: 25));
+    } catch (error) {
+      throw SupabaseFunctionException(
+        'Could not load the shared trip. Please try again.',
+        details: error,
+      );
+    }
+
+    final Object? decoded = jsonDecode(response.body);
+    final Map<String, dynamic> data = decoded is Map
+        ? decoded.map(
+            (Object? key, Object? value) => MapEntry(key.toString(), value),
+          )
+        : <String, dynamic>{};
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw SupabaseFunctionException(
+        data['error']?.toString() ?? 'Shared trip is unavailable.',
+        details: data,
+      );
+    }
+    return PublicSharedTrip.fromJson(data);
+  }
+
+  Future<Map<String, dynamic>> _shareInvoke(Map<String, Object?> body) {
+    return _functionClient.invokeJson(
+      Env.tripShareFunction,
+      body: body,
+      requireAuth: true,
+      timeout: const Duration(seconds: 30),
+    );
   }
 
   Future<Map<String, dynamic>> _invoke(Map<String, Object?> body) {

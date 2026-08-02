@@ -25,6 +25,7 @@ import '../features/planner/presentation/trip_planner_mock_data.dart';
 import '../features/planner/presentation/trip_planner_page.dart';
 import '../features/planner/presentation/widgets/trip_result_loader.dart';
 import '../features/planner/presentation/saved_trips_page.dart';
+import '../features/planner/presentation/shared_trip_page.dart';
 import '../features/planner/presentation/trip_location_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/profile/presentation/edit_profile_page.dart';
@@ -99,13 +100,14 @@ final rootNavigatorKey = GlobalKey<NavigatorState>();
 String? _pendingAuthReturnTo;
 Object? _pendingTripPlannerExtra;
 
-String? _validTripPlannerReturnTo(String? value) {
+String? _validAuthReturnTo(String? value) {
   final String candidate = value?.trim() ?? '';
   if (candidate.isEmpty) return null;
   final Uri? uri = Uri.tryParse(candidate);
   if (uri == null || uri.hasScheme || uri.hasAuthority) return null;
   return uri.path == AppRoutes.tripPlanner ||
-          uri.path.startsWith('${AppRoutes.tripPlanner}/')
+          uri.path.startsWith('${AppRoutes.tripPlanner}/') ||
+          uri.path == AppRoutes.sharedTrip
       ? uri.toString()
       : null;
 }
@@ -222,6 +224,7 @@ class AppRoutes {
   static const tripPlannerBudget = '/trip-planner/budget';
   static const tripPlannerSaved = '/trip-planner/saved';
   static const tripPlannerResult = '/trip-planner/result';
+  static const sharedTrip = '/shared-trip';
   static const tripPlannerDayDetail = '/trip-planner/result/day/:dayIndex';
   static const tripPlannerMap =
       '/trip-planner/result/day/:dayIndex/map/:activityIndex';
@@ -365,6 +368,11 @@ class AppRoutes {
     ).toString();
   }
 
+  static String sharedTripPath(String token) => Uri(
+    path: sharedTrip,
+    queryParameters: <String, String>{'token': token},
+  ).toString();
+
   // â”€â”€ Admin routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   static const adminDashboard = '/admin/dashboard';
   static const adminUsers = '/admin/users';
@@ -460,7 +468,7 @@ GoRouter buildRouter() {
       if (loggedIn) {
         final bool needsPreferences =
             !preferencesRepository.hasCompletedCurrentUser;
-        final String? authReturnTo = _validTripPlannerReturnTo(
+        final String? authReturnTo = _validAuthReturnTo(
           state.uri.queryParameters['returnTo'],
         );
         final String? returnTo = authReturnTo ?? _pendingAuthReturnTo;
@@ -485,6 +493,12 @@ GoRouter buildRouter() {
     },
     routes: [
       // Routes outside of bottom navigation.
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.sharedTrip,
+        builder: (c, s) =>
+            SharedTripPage(token: s.uri.queryParameters['token']?.trim() ?? ''),
+      ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.getStarted,

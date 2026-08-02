@@ -9,6 +9,7 @@ import {
   requireAuthorizationHeader,
   requireRole,
 } from "../auth/auth_guard.ts";
+import { isRawCloneAllowed } from "./trip_clone_authorization.ts";
 
 type JsonObject = Record<string, unknown>;
 
@@ -128,6 +129,42 @@ async function getNearbyPlaces(p: JsonObject): Promise<Response> {
 
 async function clonePlan(userId: string, p: JsonObject): Promise<Response> {
   const id = reqStr(p.idPlan, "idPlan");
+  const adminClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+  const { data: plan, error: planError } = await adminClient
+    .from("plan")
+    .select("id_user")
+    .eq("id_plan", id)
+    .maybeSingle();
+  if (planError) {
+    return jsonResponse({ error: `Could not authorize clone: ${planError.message}` }, 503);
+  }
+  if (!plan) return jsonResponse({ error: "Plan not found." }, 404);
+
+  let hasActiveForumShare = false;
+  if (String(plan.id_user ?? "") !== userId) {
+    const { data: post, error: postError } = await adminClient
+      .from("forum_post")
+      .select("id_post")
+      .eq("status", "active")
+      .contains("shared_item", { type: "trip_plan", plan_id: id })
+      .limit(1)
+      .maybeSingle();
+    if (postError) {
+      return jsonResponse(
+        { error: `Could not authorize forum share: ${postError.message}` },
+        503,
+      );
+    }
+    hasActiveForumShare = post != null;
+  }
+
+  if (!isRawCloneAllowed({
+    requestingUserId: userId,
+    ownerUserId: strVal(plan.id_user),
+    hasActiveForumShare,
+  })) {
+    return jsonResponse({ error: "This trip is not available to copy." }, 403);
+  }
   return proxyPost(`/api/trips/${id}/clone`, { id_user: userId });
 }
 

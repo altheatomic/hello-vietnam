@@ -22,5 +22,42 @@ void main() {
 
       expect(appRouteLocationFromDeepLink(uri), isNull);
     });
+
+    test('maps a verified HTTPS shared-trip URL to the public app route', () {
+      final Uri uri = Uri.parse(
+        'https://share.hellovietnam.test/trip/abc_123-XYZ',
+      );
+
+      expect(
+        appRouteLocationFromDeepLink(
+          uri,
+          shareHosts: const <String>{'share.hellovietnam.test'},
+        ),
+        '/shared-trip?token=abc_123-XYZ',
+      );
+    });
+
+    test('rejects shared-trip URLs from an untrusted host', () {
+      final Uri uri = Uri.parse('https://evil.test/trip/abc_123-XYZ');
+
+      expect(
+        appRouteLocationFromDeepLink(
+          uri,
+          shareHosts: const <String>{'share.hellovietnam.test'},
+        ),
+        isNull,
+      );
+    });
+
+    test('maps the web viewer open-app fallback to the shared-trip route', () {
+      final Uri uri = Uri.parse(
+        'com.hellovietnam.app://shared-trip?token=abc_123-XYZ',
+      );
+
+      expect(
+        appRouteLocationFromDeepLink(uri),
+        '/shared-trip?token=abc_123-XYZ',
+      );
+    });
   });
 }
