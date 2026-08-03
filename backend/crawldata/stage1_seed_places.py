@@ -47,7 +47,6 @@ import os
 import random
 import re
 import time
-import uuid
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
@@ -55,10 +54,11 @@ import requests
 from dotenv import load_dotenv
 from supabase import create_client
 
+from source_identity import legacy_place_uuid, source_external_id
+
 
 load_dotenv()
 
-NAMESPACE = uuid.UUID("9a73fa2d-48f2-4d14-8f32-8845154a6e9a")
 OVERPASS_URL = os.getenv("OVERPASS_URL", "https://overpass-api.de/api/interpreter")
 REQUEST_TIMEOUT_SECONDS = int(os.getenv("REQUEST_TIMEOUT_SECONDS", "90"))
 UPSERT_BATCH_SIZE = int(os.getenv("UPSERT_BATCH_SIZE", "200"))
@@ -341,7 +341,12 @@ def generate_description(display_name: str, city_name: str, category: str, addre
 
 
 def deterministic_place_uuid(source: str, source_place_id: str) -> str:
-    return str(uuid.uuid5(NAMESPACE, f"{source}:{source_place_id}"))
+    # Keep the original UUID namespace for places already seeded before the
+    # freshness migration. This makes a rerun update the existing row.
+    external_id = source_place_id
+    if not external_id.startswith(f"{source}:"):
+        external_id = source_external_id(source, external_id)
+    return legacy_place_uuid(source, external_id)
 
 
 def normalize_element(city: CityTarget, category: str, element: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -372,7 +377,9 @@ def normalize_element(city: CityTarget, category: str, element: Dict[str, Any]) 
         except Exception:
             average_rating = None
 
-    source_place_id = f"osm:{element.get('type')}:{element.get('id')}"
+    source_place_id = source_external_id(
+        "osm", f"{element.get('type')}:{element.get('id')}"
+    )
     row = {
         "id_place": deterministic_place_uuid("osm", source_place_id),
         "id_place_subcategory": SUBCATEGORY_IDS[CATEGORY_QUERIES[category]["subcategory_key"]],
@@ -450,9 +457,40 @@ def upsert_rows(rows: List[Dict[str, Any]]) -> None:
     client = create_client(SUPABASE_URL, SUPABASE_KEY)
     total = 0
     for batch in chunked(rows, UPSERT_BATCH_SIZE):
-        client.table("place").upsert(batch).execute()
+        client.table("place").upsert(batch, on_conflict="id_place").execute()
         total += len(batch)
         print(f"Upserted {total}/{len(rows)}")
+
+    # Keep provenance in the generic freshness table as well as the legacy
+    # place columns. New OSM rows must be visible to the scheduled checker on
+    # the same run that inserts them.
+    freshness_rows = [
+        {
+            "content_type": "place",
+            "content_id": row["id_place"],
+            "source_type": row["source"],
+            "source_url": osm_source_url(row["source_place_id"]),
+            "source_external_id": row["source_place_id"],
+            "availability_type": "business",
+            "freshness_status": "due",
+            "next_check_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+        for row in rows
+    ]
+    for batch in chunked(freshness_rows, UPSERT_BATCH_SIZE):
+        client.table("content_freshness").upsert(
+            batch,
+            on_conflict="content_type,content_id",
+        ).execute()
+
+
+def osm_source_url(source_external_id_value: str) -> str:
+    """Convert ``osm:node:123`` into a stable OSM element URL."""
+
+    token = str(source_external_id_value).strip()
+    if token.startswith("osm:"):
+        token = token[4:]
+    return f"https://www.openstreetmap.org/{token.replace(':', '/')}"
 
 
 def export_json(rows: List[Dict[str, Any]], path: str) -> None:

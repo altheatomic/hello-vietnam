@@ -1,4 +1,5 @@
 import 'detail_category.dart';
+import 'package:hellovietnam/features/data_freshness/domain/content_freshness_models.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 
 final RegExp _uuidPattern = RegExp(
@@ -65,6 +66,7 @@ class ItemDetail {
   final String description;
   final String whatToExpect;
   final List<ItemReview> reviews;
+  final ContentFreshnessInfo? freshnessInfo;
 
   const ItemDetail({
     required this.id,
@@ -81,6 +83,7 @@ class ItemDetail {
     required this.description,
     required this.whatToExpect,
     this.reviews = const <ItemReview>[],
+    this.freshnessInfo,
   });
 
   String get effectiveReviewContentId => reviewContentId ?? id;
@@ -117,6 +120,7 @@ class ItemDetail {
     String? description,
     String? whatToExpect,
     List<ItemReview>? reviews,
+    ContentFreshnessInfo? freshnessInfo,
   }) {
     return ItemDetail(
       id: id ?? this.id,
@@ -133,6 +137,7 @@ class ItemDetail {
       description: description ?? this.description,
       whatToExpect: whatToExpect ?? this.whatToExpect,
       reviews: reviews ?? this.reviews,
+      freshnessInfo: freshnessInfo ?? this.freshnessInfo,
     );
   }
 }

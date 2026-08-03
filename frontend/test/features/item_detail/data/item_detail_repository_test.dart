@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hellovietnam/core/network/supabase_function_client.dart';
+import 'package:hellovietnam/features/data_freshness/domain/content_freshness_models.dart';
 import 'package:hellovietnam/features/item_detail/data/item_detail_repository.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
@@ -40,6 +41,10 @@ void main() {
                   'ratingLabel': 'Excellent',
                   'description': 'A signature Hue noodle soup.',
                   'whatToExpect': 'Rich broth and fresh herbs.',
+                  'freshnessStatus': 'stale',
+                  'lastVerifiedAt': '2026-07-01T00:00:00Z',
+                  'freshnessWarning':
+                      'Information has not been verified recently',
                 },
               };
             },
@@ -73,6 +78,8 @@ void main() {
       'https://pub-92f9bcecf7874fc4bcc402bde56011f7.r2.dev/food/gallery.jpg',
     ]);
     expect(detail.reviewCount, 42);
+    expect(detail.freshnessInfo?.status, ContentFreshnessStatus.stale);
+    expect(detail.freshnessInfo?.lastVerifiedAt?.year, 2026);
   });
 
   test('reuses a cached detail request within the cache window', () async {

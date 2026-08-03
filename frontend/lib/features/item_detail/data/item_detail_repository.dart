@@ -4,6 +4,7 @@ import 'package:hellovietnam/core/config/env.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/media/media_url_resolver.dart';
 import 'package:hellovietnam/core/network/supabase_function_client.dart';
+import 'package:hellovietnam/features/data_freshness/domain/content_freshness_models.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -119,6 +120,7 @@ class ItemDetailRepository {
       ratingLabel: _string(item['ratingLabel']) ?? '',
       description: _string(item['description']) ?? '',
       whatToExpect: _string(item['whatToExpect']) ?? '',
+      freshnessInfo: _freshnessInfo(item),
     );
   }
 
@@ -188,6 +190,16 @@ class ItemDetailRepository {
       default:
         return fallback;
     }
+  }
+
+  ContentFreshnessInfo? _freshnessInfo(Map<String, dynamic> item) {
+    if (!item.containsKey('freshnessStatus') &&
+        !item.containsKey('freshness_status') &&
+        !item.containsKey('freshnessWarning') &&
+        !item.containsKey('freshness_warning')) {
+      return null;
+    }
+    return ContentFreshnessInfo.fromJson(item);
   }
 }
 

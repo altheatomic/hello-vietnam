@@ -332,6 +332,12 @@ class AdminContentConfigs {
       ),
       AdminContentFieldConfig(key: 'price_range', label: 'Price range'),
       AdminContentFieldConfig(
+        key: 'status',
+        label: 'Status',
+        type: AdminContentFieldType.status,
+        options: <String>['active', 'draft', 'hidden', 'expired', 'archived'],
+      ),
+      AdminContentFieldConfig(
         key: 'detailed_description',
         label: 'Detailed description',
         type: AdminContentFieldType.multiline,
@@ -403,6 +409,12 @@ class AdminContentConfigs {
         tableFlex: 3,
       ),
       AdminContentFieldConfig(key: 'event_time', label: 'Event time'),
+      AdminContentFieldConfig(
+        key: 'status',
+        label: 'Status',
+        type: AdminContentFieldType.status,
+        options: <String>['active', 'draft', 'hidden', 'expired', 'archived'],
+      ),
       AdminContentFieldConfig(
         key: 'origin_history',
         label: 'Origin / History',
@@ -488,6 +500,12 @@ class AdminContentConfigs {
         tableFlex: 3,
       ),
       AdminContentFieldConfig(key: 'price_range', label: 'Price range'),
+      AdminContentFieldConfig(
+        key: 'status',
+        label: 'Status',
+        type: AdminContentFieldType.status,
+        options: <String>['active', 'draft', 'hidden', 'expired', 'archived'],
+      ),
       AdminContentFieldConfig(
         key: 'detailed_description',
         label: 'Detailed description',

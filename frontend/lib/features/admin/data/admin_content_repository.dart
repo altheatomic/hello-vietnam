@@ -159,7 +159,24 @@ class AdminContentRepository {
     AdminContentResourceConfig config,
     AdminContentRecord record,
   ) async {
+    // Freshness-managed records are never hard-deleted. Province rows are
+    // structural lookup data and currently have no lifecycle column, so keep
+    // their existing delete behaviour until that schema is migrated too.
+    if (config.fields.any((field) => field.key == 'status')) {
+      await archive(config, record);
+      return;
+    }
     await _client.from(config.table).delete().eq(record.idColumn, record.id);
+  }
+
+  Future<void> archive(
+    AdminContentResourceConfig config,
+    AdminContentRecord record,
+  ) async {
+    await _client
+        .from(config.table)
+        .update(<String, dynamic>{'status': 'archived'})
+        .eq(record.idColumn, record.id);
   }
 
   AdminContentRecord _recordFromRow(

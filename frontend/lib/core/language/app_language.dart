@@ -363,6 +363,24 @@ class AppStrings {
     'Get Started': 'Bắt đầu',
     'Discover': 'Khám phá',
     'Destination': 'Điểm đến',
+    'Information has not been verified recently':
+        'Thông tin chưa được xác minh gần đây',
+    'This information is being checked again.':
+        'Thông tin này đang được kiểm tra lại.',
+    'Report incorrect information': 'Báo thông tin không chính xác',
+    'This place is closed': 'Địa điểm đã đóng cửa',
+    'Wrong opening hours': 'Sai giờ mở cửa',
+    'Wrong location': 'Sai địa điểm',
+    'Event has ended': 'Sự kiện đã kết thúc',
+    'Other': 'Khác',
+    'Optional note': 'Ghi chú (không bắt buộc)',
+    'Tell us what is incorrect': 'Cho chúng tôi biết thông tin nào sai',
+    'Please choose a reason.': 'Vui lòng chọn lý do.',
+    'Thanks for helping keep this information accurate.':
+        'Cảm ơn bạn đã giúp thông tin chính xác hơn.',
+    'You already reported this information.':
+        'Bạn đã báo thông tin này trước đó.',
+    'Daily report limit reached.': 'Đã đạt giới hạn báo cáo trong ngày.',
     'Login to Start Your': 'Đăng nhập để bắt đầu',
     'Amazing Trips': 'Chuyến đi tuyệt vời',
     'Enter your email': 'Nhập email',
@@ -456,7 +474,6 @@ class AppStrings {
     'Missing information': 'Thiếu thông tin',
     'Inappropriate image/video': 'Ảnh/video không phù hợp',
     'Map/address issue': 'Lỗi bản đồ/địa chỉ',
-    'Other': 'Khác',
     'Please select one': 'Vui lòng chọn một mục',
     'Description': 'Mô tả',
     'Image or video': 'Ảnh hoặc video',

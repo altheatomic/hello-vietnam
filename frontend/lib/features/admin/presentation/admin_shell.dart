@@ -39,6 +39,7 @@ class AdminShell extends StatelessWidget {
     '/admin/cultures': 'Culture Management',
     '/admin/local-products': 'Local Product Management',
     '/admin/cf-retrain': 'CF Model Retrain',
+    '/admin/data-freshness': 'Data Freshness',
   };
 
   String get _title {

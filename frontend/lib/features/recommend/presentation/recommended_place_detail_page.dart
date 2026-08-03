@@ -5,6 +5,7 @@ import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/item_detail/presentation/shared_item_detail_page.dart';
+import 'package:hellovietnam/features/data_freshness/domain/content_freshness_models.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
 import 'package:hellovietnam/features/reviews/domain/review_models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -136,6 +137,7 @@ class _RecommendedPlaceDetailPageState
               showFeedbackAction: false,
               quickInfoMetadata: metadata,
               showShareAction: true,
+              reportContentType: FreshnessContentType.place,
             );
           },
     );

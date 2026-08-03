@@ -19,6 +19,7 @@ void main() {
                 'id_province': 'province-1',
                 'image_path': 'foods/pho.jpg',
                 'description': 'Noodle soup',
+                'status': 'active',
               },
             ],
             count: 42,
@@ -60,6 +61,7 @@ void main() {
       expect(result.foods.single.city, 'Ha Noi');
       expect(result.foods.single.urlImage, 'foods/pho.jpg');
       expect(result.foods.single.description, 'Noodle soup');
+      expect(result.foods.single.status, 'active');
     },
   );
 }

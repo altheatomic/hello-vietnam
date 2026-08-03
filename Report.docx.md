@@ -370,6 +370,12 @@ Kết quả tạo lịch trình được lưu theo mô hình master-detail. Bả
 
 Các trường có cấu trúc linh hoạt như bộ sưu tập ảnh, giờ mở cửa hoặc metadata được lưu bằng `jsonb`. Khóa chính sử dụng UUID để hạn chế xung đột khi dữ liệu được tạo từ nhiều dịch vụ. Báo cáo không cố định số lượng bản ghi vì dữ liệu trên môi trường Supabase tiếp tục được bổ sung trong quá trình vận hành; quy mô tại thời điểm nghiệm thu có thể lấy trực tiếp bằng truy vấn thống kê trên cơ sở dữ liệu triển khai.
 
+Để hạn chế tình trạng dữ liệu cào bị lỗi thời, hệ thống áp dụng chiến lược cập nhật kết hợp. Mỗi bản ghi có một định danh nguồn ổn định, loại nguồn, thời điểm kiểm tra gần nhất và lịch kiểm tra kế tiếp trong bảng `content_freshness`. Tác vụ `data-freshness-check` chạy theo lịch, kiểm tra tối đa 50 bản ghi mỗi lượt và chỉ cập nhật các trường vận hành do nguồn sở hữu như tên, địa chỉ, tọa độ, giờ mở cửa, số điện thoại và trạng thái. Các trường biên tập như mô tả, ảnh được chọn, thẻ và điểm đánh giá không bị crawler ghi đè.
+
+Các sự kiện đã quá thời hạn được chuyển sang `expired` tự động. Với nguồn không còn tồn tại, lần kiểm tra hợp lệ đầu tiên chỉ đánh dấu `stale`; lần thứ hai tạo đề xuất `possibly_closed` để quản trị viên xem xét. Timeout hoặc lỗi phân tích không làm tăng bộ đếm mất nguồn. Quản trị viên có thể xem chênh lệch trước/sau, xác nhận, từ chối, chỉnh sửa trường được phép hoặc yêu cầu kiểm tra lại tại trang Data Freshness. Người dùng đã đăng nhập cũng có thể báo sai giờ mở cửa, địa điểm, tình trạng đóng cửa hoặc sự kiện đã kết thúc; báo cáo được giới hạn và chống trùng lặp.
+
+Chuỗi bằng chứng nghiệm thu gồm: sự kiện quá hạn được tự động hết hiệu lực; hai lần phản hồi missing tạo hàng chờ quản trị; nội dung được quản trị viên archive sẽ biến mất khỏi Explore và Trip Planner; báo cáo sai của người dùng xuất hiện trong hàng chờ mà không thay đổi nội dung; timeout giữ nguyên hash và bộ đếm missing; và chạy crawler hai lần với cùng source identity không tạo bản ghi trùng. Đây là cơ chế sẵn sàng cho demo, chưa phải cam kết xác minh đa nguồn ở cấp production.
+
 ### **3.3.2.Sơ đồ use-case**
 
 *\[Liệt kê các tác nhân (người dùng chưa đăng nhập, người dùng đã đăng nhập, admin) và các use-case tương ứng. Chèn sơ đồ use-case tổng quát và đặc tả chi tiết cho các use-case chính (Tạo lịch trình, Xem lịch trình đang đi, Khám phá địa điểm, Nhận dạng địa điểm bằng AI, v.v.).\]*

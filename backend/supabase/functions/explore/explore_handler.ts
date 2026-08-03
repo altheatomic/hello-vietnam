@@ -13,6 +13,11 @@ import {
   computeInterestStateUpdate,
   EVENT_SCORES,
 } from "./explore_behavior.ts";
+import {
+  freshnessWarningText,
+  resolveFreshnessEligibility,
+  type FreshnessEligibility,
+} from "./freshness_eligibility.ts";
 import { resolveExploreRating } from "./explore_rating.ts";
 
 type JsonObject = Record<string, unknown>;
@@ -44,6 +49,9 @@ type ExploreItem = {
   rating: number | null;
   reviewCount: number;
   metadata: Record<string, unknown>;
+  freshnessStatus?: FreshnessEligibility["freshnessStatus"];
+  lastVerifiedAt?: string | null;
+  freshnessWarning?: FreshnessEligibility["warning"];
   personalizedScore?: number;
   matchedTags?: string[];
 };
@@ -107,6 +115,12 @@ type PersonalizationResult = {
 type OfficialRating = {
   averageRating: number | null;
   reviewCount: number;
+};
+
+type FreshnessMetadata = {
+  freshnessStatus: FreshnessEligibility["freshnessStatus"];
+  lastVerifiedAt: string | null;
+  freshnessWarning: FreshnessEligibility["warning"];
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -537,6 +551,15 @@ class ExploreService {
       throw new Error(`Explore item is not available: ${category}:${id}.`);
     }
 
+    const freshnessById = await this.loadFreshness(
+      config.contentType,
+      [id],
+    );
+    const freshness = freshnessById.get(id) ?? null;
+    if (freshness?.freshnessStatus === "expired") {
+      throw new Error(`Explore item is not available: ${category}:${id}.`);
+    }
+
     const provinceColumn = pickOptionalColumn([row], config.provinceCandidates);
     const [provinceNameMap, translations, officialRatings] = await Promise.all([
       this.buildProvinceNameMap([row], provinceColumn),
@@ -559,6 +582,7 @@ class ExploreService {
         sortMode: "default",
       },
       officialRatings,
+      freshness,
     );
     if (!item) {
       throw new Error(`Explore item is invalid: ${category}:${id}.`);
@@ -595,6 +619,11 @@ class ExploreService {
         provinceId: item.provinceId,
         provinceName: item.provinceName,
         metadata: item.metadata,
+        freshnessStatus: item.freshnessStatus,
+        lastVerifiedAt: item.lastVerifiedAt,
+        freshnessWarning: item.freshnessWarning
+          ? freshnessWarningText(item.freshnessWarning)
+          : null,
       },
     };
   }
@@ -763,22 +792,40 @@ class ExploreService {
         ? []
         : rows.filter((row) => stringValue(row[provinceColumn]) === provinceId);
 
+      const rowIds = idColumn
+        ? uniqueStrings(
+          provinceRows
+            .map((row) => stringValue(row[idColumn]))
+            .filter((id): id is string => id != null),
+        )
+        : [];
+      const freshnessById = await this.loadFreshness(
+        config.contentType,
+        rowIds,
+      );
+      const eligibleRows = provinceRows.filter((row) => {
+        const rowId = idColumn ? stringValue(row[idColumn]) : null;
+        return resolveFreshnessEligibility(
+          rowId ? freshnessById.get(rowId) ?? null : null,
+        ).listable;
+      });
+
       const [provinceNameMap, translations, personalization, officialRatings] =
         await Promise.all([
-          this.buildProvinceNameMap(provinceRows, provinceColumn),
-          this.loadTranslations(config, provinceRows, idColumn, language),
+          this.buildProvinceNameMap(eligibleRows, provinceColumn),
+          this.loadTranslations(config, eligibleRows, idColumn, language),
           this.buildPersonalization(
             config,
-            provinceRows,
+            eligibleRows,
             idColumn,
             userId,
             sortMode,
             provinceId,
           ),
-          this.loadOfficialRatings(config.contentType, provinceRows, idColumn),
+          this.loadOfficialRatings(config.contentType, eligibleRows, idColumn),
         ]);
 
-      const items = provinceRows
+      const items = eligibleRows
         .map((row) =>
           mapExploreItem(
             row,
@@ -789,6 +836,7 @@ class ExploreService {
             language,
             personalization,
             officialRatings,
+            idColumn ? freshnessById.get(stringValue(row[idColumn]) ?? "") ?? null : null,
           )
         )
         .filter((item): item is ExploreItem => item != null)
@@ -871,6 +919,48 @@ class ExploreService {
     } catch (error) {
       console.warn("[explore] rating_summary load failed", error);
       return new Map<string, OfficialRating>();
+    }
+  }
+
+  private async loadFreshness(
+    contentType: ExploreContentType,
+    contentIds: string[],
+  ): Promise<Map<string, FreshnessMetadata>> {
+    if (contentIds.length === 0) return new Map<string, FreshnessMetadata>();
+    try {
+      const { data, error } = await this.client
+        .from("content_freshness")
+        .select("content_id,freshness_status,last_verified_at")
+        .eq("content_type", contentType)
+        .in("content_id", contentIds);
+      if (error) {
+        // A missing table during migration should not make the existing Explore
+        // flow disappear; rows without metadata remain eligible.
+        console.warn(`[explore] freshness metadata unavailable: ${error.message}`);
+        return new Map<string, FreshnessMetadata>();
+      }
+      return new Map<string, FreshnessMetadata>(
+        asRows(data)
+          .map((row) => {
+            const contentId = stringValue(row.content_id);
+            if (!contentId) return null;
+            const resolved = resolveFreshnessEligibility(row);
+            return [
+              contentId,
+              {
+                freshnessStatus: resolved.freshnessStatus,
+                lastVerifiedAt: resolved.lastVerifiedAt,
+                freshnessWarning: resolved.warning,
+              },
+            ] as const;
+          })
+          .filter(
+            (entry): entry is readonly [string, FreshnessMetadata] => entry != null,
+          ),
+      );
+    } catch (error) {
+      console.warn("[explore] freshness metadata load failed", error);
+      return new Map<string, FreshnessMetadata>();
     }
   }
 
@@ -1496,6 +1586,7 @@ function mapExploreItem(
   language: string | null,
   personalization: PersonalizationResult,
   officialRatings: Map<string, OfficialRating>,
+  freshness: FreshnessMetadata | null = null,
 ): ExploreItem | null {
   const idColumn = pickOptionalColumn([row], config.idCandidates);
   const nameColumn = pickOptionalColumn([row], config.nameCandidates);
@@ -1562,7 +1653,12 @@ function mapExploreItem(
       ...extractMetadata(row, config.metadataCandidates),
       average_rating: resolvedRating.rating,
       review_count: resolvedRating.reviewCount,
+      freshness_status: freshness?.freshnessStatus,
+      last_verified_at: freshness?.lastVerifiedAt,
     },
+    freshnessStatus: freshness?.freshnessStatus ?? null,
+    lastVerifiedAt: freshness?.lastVerifiedAt ?? null,
+    freshnessWarning: freshness?.freshnessWarning ?? null,
     personalizedScore,
     matchedTags,
   };
@@ -1935,6 +2031,7 @@ function isRenderableStatus(value: unknown): boolean {
     case "disabled":
     case "draft":
     case "archived":
+    case "expired":
     case "deleted":
     case "hidden":
       return false;

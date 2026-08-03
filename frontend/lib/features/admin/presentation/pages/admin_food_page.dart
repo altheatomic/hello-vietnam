@@ -328,9 +328,9 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
       await _repository.deleteFood(food.id);
       if (!mounted) return;
       await _loadData(showLoader: false);
-      _showSnack('"${food.name}" deleted.');
+      _showSnack('"${food.name}" archived.');
     } catch (e) {
-      _showSnack('Delete food failed: $e');
+      _showSnack('Archive food failed: $e');
     }
   }
 
@@ -998,8 +998,8 @@ class _FoodRowState extends State<_FoodRow> {
                     ),
                     const SizedBox(width: 4),
                     _FoodIconAction(
-                      icon: Icons.delete_outline_rounded,
-                      tooltip: 'Delete',
+                      icon: Icons.archive_outlined,
+                      tooltip: 'Archive',
                       color: const Color(0xFFEF4444),
                       onTap: widget.onDelete,
                     ),
@@ -1633,9 +1633,9 @@ class _DeleteConfirmDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),
       ),
-      title: const Text('Delete Food'),
+      title: const Text('Archive Food'),
       content: Text(
-        'Are you sure you want to delete "$name"?\nThis action cannot be undone.',
+        'Are you sure you want to archive "$name"?\nIt will be hidden from the active catalogue and retained for history.',
       ),
       actions: [
         TextButton(
@@ -1651,7 +1651,7 @@ class _DeleteConfirmDialog extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
             ),
           ),
-          child: const Text('Delete'),
+          child: const Text('Archive'),
         ),
       ],
     );

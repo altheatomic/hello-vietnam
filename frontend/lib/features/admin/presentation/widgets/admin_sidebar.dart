@@ -47,6 +47,12 @@ class AdminSidebar extends StatefulWidget {
       route: '/admin/reports',
     ),
     _NavDestination(
+      label: 'Data Freshness',
+      icon: Icons.update_outlined,
+      selectedIcon: Icons.update_rounded,
+      route: '/admin/data-freshness',
+    ),
+    _NavDestination(
       label: 'Food',
       icon: Icons.restaurant_outlined,
       selectedIcon: Icons.restaurant_rounded,
