@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/utils/maps_launcher.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
+import 'package:hellovietnam/features/planner/presentation/lunch_anchor_selector.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
+import 'package:hellovietnam/features/planner/presentation/widgets/lunch_discovery_card.dart';
 
 void _openDayRoute(List<TripPlannerActivityData> activities) {
   final realPlaces = activities.where((a) => a.tag != 'lunch_break').toList();
@@ -26,16 +28,32 @@ void _openDayRoute(List<TripPlannerActivityData> activities) {
   );
 }
 
+typedef NearbyRestaurantsLauncher = Future<bool> Function({
+  required double lat,
+  required double lng,
+});
+
 class TripDayDetailPage extends StatelessWidget {
-  const TripDayDetailPage({super.key, required this.dayIndex, this.dayData});
+  const TripDayDetailPage({
+    super.key,
+    required this.dayIndex,
+    this.dayData,
+    this.nearbyRestaurantsLauncher = openNearbyRestaurants,
+  });
 
   final int dayIndex;
   final TripPlannerDayData? dayData;
+  final NearbyRestaurantsLauncher nearbyRestaurantsLauncher;
 
   @override
   Widget build(BuildContext context) {
     final TripPlannerDayData day =
         dayData ?? TripPlannerMockData.dayAt(dayIndex);
+    final List<TripPlannerActivityData> realPlaces = day.activities
+        .where((a) => a.tag != 'lunch_break')
+        .toList();
+    final TripPlannerActivityData? lunchAnchor =
+        selectLunchAnchor(day.activities);
     final ThemeData theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
     final List<Color> pageColors = isDark
@@ -107,27 +125,12 @@ class TripDayDetailPage extends StatelessWidget {
                       onTap: () => _openDayRoute(day.activities),
                     ),
                     const SizedBox(height: 22),
-                    ...day.activities
-                        .where((a) => a.tag != 'lunch_break')
-                        .toList()
-                        .asMap()
-                        .entries
-                        .map(
-                          (MapEntry<int, TripPlannerActivityData> entry) =>
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 18),
-                                child: _ActivityDetailCard(
-                                  activity: entry.value,
-                                  onDirections: () => context.push(
-                                    AppRoutes.tripPlannerMapPath(
-                                      dayIndex,
-                                      entry.key,
-                                    ),
-                                    extra: entry.value,
-                                  ),
-                                ),
-                              ),
-                        ),
+                    ..._buildActivityWidgets(
+                      context: context,
+                      dayIndex: dayIndex,
+                      activities: realPlaces,
+                      lunchAnchor: lunchAnchor,
+                    ),
                   ],
                 ),
               ),
@@ -136,6 +139,63 @@ class TripDayDetailPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildActivityWidgets({
+    required BuildContext context,
+    required int dayIndex,
+    required List<TripPlannerActivityData> activities,
+    required TripPlannerActivityData? lunchAnchor,
+  }) {
+    final List<Widget> widgets = <Widget>[];
+    for (var index = 0; index < activities.length; index++) {
+      final TripPlannerActivityData activity = activities[index];
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 18),
+          child: _ActivityDetailCard(
+            activity: activity,
+            onDirections: () => context.push(
+              AppRoutes.tripPlannerMapPath(dayIndex, index),
+              extra: activity,
+            ),
+          ),
+        ),
+      );
+      if (identical(activity, lunchAnchor)) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 18),
+            child: LunchDiscoveryCard(
+              anchorName: context.l10n.ui(activity.title),
+              lunchWindow: '11:30-13:00',
+              enabled: hasValidMapCoordinates(
+                lat: activity.lat,
+                lng: activity.lng,
+              ),
+              onTap: () async {
+                final bool opened = await nearbyRestaurantsLauncher(
+                  lat: activity.lat,
+                  lng: activity.lng,
+                );
+                if (!opened && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        context.l10n.ui(
+                          'Could not open Google Maps. Please try again.',
+                        ),
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+        );
+      }
+    }
+    return widgets;
   }
 }
 
