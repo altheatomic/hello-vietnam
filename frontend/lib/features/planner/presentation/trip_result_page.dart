@@ -342,6 +342,7 @@ List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
         return TripPlannerActivityData(
           title: 'Lunch Break',
           time: p.startTime ?? '12:00',
+          endTime: p.endTime,
           slot: 'Afternoon',
           tag: 'lunch_break',
           description: 'Time to rest and eat.',
@@ -357,6 +358,7 @@ List<TripPlannerDayData> _convertPlan(TripPlanResponse plan) {
       return TripPlannerActivityData(
         title: p.name.isEmpty ? 'Place ${p.order}' : p.name,
         time: p.startTime ?? _slotToTime(p.slot),
+        endTime: p.endTime,
         slot: _capitalizeSlot(p.slot),
         tag: 'culture',
         description: '',

@@ -420,6 +420,7 @@ class TripPlannerActivityData {
   const TripPlannerActivityData({
     required this.title,
     required this.time,
+    this.endTime,
     required this.slot,
     required this.tag,
     required this.description,
@@ -433,6 +434,7 @@ class TripPlannerActivityData {
 
   final String title;
   final String time;
+  final String? endTime;
   final String slot;
   final String tag;
   final String description;
@@ -446,6 +448,7 @@ class TripPlannerActivityData {
   Map<String, dynamic> toJson() => {
         'title': title,
         'time': time,
+        'endTime': endTime,
         'slot': slot,
         'tag': tag,
         'description': description,
@@ -461,6 +464,7 @@ class TripPlannerActivityData {
       TripPlannerActivityData(
         title: json['title'] as String,
         time: json['time'] as String,
+        endTime: json['endTime'] as String?,
         slot: json['slot'] as String,
         tag: json['tag'] as String,
         description: json['description'] as String,
