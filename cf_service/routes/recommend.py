@@ -98,9 +98,11 @@ def _get_province_detail_sync(
     from services.module1_repository import (
         attach_place_tags_to_places,
         build_tag_map,
+        compute_cf_scores_from_factors,
         fetch_active_tags,
-        fetch_cf_scores_for_user,
+        fetch_place_factors,
         fetch_place_tags_for_places,
+        fetch_user_factors,
         fetch_user_interest_tags,
     )
 
@@ -147,7 +149,16 @@ def _get_province_detail_sync(
     )
 
     # ── CF blend (same pattern as trip_planner.py) ────────────────────────────
-    cf_scores = fetch_cf_scores_for_user(supabase, id_user, place_ids)
+    # Reads cf_user_factors/cf_place_factors (dot-product at request time),
+    # not cf_score_cache. {} on a user with no trained factors yet — same
+    # fallback shape as the old cache-miss case, so compute_alpha()/.get(id,
+    # 0.0) below behave unchanged.
+    user_factors = fetch_user_factors(supabase, id_user)
+    if user_factors is None:
+        cf_scores = {}
+    else:
+        place_factors = fetch_place_factors(supabase, place_ids)
+        cf_scores = compute_cf_scores_from_factors(user_factors, place_factors)
     alpha = compute_alpha(cf_scores, len(places))
     for place in ranked:
         tag_match = float(place.get("tag_match") or 0.0)

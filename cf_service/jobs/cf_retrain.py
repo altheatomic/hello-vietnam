@@ -8,7 +8,10 @@ Flow:
   3. Train WALS → get U, V embeddings
   4. Compute top-500 CF scores per user
   5. Bulk upsert into cf_score_cache
-  6. Write log to cf_retrain_log
+  6. Bulk upsert raw U, V into cf_user_factors / cf_place_factors — runs
+     alongside step 5 (not a replacement) so the runtime dot-product read
+     path can be validated before cf_score_cache is retired.
+  7. Write log to cf_retrain_log
 """
 
 import uuid
@@ -79,6 +82,26 @@ async def _save_cf_scores(conn, scores: list) -> None:
     """, scores)
 
 
+async def _save_user_factors(conn, user_ids: list, U) -> None:
+    rows = [(uid, U[i].tolist()) for i, uid in enumerate(user_ids)]
+    await conn.executemany("""
+        INSERT INTO cf_user_factors (id_user, factors, updated_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (id_user)
+        DO UPDATE SET factors = EXCLUDED.factors, updated_at = NOW()
+    """, rows)
+
+
+async def _save_place_factors(conn, place_ids: list, V) -> None:
+    rows = [(pid, V[j].tolist()) for j, pid in enumerate(place_ids)]
+    await conn.executemany("""
+        INSERT INTO cf_place_factors (id_place, factors, updated_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (id_place)
+        DO UPDATE SET factors = EXCLUDED.factors, updated_at = NOW()
+    """, rows)
+
+
 async def _log_start(conn, triggered_by: str) -> str:
     log_id = str(uuid.uuid4())
     await conn.execute("""
@@ -120,10 +143,28 @@ async def run_cf_retrain(triggered_by: str = 'cron') -> dict:
             scores  = compute_cf_scores(U, V, user_ids, place_ids, A, top_k=500)
 
             await _save_cf_scores(conn, scores)
-            await _log_success(conn, log_id, len(scores))
+            await _save_user_factors(conn, user_ids, U)
+            await _save_place_factors(conn, place_ids, V)
 
-            return {'status': 'success', 'rows_written': len(scores), 'error': None}
+            users_trained  = len(user_ids)
+            places_trained = len(place_ids)
+            await _log_success(conn, log_id, users_trained + places_trained)
+
+            return {
+                'status': 'success',
+                'rows_written': {
+                    'users_trained': users_trained,
+                    'places_trained': places_trained,
+                },
+                'cf_score_rows_written': len(scores),
+                'error': None,
+            }
 
         except Exception as e:
             await _log_failure(conn, log_id, str(e))
-            return {'status': 'failed', 'rows_written': 0, 'error': str(e)}
+            return {
+                'status': 'failed',
+                'rows_written': {'users_trained': 0, 'places_trained': 0},
+                'cf_score_rows_written': 0,
+                'error': str(e),
+            }

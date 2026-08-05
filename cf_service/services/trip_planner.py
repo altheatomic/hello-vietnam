@@ -4,7 +4,10 @@ TripPlannerService – orchestrates the full planning pipeline:
 
   [Filtering]   fetch_places_required_filter → filter_places_with_fallback
   [Module 1]    fetch tags + user interest → rank_places_by_tag_match
-  [CF Blend]    fetch_cf_scores_for_user → dynamic alpha blend → re-sort
+  [CF Blend]    fetch_user_factors/fetch_place_factors → dot-product via
+                compute_cf_scores_from_factors → dynamic alpha blend → re-sort
+                (reads cf_user_factors/cf_place_factors, not cf_score_cache —
+                see module1_repository.py)
   [Diversity]   apply_diversity_selection (slot-based subcategory allocation)
   [Module 2]    build_module2_result (K-Means + Greedy Repair)
   [Module 3]    optimize_day_route (SA with schedule-aware cost + time windows)
@@ -39,13 +42,15 @@ from services.module1_diversity import apply_diversity_selection
 from services.module1_repository import (
     attach_place_tags_to_places,
     build_tag_map,
+    compute_cf_scores_from_factors,
     fetch_active_tags,
     fetch_already_rated_places,
-    fetch_cf_scores_for_user,
+    fetch_place_factors,
     fetch_place_tags_for_places,
     fetch_trip_interest_option_subcategories,
     fetch_trip_interest_option_tags,
     fetch_trip_interest_options_by_ids,
+    fetch_user_factors,
     fetch_user_interest_tags,
     fetch_user_onboarding_choices,
     fetch_user_travel_profile,
@@ -76,6 +81,23 @@ def _fetch_initial_inputs(
     return places, profile
 
 
+def _fetch_cf_scores_via_factors(
+    supabase, id_user: str, place_ids: list[str]
+) -> dict[str, float]:
+    """
+    CF scores computed at request time from cf_user_factors/cf_place_factors,
+    replacing the cf_score_cache read path (fetch_cf_scores_for_user).
+    Returns {} — same as a full cache miss — when the user has no trained
+    factors yet, so downstream compute_alpha()/dict.get(id, 0.0) behave
+    exactly as they did on a cache miss. Does not raise.
+    """
+    user_factors = fetch_user_factors(supabase, id_user)
+    if user_factors is None:
+        return {}
+    place_factors = fetch_place_factors(supabase, place_ids)
+    return compute_cf_scores_from_factors(user_factors, place_factors)
+
+
 def _fetch_module1_inputs(supabase, id_user: str, place_ids: list[str]):
     """Avoid concurrent use of the same synchronous Supabase client."""
     return (
@@ -83,7 +105,7 @@ def _fetch_module1_inputs(supabase, id_user: str, place_ids: list[str]):
         fetch_place_tags_for_places(supabase, place_ids),
         fetch_user_interest_tags(supabase, id_user),
         fetch_already_rated_places(supabase, id_user),
-        fetch_cf_scores_for_user(supabase, id_user, place_ids),
+        _fetch_cf_scores_via_factors(supabase, id_user, place_ids),
         fetch_user_onboarding_choices(supabase, id_user),
     )
 
@@ -383,6 +405,10 @@ class TripPlannerService:
             "days": days,
             "debug": {
                 "filter_report":      filter_report,
+                # % of candidate places with a trained embedding (≥1 interaction
+                # recorded at last retrain) — no longer a "cache hit rate" since
+                # this comes from cf_user_factors/cf_place_factors, not
+                # cf_score_cache (see _fetch_cf_scores_via_factors above).
                 "cf_coverage":        round(len(cf_scores) / max(len(filtered_places), 1), 4),
                 "alpha":              alpha,
                 "weight_field":       weight_field,
