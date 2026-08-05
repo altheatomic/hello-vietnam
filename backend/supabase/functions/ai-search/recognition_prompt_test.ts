@@ -34,6 +34,19 @@ Deno.test("Gemini request contains the closed result kind enum", () => {
   assertEquals(serialized.includes("longitude"), false);
 });
 
+Deno.test("Gemini request prioritizes street-sign routing and short location labels", () => {
+  const body = buildGeminiRecognitionRequest({
+    imageBase64: "AQID",
+    mimeType: "image/jpeg",
+    targetLanguageCode: "en",
+    targetLanguageName: "English",
+  });
+  const instruction = JSON.stringify(body.system_instruction);
+
+  assert(instruction.includes("result_kind sign_text"));
+  assert(instruction.includes("short region or city label"));
+});
+
 Deno.test("Gemini request carries exactly one inline image", () => {
   const body = buildGeminiRecognitionRequest({
     imageBase64: "AQID",

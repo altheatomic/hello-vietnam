@@ -106,21 +106,30 @@ export function normalizeRecognition(
     );
   }
 
-  const textAnalysis = kind === "sign_text"
-    ? normalizeTextAnalysis(raw.text_analysis)
+  const candidateTextAnalysis = normalizeTextAnalysis(raw.text_analysis);
+  const isMisclassifiedStreetSign =
+    (kind === "landmark" || kind === "cultural_object") &&
+    candidateTextAnalysis !== null &&
+    candidateTextAnalysis.original_text.length > 0 &&
+    candidateTextAnalysis.sign_type === "street" &&
+    candidateTextAnalysis.can_open_map &&
+    candidateTextAnalysis.map_query.length > 0;
+  const normalizedKind = isMisclassifiedStreetSign ? "sign_text" : kind;
+  const textAnalysis = normalizedKind === "sign_text"
+    ? candidateTextAnalysis
     : null;
   const detectedName = readString(raw.detected_name);
 
   if (
-    (kind === "sign_text" && textAnalysis == null) ||
-    (kind !== "sign_text" && detectedName.length === 0)
+    (normalizedKind === "sign_text" && textAnalysis == null) ||
+    (normalizedKind !== "sign_text" && detectedName.length === 0)
   ) {
     return unclearRecognition(confidence, "insufficient_evidence");
   }
 
   return buildSupportedRecognition({
     raw,
-    kind,
+    kind: normalizedKind as Exclude<RecognitionKind, "unclear" | "unsupported">,
     confidence,
     detectedName,
     textAnalysis,

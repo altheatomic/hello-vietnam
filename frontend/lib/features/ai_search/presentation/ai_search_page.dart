@@ -817,12 +817,17 @@ class _AiSearchPageState extends State<AiSearchPage> {
                                     size: 12,
                                   ),
                                   const SizedBox(width: 3),
-                                  Text(
-                                    data.location,
-                                    style: const TextStyle(
-                                      color: Color(0xB3FFFFFF),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                                  Expanded(
+                                    child: Text(
+                                      data.location,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
+                                      style: const TextStyle(
+                                        color: Color(0xB3FFFFFF),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ],
