@@ -11,6 +11,7 @@ TripPlannerActivityData place(
   String tag = 'culture',
   double lat = 16.07,
   double lng = 108.22,
+  String? address,
 }) {
   return TripPlannerActivityData(
     title: title,
@@ -24,6 +25,7 @@ TripPlannerActivityData place(
     nearbyPlaces: const <TripPlannerNearbyPlace>[],
     lat: lat,
     lng: lng,
+    address: address,
   );
 }
 
@@ -62,6 +64,8 @@ Future<bool> pumpDay(
 Future<bool> _successfulLauncher({
   required double lat,
   required double lng,
+  String? placeName,
+  String? address,
 }) async => true;
 
 void main() {
@@ -89,16 +93,33 @@ void main() {
   testWidgets('forwards anchor coordinates when the action is tapped', (
     WidgetTester tester,
   ) async {
-    final launches = <({double lat, double lng})>[];
-    Future<bool> launcher({required double lat, required double lng}) async {
-      launches.add((lat: lat, lng: lng));
+    final launches = <({
+      double lat,
+      double lng,
+      String? placeName,
+      String? address,
+    })>[];
+    Future<bool> launcher({
+      required double lat,
+      required double lng,
+      String? placeName,
+      String? address,
+    }) async {
+      launches.add(
+        (lat: lat, lng: lng, placeName: placeName, address: address),
+      );
       return true;
     }
 
     await pumpDay(
       tester,
       dayWith(<TripPlannerActivityData>[
-        place('Lunch Anchor', start: '11:20', end: '13:00'),
+        place(
+          'Lunch Anchor',
+          start: '11:20',
+          end: '13:00',
+          address: '1A Tràng Tiền, Hoàn Kiếm, Hà Nội',
+        ),
       ]),
       launcher: launcher,
     );
@@ -108,7 +129,22 @@ void main() {
     await tester.tap(action);
     await tester.pump();
 
-    expect(launches, <({double lat, double lng})>[(lat: 16.07, lng: 108.22)]);
+    expect(
+      launches,
+      <({
+        double lat,
+        double lng,
+        String? placeName,
+        String? address,
+      })>[
+        (
+          lat: 16.07,
+          lng: 108.22,
+          placeName: 'Lunch Anchor',
+          address: '1A Tràng Tiền, Hoàn Kiếm, Hà Nội',
+        ),
+      ],
+    );
   });
 
   testWidgets('multiple synthetic lunch breaks still render one card', (
@@ -162,8 +198,12 @@ void main() {
   testWidgets('false launcher result shows localized failure snackbar', (
     WidgetTester tester,
   ) async {
-    Future<bool> launcher({required double lat, required double lng}) async =>
-        false;
+    Future<bool> launcher({
+      required double lat,
+      required double lng,
+      String? placeName,
+      String? address,
+    }) async => false;
 
     await pumpDay(
       tester,

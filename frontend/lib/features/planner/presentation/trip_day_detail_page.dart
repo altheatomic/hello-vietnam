@@ -31,6 +31,8 @@ void _openDayRoute(List<TripPlannerActivityData> activities) {
 typedef NearbyRestaurantsLauncher = Future<bool> Function({
   required double lat,
   required double lng,
+  String? placeName,
+  String? address,
 });
 
 class TripDayDetailPage extends StatelessWidget {
@@ -177,6 +179,8 @@ class TripDayDetailPage extends StatelessWidget {
                 final bool opened = await nearbyRestaurantsLauncher(
                   lat: activity.lat,
                   lng: activity.lng,
+                  placeName: activity.title,
+                  address: activity.address,
                 );
                 if (!opened && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

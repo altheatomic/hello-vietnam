@@ -38,16 +38,31 @@ bool hasValidMapCoordinates({required double lat, required double lng}) {
       !(lat == 0.0 && lng == 0.0);
 }
 
-Uri buildNearbyRestaurantsUri({required double lat, required double lng}) {
+Uri buildNearbyRestaurantsUri({
+  required double lat,
+  required double lng,
+  String? placeName,
+  String? address,
+}) {
   if (!hasValidMapCoordinates(lat: lat, lng: lng)) {
     throw ArgumentError.value(<double>[lat, lng], 'coordinates');
   }
+
+  final List<String> textLocation = <String>[
+    if (placeName != null && placeName.trim().isNotEmpty) placeName.trim(),
+    if (address != null && address.trim().isNotEmpty) address.trim(),
+    'Vietnam',
+  ];
+  final String query = textLocation.length > 1
+      ? 'restaurants near ${textLocation.join(', ')}'
+      : 'restaurants near $lat,$lng, Vietnam';
+
   return Uri.https(
     'www.google.com',
     '/maps/search/',
     <String, String>{
       'api': '1',
-      'query': 'restaurants near $lat,$lng',
+      'query': query,
     },
   );
 }
@@ -55,11 +70,18 @@ Uri buildNearbyRestaurantsUri({required double lat, required double lng}) {
 Future<bool> openNearbyRestaurants({
   required double lat,
   required double lng,
+  String? placeName,
+  String? address,
 }) async {
   if (!hasValidMapCoordinates(lat: lat, lng: lng)) return false;
   try {
     return await launchUrl(
-      buildNearbyRestaurantsUri(lat: lat, lng: lng),
+      buildNearbyRestaurantsUri(
+        lat: lat,
+        lng: lng,
+        placeName: placeName,
+        address: address,
+      ),
       mode: LaunchMode.externalApplication,
     );
   } catch (_) {
