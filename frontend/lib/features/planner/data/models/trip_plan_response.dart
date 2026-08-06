@@ -110,6 +110,10 @@ class TripPlanPlace {
     this.longitude,
     this.estimatedTravelMinutes,
     this.estimatedDurationMinutes,
+    this.travelTimeCarSeconds,
+    this.travelTimeBikeSeconds,
+    this.travelDistanceCarMeters,
+    this.travelDistanceBikeMeters,
     this.minimumPrice,
     this.maximumPrice,
     this.timespan,
@@ -134,6 +138,13 @@ class TripPlanPlace {
   final double? longitude;
   final int? estimatedTravelMinutes;
   final int? estimatedDurationMinutes;
+  /// Goong Distance Matrix data for the edge FROM the previous stop TO this
+  /// place. Null for the first place of each day (no predecessor) and for
+  /// any edge Goong couldn't cover (see cf_service _attach_travel_data()).
+  final int? travelTimeCarSeconds;
+  final int? travelTimeBikeSeconds;
+  final int? travelDistanceCarMeters;
+  final int? travelDistanceBikeMeters;
   final num? minimumPrice;
   final num? maximumPrice;
   final String? timespan;
@@ -178,6 +189,10 @@ class TripPlanPlace {
       longitude:                  (json['longitude'] as num?)?.toDouble(),
       estimatedTravelMinutes:     (json['estimated_travel_minutes'] as num?)?.toInt(),
       estimatedDurationMinutes:   (json['estimated_duration_minutes'] as num?)?.toInt(),
+      travelTimeCarSeconds:       (json['travel_time_car_seconds'] as num?)?.toInt(),
+      travelTimeBikeSeconds:      (json['travel_time_bike_seconds'] as num?)?.toInt(),
+      travelDistanceCarMeters:    (json['travel_distance_car_meters'] as num?)?.toInt(),
+      travelDistanceBikeMeters:   (json['travel_distance_bike_meters'] as num?)?.toInt(),
       minimumPrice:                json['minimum_price'] as num?,
       maximumPrice:                json['maximum_price'] as num?,
       timespan:                    json['timespan'] as String?,

@@ -1,5 +1,15 @@
 """
-One-time translation helper for old_province.description -> description_en.
+One-time translation helper for province.short_description -> description_en.
+
+Originally targeted old_province.description (pre-merger, 63 rows); switched
+to province.short_description (post-merger, 34 rows) alongside the Trip
+Planner/Recommend old_province -> province migration — see
+20260806090100_add_province_description_en.sql. province has no single
+"description" column (only short_description / detailed_description);
+short_description was chosen as the translation source because
+recommend_service.py's province list is a compact card view, matching the
+old old_province.description's short-form usage more closely than
+detailed_description would.
 
 cf_service has NO translation API key configured (checked .env.example:
 only SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / DATABASE_URL — no
@@ -8,7 +18,7 @@ which is a separate Deno service with its own DeepSeek key). This script
 does NOT call any translation API and does NOT add a new dependency.
 
 Workflow:
-  1. Export — dump every old_province row missing description_en into a
+  1. Export — dump every province row missing description_en into a
      JSON file for manual translation (paste into ChatGPT/Claude, or
      translate by hand):
 
@@ -20,11 +30,13 @@ Workflow:
 
   2. Fill in "description_en" for each entry in that file.
 
-  3. Apply — update old_province.description_en from the filled file:
+  3. Apply — update province.description_en from the filled file:
 
        python scripts/translate_province_descriptions.py --apply province_descriptions_to_translate.json
 
-Run from cf_service/ root. One-time script, not a recurring job.
+Run from cf_service/ root, AFTER 20260806090100_add_province_description_en.sql
+has been applied (province.description_en must exist). One-time script, not
+a recurring job.
 """
 
 from __future__ import annotations
@@ -48,8 +60,8 @@ if hasattr(sys.stdout, "reconfigure"):
 def fetch_provinces(supabase: Any) -> list[dict]:
     response = (
         supabase
-        .table("old_province")
-        .select("id_province,name,description,description_en")
+        .table("province")
+        .select("id_province,name,short_description,description_en")
         .execute()
     )
     return response.data or []
@@ -61,11 +73,11 @@ def export_for_translation(supabase: Any, output_path: str) -> None:
         {
             "id_province": p["id_province"],
             "name": p.get("name") or "",
-            "description_vi": p.get("description") or "",
+            "description_vi": p.get("short_description") or "",
             "description_en": "",
         }
         for p in provinces
-        if (p.get("description") or "").strip()
+        if (p.get("short_description") or "").strip()
         and not (p.get("description_en") or "").strip()
     ]
 
@@ -95,7 +107,7 @@ def apply_translations(supabase: Any, input_path: str) -> None:
             skipped += 1
             continue
 
-        supabase.table("old_province").update(
+        supabase.table("province").update(
             {"description_en": description_en}
         ).eq("id_province", id_province).execute()
         updated += 1

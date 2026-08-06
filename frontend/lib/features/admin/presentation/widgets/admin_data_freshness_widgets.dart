@@ -132,9 +132,14 @@ class AdminFreshnessProposalCard extends StatelessWidget {
 }
 
 class AdminFreshnessReportCard extends StatelessWidget {
-  const AdminFreshnessReportCard({super.key, required this.report});
+  const AdminFreshnessReportCard({
+    super.key,
+    required this.report,
+    required this.onOpenDetails,
+  });
 
   final AdminFreshnessReport report;
+  final VoidCallback onOpenDetails;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -143,7 +148,20 @@ class AdminFreshnessReportCard extends StatelessWidget {
       leading: const Icon(Icons.flag_outlined),
       title: Text('${report.contentType ?? ''} · ${report.reason}'),
       subtitle: Text(report.note ?? report.contentId ?? ''),
-      trailing: Text(report.status),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Chip(
+            label: Text(report.status),
+            visualDensity: VisualDensity.compact,
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: onOpenDetails,
+            child: const Text('Xem chi tiết'),
+          ),
+        ],
+      ),
     ),
   );
 }

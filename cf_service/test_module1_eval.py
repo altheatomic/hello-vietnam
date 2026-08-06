@@ -60,7 +60,10 @@ from services.module1_repository import attach_place_tags_to_places, fetch_place
 CONFIDENCE_THRESHOLD = 0.7
 CATEGORIES = ["culture_history", "nature_outdoor", "adventure"]  # entertainment excluded — see docstring
 
-PROVINCES = {"Ho Chi Minh": "230e26ed-0118-4f62-96b5-ac0eb3ca1c1b"}
+# province.id_province (post-merger table) — verified via direct DB query;
+# old_province.id_province ("230e26ed-...") is a different UUID space
+# entirely (0% overlap, see old_province -> province migration).
+PROVINCES = {"Ho Chi Minh": "094014a7-b8f6-481a-bbce-5ed6cdd457c5"}
 _PROVINCE_NAMES_VI = {
     "An Giang":   "An Giang",
     "Quang Ninh": "Quảng Ninh",
@@ -68,7 +71,11 @@ _PROVINCE_NAMES_VI = {
     "Lam Dong":   "Lâm Đồng",
 }
 # Previously-audited true totals, printed alongside the live fetch count as a
-# sanity check (not used in any calculation).
+# sanity check (not used in any calculation). STALE as of the old_province ->
+# province switch: province is the post-merger table (34 rows vs
+# old_province's 63), so these boundaries — and therefore true place counts
+# per province — have likely changed. Re-audit before trusting this
+# comparison again.
 _EXPECTED_TOTAL_ELIGIBLE = {
     "Ho Chi Minh": 463, "An Giang": 275, "Quang Ninh": 165,
     "Vinh Long": 192, "Lam Dong": 316,
@@ -85,12 +92,12 @@ _PLACE_SELECT_FIELDS = (
 
 def _lookup_province_ids(supabase) -> dict[str, str]:
     names = list(_PROVINCE_NAMES_VI.values())
-    resp = supabase.table("old_province").select("id_province,name").in_("name", names).execute()
+    resp = supabase.table("province").select("id_province,name").in_("name", names).execute()
     by_name = {row["name"]: str(row["id_province"]) for row in (resp.data or [])}
     resolved = dict(PROVINCES)
     for key, vi_name in _PROVINCE_NAMES_VI.items():
         if vi_name not in by_name:
-            raise ValueError(f"Could not resolve province '{vi_name}' in old_province table")
+            raise ValueError(f"Could not resolve province '{vi_name}' in province table")
         resolved[key] = by_name[vi_name]
     return resolved
 
@@ -104,7 +111,7 @@ def _fetch_all_places_for_province(supabase, id_province: str) -> list[dict]:
             supabase
             .table("place_localized_en")
             .select(_PLACE_SELECT_FIELDS)
-            .eq("old_province", id_province)
+            .eq("id_province", id_province)
             .eq("status", "active")
             .eq("place_subcategory.is_itinerary_eligible", True)
             .filter("latitude", "not.is", "null")

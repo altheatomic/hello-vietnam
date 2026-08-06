@@ -296,7 +296,7 @@ immutable
 as $$
 begin
     return query
-    select * from (
+    select config.table_name, config.id_column from (
         values
             ('place', 'place', 'id_place'),
             ('activity', 'activity', 'id'),
