@@ -105,6 +105,7 @@ export class OsmSourceAdapter implements SourceAdapter {
       fetchFn: this.fetchFn,
       delay: this.delay,
       extraAllowedUrl: this.overpassUrl,
+      method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
         Accept: "application/json",

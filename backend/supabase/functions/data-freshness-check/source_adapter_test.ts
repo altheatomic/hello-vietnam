@@ -117,6 +117,22 @@ Deno.test("OSM normalizes only operational fields", async () => {
   }
 });
 
+Deno.test("OSM sends the Overpass query with POST", async () => {
+  let method: string | undefined;
+  let body: BodyInit | null | undefined;
+  const adapter = new OsmSourceAdapter(async (_url, init) => {
+    method = init?.method;
+    body = init?.body;
+    return new Response(JSON.stringify({ elements: [] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  });
+  await adapter.fetch(fixtureOsmFreshness(), AbortSignal.timeout(100));
+  assertEquals(method, "POST");
+  assertStringIncludes(String(body), "data=");
+});
+
 Deno.test("source adapter turns an aborted request into an error", async () => {
   const adapter = new WikipediaSourceAdapter(async (_url, init) => {
     init?.signal?.throwIfAborted();

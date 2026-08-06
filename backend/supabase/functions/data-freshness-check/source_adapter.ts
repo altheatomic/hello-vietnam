@@ -69,6 +69,7 @@ export async function fetchSourceResponse(
     delay?: DelayLike;
     extraAllowedUrl?: string;
     headers?: HeadersInit;
+    method?: string;
     body?: BodyInit;
   } = {},
 ): Promise<FetchSourceResponse> {
@@ -82,6 +83,7 @@ export async function fetchSourceResponse(
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const response = await fetchFn(requestUrl, {
+        method: options.method,
         headers: options.headers,
         body: options.body,
         redirect: "manual",
