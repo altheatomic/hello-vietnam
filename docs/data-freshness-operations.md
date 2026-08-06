@@ -19,6 +19,10 @@ and evidence requirements, see
 - Supabase Vault secret: `data_freshness_check_secret`
 - Edge Function secret: `DATA_FRESHNESS_CHECK_SECRET`
 
+The migration currently points the cron HTTP request at the configured project
+URL `ziouozppetvvdrzgojcx`. A different staging project must override that URL
+before claiming that its cron is active.
+
 The checker secret must be identical in Vault and the Edge Function secret. It
 must never be bundled into Flutter, crawler output, or a client-side config.
 

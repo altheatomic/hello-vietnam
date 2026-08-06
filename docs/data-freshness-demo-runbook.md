@@ -78,6 +78,12 @@ where jobname = 'data-freshness-daily';
 Cron đúng phải có schedule `15 2 * * *` (02:15 UTC). Nếu Vault secret thiếu,
 cron sẽ bỏ qua request một cách an toàn.
 
+> **Quan trọng khi dùng project khác:** migration hiện tại tạo cron với URL
+> `https://ziouozppetvvdrzgojcx.supabase.co/functions/v1/data-freshness-check`.
+> Nếu staging/local không phải project này, không dùng cron đó nguyên trạng; hãy
+> deploy Edge Function/configure cron với URL của project đích rồi kiểm tra lại
+> `cron.job` và một lần trigger thủ công.
+
 ## 3. Chạy manual crawler
 
 ### 3.1. Dry run trước
