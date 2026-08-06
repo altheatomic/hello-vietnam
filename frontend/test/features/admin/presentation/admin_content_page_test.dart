@@ -2,11 +2,68 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hellovietnam/app/theme.dart';
 import 'package:hellovietnam/features/admin/data/admin_content_repository.dart';
 import 'package:hellovietnam/features/admin/domain/admin_content.dart';
+import 'package:hellovietnam/features/admin/presentation/admin_shell.dart';
 import 'package:hellovietnam/features/admin/presentation/pages/admin_content_page.dart';
 
 void main() {
+  testWidgets('loaded activity page fits the browser at 125 percent scaling', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 912.5);
+    tester.view.devicePixelRatio = 1.25;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildTheme(),
+        home: AdminShell(
+          currentPath: '/admin/activities',
+          child: AdminContentPage(
+            config: AdminContentConfigs.activity,
+            repository: _EightRecordAdminContentRepository(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('loading province layout fits a narrow admin viewport', (
+    tester,
+  ) async {
+    final repository = _PendingAdminContentRepository();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 640,
+            height: 900,
+            child: SingleChildScrollView(
+              child: AdminContentPage(
+                config: AdminContentConfigs.province,
+                repository: repository,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+
+    repository.complete();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('edit loads full admin content record before opening form', (
     tester,
   ) async {
@@ -19,9 +76,11 @@ void main() {
           body: SizedBox(
             width: 1200,
             height: 900,
-            child: AdminContentPage(
-              config: AdminContentConfigs.place,
-              repository: repository,
+            child: SingleChildScrollView(
+              child: AdminContentPage(
+                config: AdminContentConfigs.place,
+                repository: repository,
+              ),
             ),
           ),
         ),
@@ -48,9 +107,11 @@ void main() {
           body: SizedBox(
             width: 1200,
             height: 900,
-            child: AdminContentPage(
-              config: AdminContentConfigs.place,
-              repository: repository,
+            child: SingleChildScrollView(
+              child: AdminContentPage(
+                config: AdminContentConfigs.place,
+                repository: repository,
+              ),
             ),
           ),
         ),
@@ -77,6 +138,59 @@ void main() {
     expect(find.text('Hue Citadel'), findsOneWidget);
     expect(find.text('Ha Long Bay'), findsNothing);
   });
+}
+
+class _EightRecordAdminContentRepository extends AdminContentRepository {
+  @override
+  Future<AdminPagedResult<AdminContentRecord>> fetchPage(
+    AdminContentResourceConfig config, {
+    required int page,
+    required int pageSize,
+    String query = '',
+  }) async {
+    return AdminPagedResult<AdminContentRecord>(
+      items: List<AdminContentRecord>.generate(
+        8,
+        (index) => AdminContentRecord(
+          id: 'activity-$index',
+          idColumn: 'id_activity',
+          values: <String, dynamic>{
+            'id_activity': 'activity-$index',
+            'name': 'Activity number $index',
+            'short_description':
+                'A representative activity description for overflow testing.',
+            'status': 'active',
+          },
+        ),
+      ),
+      totalCount: 8,
+    );
+  }
+}
+
+class _PendingAdminContentRepository extends AdminContentRepository {
+  final Completer<AdminPagedResult<AdminContentRecord>> _completer =
+      Completer<AdminPagedResult<AdminContentRecord>>();
+
+  @override
+  Future<AdminPagedResult<AdminContentRecord>> fetchPage(
+    AdminContentResourceConfig config, {
+    required int page,
+    required int pageSize,
+    String query = '',
+  }) {
+    return _completer.future;
+  }
+
+  void complete() {
+    if (_completer.isCompleted) return;
+    _completer.complete(
+      const AdminPagedResult<AdminContentRecord>(
+        items: <AdminContentRecord>[],
+        totalCount: 0,
+      ),
+    );
+  }
 }
 
 class _FakeAdminContentRepository extends AdminContentRepository {

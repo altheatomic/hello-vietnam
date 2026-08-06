@@ -14,6 +14,13 @@ Optional filters (rating, budget) are applied in services/filters.py.
 from typing import Any
 
 from services.module3_optimizer import haversine_km
+from services.ttl_cache import TtlCache
+
+
+_PROVINCE_PLACES_CACHE = TtlCache[tuple[str, int], list[dict]](
+    ttl_seconds=120,
+    max_entries=128,
+)
 
 # Display names for subcategories shown to English-language users.
 _SUBCATEGORY_EN: dict[str, str] = {
@@ -26,6 +33,50 @@ _SUBCATEGORY_EN: dict[str, str] = {
     "Trường học / Đại học":       "School / University",
     "Bến xe / Sân bay / Ga tàu": "Transport Hub",
 }
+
+
+def remove_freshness_ineligible_places(
+    supabase: Any,
+    places: list[dict],
+) -> list[dict]:
+    """Remove only freshness states that are unsafe for itinerary planning.
+
+    A missing freshness row is retained for migration compatibility, and stale
+    content remains usable with the warning rendered by the client. Metadata
+    failures fail open so a rollout cannot blank the planner unexpectedly.
+    """
+
+    if not places:
+        return places
+    content_ids = [
+        str(place.get("id_place"))
+        for place in places
+        if place.get("id_place") is not None
+    ]
+    if not content_ids:
+        return places
+    try:
+        response = (
+            supabase
+            .table("content_freshness")
+            .select("content_id,freshness_status")
+            .eq("content_type", "place")
+            .in_("content_id", content_ids)
+            .execute()
+        )
+        blocked = {
+            str(row.get("content_id"))
+            for row in (response.data or [])
+            if str(row.get("freshness_status", "")).lower()
+            in {"needs_review", "expired"}
+        }
+        return [
+            place
+            for place in places
+            if str(place.get("id_place")) not in blocked
+        ]
+    except Exception:
+        return places
 
 
 def fetch_nearby_amenities(
@@ -98,7 +149,7 @@ def fetch_places_near_point(
 
     select_fields = (
         "id_place,id_place_subcategory,name,short_description,"
-        "status,cover_image,gallery,address,latitude,longitude,"
+        "status,cover_image,gallery,address,phone,website,old_province,latitude,longitude,"
         "average_rating,review_count,minimum_price,maximum_price,"
         "estimated_duration_minutes,timespan,timeclose,"
         "place_subcategory!inner(name,place_category,is_itinerary_eligible)"
@@ -120,6 +171,7 @@ def fetch_places_near_point(
         .execute()
     )
     candidates = resp.data or []
+    candidates = remove_freshness_ineligible_places(supabase, candidates)
 
     within = [
         p for p in candidates
@@ -145,9 +197,14 @@ def fetch_places_required_filter(
     province_id: str,
     limit: int = 500,
 ) -> list[dict]:
+    cache_key = (str(province_id), limit)
+    cached = _PROVINCE_PLACES_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
     select_fields = (
         "id_place,id_place_subcategory,name,short_description,"
-        "status,cover_image,gallery,address,latitude,longitude,"
+        "status,cover_image,gallery,address,phone,website,old_province,latitude,longitude,"
         "average_rating,review_count,minimum_price,maximum_price,"
         "estimated_duration_minutes,timespan,timeclose,"
         "place_subcategory!inner(name,place_category,is_itinerary_eligible)"
@@ -166,4 +223,6 @@ def fetch_places_required_filter(
         .execute()
     )
 
-    return response.data or []
+    rows = remove_freshness_ineligible_places(supabase, response.data or [])
+    _PROVINCE_PLACES_CACHE.set(cache_key, rows)
+    return rows

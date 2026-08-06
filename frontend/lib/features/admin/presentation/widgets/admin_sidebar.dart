@@ -47,6 +47,12 @@ class AdminSidebar extends StatefulWidget {
       route: '/admin/reports',
     ),
     _NavDestination(
+      label: 'Data Freshness',
+      icon: Icons.update_outlined,
+      selectedIcon: Icons.update_rounded,
+      route: '/admin/data-freshness',
+    ),
+    _NavDestination(
       label: 'Food',
       icon: Icons.restaurant_outlined,
       selectedIcon: Icons.restaurant_rounded,
@@ -159,41 +165,48 @@ class _AdminSidebarState extends State<AdminSidebar> {
           const SizedBox(height: 8),
 
           // ── Zone 2: Nav items ──────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              children: AdminSidebar._topItems
-                  .map(
-                    (d) => _NavItem(
-                      key: ValueKey<String>(d.route),
-                      destination: d,
-                      isActive: _isActive(d.route),
-                      onTap: () => _navigate(d.route),
+          Expanded(
+            child: SingleChildScrollView(
+              primary: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Column(
+                      children: AdminSidebar._topItems
+                          .map(
+                            (d) => _NavItem(
+                              key: ValueKey<String>(d.route),
+                              destination: d,
+                              isActive: _isActive(d.route),
+                              onTap: () => _navigate(d.route),
+                            ),
+                          )
+                          .toList(),
                     ),
-                  )
-                  .toList(),
+                  ),
+                  const _SectionLabel(label: 'MANAGEMENT'),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Column(
+                      children: AdminSidebar._managementItems
+                          .map(
+                            (d) => _NavItem(
+                              key: ValueKey<String>(d.route),
+                              destination: d,
+                              isActive: _isActive(d.route),
+                              onTap: () => _navigate(d.route),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
           ),
-
-          _SectionLabel(label: 'MANAGEMENT'),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              children: AdminSidebar._managementItems
-                  .map(
-                    (d) => _NavItem(
-                      key: ValueKey<String>(d.route),
-                      destination: d,
-                      isActive: _isActive(d.route),
-                      onTap: () => _navigate(d.route),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-
-          const Spacer(),
 
           // ── Zone 3: Sign out ───────────────────────────────────
           _SignOutButton(),

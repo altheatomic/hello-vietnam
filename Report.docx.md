@@ -109,15 +109,15 @@ TP. Hồ Chí Minh, ngày 20 tháng 07 năm 2026
 
 [**Chương 3: ỨNG DỤNG HELLOVIETNAM	15**](#heading=)
 
-[3.1.Kiến trúc hệ thống	15](#3.1.kiến-trúc-hệ-thống)
+[3.1. Kiến trúc hệ thống	15](#3.1.kiến-trúc-hệ-thống)
 
-[**3.2.Thuật toán gợi ý và tối ưu lịch trình	15**](#heading=)
+[**3.2. Thuật toán gợi ý và tối ưu lịch trình	15**](#heading=)
 
-[**3.2.1.Module 1 – Gợi ý và chọn địa điểm	15**](#heading=)
+[**3.2.1. Module 1 – Gợi ý và chọn địa điểm	15**](#heading=)
 
-[**3.2.2.Module 2 – Phân cụm địa điểm theo ngày	17**](#heading=)
+[**3.2.2. Module 2 – Phân cụm địa điểm theo ngày	17**](#heading=)
 
-[**3.1.3.Module 3 – Tối ưu lộ trình trong ngày (SA-TSPTW)	20**](#heading=)
+[**3.2.3. Module 3 – Tối ưu lộ trình trong ngày (SA-TSPTW)	20**](#heading=)
 
 [**3.3.Thiết kế các thành phần	20**](#heading=)
 
@@ -233,117 +233,128 @@ Tuy nhiên, Content-Based Filtering cũng có một số hạn chế. Chất lư
 
 # **Chương 3: ỨNG DỤNG HELLOVIETNAM**
 
-## **3.1.Kiến trúc hệ thống** {#3.1.kiến-trúc-hệ-thống}
+## **3.1. Kiến trúc hệ thống** {#3.1.kiến-trúc-hệ-thống}
 
-HelloVietnam được xây dựng theo kiến trúc phân lớp, gồm lớp trình bày, lớp dịch vụ backend, lớp xử lý thuật toán, lớp dữ liệu và các dịch vụ tích hợp bên ngoài. Cách tổ chức này tách giao diện người dùng khỏi logic nghiệp vụ và thông tin xác thực của các dịch vụ trả phí. Nhờ đó, ứng dụng Flutter không cần kết nối trực tiếp đến các API bí mật, trong khi các thành phần backend có thể được triển khai, giám sát và nâng cấp độc lập.
-
-**Lớp trình bày** được phát triển bằng Flutter và Dart. Cùng một mã nguồn Flutter cung cấp ứng dụng cho người dùng trên Android và Flutter Web, đồng thời có điểm khởi chạy riêng cho trang quản trị trên Web. Ứng dụng người dùng bao gồm các nhóm chức năng như xác thực, trang chủ, khám phá nội dung du lịch, wishlist, diễn đàn, dịch thuật, loyalty, thanh toán subscription và lập lịch trình. Trang quản trị cung cấp giao diện quản lý người dùng, báo cáo và các nhóm dữ liệu như tỉnh thành, địa điểm, món ăn, hoạt động, văn hóa và sản phẩm địa phương. Phần frontend sử dụng GoRouter để quản lý điều hướng; mã nguồn được chia theo feature, trong mỗi feature có các thành phần dữ liệu, mô hình và giao diện. Repository chịu trách nhiệm truy cập dữ liệu, store quản lý trạng thái và presentation hiển thị giao diện.
-
-**Lớp backend chính** sử dụng Supabase. Supabase Auth thực hiện đăng ký, đăng nhập, Google OAuth và cấp JWT. PostgREST và các hàm RPC cung cấp giao diện truy cập PostgreSQL; Row Level Security kiểm soát bản ghi mà từng người dùng được phép đọc hoặc thay đổi. Các nghiệp vụ cần khóa bí mật, kiểm tra quyền nâng cao hoặc phối hợp nhiều dịch vụ được đặt trong Supabase Edge Functions. Một số Edge Function tiêu biểu gồm `trip-planner`, `wishlist`, `translate`, `currency-rates`, `subscription-payment`, `media-upload`, `reviews`, `ai-search` và `ai-gateway`. Trước khi xử lý, Edge Function đọc JWT từ yêu cầu, xác định người dùng hiện tại, kiểm tra dữ liệu đầu vào rồi mới truy cập cơ sở dữ liệu hoặc dịch vụ bên ngoài.
-
-**Lớp xử lý thuật toán** là dịch vụ FastAPI viết bằng Python. Dịch vụ này chứa các thư viện và quy trình tính toán không phù hợp với môi trường Deno của Edge Functions, đặc biệt là gợi ý cộng tác và thuật toán lập lịch trình. Khi người dùng tạo lịch trình hoặc yêu cầu gợi ý, Flutter gọi Edge Function `trip-planner` hoặc `recommend`. Edge Function xác thực người dùng, kiểm tra dữ liệu đầu vào rồi proxy yêu cầu HTTP hợp lệ đến FastAPI Trip & Recommend Service. FastAPI thực hiện lựa chọn ứng viên, phân cụm theo ngày, tối ưu thứ tự tham quan và trả kết quả ngược qua Edge Function về ứng dụng. Luồng trung gian này giúp che giấu địa chỉ dịch vụ thuật toán, thông tin kết nối cơ sở dữ liệu và service role key khỏi thiết bị người dùng.
-
-FastAPI có hai đường truy cập dữ liệu phục vụ các mục đích khác nhau. Luồng nghiệp vụ thông thường sử dụng Supabase REST thông qua `supabase-py` với service role key được giữ ở máy chủ; vì vậy luồng này bỏ qua RLS và chỉ được phép tồn tại trong môi trường backend tin cậy. Riêng tác vụ CF Retrain chạy nền sử dụng `asyncpg` và `DATABASE_URL` để kết nối trực tiếp đến PostgreSQL, phù hợp với các truy vấn huấn luyện theo lô và thao tác dữ liệu có khối lượng lớn.
-
-**Lớp dữ liệu** sử dụng PostgreSQL do Supabase quản lý. Dữ liệu quan hệ được tổ chức theo các nhóm tài khoản, nội dung du lịch, lịch trình, diễn đàn, wishlist, đánh giá, thanh toán và loyalty. UUID được dùng làm khóa chính để hạn chế xung đột khi tạo dữ liệu từ nhiều dịch vụ. Các cột `jsonb` được sử dụng cho dữ liệu có cấu trúc linh hoạt như gallery, metadata hoặc payload thông báo; các quan hệ cốt lõi vẫn được bảo vệ bằng khóa ngoại, ràng buộc kiểm tra và chỉ mục.
-
-**Lớp lưu trữ và tích hợp bên ngoài** gồm Cloudflare R2 cho hình ảnh và tệp đa phương tiện, OpenStreetMap cho bản đồ, DeepSeek hoặc Gemini cho các tính năng AI, Vbee cho chuyển văn bản thành giọng nói, Stripe cho thanh toán và dịch vụ tỷ giá cho chức năng tiền tệ. Ứng dụng tải media lên R2 thông qua Edge Function `media-upload`; cơ sở dữ liệu chỉ lưu URL công khai và metadata cần thiết. Các API key của AI, Vbee, Stripe và R2 được lưu trong Supabase Secrets hoặc biến môi trường của máy chủ, không được nhúng vào mã Flutter. Firebase Cloud Messaging (FCM) được thể hiện bằng nét đứt trong sơ đồ vì đây là hạng mục dự kiến tích hợp để Edge Functions gửi thông báo Android và dữ liệu điều hướng sâu đến ứng dụng; thông báo trong ứng dụng hiện tại vẫn được lưu và đọc từ PostgreSQL.
-
-Về mặt vận hành, các truy vấn danh sách có kích thước lớn được phân trang và sắp xếp bằng chỉ mục, ví dụ feed diễn đàn, wishlist và bảng quản trị. Dữ liệu tham chiếu ít thay đổi được cache ở ứng dụng; các tác vụ độc lập được tải nền để giảm thời gian mở màn hình. Khi dịch vụ thuật toán không hoạt động, Edge Function trả lỗi có cấu trúc để frontend hiển thị trạng thái và cho phép thử lại thay vì giữ màn hình chờ vô hạn.
+HelloVietnam được xây dựng theo kiến trúc phân lớp nhằm tách giao diện, xử lý nghiệp vụ, thuật toán và dữ liệu. Mỗi lớp đảm nhận một nhóm trách nhiệm rõ ràng và chỉ trao đổi với lớp khác thông qua giao diện đã xác định. Cách tổ chức này giúp giảm phụ thuộc giữa các thành phần, thuận tiện khi kiểm thử và cho phép nâng cấp dịch vụ thuật toán hoặc dịch vụ bên ngoài mà không phải thay đổi toàn bộ ứng dụng.
 
 *Hình 3.1.1: Sơ đồ kiến trúc hệ thống HelloVietnam*
 
-![Sơ đồ kiến trúc hệ thống HelloVietnam](report-assets/system-architecture-v2.png)
+![Sơ đồ kiến trúc hệ thống HelloVietnam](report-assets/system-architecture-final.png)
 
-## **3.2.Thuật toán gợi ý và tối ưu lịch trình**
+Các khối trong Hình 3.1.1 và mục đích của chúng được tóm tắt như sau:
 
-*\[Trình bày quy trình hoạt động tổng thể: người dùng nhập điểm đến và khoảng thời gian → Module 1 chọn địa điểm → Module 2 phân bổ theo ngày → Module 3 tối ưu thứ tự tham quan trong ngày → trả về lịch trình hoàn chỉnh.\]*
+| Lớp/khối | Công nghệ chính | Mục đích |
+|---|---|---|
+| Lớp giao diện | Flutter, Dart, GoRouter | Hiển thị giao diện Android/Web, tiếp nhận thao tác và điều hướng giữa các màn hình |
+| Xác thực và backend | Supabase Auth, Edge Functions, PostgREST, RPC | Xác thực người dùng, kiểm tra quyền, xử lý nghiệp vụ và cung cấp giao diện truy cập dữ liệu |
+| Dịch vụ thuật toán | FastAPI, Python, scikit-learn | Cá nhân hóa gợi ý, phân cụm địa điểm và tối ưu lịch trình |
+| Lớp dữ liệu | PostgreSQL, RLS | Lưu trữ dữ liệu quan hệ và giới hạn quyền truy cập theo người dùng |
+| Lưu trữ và dịch vụ ngoài | Cloudflare R2, Firebase FCM, DeepSeek/Gemini, Vbee, OpenStreetMap, Stripe, API tỷ giá | Lưu media, gửi thông báo, cung cấp AI, giọng nói, bản đồ, thanh toán và tỷ giá |
 
-### **3.2.1.Module 1 – Gợi ý và chọn địa điểm**
+**Lớp giao diện.** Frontend được phát triển bằng Flutter và Dart. Mã nguồn có hai điểm khởi chạy: ứng dụng người dùng trên Android/Flutter Web và trang quản trị trên Flutter Web. Ứng dụng người dùng cung cấp các chức năng xác thực, khám phá nội dung du lịch, wishlist, diễn đàn, dịch thuật, nhận dạng bằng AI, loyalty, thanh toán gói Premium và lập lịch trình. Trang quản trị phục vụ quản lý người dùng, báo cáo và dữ liệu du lịch. GoRouter ánh xạ URL hoặc đường dẫn sâu đến màn hình tương ứng; nhờ đó ứng dụng có thể xử lý điều hướng nội bộ và mở đúng màn hình khi người dùng nhấn vào liên kết hoặc thông báo. Mã nguồn được tổ chức theo từng feature; lớp repository thực hiện truy cập dữ liệu, store quản lý trạng thái và lớp giao diện chịu trách nhiệm hiển thị, tiếp nhận thao tác từ người dùng.
 
-Module 1 là bước đầu tiên trong quy trình tạo lịch trình của hệ thống. Mục tiêu của module này là chọn ra danh sách các địa điểm phù hợp nhất với người dùng trước khi chuyển sang bước phân chia địa điểm theo ngày ở Module 2\.
+**Lớp xác thực và backend.** Supabase Auth thực hiện đăng ký, đăng nhập bằng email hoặc Google OAuth và cấp JSON Web Token (JWT) cho phiên người dùng. JWT là token có chữ ký số để backend kiểm tra danh tính và tính toàn vẹn; token không được xem là dữ liệu đã mã hóa. Trong quá trình truyền, HTTPS/TLS bảo vệ token và nội dung yêu cầu khỏi bị đọc hoặc sửa đổi trên đường truyền. Với các thao tác dữ liệu đơn giản thuộc phạm vi người dùng, Flutter có thể gọi PostgREST hoặc RPC của Supabase bằng khóa công khai và JWT. Row Level Security (RLS) tại PostgreSQL kiểm tra định danh trong JWT để chỉ cho phép người dùng đọc hoặc thay đổi các bản ghi thuộc quyền của mình.
 
-Đầu vào của Module 1 gồm thông tin sở thích của người dùng, sở thích riêng cho chuyến đi hiện tại, danh sách địa điểm trong khu vực được chọn và các tag mô tả từng địa điểm. Các tag này thể hiện đặc trưng của địa điểm, ví dụ như văn hóa, ẩm thực, thiên nhiên, biển, cà phê, mua sắm hoặc trải nghiệm địa phương.
+Các nghiệp vụ cần phối hợp nhiều bước, kiểm tra quyền quản trị hoặc sử dụng thông tin xác thực riêng của dịch vụ bên ngoài được đặt trong Supabase Edge Functions. Ví dụ, `wishlist` xử lý danh sách yêu thích, `media-upload` tiếp nhận và tải tệp lên R2, `subscription-payment` làm việc với Stripe, còn `translate`, `currency-rates` và `ai-search` tích hợp các dịch vụ AI hoặc dữ liệu ngoài. Đối với function yêu cầu đăng nhập, backend nhận JWT từ tiêu đề `Authorization`, xác định người dùng hiện tại, kiểm tra dữ liệu đầu vào và quyền thực hiện trước khi truy cập dữ liệu hoặc gọi nhà cung cấp bên ngoài.
 
-Trước hết, hệ thống xây dựng hồ sơ sở thích của người dùng. Hồ sơ này được tạo từ hai nguồn chính: sở thích ban đầu mà người dùng chọn khi sử dụng hệ thống và lịch sử hành vi của người dùng trong quá trình tương tác với các địa điểm. Các hành vi như xem chi tiết, lưu địa điểm, thêm vào lịch trình hoặc đánh giá cao sẽ làm tăng mức độ quan tâm của người dùng đối với các tag tương ứng. Ngược lại, các hành vi như bỏ qua, xóa khỏi lịch trình hoặc đánh giá thấp có thể làm giảm mức độ ưu tiên của các tag đó.
+Các thông tin xác thực nhạy cảm của hệ thống gồm **khóa API, access token, service role key, chuỗi kết nối cơ sở dữ liệu và khóa truy cập R2**. Nếu bị lộ, các giá trị này có thể bị lợi dụng để sử dụng dịch vụ trả phí, thay đổi tệp hoặc truy cập dữ liệu với quyền cao. Vì vậy, chúng chỉ được lưu trong Supabase Secrets hoặc biến môi trường phía máy chủ, không được đưa vào mã Flutter. Ứng dụng phía người dùng chỉ chứa URL dịch vụ và khóa công khai do Supabase thiết kế cho client; quyền truy cập dữ liệu vẫn được kiểm soát bằng JWT và chính sách RLS.
 
-Bên cạnh hồ sơ dài hạn, hệ thống còn xét đến sở thích của chuyến đi hiện tại. Điều này cần thiết vì người dùng có thể có nhu cầu khác nhau trong từng chuyến đi. Ví dụ, bình thường người dùng thích cà phê và văn hóa, nhưng trong chuyến đi hiện tại lại muốn ưu tiên thiên nhiên và hoạt động ngoài trời. Vì vậy, hệ thống kết hợp hồ sơ dài hạn với sở thích chuyến đi để tạo ra hồ sơ sở thích hiệu lực.
+**Lớp xử lý thuật toán.** Dịch vụ FastAPI Trip & Recommend Service được viết bằng Python để sử dụng các thư viện xử lý dữ liệu và thuật toán như scikit-learn. Flutter không gọi trực tiếp dịch vụ này. Khi người dùng tạo lịch trình hoặc yêu cầu gợi ý, ứng dụng gọi Edge Function `trip-planner` hoặc `recommend`; Edge Function xác thực yêu cầu rồi chuyển tiếp dữ liệu hợp lệ qua HTTP đến FastAPI. FastAPI thực hiện tính điểm gợi ý, phân cụm địa điểm theo ngày và tối ưu thứ tự tham quan, sau đó trả kết quả về Edge Function để chuyển lại cho ứng dụng. Cách bố trí này giữ URL nội bộ, khóa dịch vụ và thông tin kết nối cơ sở dữ liệu khỏi mã phía người dùng, đồng thời tạo một điểm kiểm soát quyền trước khi chạy thuật toán.
 
-Sau khi có hồ sơ sở thích hiệu lực, hệ thống tính điểm phù hợp giữa người dùng và từng địa điểm bằng cách so khớp các tag mà người dùng quan tâm với các tag của địa điểm. Một địa điểm sẽ có điểm cao nếu nó chứa nhiều tag trùng với sở thích của người dùng, đặc biệt là các tag có trọng số cao.
+FastAPI sử dụng hai cơ chế truy cập dữ liệu. Các luồng lập lịch trình và gợi ý thông thường dùng thư viện `supabase-py` với service role key ở phía máy chủ. Service role có quyền cao và bỏ qua RLS, do đó dịch vụ phải tự kiểm tra định danh, quyền sở hữu và tham số truy vấn; khóa này tuyệt đối không được đưa vào Flutter. Tác vụ huấn luyện lại Collaborative Filtering chạy theo lô sử dụng `asyncpg` và `DATABASE_URL` để kết nối trực tiếp PostgreSQL. Kết nối trực tiếp cũng không dựa vào RLS của phiên người dùng, nhưng phù hợp với truy vấn tổng hợp có khối lượng lớn trong một tiến trình backend được kiểm soát.
 
-Điểm phù hợp giữa người dùng u và địa điểm i được tính như sau: 
+**Lớp dữ liệu.** PostgreSQL do Supabase quản lý lưu dữ liệu tài khoản, nội dung du lịch, lịch trình, diễn đàn, wishlist, đánh giá, thanh toán, loyalty và thông báo. UUID được sử dụng làm khóa chính. Các trường `jsonb` chỉ dành cho dữ liệu có cấu trúc linh hoạt như gallery hoặc metadata; các quan hệ nghiệp vụ chính vẫn được thể hiện bằng khóa ngoại, ràng buộc `unique`, `check` và chỉ mục. Những truy vấn danh sách lớn như diễn đàn, wishlist và bảng quản trị được phân trang để tránh tải toàn bộ dữ liệu trong một lần.
 
-TagMatch(u,i) \= tTiTeffeffective\_weight(t) 
+**Lớp lưu trữ và tích hợp bên ngoài.** Cloudflare R2 lưu hình ảnh và tệp đa phương tiện; cơ sở dữ liệu chỉ lưu URL và metadata. OpenStreetMap cung cấp dữ liệu bản đồ; DeepSeek/Gemini hỗ trợ dịch và tìm kiếm AI; Vbee chuyển văn bản thành giọng nói; Stripe xử lý thanh toán; API tỷ giá cung cấp tỷ giá tiền tệ. Firebase Cloud Messaging đã được tích hợp để gửi thông báo Android. Khi có thông báo cần đẩy, backend lưu bản ghi trong PostgreSQL, Edge Function gửi nội dung qua FCM, thiết bị nhận thông báo và sử dụng dữ liệu điều hướng để mở màn hình liên quan khi người dùng nhấn vào.
 
-Sau khi tính điểm cho các địa điểm, hệ thống sắp xếp danh sách theo điểm giảm dần. Trong trường hợp nhiều địa điểm có điểm phù hợp gần nhau, hệ thống có thể xét thêm các yếu tố phụ như điểm đánh giá trung bình và số lượng đánh giá để ưu tiên các địa điểm có chất lượng ổn định hơn.
+Về khả năng chịu lỗi, frontend hiển thị trạng thái tải, lỗi và nút thử lại thay vì chờ vô hạn. Các dữ liệu tham chiếu ít thay đổi được lưu đệm tại ứng dụng; các danh sách lớn chỉ lấy từng trang và tải trang kế tiếp khi cần. Các dịch vụ trả phí và dịch vụ thuật toán được gọi qua backend, nhờ đó hệ thống có thể kiểm soát đầu vào, giới hạn tần suất, ghi log và thay đổi nhà cung cấp mà không làm lộ khóa truy cập.
 
-Tuy nhiên, nếu chỉ lấy các địa điểm có điểm cao nhất, danh sách kết quả có thể bị lệch về một nhóm địa điểm nhất định. Ví dụ, nếu người dùng thích cà phê, nhiều quán cà phê có thể cùng xuất hiện trong top đầu, khiến danh sách thiếu sự đa dạng. Vì vậy, Module 1 có thêm bước đa dạng hóa theo nhóm địa điểm hoặc subcategory. Bước này giúp danh sách ứng viên có sự cân bằng hơn giữa các loại trải nghiệm như tham quan, ăn uống, văn hóa, thiên nhiên hoặc mua sắm.
+## **3.2. Thuật toán gợi ý và tối ưu lịch trình**
 
-Đầu ra của Module 1 là danh sách địa điểm ứng viên đã được xếp hạng và đa dạng hóa. Danh sách này không phải là lịch trình cuối cùng, mà là tập địa điểm phù hợp để chuyển sang Module 2\. Module 2 sẽ tiếp tục phân chia các địa điểm này theo từng ngày dựa trên vị trí địa lý và các ràng buộc của lịch trình.
+Quy trình xây dựng lịch trình nhận các thông tin gồm tỉnh/thành phố hoặc vị trí xuất phát, ngày bắt đầu, ngày kết thúc, nhịp độ tham quan và sở thích của chuyến đi. Dữ liệu được xử lý qua ba module liên tiếp. Module 1 xếp hạng và chọn tập địa điểm phù hợp; Module 2 phân các địa điểm theo từng ngày dựa trên vị trí và tải tham quan; Module 3 tối ưu thứ tự ghé thăm trong từng ngày, đồng thời tạo mốc thời gian cụ thể. Kết quả cuối cùng là lịch trình có ngày, thứ tự, thời gian di chuyển, thời gian tham quan và cảnh báo ràng buộc.
 
-### **3.2.2.Module 2 – Phân cụm địa điểm theo ngày**
+### **3.2.1. Module 1 – Gợi ý và chọn địa điểm**
 
-*\[Mô tả thuật toán K-Means với k \= số ngày du lịch, sử dụng tọa độ (lat, lng) làm feature. Trình bày Greedy Repair: cân bằng số địa điểm giữa các ngày, xử lý trường hợp cluster rỗng hoặc quá tải. Nêu kết quả: mỗi ngày có một tập địa điểm địa lý gần nhau.\]*
+Module 1 tạo danh sách ứng viên phù hợp với người dùng. Đầu vào gồm hồ sơ sở thích dài hạn, sở thích riêng của chuyến đi, lịch sử hành vi, các địa điểm thuộc khu vực đã chọn và tập tag của từng địa điểm. Hồ sơ dài hạn được khởi tạo từ lựa chọn onboarding và được điều chỉnh bởi implicit feedback. Ví dụ, xem chi tiết làm tăng nhẹ trọng số liên quan, lưu yêu thích hoặc thêm vào chuyến đi làm tăng mạnh hơn, còn bỏ yêu thích hoặc đánh giá thấp làm giảm trọng số.
 
-Module 2 là bước xử lý sau khi Module 1 đã chọn ra danh sách địa điểm ứng viên phù hợp với người dùng. Mục tiêu của module này là chia các địa điểm thành từng nhóm theo ngày, sao cho các địa điểm trong cùng một ngày tương đối gần nhau về mặt địa lý và số lượng địa điểm trong mỗi ngày nằm trong giới hạn hợp lý.
+Khi người dùng chọn sở thích cho chuyến đi hiện tại, hệ thống kết hợp hai nguồn theo công thức:
 
-Đầu vào của Module 2 là danh sách địa điểm đã được Module 1 xếp hạng và đa dạng hóa. Danh sách này gồm các địa điểm có module1\_score cao, tức là có mức độ phù hợp tốt với sở thích của người dùng. Ngoài ra, Module 2 còn sử dụng các thông tin như tọa độ địa điểm, thời lượng tham quan ước lượng, số ngày du lịch và nhịp độ tham quan của người dùng.
+$$
+w_{eff}(u,t)=0.4\,w_{profile}(u,t)+0.6\,w_{trip}(t)
+$$
 
-Trước khi phân cụm, hệ thống giới hạn số lượng địa điểm ứng viên được đưa vào Module 2\. Số lượng này được tính dựa trên số ngày du lịch:
+Trong đó, \(w_{profile}(u,t)\) là trọng số tag \(t\) trong hồ sơ dài hạn của người dùng \(u\), \(w_{trip}(t)\) là trọng số của tag trong chuyến đi hiện tại và \(w_{eff}(u,t)\) là trọng số hiệu lực sau khi chuẩn hóa. Nếu người dùng không chọn sở thích riêng cho chuyến đi, hệ thống sử dụng hoàn toàn hồ sơ dài hạn.
 
-candidate\_limit=total\_daysCANDIDATE\_PER\_DAY 
+Mỗi quan hệ giữa địa điểm và tag có độ tin cậy \(c(i,t)\). Điểm phù hợp dựa trên nội dung được tính bằng:
 
-Trong đó:
+$$
+TagMatch(u,i)=
+\frac{\sum_{t \in T_i}w_{eff}(u,t)\,c(i,t)}
+{\sum_{t \in T_u}w_{eff}(u,t)}
+$$
 
-- candidate\_limit là số lượng địa điểm ứng viên tối đa được đưa vào Module 2\.  
-- total\_days là số ngày du lịch của người dùng.  
-- CANDIDATE\_PER\_DAY là số địa điểm ứng viên dự kiến cho mỗi ngày.
+Trong đó, \(T_i\) là tập tag của địa điểm \(i\), còn \(T_u\) là tập tag có trọng số trong hồ sơ hiệu lực. Phép chia cho tổng trọng số giúp điểm nằm trên cùng thang đo khi số lượng sở thích giữa các người dùng khác nhau.
 
-Ví dụ, nếu người dùng đi 3 ngày và hệ thống lấy 8 địa điểm ứng viên cho mỗi ngày, Module 2 sẽ nhận tối đa 24 địa điểm để xử lý. Việc lấy nhiều hơn số địa điểm thực tế cần xuất hiện trong lịch trình giúp hệ thống có thêm lựa chọn khi cần cân bằng lại các ngày.
+Hệ thống tiếp tục kết hợp điểm Content-Based (CB) với điểm Collaborative Filtering (CF):
 
-Sau khi nhận danh sách địa điểm, hệ thống xác định thời lượng tham quan ước lượng cho từng địa điểm để phục vụ việc kiểm soát tải lịch trình trong mỗi ngày.
+$$
+FinalScore(u,i)=\alpha\,TagMatch(u,i)+(1-\alpha)\,CF(u,i)
+$$
 
-Tiếp theo, Module 2 sử dụng thuật toán K-Means để phân cụm địa điểm theo vị trí địa lý. Mỗi địa điểm được biểu diễn bằng cặp tọa độ:
+Hệ số \(\alpha\) thay đổi theo độ bao phủ của dữ liệu CF. Khi chưa có điểm CF, \(\alpha=1\) để dùng hoàn toàn CB. Khi độ bao phủ CF nhỏ hơn 10%, \(\alpha=0.7\); từ 10% đến dưới 30%, \(\alpha=0.5\); từ 30% trở lên, \(\alpha=0.3\). Cơ chế này xử lý cold-start: người dùng mới vẫn nhận được kết quả từ sở thích đã chọn, còn người dùng có đủ lịch sử sẽ nhận kết quả chịu ảnh hưởng nhiều hơn từ hành vi cộng đồng.
 
-xi​=(lati​,loni​) 
+Sau khi sắp xếp theo `FinalScore`, hệ thống dùng điểm đánh giá trung bình và số lượt đánh giá làm tiêu chí phụ. Bước đa dạng hóa giới hạn việc một nhóm địa điểm hoặc một subcategory chiếm toàn bộ vị trí đầu. Đầu ra của Module 1 là tập ứng viên đã xếp hạng và đa dạng hóa để chuyển sang Module 2, chưa phải lịch trình cuối cùng.
 
-Số cụm của K-Means được xác định dựa trên số ngày du lịch. Nếu người dùng đi DDD ngày, hệ thống đặt số cụm tương ứng là: 
+### **3.2.2. Module 2 – Phân cụm địa điểm theo ngày**
 
-k=D
+Module 2 phân tập ứng viên thành các nhóm theo ngày sao cho địa điểm trong cùng ngày tương đối gần nhau và khối lượng tham quan phù hợp với nhịp độ người dùng. Trước khi phân cụm, các bản ghi thiếu tọa độ hợp lệ hoặc thiếu điểm Module 1 bị loại và ghi nhận lý do. Số ứng viên tối đa được tính theo:
 
-Điều này có nghĩa là hệ thống cố gắng chia các địa điểm thành DDD nhóm, mỗi nhóm tương ứng với một ngày trong lịch trình.
+$$
+candidate\_limit=D \times 8
+$$
 
-Trong bước phân cụm, K-Means giúp gom các địa điểm gần nhau vào cùng một cụm. Nhờ đó, các địa điểm trong cùng một ngày có xu hướng nằm gần nhau hơn, giúp giảm quãng đường di chuyển và tăng tính khả thi của lịch trình.
+Trong đó, \(D\) là số ngày của chuyến đi và 8 là số ứng viên dự phòng cho mỗi ngày. Ví dụ, chuyến đi 3 ngày đưa tối đa 24 địa điểm có thứ hạng cao vào bước phân cụm. Số lượng này lớn hơn số điểm ghé thăm thực tế để còn phương án thay thế khi cân bằng lịch trình.
 
-Tuy nhiên, kết quả K-Means chỉ là kết quả phân cụm ban đầu. Thuật toán này chủ yếu xét đến vị trí địa lý, chưa trực tiếp quan tâm đến số lượng địa điểm trong từng ngày, tổng thời lượng tham quan hoặc mức độ ưu tiên của từng địa điểm. Vì vậy, sau khi phân cụm bằng K-Means, hệ thống cần tiếp tục điều chỉnh kết quả bằng bước Greedy Repair.
+Mỗi địa điểm \(i\) được biểu diễn bởi vector tọa độ:
 
-trong bước K-Means, hệ thống sử dụng khoảng cách Euclid trên cặp tọa độ (lati​,loni​) như một xấp xỉ để phân cụm nhanh trong phạm vi tỉnh hoặc thành phố. Cách tính này đủ phù hợp cho bước tạo cụm ban đầu. Tuy nhiên, khi cần đánh giá khoảng cách thực tế theo kilômét trong các bước điều chỉnh, hệ thống có thể sử dụng hàm khoảng cách địa lý như Haversine để phản ánh tốt hơn khoảng cách giữa các địa điểm. 
+$$
+x_i=(latitude_i,longitude_i)
+$$
 
-Sau khi có kết quả phân cụm, hệ thống ánh xạ các cụm thành các ngày trong lịch trình. Mỗi cụm được gán với một day\_index, tương ứng với ngày thứ nhất, ngày thứ hai, ngày thứ ba và tiếp tục như vậy. Trong từng ngày, các địa điểm được sắp xếp theo độ ưu tiên, chủ yếu dựa trên module1\_score, sau đó xét thêm average\_rating và review\_count nếu cần.
+Số cụm được chọn là \(k=\min(D,N)\), với \(N\) là số ứng viên có tọa độ hợp lệ. K-Means sử dụng `random_state=42` và `n_init=10` để kết quả có thể lặp lại giữa các lần chạy. Khoảng cách Euclid trên cặp tọa độ được dùng để tạo cụm ban đầu trong phạm vi một tỉnh/thành phố. Sau đó, khoảng cách Haversine được dùng khi đánh giá khoảng cách thực theo kilômét giữa địa điểm và tâm cụm.
 
-Từ mỗi cụm ngày, hệ thống chọn ra các địa điểm chính, gọi là primary\_places. Đây là các địa điểm được đưa vào lịch trình chính của ngày đó. Các địa điểm còn lại được đưa vào backup\_places, đóng vai trò là danh sách dự phòng để sử dụng khi cần bổ sung hoặc thay thế trong bước repair.
+Kết quả K-Means chưa xét đầy đủ số địa điểm và thời lượng của từng ngày. Vì vậy, hệ thống áp dụng Greedy Repair. Giới hạn được xác định theo nhịp độ: mức `easy` có mục tiêu 3 địa điểm/ngày, `balanced` là 4, còn `active` và `packed` là 5; mỗi mức có giới hạn tối thiểu và tối đa tương ứng. Trong từng cụm, địa điểm được ưu tiên theo điểm Module 1, điểm đánh giá và số lượt đánh giá. Các mục đầu tiên tạo thành `primary_places`, phần còn lại được đưa vào `backup_places`.
 
-Một ngày trong lịch trình được xem là hợp lệ khi số lượng địa điểm và tổng thời lượng tham quan nằm trong giới hạn cho phép. Ngoài ra, tổng thời lượng tham quan trong ngày cũng không nên vượt quá giới hạn hệ thống đặt ra.
+Greedy Repair lần lượt xử lý ngày thiếu, ngày quá nhiều địa điểm và ngày có tổng thời lượng quá cao. Với ngày thiếu, thuật toán chọn địa điểm từ danh sách dự phòng hoặc từ ngày khác nếu địa điểm đó còn nằm trong ngưỡng khoảng cách tới tâm cụm và không làm vượt giới hạn. Với ngày quá tải, thuật toán ưu tiên chuyển địa điểm sang ngày phù hợp khác; nếu không thể chuyển, địa điểm thứ hạng cao được giữ trong `optional_places`, còn địa điểm thứ hạng thấp hơn chuyển về `backup_places`. Mọi thao tác điều chỉnh được ghi trong `repair_logs` để có thể kiểm tra kết quả.
 
-Nếu kết quả sau K-Means chưa thỏa mãn các điều kiện trên, hệ thống sử dụng Greedy Repair để điều chỉnh. Greedy Repair là bước hậu xử lý nhằm sửa các cụm ngày chưa hợp lý. Bước này không tìm nghiệm tối ưu toàn cục, mà chọn các thao tác điều chỉnh tốt nhất tại từng thời điểm.
+Đầu ra của Module 2 là danh sách các cụm ngày, mỗi cụm có ngày, tâm cụm, các địa điểm chính, tổng thời lượng dự kiến và cảnh báo. Các địa điểm dự phòng và tùy chọn được giữ lại để frontend có thể đề xuất thay thế khi cần.
 
-Greedy Repair xử lý chủ yếu ba trường hợp. Thứ nhất, nếu một ngày có quá ít địa điểm, hệ thống sẽ tìm thêm địa điểm phù hợp từ backup\_places hoặc từ các ngày khác còn khả năng nhường điểm. Địa điểm được thêm vào phải không làm ngày đó vượt quá số lượng tối đa, không làm tổng thời lượng quá tải và không nằm quá xa cụm ngày hiện tại.
+### **3.2.3. Module 3 – Tối ưu lộ trình trong ngày (SA-TSPTW)**
 
-Thứ hai, nếu một ngày có quá nhiều địa điểm, hệ thống sẽ chọn một số địa điểm để chuyển sang ngày khác hoặc đưa vào danh sách dự phòng. Những địa điểm ở xa trung tâm cụm, có thời lượng dài hoặc có điểm thấp hơn sẽ có khả năng bị chuyển đi trước. Cách làm này giúp ngày đó trở nên cân bằng hơn mà vẫn cố gắng giữ lại các địa điểm quan trọng với người dùng.
+Module 3 nhận từng nhóm địa điểm của Module 2 và tìm thứ tự ghé thăm phù hợp. Bài toán được mô hình hóa theo hướng Traveling Salesman Problem with Time Windows (TSPTW): ngoài việc giảm thời gian di chuyển, mỗi địa điểm còn có giờ mở cửa, giờ đóng cửa và thời lượng tham quan. Hệ thống cũng xét thời gian chờ, giờ nghỉ trưa và giới hạn kết thúc ngày.
 
-Thứ ba, nếu một ngày không vượt quá số lượng địa điểm nhưng tổng thời lượng tham quan quá cao, hệ thống cũng thực hiện điều chỉnh tương tự. Các địa điểm có thời lượng dài hoặc ít phù hợp hơn sẽ được xem xét chuyển sang ngày khác nếu có ngày phù hợp để nhận.
+Để tạo nghiệm ban đầu nhanh, thuật toán Greedy Nearest-Neighbour bắt đầu từ vị trí xuất phát và liên tục chọn địa điểm chưa ghé gần nhất theo khoảng cách Haversine. Nghiệm này có chi phí thấp hơn một thứ tự ngẫu nhiên và được dùng làm điểm bắt đầu cho Simulated Annealing (SA).
 
-Trong trường hợp một địa điểm có điểm cao nhưng không thể xếp vào lịch chính do ràng buộc số lượng, thời lượng hoặc vị trí, hệ thống có thể đưa địa điểm đó vào optional\_places. Đây là các địa điểm phù hợp với người dùng nhưng chưa thể đưa vào lịch trình chính. Ngược lại, các địa điểm có độ ưu tiên thấp hơn sẽ được đưa vào backup\_places để làm phương án dự phòng.
+Hàm mục tiêu đánh giá một thứ tự \(R\) như sau:
 
-Đầu ra chính của Module 2 là danh sách các nhóm địa điểm theo từng ngày. Mỗi nhóm ngày gồm các địa điểm chính được đề xuất tham quan cùng nhau.
+$$
+Cost(R)=Travel(R)+Wait(R)+Lunch(R)
++1000\,Violation(R)+1500\,Dropped(R)
+$$
 
-### **3.1.3.Module 3 – Tối ưu lộ trình trong ngày (SA-TSPTW)**
+`Travel` là tổng thời gian di chuyển, `Wait` là thời gian phải chờ địa điểm mở cửa, `Lunch` là thời gian nghỉ trưa phát sinh trong lịch, `Violation` là số lần thời điểm kết thúc tham quan vượt giờ đóng cửa và `Dropped` là số địa điểm có thời điểm kết thúc dự kiến sau 20:00. Hệ số phạt lớn khiến thuật toán ưu tiên lịch trình khả thi thay vì chỉ tối thiểu hóa quãng đường.
 
-*\[Mô tả chi tiết hàm mục tiêu: tổng thời gian di chuyển \+ penalty vi phạm time window (×1000 cho closing violation). Cấu trúc lịch trình ngày: bắt đầu 08:00, buffer 15 phút, lunch break, thời gian tham quan. Tham số SA: nhiệt độ khởi đầu, tỉ lệ giảm nhiệt, số vòng lặp. Ngưỡng chuyển đổi Brute Force ↔ SA tại n=8/9.\]*
+Từ nghiệm hiện tại, SA sinh nghiệm lân cận bằng một trong ba phép biến đổi: đổi chỗ hai địa điểm, đảo ngược một đoạn hoặc lấy một địa điểm chèn sang vị trí khác. Nghiệm tốt hơn luôn được chấp nhận. Nghiệm xấu hơn có thể được chấp nhận với xác suất:
 
-*Bảng 3.1.1: Ví dụ lịch trình 3 ngày tại \[tỉnh/thành phố\]*
+$$
+P=\exp\left(-\frac{\Delta Cost}{T}\right)
+$$
 
-*\[\[Chèn bảng ví dụ lịch trình tại đây\]\]*
+Khả năng chấp nhận nghiệm xấu ở nhiệt độ cao giúp thuật toán thoát khỏi cực tiểu cục bộ. Cấu hình hiện tại sử dụng \(T_0=1.0\), \(T_{min}=0.0001\), hệ số giảm nhiệt \(0.9\) và \(12n\) lần thử tại mỗi mức nhiệt, với \(n\) là số địa điểm trong ngày. Dịch vụ có thể chạy SA nhiều lần với seed khác nhau rồi chọn nghiệm có chi phí thấp nhất.
+
+Sau khi chọn thứ tự tốt nhất, bộ dựng lịch bắt đầu ngày lúc 08:00, thêm thời gian đệm 15 phút giữa các điểm, ước lượng di chuyển với tốc độ trung bình 30 km/h và chèn 90 phút nghỉ trưa từ 12:00 khi phù hợp. Thời lượng mặc định là 60 phút nếu địa điểm chưa có dữ liệu. Địa điểm kết thúc sau giờ đóng cửa được gắn cảnh báo; địa điểm dự kiến kết thúc sau 20:00 bị loại khỏi lịch chính. Kết quả trả về gồm danh sách theo thời gian, tổng thời gian di chuyển, tổng thời gian chờ, số vi phạm và số địa điểm bị loại.
+
+Module 3 hiện sử dụng Greedy Nearest-Neighbour kết hợp Simulated Annealing cho mọi ngày có từ hai địa điểm trở lên; hệ thống không có nhánh Brute Force. Vì vậy, báo cáo không đặt ngưỡng chuyển đổi giữa Brute Force và SA. Cách triển khai này phù hợp với số lượng địa điểm mỗi ngày đã được Module 2 giới hạn, đồng thời tránh chi phí giai thừa của vét cạn.
 
 ## **3.3.Thiết kế các thành phần**
 
@@ -358,6 +369,12 @@ Dữ liệu cá nhân hóa được lưu trong các bảng `user_travel_profile`
 Kết quả tạo lịch trình được lưu theo mô hình master-detail. Bảng `plan` lưu thông tin chung của chuyến đi, còn `plan_component` lưu từng thành phần theo ngày, thứ tự và địa điểm. Cấu trúc này cho phép tải riêng từng lịch trình, cập nhật trạng thái và tiếp tục chuyến đi mà không phải lưu toàn bộ kết quả vào một trường văn bản lớn.
 
 Các trường có cấu trúc linh hoạt như bộ sưu tập ảnh, giờ mở cửa hoặc metadata được lưu bằng `jsonb`. Khóa chính sử dụng UUID để hạn chế xung đột khi dữ liệu được tạo từ nhiều dịch vụ. Báo cáo không cố định số lượng bản ghi vì dữ liệu trên môi trường Supabase tiếp tục được bổ sung trong quá trình vận hành; quy mô tại thời điểm nghiệm thu có thể lấy trực tiếp bằng truy vấn thống kê trên cơ sở dữ liệu triển khai.
+
+Để hạn chế tình trạng dữ liệu cào bị lỗi thời, hệ thống áp dụng chiến lược cập nhật kết hợp. Mỗi bản ghi có một định danh nguồn ổn định, loại nguồn, thời điểm kiểm tra gần nhất và lịch kiểm tra kế tiếp trong bảng `content_freshness`. Tác vụ `data-freshness-check` chạy theo lịch, kiểm tra tối đa 50 bản ghi mỗi lượt và chỉ cập nhật các trường vận hành do nguồn sở hữu như tên, địa chỉ, tọa độ, giờ mở cửa, số điện thoại và trạng thái. Các trường biên tập như mô tả, ảnh được chọn, thẻ và điểm đánh giá không bị crawler ghi đè.
+
+Các sự kiện đã quá thời hạn được chuyển sang `expired` tự động. Với nguồn không còn tồn tại, lần kiểm tra hợp lệ đầu tiên chỉ đánh dấu `stale`; lần thứ hai tạo đề xuất `possibly_closed` để quản trị viên xem xét. Timeout hoặc lỗi phân tích không làm tăng bộ đếm mất nguồn. Quản trị viên có thể xem chênh lệch trước/sau, xác nhận, từ chối, chỉnh sửa trường được phép hoặc yêu cầu kiểm tra lại tại trang Data Freshness. Người dùng đã đăng nhập cũng có thể báo sai giờ mở cửa, địa điểm, tình trạng đóng cửa hoặc sự kiện đã kết thúc; báo cáo được giới hạn và chống trùng lặp.
+
+Chuỗi bằng chứng nghiệm thu gồm: sự kiện quá hạn được tự động hết hiệu lực; hai lần phản hồi missing tạo hàng chờ quản trị; nội dung được quản trị viên archive sẽ biến mất khỏi Explore và Trip Planner; báo cáo sai của người dùng xuất hiện trong hàng chờ mà không thay đổi nội dung; timeout giữ nguyên hash và bộ đếm missing; và chạy crawler hai lần với cùng source identity không tạo bản ghi trùng. Đây là cơ chế sẵn sàng cho demo, chưa phải cam kết xác minh đa nguồn ở cấp production.
 
 ### **3.3.2.Sơ đồ use-case**
 

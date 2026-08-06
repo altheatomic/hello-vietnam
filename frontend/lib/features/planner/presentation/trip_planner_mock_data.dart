@@ -429,6 +429,13 @@ class TripPlannerActivityData {
     this.lat = 0.0,
     this.lng = 0.0,
     this.imageUrl,
+    this.idPlace = '',
+    this.idProvince = '',
+    this.estimatedDurationMinutes,
+    this.minimumPrice,
+    this.maximumPrice,
+    this.timespan,
+    this.timeclose,
   });
 
   final String title;
@@ -442,6 +449,13 @@ class TripPlannerActivityData {
   final double lat;
   final double lng;
   final String? imageUrl;
+  final String idPlace;
+  final String idProvince;
+  final int? estimatedDurationMinutes;
+  final num? minimumPrice;
+  final num? maximumPrice;
+  final String? timespan;
+  final String? timeclose;
 
   Map<String, dynamic> toJson() => {
         'title': title,
@@ -455,6 +469,13 @@ class TripPlannerActivityData {
         'lat': lat,
         'lng': lng,
         'imageUrl': imageUrl,
+        'idPlace': idPlace,
+        'idProvince': idProvince,
+        'estimatedDurationMinutes': estimatedDurationMinutes,
+        'minimumPrice': minimumPrice,
+        'maximumPrice': maximumPrice,
+        'timespan': timespan,
+        'timeclose': timeclose,
       };
 
   factory TripPlannerActivityData.fromJson(Map<String, dynamic> json) =>
@@ -472,6 +493,14 @@ class TripPlannerActivityData {
         lat: (json['lat'] as num).toDouble(),
         lng: (json['lng'] as num).toDouble(),
         imageUrl: json['imageUrl'] as String?,
+        idPlace: json['idPlace'] as String? ?? '',
+        idProvince: json['idProvince'] as String? ?? '',
+        estimatedDurationMinutes:
+            (json['estimatedDurationMinutes'] as num?)?.toInt(),
+        minimumPrice: json['minimumPrice'] as num?,
+        maximumPrice: json['maximumPrice'] as num?,
+        timespan: json['timespan'] as String?,
+        timeclose: json['timeclose'] as String?,
       );
 }
 

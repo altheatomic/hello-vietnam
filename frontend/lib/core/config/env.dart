@@ -19,6 +19,10 @@ class Env {
     'EXPLORE_FUNCTION',
     defaultValue: 'explore',
   );
+  static const dataFreshnessFunction = String.fromEnvironment(
+    'DATA_FRESHNESS_FUNCTION',
+    defaultValue: 'data-freshness',
+  );
   static const currencyRatesFunction = String.fromEnvironment(
     'CURRENCY_RATES_FUNCTION',
     defaultValue: 'currency-rates',
@@ -26,6 +30,14 @@ class Env {
   static const tripPlannerFunction = String.fromEnvironment(
     'TRIP_PLANNER_FUNCTION',
     defaultValue: 'trip-planner',
+  );
+  static const tripShareFunction = String.fromEnvironment(
+    'TRIP_SHARE_FUNCTION',
+    defaultValue: 'trip-share',
+  );
+  static const shareWebHost = String.fromEnvironment(
+    'SHARE_WEB_HOST',
+    defaultValue: '',
   );
   static const recommendFunction = String.fromEnvironment(
     'RECOMMEND_FUNCTION',

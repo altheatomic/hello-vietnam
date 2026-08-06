@@ -57,6 +57,10 @@ class AdminFoodRepository {
 
     dynamic filter = _client.from(_foodTable).select('*');
 
+    // Archived records remain in the database for auditability but should not
+    // appear in the active admin catalogue.
+    filter = filter.neq(columns.statusColumn, 'archived');
+
     final trimmedTypeId = typeId?.trim();
     if (trimmedTypeId != null && trimmedTypeId.isNotEmpty) {
       filter = filter.eq(columns.typeColumn, trimmedTypeId);
@@ -199,15 +203,18 @@ class AdminFoodRepository {
   }
 
   Future<_FoodTableColumns> _resolveFoodColumns() async {
-    if (_foodColumns != null) return _foodColumns!;
-
-    final rows = await _resolvedTableClient.list(
-      'food columns',
-      () async => _client.from(_foodTable).select('*').limit(1),
+    // The production schema is migration-controlled. Avoid probing the table
+    // before every first page load: that extra sequential network round-trip
+    // made the admin Food screen noticeably slower and could fail independently.
+    return _foodColumns ??= const _FoodTableColumns(
+      idColumn: 'id_food',
+      nameColumn: 'name',
+      typeColumn: 'food_type_id',
+      cityColumn: 'id_province',
+      imageColumn: 'image_path',
+      descriptionColumn: 'description',
+      statusColumn: 'status',
     );
-    final sample = rows.isEmpty ? const <String, dynamic>{} : rows.first;
-    _foodColumns = _FoodTableColumns.fromSample(sample);
-    return _foodColumns!;
   }
 
   String _foodSearchFilter(_FoodTableColumns columns, String query) {
@@ -279,6 +286,7 @@ class AdminFoodRepository {
       'city': food.city,
       'urlImage': food.urlImage,
       'description': food.description,
+      'status': food.status,
     };
   }
 
@@ -339,6 +347,13 @@ class AdminFoodRepository {
         'description',
         'desc',
       ]),
+      status:
+          _firstString(row, <String>[
+            columns.statusColumn,
+            'status',
+            'state',
+          ]) ??
+          'active',
     );
   }
 
@@ -350,6 +365,7 @@ class AdminFoodRepository {
       city: _readNullableString(json, 'city') ?? 'Unknown',
       urlImage: _readNullableString(json, 'urlImage'),
       description: _readNullableString(json, 'description'),
+      status: _readNullableString(json, 'status') ?? 'active',
     );
   }
 
@@ -422,6 +438,7 @@ class _FoodTableColumns {
     required this.cityColumn,
     required this.imageColumn,
     required this.descriptionColumn,
+    required this.statusColumn,
   });
 
   final String idColumn;
@@ -430,6 +447,7 @@ class _FoodTableColumns {
   final String cityColumn;
   final String imageColumn;
   final String descriptionColumn;
+  final String statusColumn;
 
   bool get cityIsForeignKey =>
       cityColumn == 'id_province' ||
@@ -450,42 +468,6 @@ class _FoodTableColumns {
       idColumn: 'id_city',
       nameColumn: 'city',
     );
-  }
-
-  factory _FoodTableColumns.fromSample(Map<String, dynamic> sample) {
-    return _FoodTableColumns(
-      idColumn: _pickColumn(sample, <String>['id_food', 'food_id', 'id']),
-      nameColumn: _pickColumn(sample, <String>['name', 'food_name', 'title']),
-      typeColumn: _pickColumn(sample, <String>[
-        'food_type_id',
-        'id_food_type',
-        'type_id',
-        'type',
-      ]),
-      cityColumn: _pickColumn(sample, <String>[
-        'id_province',
-        'province_id',
-        'id_city',
-        'city_id',
-        'city_province',
-        'city',
-        'province',
-      ]),
-      imageColumn: _pickColumn(sample, <String>[
-        'image_path',
-        'url_image',
-        'image_url',
-        'image',
-      ]),
-      descriptionColumn: _pickColumn(sample, <String>['description', 'desc']),
-    );
-  }
-
-  static String _pickColumn(Map<String, dynamic> sample, List<String> keys) {
-    for (final key in keys) {
-      if (sample.containsKey(key)) return key;
-    }
-    return keys.first;
   }
 }
 

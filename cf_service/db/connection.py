@@ -24,8 +24,9 @@ async def init_pool() -> None:
 
     _pool = await asyncpg.create_pool(
         dsn=database_url,
-        min_size=2,
+        min_size=1,
         max_size=10,
+        timeout=8,
         command_timeout=60,
     )
 

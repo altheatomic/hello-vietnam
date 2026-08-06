@@ -18,6 +18,7 @@ from __future__ import annotations
 from collections import defaultdict
 from copy import deepcopy
 from datetime import timedelta
+import logging
 import math
 from typing import Any
 
@@ -30,12 +31,15 @@ from config import (
     HIGH_RANK_TOP_PERCENT,
     KMEANS_N_INIT,
     KMEANS_RANDOM_STATE,
+    MAX_SINGLE_PLACE_DURATION_MINUTES,
     MAX_VISIT_DURATION_MINUTES,
     PACE_DAY_RULES,
     REPAIR_DISTANCE_RHO,
     REPAIR_RELAXED_DISTANCE_RHO,
 )
 from services.filters import parse_date
+
+logger = logging.getLogger(__name__)
 
 
 DURATION_KEYWORD_RULES = [
@@ -103,7 +107,16 @@ def estimate_duration_minutes(place: dict) -> int:
     duration = place.get("estimated_duration_minutes")
     try:
         if duration is not None and int(duration) > 0:
-            return int(duration)
+            duration = int(duration)
+            if duration > MAX_SINGLE_PLACE_DURATION_MINUTES:
+                logger.warning(
+                    "estimated_duration_minutes=%d for place %r exceeds sanity clamp "
+                    "%d — clamping (likely bad/missing data or a unit mismatch)",
+                    duration, place.get("id_place") or place.get("name"),
+                    MAX_SINGLE_PLACE_DURATION_MINUTES,
+                )
+                duration = MAX_SINGLE_PLACE_DURATION_MINUTES
+            return duration
     except (TypeError, ValueError):
         pass
 

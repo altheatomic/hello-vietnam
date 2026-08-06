@@ -25,6 +25,7 @@ import '../features/planner/presentation/trip_planner_mock_data.dart';
 import '../features/planner/presentation/trip_planner_page.dart';
 import '../features/planner/presentation/widgets/trip_result_loader.dart';
 import '../features/planner/presentation/saved_trips_page.dart';
+import '../features/planner/presentation/shared_trip_page.dart';
 import '../features/planner/presentation/trip_location_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/profile/presentation/edit_profile_page.dart';
@@ -99,13 +100,14 @@ final rootNavigatorKey = GlobalKey<NavigatorState>();
 String? _pendingAuthReturnTo;
 Object? _pendingTripPlannerExtra;
 
-String? _validTripPlannerReturnTo(String? value) {
+String? _validAuthReturnTo(String? value) {
   final String candidate = value?.trim() ?? '';
   if (candidate.isEmpty) return null;
   final Uri? uri = Uri.tryParse(candidate);
   if (uri == null || uri.hasScheme || uri.hasAuthority) return null;
   return uri.path == AppRoutes.tripPlanner ||
-          uri.path.startsWith('${AppRoutes.tripPlanner}/')
+          uri.path.startsWith('${AppRoutes.tripPlanner}/') ||
+          uri.path == AppRoutes.sharedTrip
       ? uri.toString()
       : null;
 }
@@ -222,6 +224,7 @@ class AppRoutes {
   static const tripPlannerBudget = '/trip-planner/budget';
   static const tripPlannerSaved = '/trip-planner/saved';
   static const tripPlannerResult = '/trip-planner/result';
+  static const sharedTrip = '/shared-trip';
   static const tripPlannerDayDetail = '/trip-planner/result/day/:dayIndex';
   static const tripPlannerMap =
       '/trip-planner/result/day/:dayIndex/map/:activityIndex';
@@ -317,12 +320,13 @@ class AppRoutes {
   ).toString();
 
   static String recommendedPlaceDetailPath({
-    required String idProvince,
+    String? idProvince,
     required String idPlace,
   }) => Uri(
     path: recommendedPlaceDetail,
     queryParameters: <String, String>{
-      'idProvince': idProvince,
+      if (idProvince?.trim().isNotEmpty == true)
+        'idProvince': idProvince!.trim(),
       'idPlace': idPlace,
     },
   ).toString();
@@ -354,16 +358,25 @@ class AppRoutes {
 
   /// Builds a restorable result location for a persisted plan, or marks the
   /// location as a process-local draft when [idPlan] is absent.
-  static String tripPlannerResultPath({String? idPlan}) {
+  static String tripPlannerResultPath({
+    String? idPlan,
+    bool fromNotification = false,
+  }) {
     final String normalizedId = idPlan?.trim() ?? '';
     return Uri(
       path: tripPlannerResult,
       queryParameters: <String, String>{
         if (normalizedId.isNotEmpty) 'idPlan': normalizedId,
         if (normalizedId.isEmpty) 'draft': 'true',
+        if (fromNotification) 'from': 'notification',
       },
     ).toString();
   }
+
+  static String sharedTripPath(String token) => Uri(
+    path: sharedTrip,
+    queryParameters: <String, String>{'token': token},
+  ).toString();
 
   // â”€â”€ Admin routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   static const adminDashboard = '/admin/dashboard';
@@ -460,7 +473,7 @@ GoRouter buildRouter() {
       if (loggedIn) {
         final bool needsPreferences =
             !preferencesRepository.hasCompletedCurrentUser;
-        final String? authReturnTo = _validTripPlannerReturnTo(
+        final String? authReturnTo = _validAuthReturnTo(
           state.uri.queryParameters['returnTo'],
         );
         final String? returnTo = authReturnTo ?? _pendingAuthReturnTo;
@@ -485,6 +498,12 @@ GoRouter buildRouter() {
     },
     routes: [
       // Routes outside of bottom navigation.
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.sharedTrip,
+        builder: (c, s) =>
+            SharedTripPage(token: s.uri.queryParameters['token']?.trim() ?? ''),
+      ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.getStarted,
@@ -622,7 +641,7 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.recommendedPlaceDetail,
         builder: (c, s) => RecommendedPlaceDetailPage(
-          idProvince: s.uri.queryParameters['idProvince'] ?? '',
+          idProvince: s.uri.queryParameters['idProvince'],
           idPlace: s.uri.queryParameters['idPlace'] ?? '',
         ),
       ),
@@ -970,6 +989,8 @@ GoRouter buildRouter() {
                     builder: (context, state) => TripResultLoader(
                       idPlan: state.uri.queryParameters['idPlan'],
                       draft: _tripPlanFromExtra(state.extra),
+                      returnToNotification:
+                          state.uri.queryParameters['from'] == 'notification',
                     ),
                     routes: [
                       GoRoute(

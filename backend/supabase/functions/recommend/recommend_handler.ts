@@ -60,6 +60,10 @@ export async function handleRecommendRequest(req: Request): Promise<Response> {
             `?id_user=${encodeURIComponent(userId)}&limit=${limit}`,
         );
       }
+      case "getPlaceById": {
+        const idPlace = requiredString(payload.idPlace, "idPlace");
+        return proxyGet(`/api/recommend/place/${encodeURIComponent(idPlace)}`);
+      }
       default:
         return jsonResponse({ error: `Unsupported action: ${action}` }, 400);
     }

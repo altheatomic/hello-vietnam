@@ -49,6 +49,13 @@ DEFAULT_PACE_LEVEL = "balanced"
 MAX_VISIT_DURATION_MINUTES = 420
 DEFAULT_VISIT_DURATION_MINUTES = 90
 
+# Sanity clamp for a single place's estimated_duration_minutes as read from
+# the DB, applied in estimate_duration_minutes(). 480min (8h) is far above
+# any real place duration (real data tops out at 240min) and far below the
+# 24h wraparound schedule_builder._add() cannot handle — see that module's
+# docstring.
+MAX_SINGLE_PLACE_DURATION_MINUTES = 480
+
 HIGH_RANK_TOP_PERCENT = 0.20
 
 KMEANS_RANDOM_STATE = 42

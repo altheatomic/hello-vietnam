@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:hellovietnam/core/config/env.dart';
 import 'package:hellovietnam/core/network/supabase_function_client.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models/trip_plan_request.dart';
 import 'models/trip_plan_response.dart';
+import 'models/trip_share_link.dart';
 
 class NoTripCandidatesException implements Exception {
   const NoTripCandidatesException();
@@ -13,10 +17,13 @@ class TripRepository {
   TripRepository({
     SupabaseFunctionClient? functionClient,
     SupabaseClient? client,
+    http.Client? httpClient,
   }) : _functionClient =
-           functionClient ?? SupabaseFunctionClient(client: client);
+           functionClient ?? SupabaseFunctionClient(client: client),
+       _httpClient = httpClient ?? http.Client();
 
   final SupabaseFunctionClient _functionClient;
+  final http.Client _httpClient;
 
   Future<TripPlanResponse> planTrip(TripPlanRequest request) async {
     try {
@@ -93,12 +100,48 @@ class TripRepository {
     });
   }
 
+  Future<String> renamePlan(String idPlan, String customTitle) async {
+    final data = await _invoke(<String, Object?>{
+      'action': 'renamePlan',
+      'idPlan': idPlan,
+      'customTitle': customTitle,
+    });
+    return data['custom_title'] as String;
+  }
+
   Future<List<SavedPlanItem>> listSavedPlans() async {
     final data = await _invoke(<String, Object?>{'action': 'listSavedPlans'});
     final raw = data['plans'] as List<dynamic>? ?? <dynamic>[];
     return raw
         .whereType<Map<String, dynamic>>()
         .map(SavedPlanItem.fromJson)
+        .toList();
+  }
+
+  /// Shifts a saved plan's start_at/end_at when the user starts the trip
+  /// later than originally planned, preserving its duration. [newStartAt]
+  /// must be an ISO 'YYYY-MM-DD' date string.
+  Future<void> rescheduleTrip(String idPlan, String newStartAt) async {
+    await _invoke(<String, Object?>{
+      'action': 'rescheduleTrip',
+      'idPlan': idPlan,
+      'newStartAt': newStartAt,
+    });
+  }
+
+  Future<void> completeTrip(String idPlan) async {
+    await _invoke(<String, Object?>{'action': 'completeTrip', 'idPlan': idPlan});
+  }
+
+  /// Client-pull check for trips left un-ended long after their planned end
+  /// date — see cf_service `get_overdue_plans()` for the reusable query
+  /// this calls through.
+  Future<List<OverdueTripPlan>> checkOverdueTrips() async {
+    final data = await _invoke(<String, Object?>{'action': 'overdueTripCheck'});
+    final raw = data['plans'] as List<dynamic>? ?? <dynamic>[];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(OverdueTripPlan.fromJson)
         .toList();
   }
 
@@ -113,6 +156,91 @@ class TripRepository {
         .whereType<Map<String, dynamic>>()
         .map(CfRetrainLog.fromJson)
         .toList();
+  }
+
+  Future<CreatedTripShare> createShareLink(
+    String idPlan, {
+    int expiryDays = 30,
+    bool allowCopy = true,
+  }) async {
+    final data = await _shareInvoke(<String, Object?>{
+      'action': 'create',
+      'idPlan': idPlan,
+      'expiryDays': expiryDays,
+      'allowCopy': allowCopy,
+    });
+    return CreatedTripShare.fromJson(data);
+  }
+
+  Future<List<TripShareLink>> listShareLinks({String? idPlan}) async {
+    final data = await _shareInvoke(<String, Object?>{
+      'action': 'list',
+      if (idPlan != null && idPlan.trim().isNotEmpty) 'idPlan': idPlan.trim(),
+    });
+    final raw = data['links'] as List<dynamic>? ?? <dynamic>[];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(TripShareLink.fromJson)
+        .toList();
+  }
+
+  Future<void> revokeShareLink(String idShare) async {
+    await _shareInvoke(<String, Object?>{
+      'action': 'revoke',
+      'idShare': idShare,
+    });
+  }
+
+  Future<String> copySharedPlan(String token) async {
+    final data = await _shareInvoke(<String, Object?>{
+      'action': 'copy',
+      'token': token,
+    });
+    return data['id_plan'] as String;
+  }
+
+  Future<PublicSharedTrip> getPublicSharedPlan(String token) async {
+    final Uri uri = Uri.parse(
+      '${Env.supabaseUrl}/functions/v1/${Env.tripShareFunction}/public/'
+      '${Uri.encodeComponent(token.trim())}',
+    );
+    final http.Response response;
+    try {
+      response = await _httpClient
+          .get(
+            uri,
+            headers: const <String, String>{'apikey': Env.supabaseAnonKey},
+          )
+          .timeout(const Duration(seconds: 25));
+    } catch (error) {
+      throw SupabaseFunctionException(
+        'Could not load the shared trip. Please try again.',
+        details: error,
+      );
+    }
+
+    final Object? decoded = jsonDecode(response.body);
+    final Map<String, dynamic> data = decoded is Map
+        ? decoded.map(
+            (Object? key, Object? value) => MapEntry(key.toString(), value),
+          )
+        : <String, dynamic>{};
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw SupabaseFunctionException(
+        data['error']?.toString() ?? 'Shared trip is unavailable.',
+        details: data,
+      );
+    }
+    return PublicSharedTrip.fromJson(data);
+  }
+
+  Future<Map<String, dynamic>> _shareInvoke(Map<String, Object?> body) {
+    return _functionClient.invokeJson(
+      Env.tripShareFunction,
+      body: body,
+      requireAuth: true,
+      timeout: const Duration(seconds: 30),
+    );
   }
 
   Future<Map<String, dynamic>> _invoke(Map<String, Object?> body) {

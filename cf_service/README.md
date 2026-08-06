@@ -24,11 +24,16 @@ Copy `.env.example` to `.env` for local development:
 ```env
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
-DATABASE_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@<pooler-host>.pooler.supabase.com:5432/postgres
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` and `DATABASE_URL` are server-only secrets. Never put
 them in Flutter or any client-side config.
+
+Use the **Supavisor session pooler** connection string shown in Supabase
+Dashboard → Connect for hosted FastAPI deployments. The direct
+`db.<project-ref>.supabase.co:5432` endpoint can be IPv6-only; hosts without
+outbound IPv6 fail with `[Errno 101] Network is unreachable`.
 
 ## Run Locally
 

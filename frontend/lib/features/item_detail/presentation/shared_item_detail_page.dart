@@ -11,13 +11,15 @@ import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/media/media_url_resolver.dart';
 import 'package:hellovietnam/features/explore/data/explore_tracking_service.dart';
 import 'package:hellovietnam/features/explore/presentation/widgets/explore_floating_back_button.dart';
+import 'package:hellovietnam/features/data_freshness/domain/content_freshness_models.dart';
+import 'package:hellovietnam/features/data_freshness/presentation/content_report_sheet.dart';
+import 'package:hellovietnam/features/data_freshness/presentation/freshness_warning_banner.dart';
 import 'package:hellovietnam/features/forum/domain/create_forum_post_request.dart';
 import 'package:hellovietnam/features/item_detail/data/item_detail_repository.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_controller.dart';
 import 'package:hellovietnam/features/profile/data/wishlist_repository.dart';
-import 'package:hellovietnam/features/report/presentation/report_issue_popup.dart';
 import 'package:hellovietnam/features/reviews/data/review_repository.dart';
 import 'package:hellovietnam/features/reviews/domain/review_models.dart';
 import 'package:hellovietnam/features/reviews/presentation/review_section.dart';
@@ -38,8 +40,10 @@ class SharedItemDetailPage extends StatefulWidget {
     this.showWhatToExpect = true,
     this.showTrailingGallery = true,
     this.showFeedbackAction = true,
+    this.quickInfoMetadata = const <String>[],
     this.showRatingBadge = true,
     this.showShareAction,
+    this.reportContentType,
   }) : assert(
          request != null || detail != null,
          'Either request or detail must be provided.',
@@ -65,6 +69,10 @@ class SharedItemDetailPage extends StatefulWidget {
   /// Whether to show the thumbs-up icon next to the description box.
   final bool showFeedbackAction;
 
+  /// Optional detail lines rendered below the description. Empty by default,
+  /// so existing detail pages retain their current layout.
+  final List<String> quickInfoMetadata;
+
   /// Whether to show the star rating badge over the hero image carousel.
   final bool showRatingBadge;
 
@@ -72,6 +80,10 @@ class SharedItemDetailPage extends StatefulWidget {
   /// [ItemDetailRequest.trackExploreBehavior]. Null falls back to the
   /// existing `_shouldTrackExploreBehavior` behavior.
   final bool? showShareAction;
+
+  /// Overrides the inferred freshness report target. Recommend's place detail
+  /// reuses the activities layout and therefore passes this explicitly.
+  final FreshnessContentType? reportContentType;
 
   @override
   State<SharedItemDetailPage> createState() => _SharedItemDetailPageState();
@@ -334,6 +346,16 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
     }
   }
 
+  FreshnessContentType get _reportContentType {
+    if (widget.reportContentType != null) return widget.reportContentType!;
+    return switch (_detail.category) {
+      DetailCategory.activities => FreshnessContentType.activity,
+      DetailCategory.culture => FreshnessContentType.culture,
+      DetailCategory.food => FreshnessContentType.food,
+      DetailCategory.localProducts => FreshnessContentType.localProduct,
+    };
+  }
+
   ReviewContentType? get _reviewContentType {
     if (widget.reviewContentType != null) return widget.reviewContentType;
     if (!_detail.hasReviewTarget) {
@@ -378,6 +400,10 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                     const SizedBox(height: 12),
                   ],
                   _DetailHeader(title: _detail.name),
+                  if (_detail.freshnessInfo?.showsWarning == true) ...<Widget>[
+                    const SizedBox(height: 12),
+                    FreshnessWarningBanner(info: _detail.freshnessInfo!),
+                  ],
                   const SizedBox(height: 20),
                   _HeroImageCarousel(
                     images: _detail.effectiveHeroImages,
@@ -395,6 +421,7 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
                   const SizedBox(height: 18),
                   _QuickInfoCard(
                     description: _detail.description,
+                    metadata: widget.quickInfoMetadata,
                     isExpanded: _descExpanded,
                     showFeedbackAction: widget.showFeedbackAction,
                     onToggleExpanded: () {
@@ -467,8 +494,18 @@ class _SharedItemDetailPageState extends State<SharedItemDetailPage> {
             top: 6,
             right: AppConstants.pagePadding,
             child: SafeArea(
-              child: _ReportAssetIconButton(
-                onTap: () => showReportIssueFlow(context),
+              child: KeyedSubtree(
+                key: ValueKey<String>(
+                  'freshness-report:${_reportContentType.apiValue}',
+                ),
+                child: _ReportAssetIconButton(
+                  onTap: () => showContentReportSheet(
+                    context,
+                    contentType: _reportContentType,
+                    contentId: _detail.id,
+                    contentName: _detail.name,
+                  ),
+                ),
               ),
             ),
           ),
@@ -670,12 +707,14 @@ class _HeroImageCarousel extends StatelessWidget {
 class _QuickInfoCard extends StatelessWidget {
   const _QuickInfoCard({
     required this.description,
+    this.metadata = const <String>[],
     required this.isExpanded,
     required this.showFeedbackAction,
     required this.onToggleExpanded,
   });
 
   final String description;
+  final List<String> metadata;
   final bool isExpanded;
   final bool showFeedbackAction;
   final VoidCallback onToggleExpanded;
@@ -746,6 +785,20 @@ class _QuickInfoCard extends StatelessWidget {
                                 ? AppColors.primaryLight
                                 : AppColors.primary,
                             decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (metadata.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 12),
+                      ...metadata.map(
+                        (String line) => Padding(
+                          padding: const EdgeInsets.only(top: 5),
+                          child: Text(
+                            line,
+                            style: descriptionStyle.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),

@@ -622,11 +622,15 @@ class _DropdownPill<T> extends StatelessWidget {
                   if (leadingIcon != null)
                     Icon(leadingIcon, size: 16, color: AppColors.textSecondary),
                   if (leadingIcon != null) const SizedBox(width: 8),
-                  Text(
-                    allLabel,
-                    style: const TextStyle(
-                      color: dropdownTextColor,
-                      fontWeight: FontWeight.w500,
+                  Expanded(
+                    child: Text(
+                      allLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: dropdownTextColor,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -634,6 +638,8 @@ class _DropdownPill<T> extends StatelessWidget {
               ...values.map(
                 (v) => Text(
                   labelOf(v),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: dropdownTextColor,
                     fontWeight: FontWeight.w500,

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
 
 // ── SharedPreferences keys (namespaced per user so a device switching ────────
@@ -186,14 +187,27 @@ class TripStore extends ChangeNotifier {
 
   static final TripStore instance = TripStore._();
 
+  final TripRepository _repository = TripRepository();
+
   ActiveTrip? _activeTrip;
   TripStatus? _lastStatus;
   Timer? _refreshTimer;
   String? _currentUserId;
   StreamSubscription<AuthState>? _authSubscription;
 
+  /// Plan ids ended in this session — local-only (see [endTripByPlan]).
+  /// Doesn't survive app restart: there's no per-plan "ended" flag synced
+  /// back down from the server, only `ended_at` on the `plan` row itself.
+  final Set<String> _locallyCompletedTripIds = <String>{};
+
   ActiveTrip? get activeTrip => _activeTrip;
   bool get hasActiveTrip => _activeTrip != null;
+
+  /// Whether [idPlan] was ended in this session, from ANY of the three
+  /// "End Trip" surfaces (Trip Tracker card, overdue-check popup, bell
+  /// notification card) — see [endTripByPlan].
+  bool isCompletedLocally(String idPlan) =>
+      _locallyCompletedTripIds.contains(idPlan);
 
   // ── Initialisation ──────────────────────────────────────────────────────────
 
@@ -300,14 +314,24 @@ class TripStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Ends the active trip, clears persistence, and cancels the refresh timer.
-  ///
-  /// Call this on explicit user action (End Trip / Dismiss) or on logout.
-  void endTrip() {
-    _stopTimer();
-    _activeTrip = null;
-    _lastStatus = null;
-    _clearPersistence(); // fire-and-forget
+  /// Canonical "End Trip" action — used identically by the Trip Tracker
+  /// card on Home, the overdue-check popup, and the bell notification
+  /// card, so all three behave the same: syncs `ended_at` to the server
+  /// for [idPlan] (awaited — throws on failure so callers can show their
+  /// own error UI, and nothing changes locally if it fails), marks it
+  /// completed for [isCompletedLocally] (so e.g. a notification's own
+  /// "End Trip" button hides immediately even if the trip was actually
+  /// ended through a different surface), and clears it from the Trip
+  /// Tracker if it's the trip currently tracked there.
+  Future<void> endTripByPlan(String idPlan) async {
+    await _repository.completeTrip(idPlan);
+    _locallyCompletedTripIds.add(idPlan);
+    if (_activeTrip?.idPlan == idPlan) {
+      _stopTimer();
+      _activeTrip = null;
+      _lastStatus = null;
+      _clearPersistence(); // fire-and-forget
+    }
     notifyListeners();
   }
 

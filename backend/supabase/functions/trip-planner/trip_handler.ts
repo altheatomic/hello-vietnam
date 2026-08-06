@@ -9,6 +9,7 @@ import {
   requireAuthorizationHeader,
   requireRole,
 } from "../auth/auth_guard.ts";
+import { isRawCloneAllowed } from "./trip_clone_authorization.ts";
 
 type JsonObject = Record<string, unknown>;
 
@@ -67,6 +68,14 @@ export async function handleTripPlannerRequest(
         return clonePlan(userId, payload);
       case "savePlan":
         return savePlan(userId, payload);
+      case "renamePlan":
+        return renamePlan(userId, payload);
+      case "rescheduleTrip":
+        return rescheduleTrip(userId, payload);
+      case "completeTrip":
+        return completeTrip(userId, payload);
+      case "overdueTripCheck":
+        return overdueTripCheck(userId);
       case "triggerCfRetrain":
         return triggerCfRetrain(userId);
       case "getCfRetrainLogs":
@@ -128,6 +137,42 @@ async function getNearbyPlaces(p: JsonObject): Promise<Response> {
 
 async function clonePlan(userId: string, p: JsonObject): Promise<Response> {
   const id = reqStr(p.idPlan, "idPlan");
+  const adminClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+  const { data: plan, error: planError } = await adminClient
+    .from("plan")
+    .select("id_user")
+    .eq("id_plan", id)
+    .maybeSingle();
+  if (planError) {
+    return jsonResponse({ error: `Could not authorize clone: ${planError.message}` }, 503);
+  }
+  if (!plan) return jsonResponse({ error: "Plan not found." }, 404);
+
+  let hasActiveForumShare = false;
+  if (String(plan.id_user ?? "") !== userId) {
+    const { data: post, error: postError } = await adminClient
+      .from("forum_post")
+      .select("id_post")
+      .eq("status", "active")
+      .contains("shared_item", { type: "trip_plan", plan_id: id })
+      .limit(1)
+      .maybeSingle();
+    if (postError) {
+      return jsonResponse(
+        { error: `Could not authorize forum share: ${postError.message}` },
+        503,
+      );
+    }
+    hasActiveForumShare = post != null;
+  }
+
+  if (!isRawCloneAllowed({
+    requestingUserId: userId,
+    ownerUserId: strVal(plan.id_user),
+    hasActiveForumShare,
+  })) {
+    return jsonResponse({ error: "This trip is not available to copy." }, 403);
+  }
   return proxyPost(`/api/trips/${id}/clone`, { id_user: userId });
 }
 
@@ -137,6 +182,33 @@ async function savePlan(userId: string, p: JsonObject): Promise<Response> {
     id_user: userId,
     custom_title: strVal(p.customTitle),
   });
+}
+
+async function renamePlan(userId: string, p: JsonObject): Promise<Response> {
+  const id = reqStr(p.idPlan, "idPlan");
+  const customTitle = reqStr(p.customTitle, "customTitle");
+  return proxyRequest("PATCH", `/api/trips/${id}/title`, {
+    id_user: userId,
+    custom_title: customTitle,
+  });
+}
+
+async function rescheduleTrip(userId: string, p: JsonObject): Promise<Response> {
+  const id = reqStr(p.idPlan, "idPlan");
+  const newStartAt = reqStr(p.newStartAt, "newStartAt");
+  return proxyPost(`/api/trips/${id}/reschedule`, {
+    id_user: userId,
+    new_start_at: newStartAt,
+  });
+}
+
+async function completeTrip(userId: string, p: JsonObject): Promise<Response> {
+  const id = reqStr(p.idPlan, "idPlan");
+  return proxyPost(`/api/trips/${id}/complete`, { id_user: userId });
+}
+
+async function overdueTripCheck(userId: string): Promise<Response> {
+  return proxyGet(`/api/trips/overdue-check?id_user=${userId}`);
 }
 
 async function triggerCfRetrain(userId: string): Promise<Response> {
@@ -149,26 +221,35 @@ async function getCfRetrainLogs(userId: string): Promise<Response> {
   const adminClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
   await requireRole(adminClient, userId, "admin");
 
-  const r = await fetch(`${CF_SERVICE_URL}/admin/cf/retrain/logs`);
-  const { data, error } = await parseUpstreamJson(r);
-  if (error != null) return error;
+  const { data, error } = await adminClient
+    .from("cf_retrain_log")
+    .select(
+      "id_log, triggered_by, started_at, finished_at, status, rows_written, error_msg",
+    )
+    .order("started_at", { ascending: false })
+    .limit(50);
 
-  if (!r.ok) {
+  if (error) {
     return jsonResponse(
-      { error: strVal((data as JsonObject)?.detail) ?? "Request failed." },
-      r.status,
+      { error: `Could not load CF retrain logs: ${error.message}` },
+      503,
     );
   }
-  // cf_service returns a bare JSON array here (unlike the other endpoints,
-  // which return objects) — wrap it so the response shape matches every
-  // other action's `{ ... }` contract that invokeJson() expects.
-  return jsonResponse({ logs: data });
+  return jsonResponse({ logs: data ?? [] });
 }
 
 async function proxyPost(path: string, body: unknown): Promise<Response> {
+  return proxyRequest("POST", path, body);
+}
+
+async function proxyRequest(
+  method: "POST" | "PATCH",
+  path: string,
+  body: unknown,
+): Promise<Response> {
   console.log(`[trip-planner] cf_service_host=${new URL(CF_SERVICE_URL).host}`);
   const r = await fetch(`${CF_SERVICE_URL}${path}`, {
-    method: "POST",
+    method,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });

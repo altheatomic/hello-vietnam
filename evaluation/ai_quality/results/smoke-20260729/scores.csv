@@ -1,0 +1,9 @@
+﻿action_correct,actual_action,actual_db_id,answer,audio_reachable,audio_url,audio_url_present,automatic_pass,case_id,character_f_score,confidence,contains_forbidden_term,db_match_correct,detected_name,end_to_end_correct,error,expected_action,expected_db_id,expected_type,feature,human_adequacy,human_factuality,human_fluency,human_groundedness,human_intelligibility,human_mos,human_name_judgment,human_pending,human_relevance,human_summary_usefulness,latency_ms,name_correct,name_similarity,numbers_preserved,predicted_type,required_fact_coverage,schema_valid,status_code,success,token_f1,translation,type_correct
+,,,,,,,,search-food-01,,,,False,,False,EvaluationHttpError,,2965b48d-a399-47f6-b16b-1332c4f0ec06,food,ai_search,,,,,,,,False,,,,False,0.0,,,,False,,False,,,False
+,,,,,,,,search-food-02,,,,False,,False,EvaluationHttpError,,1d36de99-7a98-4a36-8ef1-a6ff59cd857f,food,ai_search,,,,,,,,False,,,,False,0.0,,,,False,,False,,,False
+True,trip_planner,,Tôi sẽ giúp bạn lập lịch trình 3 ngày ở Đà Nẵng.,,,,True,chat-01,,,False,,,,,trip_planner,,,ai_chat,,,,,,,,True,,,4669.854,,,,,1.0,,200,True,,,
+True,translate,,I am allergic to seafood.,,,,True,chat-02,,,False,,,,,translate,,,ai_chat,,,,,,,,True,,,3769.905,,,,,1.0,,200,True,,,
+,,,,,,,True,translation-01,1.0,,,,,,,,,,translation,,,,,,,,True,,,3714.841,,,True,,,,200,True,1.0,Vé vào bảo tàng giá bao nhiêu?,
+,,,,,,,True,translation-02,0.7741935483870968,,,,,,,,,,translation,,,,,,,,True,,,3516.857,,,True,,,,200,True,0.923076923076923,Tôi bị dị ứng với hải sản.,
+,,,,True,https://vbee.vn/s/75bb4ac8-6702-45fa-bf86-fa874b6b71c7/b89b756e-c2bd-40f6-a8db-ffddeeb68007,True,True,tts-01,,,,,,,,,,,tts,,,,,,,,True,,,3172.436,,,,,,,200,True,,,
+,,,,True,https://vbee.vn/s/79f0b32e-be99-431d-aeef-888136da4494/d8da8240-fbc9-458c-a39d-da8e8031579f,True,True,tts-02,,,,,,,,,,,tts,,,,,,,,True,,,3377.053,,,,,,,200,True,,,

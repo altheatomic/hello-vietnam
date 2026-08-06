@@ -134,7 +134,11 @@ async def main(repeats: int, out_path: str) -> None:
     results: list[ScenarioResult] = []
 
     # ── 1. n_days sweep (same province, same interest) ───────────────────────
-    for n_days in (1, 2, 3, 5, 7):
+    # 10/15/20/30 added to stress-test larger itineraries (still Ho Chi Minh /
+    # culture_history / sa_runs=2 / I_multiplier=12 — the latter is
+    # module3_optimizer._simulated_annealing's default, unchanged here).
+    # Run with `--repeats 3` for these larger values as specified.
+    for n_days in (1, 2, 3, 5, 7, 10, 15, 20, 30):
         results.append(await _run_scenario(
             supabase,
             name=f"n_days={n_days}",

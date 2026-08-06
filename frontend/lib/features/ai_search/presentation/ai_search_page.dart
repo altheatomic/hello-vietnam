@@ -1,17 +1,22 @@
-import 'dart:typed_data';
-
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/item_detail/domain/detail_category.dart';
 import 'package:hellovietnam/features/item_detail/domain/item_detail_models.dart';
+import 'package:hellovietnam/features/translate/data/openai_translation_service.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../data/ai_recognition_history_repository.dart';
 import '../data/ai_search_service.dart';
+import '../application/ai_recognition_map_coordinator.dart';
+import 'widgets/ai_recognition_result_sections.dart';
 
-enum _AiSearchView { initial, analyzing, resultFood, resultObject }
+enum _AiSearchView { initial, analyzing, result }
+
+enum _MapFallbackChoice { openSettings, continueWithoutLocation }
 
 class AiSearchPage extends StatefulWidget {
   const AiSearchPage({
@@ -20,12 +25,18 @@ class AiSearchPage extends StatefulWidget {
     this.historyStore,
     this.onOpenHistory,
     this.initialHistoryEntry,
+    this.mapCoordinator,
+    this.onCopyText,
+    this.onSpeakText,
   });
 
   final AiSearchService? aiSearchService;
   final AiRecognitionHistoryStore? historyStore;
   final VoidCallback? onOpenHistory;
   final AiRecognitionHistoryEntry? initialHistoryEntry;
+  final AiRecognitionMapCoordinator? mapCoordinator;
+  final Future<void> Function(String text)? onCopyText;
+  final Future<void> Function(String text)? onSpeakText;
 
   @override
   State<AiSearchPage> createState() => _AiSearchPageState();
@@ -40,9 +51,14 @@ class _AiSearchPageState extends State<AiSearchPage> {
   _AiSearchView _view = _AiSearchView.initial;
   bool _foodFavorite = false;
   bool _objectFavorite = false;
+  bool _openingMap = false;
+  bool _speaking = false;
   final ImagePicker _imagePicker = ImagePicker();
   late final AiSearchService _aiSearchService;
   late final AiRecognitionHistoryStore _historyStore;
+  late final AiRecognitionMapCoordinator _mapCoordinator;
+  AiSearchResult? _activeResult;
+  AudioPlayer? _audioPlayer;
   Uint8List? _selectedImageBytes;
   String? _selectedImageName;
 
@@ -86,23 +102,38 @@ class _AiSearchPageState extends State<AiSearchPage> {
     super.initState();
     _aiSearchService = widget.aiSearchService ?? AiSearchService();
     _historyStore = widget.historyStore ?? AiRecognitionHistoryRepository();
+    _mapCoordinator =
+        widget.mapCoordinator ?? DefaultAiRecognitionMapCoordinator();
     final AiRecognitionHistoryEntry? historyEntry = widget.initialHistoryEntry;
     if (historyEntry != null) {
       _selectedImageBytes = historyEntry.thumbnailBytes;
+      _activeResult = historyEntry.result;
       _activeRecognitionData = _RecognitionData.fromAiSearchResult(
         historyEntry.result,
       );
-      _view = historyEntry.result.isFood
-          ? _AiSearchView.resultFood
-          : _AiSearchView.resultObject;
+      _view = _AiSearchView.result;
     }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer?.dispose();
+    super.dispose();
   }
 
   bool get _isActiveFavorite {
     return _activeRecognitionData.isFood ? _foodFavorite : _objectFavorite;
   }
 
+  bool get _canFavorite {
+    final AiRecognitionKind? kind = _activeResult?.kind;
+    return kind == AiRecognitionKind.food ||
+        kind == AiRecognitionKind.landmark ||
+        kind == AiRecognitionKind.culturalObject;
+  }
+
   void _toggleFavorite() {
+    if (!_canFavorite) return;
     setState(() {
       if (_activeRecognitionData.isFood) {
         _foodFavorite = !_foodFavorite;
@@ -144,13 +175,16 @@ class _AiSearchPageState extends State<AiSearchPage> {
     });
 
     try {
-      final AiSearchResult result = await _aiSearchService.analyzeImage(file);
+      final AiSearchResult result = await _aiSearchService.analyzeImage(
+        file,
+        targetLanguageCode: context.languageController.languageCode,
+        targetLanguageName: context.languageController.language.englishName,
+      );
       if (!mounted) return;
       setState(() {
+        _activeResult = result;
         _activeRecognitionData = _RecognitionData.fromAiSearchResult(result);
-        _view = result.isFood
-            ? _AiSearchView.resultFood
-            : _AiSearchView.resultObject;
+        _view = _AiSearchView.result;
       });
       await _saveRecognitionHistory(result, file);
     } catch (error) {
@@ -168,6 +202,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
     AiSearchResult result,
     XFile file,
   ) async {
+    if (!result.isHistoryEligible) return;
     try {
       final Uint8List bytes = _selectedImageBytes ?? await file.readAsBytes();
       await _historyStore.save(result: result, imageBytes: bytes);
@@ -184,6 +219,148 @@ class _AiSearchPageState extends State<AiSearchPage> {
         ),
       );
     }
+  }
+
+  Future<void> _copyText(String text) async {
+    final String normalized = text.trim();
+    if (normalized.isEmpty) return;
+    try {
+      final Future<void> Function(String text)? callback = widget.onCopyText;
+      if (callback != null) {
+        await callback(normalized);
+      } else {
+        await Clipboard.setData(ClipboardData(text: normalized));
+      }
+      if (!mounted || callback != null) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Copied to clipboard')));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not copy text: $error')));
+    }
+  }
+
+  Future<void> _speakSignText(AiSearchResult result) async {
+    final AiRecognitionTextAnalysis? text = result.textAnalysis;
+    final String original = text?.originalText.trim() ?? '';
+    if (original.isEmpty || _speaking) return;
+    _speaking = true;
+    try {
+      final Future<void> Function(String text)? callback = widget.onSpeakText;
+      if (callback != null) {
+        await callback(original);
+      } else {
+        final AppLanguage language = AppLanguageScope.languageOf(context);
+        final String languageCode =
+            text?.detectedLanguageCode.trim().isNotEmpty == true
+            ? text!.detectedLanguageCode.trim()
+            : language.code;
+        final String languageName =
+            text?.detectedLanguageName.trim().isNotEmpty == true
+            ? text!.detectedLanguageName.trim()
+            : language.englishName;
+        final OnlineSpeechResult speech = await OpenAITranslationService()
+            .synthesizeSpeech(
+              text: original,
+              languageCode: languageCode,
+              languageName: languageName,
+            );
+        _audioPlayer ??= AudioPlayer();
+        await _audioPlayer!.play(UrlSource(speech.audioUrl));
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not play audio: $error')));
+    } finally {
+      _speaking = false;
+    }
+  }
+
+  Future<void> _openMap(AiSearchResult result) async {
+    final String query = result.mapQuery.trim().isNotEmpty
+        ? result.mapQuery.trim()
+        : result.textAnalysis?.mapQuery.trim() ?? '';
+    if (query.isEmpty || !result.canOpenMap) return;
+    if (_openingMap) return;
+    _openingMap = true;
+    try {
+      final AiRecognitionMapPreparation preparation = await _mapCoordinator
+          .prepare();
+      bool launched = false;
+      switch (preparation) {
+        case AiRecognitionMapReady(:final origin):
+          launched = await _mapCoordinator.launch(query, origin: origin);
+        case AiRecognitionMapWithoutOrigin():
+          launched = await _mapCoordinator.launch(query);
+        case AiRecognitionMapNeedsSettings(:final target):
+          final _MapFallbackChoice? choice = await _showMapSettingsDialog(
+            target,
+          );
+          if (choice == _MapFallbackChoice.openSettings) {
+            await _mapCoordinator.openSettings(target);
+            return;
+          }
+          if (choice == _MapFallbackChoice.continueWithoutLocation) {
+            launched = await _mapCoordinator.launch(query);
+          }
+      }
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Could not open Google Maps.'),
+            action: SnackBarAction(
+              label: 'Copy',
+              onPressed: () => _copyText(query),
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not open map: $error')));
+    } finally {
+      _openingMap = false;
+    }
+  }
+
+  Future<_MapFallbackChoice?> _showMapSettingsDialog(
+    AiRecognitionMapSettingsTarget target,
+  ) {
+    return showDialog<_MapFallbackChoice>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: Text(context.l10n.ui('Location access needed')),
+        content: Text(
+          target == AiRecognitionMapSettingsTarget.app
+              ? 'Allow location access in Settings for directions, or continue with a text search.'
+              : 'Turn on location services for directions, or continue with a text search.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(context.l10n.ui('Cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(
+              context,
+            ).pop(_MapFallbackChoice.continueWithoutLocation),
+            child: Text(context.l10n.ui('Continue Without Location')),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.of(context).pop(_MapFallbackChoice.openSettings),
+            child: Text(context.l10n.ui('Open Settings')),
+          ),
+        ],
+      ),
+    );
   }
 
   void _openHistory() {
@@ -207,7 +384,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
             ? _buildInitialView(context)
             : _view == _AiSearchView.analyzing
             ? _buildAnalyzingView(context)
-            : _buildResultView(context, _activeData),
+            : _buildResultView(context, _activeResult, _activeData),
       ),
     );
   }
@@ -275,7 +452,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
               ),
               const SizedBox(height: 16),
               const Text(
-                'Snap or upload a photo to explore\nits origin and ingredients',
+                'Snap or upload a photo to explore\nfood, places, signs, and local context',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Color(0xCCEAF6FD),
@@ -517,7 +694,12 @@ class _AiSearchPageState extends State<AiSearchPage> {
     );
   }
 
-  Widget _buildResultView(BuildContext context, _RecognitionData data) {
+  Widget _buildResultView(
+    BuildContext context,
+    AiSearchResult? result,
+    _RecognitionData data,
+  ) {
+    final AiSearchResult activeResult = result!;
     final double topPadding = MediaQuery.of(context).padding.top;
     final double bottomSafe = MediaQuery.of(context).padding.bottom;
 
@@ -606,7 +788,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
                                     ),
                                   ),
                                   child: Text(
-                                    data.isFood ? 'Food' : 'Object',
+                                    data.categoryLabel,
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 12,
@@ -616,7 +798,7 @@ class _AiSearchPageState extends State<AiSearchPage> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              _favoriteButton(),
+                              if (_canFavorite) _favoriteButton(),
                             ],
                           ),
                         ),
@@ -635,12 +817,17 @@ class _AiSearchPageState extends State<AiSearchPage> {
                                     size: 12,
                                   ),
                                   const SizedBox(width: 3),
-                                  Text(
-                                    data.location,
-                                    style: const TextStyle(
-                                      color: Color(0xB3FFFFFF),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                                  Expanded(
+                                    child: Text(
+                                      data.location,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
+                                      style: const TextStyle(
+                                        color: Color(0xB3FFFFFF),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -686,16 +873,32 @@ class _AiSearchPageState extends State<AiSearchPage> {
                     padding: const EdgeInsets.fromLTRB(14, 16, 14, 0),
                     child: Column(
                       children: <Widget>[
-                        _buildMatchCard(data),
-                        if (data.databaseMatch != null) ...<Widget>[
+                        if (activeResult.kind != AiRecognitionKind.unclear &&
+                            activeResult.kind !=
+                                AiRecognitionKind.unsupported &&
+                            activeResult.kind != AiRecognitionKind.signText)
+                          _buildMatchCard(data),
+                        if (activeResult.kind == AiRecognitionKind.food &&
+                            data.databaseMatch != null) ...<Widget>[
                           const SizedBox(height: 12),
                           _buildDatabaseMatchCard(data.databaseMatch!),
                         ],
                         const SizedBox(height: 12),
-                        if (data.isFood)
-                          ..._buildFoodCards(data)
-                        else
-                          ..._buildObjectCards(data),
+                        AiRecognitionResultSections(
+                          result: activeResult,
+                          onOpenMap: () => _openMap(activeResult),
+                          onCopyOriginal: () => _copyText(
+                            activeResult.textAnalysis?.originalText ?? '',
+                          ),
+                          onCopyTranslation: () => _copyText(
+                            activeResult.textAnalysis?.translatedText ?? '',
+                          ),
+                          onListen: () => _speakSignText(activeResult),
+                          onTakePhoto: () =>
+                              _pickAndAnalyze(ImageSource.camera),
+                          onChooseImage: () =>
+                              _pickAndAnalyze(ImageSource.gallery),
+                        ),
                       ],
                     ),
                   ),
@@ -713,203 +916,6 @@ class _AiSearchPageState extends State<AiSearchPage> {
           ),
         ),
       ],
-    );
-  }
-
-  List<Widget> _buildFoodCards(_RecognitionData data) {
-    return <Widget>[
-      _buildInfoCard(
-        icon: Icons.restaurant_menu_rounded,
-        title: 'MAIN INGREDIENTS',
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: data.primaryTags.map(_buildPill).toList(),
-        ),
-      ),
-      const SizedBox(height: 12),
-      _buildInfoCard(
-        icon: Icons.star_border_rounded,
-        title: 'TASTE PROFILE',
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: data.secondaryTags.map(_buildPill).toList(),
-        ),
-      ),
-      const SizedBox(height: 12),
-      _buildInfoCard(
-        icon: Icons.access_time_rounded,
-        title: 'BEST TIME TO ENJOY',
-        child: Text(
-          data.bestTime,
-          style: TextStyle(
-            fontSize: 29 / 2.2,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-      const SizedBox(height: 12),
-      _buildInfoCard(
-        icon: Icons.info_outline_rounded,
-        title: 'FOOD NOTE',
-        child: Text(
-          data.note,
-          style: TextStyle(
-            fontSize: 12.5,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            height: 1.55,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-      const SizedBox(height: 12),
-      _buildInfoCard(
-        icon: Icons.menu_book_rounded,
-        title: 'CULTURAL SIGNIFICANCE',
-        child: Text(
-          data.cultural,
-          style: TextStyle(
-            fontSize: 12.5,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            height: 1.55,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-      const SizedBox(height: 12),
-      _buildInfoCard(
-        icon: Icons.place_outlined,
-        title: 'SUGGESTED PLACES TO TRY',
-        child: Column(children: data.places.map(_buildPlaceLine).toList()),
-      ),
-    ];
-  }
-
-  List<Widget> _buildObjectCards(_RecognitionData data) {
-    return <Widget>[
-      _buildInfoCard(
-        icon: Icons.sell_outlined,
-        title: 'CATEGORY',
-        child: Wrap(children: <Widget>[_buildPill(data.categoryText)]),
-      ),
-      const SizedBox(height: 12),
-      _buildInfoCard(
-        icon: Icons.layers_outlined,
-        title: 'MAIN MATERIALS',
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: data.primaryTags.map(_buildPill).toList(),
-        ),
-      ),
-      const SizedBox(height: 12),
-      _buildInfoCard(
-        icon: Icons.widgets_outlined,
-        title: 'COMMON USAGE',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: data.usageBullets.map(_buildBulletLine).toList(),
-        ),
-      ),
-      const SizedBox(height: 12),
-      _buildInfoCard(
-        icon: Icons.handyman_outlined,
-        title: 'PRODUCTION METHOD',
-        child: Text(
-          data.productionMethod,
-          style: TextStyle(
-            fontSize: 12.5,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            height: 1.55,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-      const SizedBox(height: 12),
-      _buildInfoCard(
-        icon: Icons.circle_outlined,
-        title: 'ALTERNATIVE NAMES',
-        child: Text(
-          data.alternativeNames,
-          style: TextStyle(
-            fontSize: 12.5,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            height: 1.55,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-      const SizedBox(height: 12),
-      _buildInfoCard(
-        icon: Icons.attach_money_rounded,
-        title: 'PRICE RANGE',
-        child: Text(
-          data.priceRange,
-          style: const TextStyle(
-            fontSize: 13,
-            color: _accentDark,
-            height: 1.45,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-      const SizedBox(height: 12),
-      _buildInfoCard(
-        icon: Icons.storefront_outlined,
-        title: 'WHERE TO BUY / SEE IT',
-        child: Column(children: data.places.map(_buildPlaceLine).toList()),
-      ),
-    ];
-  }
-
-  Widget _buildInfoCard({
-    required IconData icon,
-    required String title,
-    required Widget child,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(color: _cardShadow1, blurRadius: 3, offset: Offset(0, 1)),
-          BoxShadow(color: _cardShadow2, blurRadius: 12, offset: Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: _accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Icon(icon, size: 14, color: _accentDark),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          child,
-        ],
-      ),
     );
   }
 
@@ -1047,92 +1053,6 @@ class _AiSearchPageState extends State<AiSearchPage> {
     );
   }
 
-  Widget _buildPill(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: _accent.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _accent.withValues(alpha: 0.26), width: 1),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 12,
-          color: _accentDark,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBulletLine(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 7),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            width: 5,
-            height: 5,
-            margin: const EdgeInsets.only(top: 8),
-            decoration: const BoxDecoration(
-              color: _accentDark,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                height: 1.45,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlaceLine(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: _accent.withValues(alpha: 0.09),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.location_on_outlined,
-              color: _accentDark,
-              size: 15,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.w500,
-                height: 1.3,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _favoriteButton() {
     final bool isFavorite = _isActiveFavorite;
     return GestureDetector(
@@ -1234,34 +1154,57 @@ class _RecognitionData {
 
   factory _RecognitionData.fromAiSearchResult(AiSearchResult result) {
     final double confidencePercent = result.confidence * 100;
-    final bool highMatch = result.confidence >= 0.85;
-    final bool mediumMatch = result.confidence >= 0.65;
+    final bool highMatch = result.confidence >= 0.8;
+    final bool mediumMatch = result.confidence >= 0.55;
+    final bool fallback =
+        result.kind == AiRecognitionKind.unclear ||
+        result.kind == AiRecognitionKind.unsupported;
+    final String categoryLabel = switch (result.kind) {
+      AiRecognitionKind.food => 'Food',
+      AiRecognitionKind.landmark => 'Landmark',
+      AiRecognitionKind.culturalObject => 'Cultural Object',
+      AiRecognitionKind.signText => 'Street Sign',
+      AiRecognitionKind.unclear => 'Unclear',
+      AiRecognitionKind.unsupported => 'Not Supported',
+    };
+    final String fallbackTitle = switch (result.kind) {
+      AiRecognitionKind.food => 'Food',
+      AiRecognitionKind.landmark => 'Landmark',
+      AiRecognitionKind.culturalObject => 'Cultural object',
+      AiRecognitionKind.signText => 'Street sign',
+      AiRecognitionKind.unclear => 'Could not recognize clearly',
+      AiRecognitionKind.unsupported => 'Image type not supported',
+    };
 
     return _RecognitionData(
       isFood: result.isFood,
-      matchLabel: highMatch
+      matchLabel: fallback
+          ? (result.kind == AiRecognitionKind.unclear
+                ? 'Could not recognize clearly'
+                : 'Image type not supported')
+          : highMatch
           ? 'High Match'
           : mediumMatch
           ? 'Possible Match'
           : 'Low Confidence',
-      matchLabelColor: highMatch
+      matchLabelColor: fallback
+          ? const Color(0xFF94A3B8)
+          : highMatch
           ? const Color(0xFF22C55E)
           : mediumMatch
           ? const Color(0xFFF59E0B)
           : const Color(0xFFEF4444),
-      categoryLabel: result.isFood ? 'Food' : 'Object',
+      categoryLabel: categoryLabel,
       location: result.locationHint.isNotEmpty
           ? result.locationHint
-          : 'Vietnam',
+          : (fallback ? 'AI Recognition' : 'Vietnam'),
       title: result.detectedName.isNotEmpty
           ? result.detectedName
-          : (result.isFood ? 'Unknown dish' : 'Unknown object'),
+          : fallbackTitle,
       subtitle: result.subtitle.isNotEmpty
           ? result.subtitle
           : '${confidencePercent.toStringAsFixed(0)}% confidence',
-      summary: result.summary.isNotEmpty
-          ? result.summary
-          : 'Gemini did not return a detailed summary for this image.',
+      summary: result.summary.isNotEmpty ? result.summary : '',
       heroAssetPath: result.isFood
           ? 'assets/images/homepage/bestdishes_bg.jpeg'
           : 'assets/images/avatar/avatar.jpg',

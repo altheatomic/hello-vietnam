@@ -1,0 +1,547 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="2000"
+     height="1400"
+     viewBox="0 0 2000 1400">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="7" stdDeviation="10" flood-color="#16324f" flood-opacity="0.10"/>
+    </filter>
+    <filter id="shadowSoft" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#16324f" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="12" markerHeight="12" refX="10" refY="6"
+            orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#2476d8"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="12" markerHeight="12" refX="10" refY="6"
+            orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#7357c7"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="12" markerHeight="12" refX="10" refY="6"
+            orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#168f73"/>
+    </marker>
+    <marker id="arrowCoral" markerWidth="12" markerHeight="12" refX="10" refY="6"
+            orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#db665b"/>
+    </marker>
+    <marker id="arrowTeal" markerWidth="12" markerHeight="12" refX="10" refY="6"
+            orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#178b91"/>
+    </marker>
+    <style>
+      .canvas-title {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 44px;
+        font-weight: 800;
+        fill: #14233b;
+      }
+      .canvas-subtitle {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 18px;
+        font-weight: 500;
+        fill: #607087;
+      }
+      .section-kicker {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 14px;
+        font-weight: 800;
+        fill: #ffffff;
+      }
+      .section-title {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 24px;
+        font-weight: 800;
+        fill: #17243a;
+      }
+      .section-purpose {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 15px;
+        font-weight: 500;
+        fill: #56667b;
+      }
+      .card-title {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 19px;
+        font-weight: 750;
+        fill: #17243a;
+      }
+      .card-body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        fill: #617086;
+      }
+      .algo-title {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 17px;
+        font-weight: 800;
+        fill: #3b2d71;
+      }
+      .algo-body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        fill: #665d84;
+      }
+      .label {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        fill: #45566e;
+      }
+      .small-label {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 12px;
+        font-weight: 650;
+        fill: #5d6b80;
+      }
+      .micro {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        fill: #66768a;
+      }
+      .integration-title {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 15px;
+        font-weight: 750;
+        fill: #26354a;
+      }
+      .integration-body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        fill: #68778b;
+      }
+      .legend {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        fill: #617086;
+      }
+      .flow-blue {
+        fill: none;
+        stroke: #2476d8;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        marker-end: url(#arrowBlue);
+      }
+      .flow-purple {
+        fill: none;
+        stroke: #7357c7;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        marker-end: url(#arrowPurple);
+      }
+      .flow-green {
+        fill: none;
+        stroke: #168f73;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        marker-end: url(#arrowGreen);
+      }
+      .flow-coral {
+        fill: none;
+        stroke: #db665b;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        marker-end: url(#arrowCoral);
+      }
+      .flow-teal {
+        fill: none;
+        stroke: #178b91;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        marker-end: url(#arrowTeal);
+      }
+      .flow-teal-dashed {
+        fill: none;
+        stroke: #178b91;
+        stroke-width: 2.5;
+        stroke-dasharray: 8 7;
+        stroke-linecap: round;
+        marker-end: url(#arrowTeal);
+      }
+    </style>
+  </defs>
+
+  <rect width="2000" height="1400" fill="#f7fafc"/>
+
+  <!-- Document heading -->
+  <text x="50" y="58" class="canvas-title">KIẾN TRÚC HỆ THỐNG HELLOVIETNAM · V5</text>
+  <text x="50" y="91" class="canvas-subtitle">
+    Kiến trúc Client–Server cho ứng dụng gợi ý điểm đến và lập lịch trình du lịch cá nhân hóa
+  </text>
+
+  <!-- Client region -->
+  <rect x="50" y="115" width="1900" height="330" rx="24"
+        fill="#edf5ff" stroke="#9fc8f7" stroke-width="2"/>
+  <rect x="74" y="135" width="220" height="31" rx="16" fill="#2476d8"/>
+  <text x="184" y="156" text-anchor="middle" class="section-kicker">CLIENT · LỚP GIAO DIỆN</text>
+  <text x="316" y="156" class="section-purpose">
+    Tiếp nhận thao tác, hiển thị kết quả, xử lý tác vụ trên thiết bị và điều hướng trải nghiệm người dùng.
+  </text>
+
+  <g filter="url(#shadowSoft)">
+    <rect x="115" y="180" width="1100" height="102" rx="18"
+          fill="#ffffff" stroke="#7db4f2" stroke-width="2"/>
+    <rect x="1250" y="180" width="620" height="102" rx="18"
+          fill="#ffffff" stroke="#7db4f2" stroke-width="2"/>
+  </g>
+
+  <rect x="138" y="200" width="58" height="58" rx="14" fill="#e8f2ff"/>
+  <image x="149" y="211" width="36" height="36"
+         href="report-assets/architecture-icons/flutter.svg"
+         xlink:href="report-assets/architecture-icons/flutter.svg"/>
+  <text x="216" y="216" class="card-title">Ứng dụng người dùng</text>
+  <text x="216" y="240" class="card-body">Android · Flutter Web</text>
+  <text x="450" y="216" class="card-body">Auth/Profile · Explore/Wishlist · Trip Planner/Map</text>
+  <text x="450" y="240" class="card-body">Dịch · AI · Diễn đàn · Loyalty/Payment · Thông báo</text>
+  <rect x="1042" y="201" width="145" height="31" rx="15" fill="#e8f2ff"/>
+  <text x="1115" y="221" text-anchor="middle" class="small-label">NGƯỜI DÙNG DU LỊCH</text>
+  <text x="1044" y="257" class="micro">In-app + Android push</text>
+
+  <rect x="1273" y="200" width="58" height="58" rx="14" fill="#e8f2ff"/>
+  <image x="1284" y="211" width="36" height="36"
+         href="report-assets/architecture-icons/flutter.svg"
+         xlink:href="report-assets/architecture-icons/flutter.svg"/>
+  <text x="1351" y="216" class="card-title">Trang quản trị</text>
+  <text x="1351" y="240" class="card-body">Flutter Web</text>
+  <text x="1351" y="263" class="card-body">Người dùng · nội dung · báo cáo · thống kê</text>
+
+  <!-- Android on-device strip -->
+  <rect x="115" y="301" width="1100" height="124" rx="18"
+        fill="#ebfbfb" stroke="#53abb0" stroke-width="2"/>
+  <rect x="134" y="315" width="255" height="27" rx="13" fill="#178b91"/>
+  <text x="262" y="334" text-anchor="middle" class="section-kicker">XỬ LÝ TRÊN THIẾT BỊ ANDROID</text>
+
+  <g filter="url(#shadowSoft)">
+    <rect x="139" y="350" width="290" height="58" rx="12"
+          fill="#ffffff" stroke="#8bc9cc" stroke-width="1.5"/>
+    <rect x="452" y="350" width="315" height="58" rx="12"
+          fill="#ffffff" stroke="#8bc9cc" stroke-width="1.5"/>
+    <rect x="790" y="350" width="400" height="58" rx="12"
+          fill="#ffffff" stroke="#8bc9cc" stroke-width="1.5"/>
+  </g>
+  <circle cx="163" cy="379" r="14" fill="#d8f3f3"/>
+  <text x="163" y="384" text-anchor="middle" class="small-label" fill="#178b91">ML</text>
+  <text x="187" y="374" class="integration-title">Google ML Kit</text>
+  <text x="187" y="394" class="integration-body">Dịch offline sau khi tải model</text>
+
+  <circle cx="476" cy="379" r="14" fill="#d8f3f3"/>
+  <text x="476" y="384" text-anchor="middle" class="small-label" fill="#178b91">TTS</text>
+  <text x="500" y="374" class="integration-title">Flutter / Android TTS</text>
+  <text x="500" y="394" class="integration-body">Đọc bản dịch bằng giọng trên thiết bị</text>
+
+  <circle cx="814" cy="379" r="14" fill="#d8f3f3"/>
+  <text x="814" y="384" text-anchor="middle" class="small-label" fill="#178b91">↗</text>
+  <text x="838" y="374" class="integration-title">GoRouter · Local cache</text>
+  <text x="838" y="394" class="integration-body">Deep link · dữ liệu lưu đệm · callback xác thực/thanh toán</text>
+
+  <path d="M 284 282 V 350" class="flow-teal"/>
+  <path d="M 429 379 H 452" class="flow-teal"/>
+  <path d="M 990 282 V 350" class="flow-teal"/>
+  <rect x="881" y="307" width="308" height="30" rx="14"
+        fill="#ffffff" stroke="#178b91" stroke-width="1.5" stroke-dasharray="7 6"/>
+  <text x="1035" y="327" text-anchor="middle" class="small-label" fill="#178b91">
+    Tải model ngôn ngữ ở lần đầu · cần mạng
+  </text>
+  <path d="M 881 322 H 420 V 350" class="flow-teal-dashed"/>
+
+  <!-- Deployment note -->
+  <rect x="1250" y="306" width="620" height="108" rx="16"
+        fill="#ffffff" stroke="#b9d5f5" stroke-width="1.5"/>
+  <text x="1273" y="334" class="integration-title">TRIỂN KHAI CLIENT</text>
+  <text x="1273" y="360" class="card-body">Android production: com.hellovietnam.app</text>
+  <text x="1273" y="384" class="card-body">Package ID dùng cho Google Play · Firebase · deep link</text>
+  <text x="1273" y="405" class="micro">Thay đổi định danh triển khai, không làm đổi cấu trúc hệ thống.</text>
+
+  <!-- Server region -->
+  <rect x="50" y="470" width="1435" height="880" rx="24"
+        fill="#fbfcff" stroke="#c7d3e3" stroke-width="2"/>
+  <rect x="74" y="490" width="100" height="31" rx="16" fill="#394b67"/>
+  <text x="124" y="511" text-anchor="middle" class="section-kicker">SERVER</text>
+  <text x="194" y="511" class="section-purpose">
+    Xử lý nghiệp vụ, cá nhân hóa, tối ưu lịch trình và quản lý dữ liệu tập trung.
+  </text>
+
+  <!-- FastAPI algorithm service -->
+  <g filter="url(#shadow)">
+    <rect x="135" y="545" width="1265" height="405" rx="24"
+          fill="#f3f0ff" stroke="#8d78d7" stroke-width="3"/>
+  </g>
+  <rect x="160" y="568" width="70" height="70" rx="17" fill="#ffffff"/>
+  <image x="173" y="581" width="44" height="44"
+         href="report-assets/architecture-icons/fastapi.svg"
+         xlink:href="report-assets/architecture-icons/fastapi.svg"/>
+  <text x="252" y="593" class="section-title">FASTAPI TRIP &amp; RECOMMEND SERVICE</text>
+  <text x="252" y="622" class="section-purpose">
+    Cá nhân hóa gợi ý và xây dựng lịch trình phù hợp với hồ sơ, vị trí, số ngày và khung giờ tham quan.
+  </text>
+  <rect x="1160" y="578" width="205" height="37" rx="19" fill="#7357c7"/>
+  <text x="1263" y="602" text-anchor="middle" class="section-kicker">PYTHON · FASTAPI</text>
+
+  <g filter="url(#shadowSoft)">
+    <rect x="170" y="663" width="360" height="105" rx="16"
+          fill="#ffffff" stroke="#c5b9ee" stroke-width="2"/>
+    <rect x="555" y="663" width="350" height="105" rx="16"
+          fill="#ffffff" stroke="#c5b9ee" stroke-width="2"/>
+    <rect x="930" y="663" width="435" height="105" rx="16"
+          fill="#ffffff" stroke="#c5b9ee" stroke-width="2"/>
+    <rect x="260" y="796" width="470" height="105" rx="16"
+          fill="#ffffff" stroke="#c5b9ee" stroke-width="2"/>
+    <rect x="760" y="796" width="515" height="105" rx="16"
+          fill="#ffffff" stroke="#c5b9ee" stroke-width="2"/>
+  </g>
+
+  <circle cx="201" cy="693" r="15" fill="#7357c7"/>
+  <text x="201" y="698" text-anchor="middle" class="section-kicker">1</text>
+  <text x="228" y="696" class="algo-title">Hybrid Recommendation</text>
+  <text x="194" y="726" class="algo-body">Content-Based + Collaborative Filtering</text>
+  <text x="194" y="749" class="algo-body">Chấm điểm mức phù hợp của địa điểm</text>
+
+  <circle cx="586" cy="693" r="15" fill="#7357c7"/>
+  <text x="586" y="698" text-anchor="middle" class="section-kicker">2</text>
+  <text x="613" y="696" class="algo-title">K-Means</text>
+  <text x="579" y="726" class="algo-body">Phân cụm địa điểm theo vị trí địa lý</text>
+  <text x="579" y="749" class="algo-body">Giảm không gian tìm kiếm lịch trình</text>
+
+  <circle cx="961" cy="693" r="15" fill="#7357c7"/>
+  <text x="961" y="698" text-anchor="middle" class="section-kicker">3</text>
+  <text x="988" y="696" class="algo-title">Greedy Repair</text>
+  <text x="954" y="726" class="algo-body">Cân bằng số lượng và thời lượng tham quan</text>
+  <text x="954" y="749" class="algo-body">Loại hoặc thay lựa chọn không phù hợp</text>
+
+  <circle cx="291" cy="826" r="15" fill="#7357c7"/>
+  <text x="291" y="831" text-anchor="middle" class="section-kicker">4</text>
+  <text x="318" y="829" class="algo-title">Greedy Nearest-Neighbour</text>
+  <text x="284" y="859" class="algo-body">Tạo lộ trình ban đầu theo khoảng cách gần nhất</text>
+  <text x="284" y="882" class="algo-body">Giảm quãng đường di chuyển giữa các điểm</text>
+
+  <circle cx="791" cy="826" r="15" fill="#7357c7"/>
+  <text x="791" y="831" text-anchor="middle" class="section-kicker">5</text>
+  <text x="818" y="829" class="algo-title">SA-TSPTW</text>
+  <text x="784" y="859" class="algo-body">Simulated Annealing cho TSP có khung giờ</text>
+  <text x="784" y="882" class="algo-body">Tối ưu thứ tự và tính khả thi theo thời gian</text>
+
+  <rect x="1030" y="910" width="335" height="24" rx="12" fill="#e8e2fb"/>
+  <text x="1198" y="927" text-anchor="middle" class="micro" fill="#5d49aa">
+    Khoảng cách Haversine · tốc độ trung bình giả định
+  </text>
+
+  <!-- Supabase backend and data -->
+  <g filter="url(#shadowSoft)">
+    <rect x="135" y="980" width="1265" height="315" rx="22"
+          fill="#eafaf4" stroke="#62bca3" stroke-width="2"/>
+  </g>
+  <image x="160" y="1002" width="32" height="32"
+         href="report-assets/architecture-icons/supabase.svg"
+         xlink:href="report-assets/architecture-icons/supabase.svg"/>
+  <text x="207" y="1027" class="section-title">BACKEND VÀ DỮ LIỆU · SUPABASE</text>
+  <text x="665" y="1026" class="section-purpose">
+    Xác thực, điều phối API và quản lý dữ liệu giao dịch.
+  </text>
+
+  <!-- Access labels -->
+  <rect x="205" y="1052" width="345" height="31" rx="12" fill="#ffffff" stroke="#a4d9ca"/>
+  <text x="378" y="1073" text-anchor="middle" class="small-label">
+    Edge Functions → FastAPI: Proxy HTTP · trip-planner / recommend
+  </text>
+  <rect x="580" y="1052" width="398" height="31" rx="12" fill="#ffffff" stroke="#a4d9ca"/>
+  <text x="779" y="1073" text-anchor="middle" class="small-label">
+    FastAPI → Supabase API: Service role phía server · bỏ qua RLS
+  </text>
+  <rect x="1008" y="1052" width="332" height="31" rx="12" fill="#ffffff" stroke="#a4d9ca"/>
+  <text x="1174" y="1073" text-anchor="middle" class="small-label">
+    FastAPI → PostgreSQL: CF retrain · asyncpg tin cậy
+  </text>
+
+  <g filter="url(#shadowSoft)">
+    <rect x="165" y="1110" width="235" height="135" rx="15"
+          fill="#ffffff" stroke="#8ed0bc" stroke-width="2"/>
+    <rect x="420" y="1110" width="245" height="135" rx="15"
+          fill="#ffffff" stroke="#8ed0bc" stroke-width="2"/>
+    <rect x="685" y="1110" width="290" height="135" rx="15"
+          fill="#ffffff" stroke="#8ed0bc" stroke-width="2"/>
+    <rect x="995" y="1110" width="370" height="135" rx="15"
+          fill="#ffffff" stroke="#8ed0bc" stroke-width="2"/>
+  </g>
+
+  <rect x="184" y="1129" width="42" height="42" rx="10" fill="#dcf5ec"/>
+  <text x="205" y="1155" text-anchor="middle" class="micro" fill="#168f73">AUTH</text>
+  <text x="240" y="1145" class="card-title">Supabase Auth</text>
+  <text x="184" y="1182" class="card-body">JWT · Google OAuth</text>
+  <text x="184" y="1205" class="card-body">Tài khoản · phiên đăng nhập</text>
+  <text x="184" y="1227" class="micro">Redirect theo package/deep link</text>
+
+  <rect x="439" y="1129" width="42" height="42" rx="10" fill="#dcf5ec"/>
+  <text x="460" y="1155" text-anchor="middle" class="micro" fill="#168f73">EF</text>
+  <text x="495" y="1145" class="card-title">Edge Functions</text>
+  <text x="439" y="1182" class="card-body">API Gateway · kiểm tra JWT</text>
+  <text x="439" y="1205" class="card-body">Proxy · dịch vụ có khóa bí mật</text>
+  <text x="439" y="1227" class="micro">Translate · AI · payment · media</text>
+
+  <rect x="704" y="1129" width="42" height="42" rx="10" fill="#dcf5ec"/>
+  <text x="725" y="1155" text-anchor="middle" class="micro" fill="#168f73">API</text>
+  <text x="760" y="1145" class="card-title">PostgREST / RPC</text>
+  <text x="704" y="1182" class="card-body">REST API · truy vấn dữ liệu</text>
+  <text x="704" y="1205" class="card-body">Client → API: JWT + RLS</text>
+  <text x="704" y="1227" class="micro">Phân quyền theo từng người dùng</text>
+
+  <rect x="1014" y="1129" width="42" height="42" rx="10" fill="#dcf5ec"/>
+  <image x="1022" y="1137" width="26" height="26"
+         href="report-assets/architecture-icons/postgresql.svg"
+         xlink:href="report-assets/architecture-icons/postgresql.svg"/>
+  <text x="1070" y="1145" class="card-title">PostgreSQL</text>
+  <text x="1014" y="1182" class="card-body">Người dùng · địa điểm · lịch trình · diễn đàn</text>
+  <text x="1014" y="1205" class="card-body">Thông báo · subscription · hành vi gợi ý</text>
+  <text x="1014" y="1227" class="micro">Khóa ngoại · chỉ mục · JSONB · trigger/webhook</text>
+
+  <!-- Main client and server flows -->
+  <path d="M 350 282 V 292 H 84 V 1178 H 420" class="flow-blue"/>
+  <rect x="61" y="742" width="170" height="52" rx="12" fill="#ffffff" stroke="#b9d5f5"/>
+  <text x="146" y="764" text-anchor="middle" class="small-label">Yêu cầu nghiệp vụ</text>
+  <text x="146" y="784" text-anchor="middle" class="small-label">và xác thực</text>
+
+  <path d="M 1555 282 H 1888 V 455 H 1456 V 1178 H 975" class="flow-blue"/>
+  <rect x="1243" y="478" width="220" height="47" rx="11" fill="#ffffff" stroke="#b9d5f5"/>
+  <text x="1353" y="498" text-anchor="middle" class="small-label">Client → PostgREST/RPC</text>
+  <text x="1353" y="517" text-anchor="middle" class="small-label">JWT + RLS</text>
+
+  <path d="M 542 1110 V 1095 H 360 V 950" class="flow-purple"/>
+  <path d="M 830 1110 V 1092 H 875 V 950" class="flow-green"/>
+  <path d="M 1180 1110 V 1092 H 1210 V 950" class="flow-green"/>
+
+  <!-- Integrated services region -->
+  <rect x="1515" y="470" width="435" height="880" rx="24"
+        fill="#fff7f4" stroke="#efa89f" stroke-width="2"/>
+  <rect x="1539" y="490" width="208" height="31" rx="16" fill="#db665b"/>
+  <text x="1643" y="511" text-anchor="middle" class="section-kicker">DỊCH VỤ TÍCH HỢP</text>
+  <text x="1541" y="545" class="section-purpose">Năng lực nền tảng và nhà cung cấp bên ngoài.</text>
+
+  <g filter="url(#shadowSoft)">
+    <rect x="1542" y="566" width="181" height="100" rx="14"
+          fill="#ffffff" stroke="#efb9b2" stroke-width="2"/>
+    <rect x="1741" y="566" width="181" height="100" rx="14"
+          fill="#ffffff" stroke="#efb9b2" stroke-width="2"/>
+    <rect x="1542" y="685" width="181" height="100" rx="14"
+          fill="#ffffff" stroke="#efb9b2" stroke-width="2"/>
+    <rect x="1741" y="685" width="181" height="100" rx="14"
+          fill="#ffffff" stroke="#efb9b2" stroke-width="2"/>
+    <rect x="1542" y="804" width="181" height="100" rx="14"
+          fill="#ffffff" stroke="#efb9b2" stroke-width="2"/>
+    <rect x="1741" y="804" width="181" height="100" rx="14"
+          fill="#ffffff" stroke="#efb9b2" stroke-width="2"/>
+    <rect x="1542" y="923" width="181" height="100" rx="14"
+          fill="#ffffff" stroke="#efb9b2" stroke-width="2"/>
+    <rect x="1741" y="923" width="181" height="100" rx="14"
+          fill="#ffffff" stroke="#efb9b2" stroke-width="2"/>
+  </g>
+
+  <image x="1558" y="583" width="31" height="31"
+         href="report-assets/architecture-icons/firebase.svg"
+         xlink:href="report-assets/architecture-icons/firebase.svg"/>
+  <text x="1598" y="601" class="integration-title">Firebase FCM</text>
+  <text x="1558" y="635" class="integration-body">Push Android</text>
+  <text x="1558" y="652" class="integration-body">Thông báo · deep link</text>
+
+  <image x="1757" y="583" width="31" height="31"
+         href="report-assets/architecture-icons/cloudflare.svg"
+         xlink:href="report-assets/architecture-icons/cloudflare.svg"/>
+  <text x="1797" y="601" class="integration-title">Cloudflare R2</text>
+  <text x="1757" y="635" class="integration-body">Ảnh và media</text>
+  <text x="1757" y="652" class="integration-body">Object storage · public URL</text>
+
+  <image x="1558" y="702" width="31" height="31"
+         href="report-assets/architecture-icons/deepseek.svg"
+         xlink:href="report-assets/architecture-icons/deepseek.svg"/>
+  <text x="1598" y="720" class="integration-title">DeepSeek</text>
+  <text x="1558" y="754" class="integration-body">AI Chat · dịch Premium</text>
+  <text x="1558" y="771" class="integration-body">Qua Edge Functions</text>
+
+  <image x="1757" y="702" width="31" height="31"
+         href="report-assets/architecture-icons/googlegemini.svg"
+         xlink:href="report-assets/architecture-icons/googlegemini.svg"/>
+  <text x="1797" y="720" class="integration-title">Gemini</text>
+  <text x="1757" y="754" class="integration-body">Nhận diện hình ảnh</text>
+  <text x="1757" y="771" class="integration-body">Kết quả có cấu trúc</text>
+
+  <rect x="1558" y="821" width="31" height="31" rx="8" fill="#e9f3ff"/>
+  <text x="1574" y="841" text-anchor="middle" class="micro" fill="#2476d8">VB</text>
+  <text x="1598" y="839" class="integration-title">VBee</text>
+  <text x="1558" y="873" class="integration-body">Giọng nói Premium</text>
+  <text x="1558" y="890" class="integration-body">Trả audio URL khi yêu cầu</text>
+
+  <image x="1757" y="821" width="31" height="31"
+         href="report-assets/architecture-icons/openstreetmap.svg"
+         xlink:href="report-assets/architecture-icons/openstreetmap.svg"/>
+  <text x="1797" y="839" class="integration-title">OpenStreetMap</text>
+  <text x="1757" y="873" class="integration-body">Bản đồ · tọa độ</text>
+  <text x="1757" y="890" class="integration-body">Không tính thời gian đường bộ</text>
+
+  <image x="1558" y="940" width="31" height="31"
+         href="report-assets/architecture-icons/stripe.svg"
+         xlink:href="report-assets/architecture-icons/stripe.svg"/>
+  <text x="1598" y="958" class="integration-title">Stripe</text>
+  <text x="1558" y="992" class="integration-body">Thanh toán gói</text>
+  <text x="1558" y="1009" class="integration-body">Webhook · subscription</text>
+
+  <rect x="1757" y="940" width="31" height="31" rx="8" fill="#fff0e9"/>
+  <text x="1773" y="960" text-anchor="middle" class="micro" fill="#db665b">FX</text>
+  <text x="1797" y="958" class="integration-title">API tỷ giá</text>
+  <text x="1757" y="992" class="integration-body">Tỷ giá tiền tệ</text>
+  <text x="1757" y="1009" class="integration-body">Truy xuất · cache kết quả</text>
+
+  <!-- Corrected external-service flows -->
+  <path d="M 1180 1245 H 1447 V 616 H 1542" class="flow-coral"/>
+  <rect x="1372" y="1050" width="130" height="49" rx="11" fill="#ffffff" stroke="#efb9b2"/>
+  <text x="1437" y="1070" text-anchor="middle" class="small-label">notification-</text>
+  <text x="1437" y="1089" text-anchor="middle" class="small-label">dispatch/webhook</text>
+
+  <path d="M 1632 566 V 455 H 1228 V 230 H 1215" class="flow-coral"/>
+
+  <path d="M 542 1245 V 1322 H 1499 V 735 H 1542" class="flow-coral"/>
+  <rect x="720" y="1307" width="330" height="30" rx="11" fill="#ffffff" stroke="#efb9b2"/>
+  <text x="885" y="1327" text-anchor="middle" class="small-label">
+    Dịch Premium / AI Chat: Edge Functions → DeepSeek
+  </text>
+  <path d="M 1542 754 H 1492 V 448 H 1241 V 250 H 1215" class="flow-coral"/>
+
+  <path d="M 575 1245 V 1300 H 1484 V 854 H 1542" class="flow-coral"/>
+  <rect x="1070" y="1285" width="368" height="30" rx="11" fill="#ffffff" stroke="#efb9b2"/>
+  <text x="1254" y="1305" text-anchor="middle" class="small-label">
+    Phát âm Premium riêng: yêu cầu → VBee → audio URL
+  </text>
+
+  <!-- Legend -->
+  <rect x="1542" y="1045" width="380" height="272" rx="15"
+        fill="#ffffff" stroke="#edd4cf"/>
+  <text x="1564" y="1073" class="integration-title">QUY ƯỚC &amp; LUỒNG CHÍNH</text>
+  <line x1="1564" y1="1098" x2="1618" y2="1098" stroke="#2476d8" stroke-width="3"/>
+  <text x="1631" y="1103" class="legend">Yêu cầu từ giao diện</text>
+  <line x1="1564" y1="1125" x2="1618" y2="1125" stroke="#7357c7" stroke-width="3"/>
+  <text x="1631" y="1130" class="legend">Điều phối dịch vụ thuật toán</text>
+  <line x1="1564" y1="1152" x2="1618" y2="1152" stroke="#168f73" stroke-width="3"/>
+  <text x="1631" y="1157" class="legend">Truy cập dữ liệu</text>
+  <line x1="1564" y1="1179" x2="1618" y2="1179" stroke="#db665b" stroke-width="3"/>
+  <text x="1631" y="1184" class="legend">Dịch vụ tích hợp bên ngoài</text>
+  <line x1="1564" y1="1206" x2="1618" y2="1206"
+        stroke="#178b91" stroke-width="2.5" stroke-dasharray="8 7"/>
+  <text x="1631" y="1211" class="legend">Xử lý trên thiết bị / tải model</text>
+  <rect x="1564" y="1230" width="334" height="65" rx="11" fill="#f7fafc" stroke="#d8e0e9"/>
+  <text x="1578" y="1250" class="micro">Dịch Basic: UI → ML Kit → bản dịch</text>
+  <text x="1578" y="1268" class="micro">Đọc Basic: bản dịch → Android TTS → âm thanh</text>
+  <text x="1578" y="1286" class="micro">Dịch Premium: Client → Edge → DeepSeek → Client</text>
+
+  <text x="50" y="1380" class="legend">
+    Ghi chú: Client truy cập dữ liệu qua JWT + RLS; FastAPI dùng service role phía server và kết nối asyncpg tin cậy cho tác vụ huấn luyện lại.
+  </text>
+</svg>

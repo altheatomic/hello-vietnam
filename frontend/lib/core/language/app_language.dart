@@ -331,6 +331,25 @@ class AppStrings {
   }
 
   static const Map<String, String> _viText = <String, String>{
+    'Still on this trip?': 'Bạn vẫn đang trong chuyến đi?',
+    'Have you completed your trip to': 'Bạn đã hoàn thành chuyến đi đến',
+    'Not yet': 'Chưa',
+    'Mark as completed': 'Đánh dấu đã hoàn thành',
+    'Update your start date?': 'Cập nhật lại ngày bắt đầu?',
+    "It looks like today is after this trip's planned start date. Update it to keep your itinerary accurate?":
+        'Có vẻ hôm nay đã trễ hơn ngày bắt đầu dự kiến của chuyến đi. Cập nhật lại để lịch trình được chính xác?',
+    'Not now': 'Để sau',
+    'Update': 'Cập nhật',
+    'End Trip': 'Kết thúc chuyến đi',
+    'Open Itinerary': 'Xem lịch trình',
+    'Could not end trip. Please try again.':
+        'Không thể kết thúc chuyến đi. Vui lòng thử lại.',
+    'Trip marked as completed.': 'Đã đánh dấu chuyến đi hoàn thành.',
+    'Could not update start date. Please try again.':
+        'Không thể cập nhật ngày bắt đầu. Vui lòng thử lại.',
+    'Select new start date': 'Chọn ngày bắt đầu mới',
+    'Tap your new start date, then tap any later date to confirm':
+        'Chạm chọn ngày bắt đầu mới, sau đó chạm thêm một ngày bất kỳ để xác nhận',
     'Opening Hello Vietnam': 'Đang mở Hello Vietnam',
     'Preparing your Vietnam journey': 'Đang chuẩn bị hành trình Việt Nam',
     'Home': 'Trang chủ',
@@ -344,6 +363,24 @@ class AppStrings {
     'Get Started': 'Bắt đầu',
     'Discover': 'Khám phá',
     'Destination': 'Điểm đến',
+    'Information has not been verified recently':
+        'Thông tin chưa được xác minh gần đây',
+    'This information is being checked again.':
+        'Thông tin này đang được kiểm tra lại.',
+    'Report incorrect information': 'Báo thông tin không chính xác',
+    'This place is closed': 'Địa điểm đã đóng cửa',
+    'Wrong opening hours': 'Sai giờ mở cửa',
+    'Wrong location': 'Sai địa điểm',
+    'Event has ended': 'Sự kiện đã kết thúc',
+    'Other': 'Khác',
+    'Optional note': 'Ghi chú (không bắt buộc)',
+    'Tell us what is incorrect': 'Cho chúng tôi biết thông tin nào sai',
+    'Please choose a reason.': 'Vui lòng chọn lý do.',
+    'Thanks for helping keep this information accurate.':
+        'Cảm ơn bạn đã giúp thông tin chính xác hơn.',
+    'You already reported this information.':
+        'Bạn đã báo thông tin này trước đó.',
+    'Daily report limit reached.': 'Đã đạt giới hạn báo cáo trong ngày.',
     'Login to Start Your': 'Đăng nhập để bắt đầu',
     'Amazing Trips': 'Chuyến đi tuyệt vời',
     'Enter your email': 'Nhập email',
@@ -437,7 +474,6 @@ class AppStrings {
     'Missing information': 'Thiếu thông tin',
     'Inappropriate image/video': 'Ảnh/video không phù hợp',
     'Map/address issue': 'Lỗi bản đồ/địa chỉ',
-    'Other': 'Khác',
     'Please select one': 'Vui lòng chọn một mục',
     'Description': 'Mô tả',
     'Image or video': 'Ảnh hoặc video',
@@ -582,8 +618,13 @@ class AppStrings {
     'Payment Method': 'Phương thức thanh toán',
     'Change': 'Đổi',
     'Important Information': 'Thông tin quan trọng',
-    'Your subscription will automatically renew. You can cancel anytime from your account settings.':
-        'Gói đăng ký sẽ tự động gia hạn. Bạn có thể hủy bất cứ lúc nào trong cài đặt tài khoản.',
+    'TEST MODE · No real charge': 'CHẾ ĐỘ THỬ NGHIỆM · Không thu tiền thật',
+    'This is a one-time sandbox payment. Premium access does not renew automatically.':
+        'Đây là thanh toán thử nghiệm một lần. Quyền Premium không tự động gia hạn.',
+    'Payment synchronization is incomplete': 'Chưa hoàn tất đồng bộ thanh toán',
+    'Your checkout session is saved. Retry to verify the payment; you will not be charged again.':
+        'Phiên thanh toán đã được lưu. Hãy thử lại để xác minh; bạn sẽ không bị tính tiền lần nữa.',
+    'Retry verification': 'Thử xác minh lại',
     'I agree to the ': 'Tôi đồng ý với ',
     'Terms & Conditions': 'Điều khoản & Điều kiện',
     ' and ': ' và ',
@@ -717,6 +758,13 @@ class AppStrings {
     'Leisure Trip': 'Du lịch',
     'Business Trip': 'Công tác',
     'Your Vietnam Adventure': 'Hành trình Việt Nam',
+    'Edit trip name': 'Đổi tên chuyến đi',
+    'Trip name': 'Tên chuyến đi',
+    'Trip name cannot be empty.': 'Tên chuyến đi không được để trống.',
+    'You already have a trip with this name.':
+        'Bạn đã có một chuyến đi với tên này.',
+    'Could not rename trip. Please try again.':
+        'Không thể đổi tên chuyến đi. Vui lòng thử lại.',
     'Personalized Itinerary': 'Lịch trình cá nhân hóa',
     "Let's create your perfect trip": 'Cùng tạo chuyến đi hoàn hảo của bạn',
     'Trip Type': 'Loại chuyến đi',
@@ -1038,6 +1086,17 @@ class AppStrings {
     'Share': 'Chia sẻ',
     'Share to Forum': 'Chia sẻ lên Diễn đàn',
     'Get Directions': 'Chỉ đường',
+    'Duration': 'Thời lượng',
+    'Price': 'Giá',
+    'Open': 'Mở cửa',
+    'Phone': 'Điện thoại',
+    'Website': 'Trang web',
+    'Address': 'Địa chỉ',
+    'From': 'Từ',
+    'Up to': 'Tối đa',
+    'min': 'phút',
+    'h': ' giờ',
+    'm': ' phút',
     'Create Trip on Google Maps': 'Tạo chuyến đi trên Google Maps',
     'Back to trip planner': 'Quay lại Lịch trình',
     'Destinations': 'Điểm đến',
@@ -1163,5 +1222,17 @@ class AppStrings {
     'Open Popular Apps': 'Mở ứng dụng phổ biến',
     'Open Notifications': 'Mở thông báo',
     'Open Profile': 'Mở hồ sơ',
+    'Possible Match': 'Có thể khớp',
+    'Landmark': 'Điểm tham quan',
+    'Cultural Object': 'Vật thể văn hóa',
+    'Street Sign': 'Biển hiệu đường',
+    'Original Text': 'Văn bản gốc',
+    'Find on Map': 'Tìm trên bản đồ',
+    'Continue Without Location': 'Tiếp tục không có vị trí',
+    'Open Settings': 'Mở Cài đặt',
+    'Take Another Photo': 'Chụp ảnh khác',
+    'Choose Another Image': 'Chọn ảnh khác',
+    'Could Not Recognize Clearly': 'Không thể nhận diện rõ',
+    'Image Type Not Supported': 'Loại ảnh chưa được hỗ trợ',
   };
 }

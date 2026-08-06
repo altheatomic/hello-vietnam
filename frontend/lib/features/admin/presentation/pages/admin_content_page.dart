@@ -147,14 +147,18 @@ class _AdminContentPageState extends State<AdminContentPage> {
   }
 
   Future<void> _confirmDelete(AdminContentRecord record) async {
+    final bool archives = _config.fields.any((field) => field.key == 'status');
+    final String action = archives ? 'Archive' : 'Delete';
     final confirmed = await showDialog<bool>(
       context: context,
       barrierColor: const Color(0x80152B43),
       builder: (context) {
         return AlertDialog(
-          title: Text('Delete ${_config.primaryField.label}?'),
+          title: Text('$action ${_config.primaryField.label}?'),
           content: Text(
-            'This will permanently delete "${_displayName(record)}".',
+            archives
+                ? '"${_displayName(record)}" will be hidden from active results and retained for history.'
+                : 'This will permanently delete "${_displayName(record)}".',
           ),
           actions: [
             TextButton(
@@ -166,7 +170,7 @@ class _AdminContentPageState extends State<AdminContentPage> {
                 backgroundColor: const Color(0xFFEF4444),
               ),
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Delete'),
+              child: Text(action),
             ),
           ],
         );
@@ -177,11 +181,11 @@ class _AdminContentPageState extends State<AdminContentPage> {
     try {
       await _repository.delete(_config, record);
       if (!mounted) return;
-      _showSnack('Deleted.');
+      _showSnack(archives ? 'Archived.' : 'Deleted.');
       await _loadRecords(showLoader: false);
     } catch (error) {
       if (!mounted) return;
-      _showSnack('Delete failed: $error');
+      _showSnack('$action failed: $error');
     }
   }
 
@@ -236,32 +240,53 @@ class _AdminContentPageState extends State<AdminContentPage> {
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),
         border: Border.all(color: AppColors.divider),
       ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 420,
-            child: TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              decoration: adminInputDecoration(
-                hintText: 'Search ${_config.table} records',
-                suffixIcon: const Icon(Icons.search_rounded, size: 20),
-              ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final search = TextField(
+            controller: _searchController,
+            onChanged: _onSearchChanged,
+            decoration: adminInputDecoration(
+              hintText: 'Search ${_config.table} records',
+              suffixIcon: const Icon(Icons.search_rounded, size: 20),
             ),
-          ),
-          const Spacer(),
-          _MetricPill(
-            icon: _config.icon,
-            label: 'Total',
-            value: _totalCount.toString(),
-          ),
-          const SizedBox(width: 10),
-          _MetricPill(
-            icon: Icons.filter_alt_outlined,
-            label: 'Loaded',
-            value: _records.length.toString(),
-          ),
-        ],
+          );
+          final metrics = Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _MetricPill(
+                icon: _config.icon,
+                label: 'Total',
+                value: _totalCount.toString(),
+              ),
+              _MetricPill(
+                icon: Icons.filter_alt_outlined,
+                label: 'Loaded',
+                value: _records.length.toString(),
+              ),
+            ],
+          );
+
+          if (constraints.maxWidth < 760) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [search, const SizedBox(height: 12), metrics],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: search,
+                ),
+              ),
+              const SizedBox(width: 20),
+              metrics,
+            ],
+          );
+        },
       ),
     );
   }
@@ -336,6 +361,9 @@ class _AdminContentPageState extends State<AdminContentPage> {
                       record: record,
                       onEdit: () => _openForm(record),
                       onDelete: () => _confirmDelete(record),
+                      archives: _config.fields.any(
+                        (field) => field.key == 'status',
+                      ),
                     );
                   },
                 ),
@@ -454,6 +482,7 @@ class _TableRow extends StatelessWidget {
     required this.record,
     required this.onEdit,
     required this.onDelete,
+    required this.archives,
   });
 
   final AdminContentResourceConfig config;
@@ -461,6 +490,7 @@ class _TableRow extends StatelessWidget {
   final AdminContentRecord record;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final bool archives;
 
   @override
   Widget build(BuildContext context) {
@@ -498,10 +528,15 @@ class _TableRow extends StatelessWidget {
                   icon: const Icon(Icons.edit_outlined, size: 19),
                 ),
                 IconButton(
-                  tooltip: 'Delete',
+                  tooltip: archives ? 'Archive' : 'Delete',
                   onPressed: onDelete,
                   color: const Color(0xFFEF4444),
-                  icon: const Icon(Icons.delete_outline_rounded, size: 19),
+                  icon: Icon(
+                    archives
+                        ? Icons.archive_outlined
+                        : Icons.delete_outline_rounded,
+                    size: 19,
+                  ),
                 ),
               ],
             ),

@@ -1,0 +1,75 @@
+{
+  "assessment_date": "2026-07-29",
+  "status": "automatic_pilot_complete_human_rating_pending",
+  "source_runs": {
+    "ai_search_food": "../pilot-20260729/raw.jsonl",
+    "ai_chat_translation_tts": "../final-20260729/raw.jsonl",
+    "quota_evidence": "../ai-search-final-20260729/raw.jsonl"
+  },
+  "ai_search": {
+    "scope": "food_only",
+    "cases": 12,
+    "api_success_rate": 1.0,
+    "schema_valid_rate": 1.0,
+    "type_accuracy": 1.0,
+    "name_accuracy": 0.3333333333,
+    "database_match_accuracy": 0.3333333333,
+    "end_to_end_accuracy": 0.3333333333,
+    "expected_calibration_error": 0.6233333333,
+    "mean_confidence_correct": 0.98,
+    "mean_confidence_incorrect": 0.945,
+    "latency_ms": {
+      "mean": 8716.5003,
+      "p50": 7628.0165,
+      "p95": 14213.7672,
+      "p99": 15435.8695
+    },
+    "object_cases_pending": 8,
+    "quota_probe_429_rate": 1.0
+  },
+  "ai_chat": {
+    "cases": 14,
+    "api_success_rate": 1.0,
+    "action_accuracy": 1.0,
+    "required_fact_coverage": 1.0,
+    "automatic_pass_rate": 1.0,
+    "latency_ms": {
+      "mean": 2270.9145,
+      "p50": 2221.4675,
+      "p95": 3092.5001,
+      "p99": 3093.3144
+    },
+    "human_factuality_pending": 14,
+    "human_relevance_pending": 14
+  },
+  "translation": {
+    "cases": 14,
+    "api_success_rate": 1.0,
+    "mean_token_f1": 0.9383150183,
+    "mean_chrf": 0.9352122669,
+    "number_preservation_rate": 1.0,
+    "automatic_pass_rate": 1.0,
+    "latency_ms": {
+      "mean": 1245.4233,
+      "p50": 1178.488,
+      "p95": 1457.2717,
+      "p99": 1483.1687
+    },
+    "human_adequacy_pending": 14,
+    "human_fluency_pending": 14
+  },
+  "tts": {
+    "cases": 6,
+    "api_success_rate": 1.0,
+    "audio_url_rate": 1.0,
+    "audio_reachable_rate": 1.0,
+    "latency_ms": {
+      "mean": 3179.3152,
+      "p50": 2971.938,
+      "p95": 4069.2475,
+      "p99": 4321.1935
+    },
+    "human_mos_pending": 6,
+    "human_intelligibility_pending": 6
+  }
+}

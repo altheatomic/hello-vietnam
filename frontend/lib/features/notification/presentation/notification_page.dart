@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/widgets/app_loading_screen.dart';
 import 'package:hellovietnam/features/notification/domain/app_notification.dart';
 import 'package:hellovietnam/features/notification/presentation/notification_action_handler.dart';
 import 'package:hellovietnam/features/notification/presentation/notification_controller.dart';
+import 'package:hellovietnam/features/planner/data/trip_store.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key, this.controller});
@@ -276,6 +279,42 @@ class _NotificationPageState extends State<NotificationPage> {
     await NotificationActionHandler.open(context, notification);
   }
 
+  Future<void> _handleEndTrip(AppNotification notification) async {
+    final String? idPlan = notification.target.entityId;
+    if (idPlan == null || idPlan.isEmpty) return;
+
+    try {
+      // Canonical End Trip action — same one used by the Trip Tracker card
+      // on Home and the overdue-check popup, so all three behave the same.
+      await TripStore.instance.endTripByPlan(idPlan);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              context.l10n.ui('Could not end trip. Please try again.'),
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      return;
+    }
+
+    if (!mounted) return;
+    await _controller.markAsRead(notification.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.ui('Trip marked as completed.')),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   Future<void> _clearAllNotifications() async {
     await _controller.clearAll();
     if (!mounted) {
@@ -291,136 +330,170 @@ class _NotificationPageState extends State<NotificationPage> {
       );
   }
 
+  void _handleBack() {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go(AppRoutes.home);
+  }
+
   @override
   Widget build(BuildContext context) {
     final double topInset = MediaQuery.of(context).padding.top;
+    final bool canPop = context.canPop();
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(
-        children: <Widget>[
-          const Positioned.fill(child: _NotificationBackground()),
-          SafeArea(
-            bottom: false,
-            child: ListenableBuilder(
-              listenable: _controller,
-              builder: (BuildContext context, Widget? child) {
-                final List<AppNotification> notifications =
-                    _controller.visibleNotifications;
+    return PopScope<void>(
+      canPop: canPop,
+      onPopInvokedWithResult: (bool didPop, void result) {
+        if (!didPop && !canPop) context.go(AppRoutes.home);
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Stack(
+          children: <Widget>[
+            const Positioned.fill(child: _NotificationBackground()),
+            SafeArea(
+              bottom: false,
+              child: ListenableBuilder(
+                // Also listens to TripStore so a trip completed via the Home
+                // Trip Tracker card or the overdue-check popup immediately
+                // hides this page's "End Trip" button/shows "Completed" too.
+                listenable: Listenable.merge(<Listenable>[
+                  _controller,
+                  TripStore.instance,
+                ]),
+                builder: (BuildContext context, Widget? child) {
+                  final List<AppNotification> notifications =
+                      _controller.visibleNotifications;
 
-                return Column(
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-                      child: _NotificationHeader(
-                        activeFilterCount: _controller.activeFilterCount,
-                        onBack: () => Navigator.of(context).maybePop(),
-                        onFilter: _openFilters,
-                      ),
-                    ),
-                    if (_controller.isLoading)
-                      Expanded(
-                        child: AppLoadingScreen(
-                          message: context.l10n.ui('Loading notifications'),
-                          compact: true,
+                  return Column(
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+                        child: _NotificationHeader(
+                          activeFilterCount: _controller.activeFilterCount,
+                          onBack: _handleBack,
+                          onFilter: _openFilters,
                         ),
-                      )
-                    else if (_controller.errorMessage != null &&
-                        notifications.isEmpty)
-                      Expanded(
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Text(
-                              context.l10n.ui(_controller.errorMessage!),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                      ),
+                      if (_controller.isLoading)
+                        Expanded(
+                          child: AppLoadingScreen(
+                            message: context.l10n.ui('Loading notifications'),
+                            compact: true,
+                          ),
+                        )
+                      else if (_controller.errorMessage != null &&
+                          notifications.isEmpty)
+                        Expanded(
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                              ),
+                              child: Text(
+                                context.l10n.ui(_controller.errorMessage!),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      )
-                    else if (notifications.isEmpty)
-                      const Expanded(child: _NotificationEmptyState())
-                    else
-                      Expanded(
-                        child: RefreshIndicator(
-                          onRefresh: _controller.refresh,
-                          child: ListView.separated(
-                            controller: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(
-                              parent: BouncingScrollPhysics(),
-                            ),
-                            padding: EdgeInsets.fromLTRB(
-                              16,
-                              10,
-                              16,
-                              topInset + 28,
-                            ),
-                            itemCount: notifications.length + 2,
-                            separatorBuilder:
-                                (BuildContext context, int index) =>
-                                    const SizedBox(height: 14),
-                            itemBuilder: (BuildContext context, int index) {
-                              if (index == notifications.length) {
-                                if (_controller.isLoadingMore) {
-                                  return const Center(
-                                    child: SizedBox.square(
-                                      dimension: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
+                        )
+                      else if (notifications.isEmpty)
+                        const Expanded(child: _NotificationEmptyState())
+                      else
+                        Expanded(
+                          child: RefreshIndicator(
+                            onRefresh: _controller.refresh,
+                            child: ListView.separated(
+                              controller: _scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(
+                                parent: BouncingScrollPhysics(),
+                              ),
+                              padding: EdgeInsets.fromLTRB(
+                                16,
+                                10,
+                                16,
+                                topInset + 28,
+                              ),
+                              itemCount: notifications.length + 2,
+                              separatorBuilder:
+                                  (BuildContext context, int index) =>
+                                      const SizedBox(height: 14),
+                              itemBuilder: (BuildContext context, int index) {
+                                if (index == notifications.length) {
+                                  if (_controller.isLoadingMore) {
+                                    return const Center(
+                                      child: SizedBox.square(
+                                        dimension: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  if (_controller.hasMore) {
+                                    return Center(
+                                      child: TextButton.icon(
+                                        onPressed: _controller.loadMore,
+                                        icon: const Icon(
+                                          Icons.expand_more_rounded,
+                                        ),
+                                        label: Text(
+                                          context.l10n.ui('Load more'),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return const SizedBox.shrink();
+                                }
+                                if (index == notifications.length + 1) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Center(
+                                      child: _ClearAllButton(
+                                        onTap: _clearAllNotifications,
                                       ),
                                     ),
                                   );
                                 }
-                                if (_controller.hasMore) {
-                                  return Center(
-                                    child: TextButton.icon(
-                                      onPressed: _controller.loadMore,
-                                      icon: const Icon(
-                                        Icons.expand_more_rounded,
-                                      ),
-                                      label: Text(context.l10n.ui('Load more')),
-                                    ),
-                                  );
-                                }
-                                return const SizedBox.shrink();
-                              }
-                              if (index == notifications.length + 1) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 6),
-                                  child: Center(
-                                    child: _ClearAllButton(
-                                      onTap: _clearAllNotifications,
-                                    ),
+
+                                final AppNotification notification =
+                                    notifications[index];
+                                return _AnimatedNotificationTile(
+                                  index: index,
+                                  child: _NotificationTile(
+                                    notification: notification,
+                                    onTap: () =>
+                                        _handleNotificationTap(notification),
+                                    onEndTrip: () =>
+                                        _handleEndTrip(notification),
+                                    isTripCompleted:
+                                        notification.isTripCompleted ||
+                                        (notification.target.entityId != null &&
+                                            TripStore.instance
+                                                .isCompletedLocally(
+                                                  notification.target.entityId!,
+                                                )),
                                   ),
                                 );
-                              }
-
-                              final AppNotification notification =
-                                  notifications[index];
-                              return _AnimatedNotificationTile(
-                                index: index,
-                                child: _NotificationTile(
-                                  notification: notification,
-                                  onTap: () =>
-                                      _handleNotificationTap(notification),
-                                ),
-                              );
-                            },
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -653,10 +726,17 @@ class _AnimatedNotificationTile extends StatelessWidget {
 }
 
 class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({required this.notification, required this.onTap});
+  const _NotificationTile({
+    required this.notification,
+    required this.onTap,
+    required this.onEndTrip,
+    required this.isTripCompleted,
+  });
 
   final AppNotification notification;
   final VoidCallback onTap;
+  final VoidCallback onEndTrip;
+  final bool isTripCompleted;
 
   @override
   Widget build(BuildContext context) {
@@ -782,6 +862,15 @@ class _NotificationTile extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  if (notification.target.kind ==
+                      NotificationTargetKind.tripOverdueCheck) ...<Widget>[
+                    const SizedBox(height: 10),
+                    _TripOverdueCard(
+                      target: notification.target,
+                      onEndTrip: onEndTrip,
+                      isCompleted: isTripCompleted,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -790,6 +879,201 @@ class _NotificationTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Embedded trip summary shown inside a `tripOverdueCheck` notification.
+///
+/// The card itself has no `onTap` — only its two pill buttons
+/// ("Open Itinerary" / "End Trip") are tappable, each with its own
+/// [GestureDetector] (`HitTestBehavior.opaque`) nested inside the tile's
+/// outer [GestureDetector] (tap elsewhere on the tile → the usual
+/// notification action). Flutter's gesture arena resolves nested tap
+/// recognizers to the innermost one hit, so the outer tile's onTap never
+/// also fires when a button is tapped — no manual event-stopping needed.
+/// "Open Itinerary" uses [GoRouterHelper.go] (not `push`) to avoid two
+/// copies of the shell's branch Navigators being mounted with the same
+/// GlobalKeys.
+class _TripOverdueCard extends StatelessWidget {
+  const _TripOverdueCard({
+    required this.target,
+    required this.onEndTrip,
+    required this.isCompleted,
+  });
+
+  final NotificationTarget target;
+  final VoidCallback onEndTrip;
+  final bool isCompleted;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String? customTitle = target.metadata['customTitle'];
+    final String tripTitle = (customTitle == null || customTitle.isEmpty)
+        ? context.l10n.ui('Your Vietnam Adventure')
+        : customTitle;
+    final DateTime? startAt = DateTime.tryParse(
+      target.metadata['startAt'] ?? '',
+    );
+    final DateTime? endAt = DateTime.tryParse(target.metadata['endAt'] ?? '');
+    final String dateRange = _formatTripDateRange(context, startAt, endAt);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            tripTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          if (dateRange.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 4),
+            Text(
+              dateRange,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          if (isCompleted)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  context.l10n.ui('Completed'),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.tertiary,
+                  ),
+                ),
+              ),
+            )
+          else
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: _TripCardPillButton(
+                    label: context.l10n.ui('Open Itinerary'),
+                    filled: true,
+                    color: theme.colorScheme.primary,
+                    onTap: () => context.go(
+                      AppRoutes.tripPlannerResultPath(
+                        idPlan: target.entityId,
+                        fromNotification: true,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _TripCardPillButton(
+                    label: context.l10n.ui('End Trip'),
+                    filled: false,
+                    color: AppNotificationType.trip.accentColor,
+                    onTap: onEndTrip,
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TripCardPillButton extends StatelessWidget {
+  const _TripCardPillButton({
+    required this.label,
+    required this.filled,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool filled;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: filled ? color : theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(999),
+          border: filled
+              ? null
+              : Border.all(color: color.withValues(alpha: 0.5)),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: filled ? theme.colorScheme.onPrimary : color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+const List<String> _shortMonthNames = <String>[
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+String _formatTripDateRange(
+  BuildContext context,
+  DateTime? startAt,
+  DateTime? endAt,
+) {
+  if (startAt == null || endAt == null) return '';
+  final int nDays = endAt.difference(startAt).inDays + 1;
+  final String startLabel =
+      '${startAt.day} ${_shortMonthNames[startAt.month - 1]}';
+  final String endLabel = '${endAt.day} ${_shortMonthNames[endAt.month - 1]}';
+  final String daysLabel = context.l10n.ui(nDays == 1 ? 'day' : 'days');
+  return '$startLabel – $endLabel · $nDays $daysLabel';
 }
 
 class _ClearAllButton extends StatelessWidget {

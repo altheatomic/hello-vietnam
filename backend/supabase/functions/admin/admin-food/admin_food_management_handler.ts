@@ -20,6 +20,7 @@ type AdminFoodPayload = {
   city: string;
   urlImage?: string | null;
   description?: string | null;
+  status?: string;
 };
 
 type FoodTypePayload = {
@@ -42,6 +43,14 @@ type FoodTranslationHints = {
   languageColumn: string | null;
   nameColumn: string;
   descriptionColumn: string;
+};
+
+type FoodTableColumns = {
+  idColumn: string;
+  nameColumn: string;
+  typeColumn: string;
+  cityColumn: string;
+  statusColumn: string | null;
 };
 
 type FoodTypeTranslationHints = {
@@ -190,6 +199,7 @@ class AdminFoodService {
   private foodImageColumn = "image_path";
   private foodNameColumn = "name";
   private foodDescriptionColumn = "description";
+  private foodStatusColumn: string | null = null;
   private foodCityIsForeignKey = true;
 
   private foodTranslationHints: FoodTranslationHints | null = null;
@@ -213,6 +223,7 @@ class AdminFoodService {
         nameColumn: this.foodNameColumn,
         typeColumn: this.foodTypeColumn,
         cityColumn: this.foodCityColumn,
+        statusColumn: this.foodStatusColumn,
       },
       options,
     );
@@ -291,6 +302,9 @@ class AdminFoodService {
           stringValue(trans?.[foodTransHints.descriptionColumn]) ??
           stringValue(row[this.foodDescriptionColumn]) ??
           stringValue(row.description),
+        status: this.foodStatusColumn
+          ? stringValue(row[this.foodStatusColumn]) ?? "active"
+          : "active",
       });
     }
 
@@ -342,6 +356,9 @@ class AdminFoodService {
       [this.foodCityColumn]: cityValue,
       [this.foodImageColumn]: cleanNullableText(food.urlImage),
     };
+    if (this.foodStatusColumn) {
+      payload[this.foodStatusColumn] = normalizeFoodStatus(food.status);
+    }
 
     const inserted = await insertSingle(this.client, FOOD_TABLE, payload);
     const foodId =
@@ -372,6 +389,7 @@ class AdminFoodService {
       city: food.city,
       urlImage: cleanNullableText(food.urlImage),
       description: cleanNullableText(food.description),
+      status: normalizeFoodStatus(food.status),
     };
   }
 
@@ -395,6 +413,9 @@ class AdminFoodService {
       [this.foodCityColumn]: cityValue,
       [this.foodImageColumn]: cleanNullableText(food.urlImage),
     };
+    if (this.foodStatusColumn) {
+      payload[this.foodStatusColumn] = normalizeFoodStatus(food.status);
+    }
 
     await updateWhere(this.client, FOOD_TABLE, payload, this.foodIdColumn, food.id);
     await this.upsertFoodTranslation(food.id, language, food.name, food.description);
@@ -406,13 +427,24 @@ class AdminFoodService {
       city: food.city,
       urlImage: cleanNullableText(food.urlImage),
       description: cleanNullableText(food.description),
+      status: normalizeFoodStatus(food.status),
     };
   }
 
   async deleteFood(foodId: string): Promise<void> {
-    const hints = await this.ensureFoodTranslationHints();
-    await deleteWhere(this.client, FOOD_TRANSLATION_TABLE, hints.foodIdColumn, foodId);
-    await deleteWhere(this.client, FOOD_TABLE, this.foodIdColumn, foodId);
+    await this.ensureFoodColumns();
+    if (!this.foodStatusColumn) {
+      throw new Error(
+        "Food table does not expose a status column. Apply the data freshness migration before archiving food.",
+      );
+    }
+    await updateWhere(
+      this.client,
+      FOOD_TABLE,
+      { [this.foodStatusColumn]: "archived" },
+      this.foodIdColumn,
+      foodId,
+    );
   }
 
   async upsertFoodType(type: FoodTypePayload, language: string): Promise<void> {
@@ -610,6 +642,7 @@ class AdminFoodService {
       ["description", "desc"],
       this.foodDescriptionColumn,
     );
+    this.foodStatusColumn = pickOptionalColumn(sample, ["status", "state"]);
   }
 
   private async ensureFoodTranslationHints(): Promise<FoodTranslationHints> {
@@ -869,6 +902,7 @@ function requireFoodPayload(
     city: requiredString(payload.city, "food.city"),
     urlImage: cleanNullableText(stringValue(payload.urlImage)),
     description: cleanNullableText(stringValue(payload.description)),
+    status: normalizeFoodStatus(stringValue(payload.status)),
   };
 
   if (requireId && !food.id) {
@@ -876,6 +910,16 @@ function requireFoodPayload(
   }
 
   return food;
+}
+
+function normalizeFoodStatus(value: unknown): string {
+  const status = stringValue(value) ?? "active";
+  if (
+    !["active", "draft", "hidden", "expired", "archived"].includes(status)
+  ) {
+    throw new Error(`Unsupported food status: ${status}`);
+  }
+  return status;
 }
 
 function requireFoodTypePayload(value: unknown): FoodTypePayload {
@@ -947,6 +991,7 @@ async function selectFoodRowsPage(
     nameColumn: string;
     typeColumn: string;
     cityColumn: string;
+    statusColumn: string | null;
   },
   options: FoodListOptions,
 ): Promise<{ rows: JsonObject[]; total: number }> {
@@ -956,6 +1001,9 @@ async function selectFoodRowsPage(
   const to = from + pageSize - 1;
 
   let query = client.from(table).select("*", { count: "exact" });
+  if (columns.statusColumn) {
+    query = query.neq(columns.statusColumn, "archived");
+  }
   if (options.typeId) {
     query = query.eq(columns.typeColumn, options.typeId);
   }

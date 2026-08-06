@@ -14,7 +14,9 @@ import '../widgets/food_type_manager_dialog.dart';
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 class AdminFoodPage extends StatefulWidget {
-  const AdminFoodPage({super.key});
+  const AdminFoodPage({super.key, this.repository});
+
+  final AdminFoodRepository? repository;
 
   @override
   State<AdminFoodPage> createState() => _AdminFoodPageState();
@@ -27,7 +29,8 @@ enum _FoodSortDirection { ascending, descending }
 enum _FoodSortMenuAction { defaultOrder, ascending, descending }
 
 class _AdminFoodPageState extends State<AdminFoodPage> {
-  final AdminFoodRepository _repository = AdminFoodRepository();
+  late final AdminFoodRepository _repository =
+      widget.repository ?? AdminFoodRepository();
   final List<AdminFood> _foods = <AdminFood>[];
   final List<FoodType> _types = <FoodType>[];
 
@@ -37,6 +40,8 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
   _FoodSortField? _activeSortField;
   _FoodSortDirection? _activeSortDirection;
   bool _isLoading = true;
+  String? _loadError;
+  int _loadRequestId = 0;
   int _totalCount = 0;
   int _currentPage = 1;
   static const int _pageSize = 8;
@@ -55,54 +60,71 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
   }
 
   Future<void> _loadData({bool showLoader = true}) async {
+    final requestId = ++_loadRequestId;
     if (showLoader && mounted) {
-      setState(() => _isLoading = true);
+      setState(() {
+        _isLoading = true;
+        _loadError = null;
+      });
     }
 
+    unawaited(_loadTypes(requestId));
     try {
-      final results = await Future.wait([
-        _repository.fetchFoods(
-          page: _currentPage,
-          pageSize: _pageSize,
-          query: _searchController.text,
-          typeId: _filterTypeId,
-          sortField: switch (_activeSortField) {
-            _FoodSortField.name => 'name',
-            _FoodSortField.city => 'city',
-            null => null,
-          },
-          sortDirection: switch (_activeSortDirection) {
-            _FoodSortDirection.ascending => 'ascending',
-            _FoodSortDirection.descending => 'descending',
-            null => null,
-          },
-        ),
-        _repository.fetchFoodTypes(),
-      ]);
-      final foodPage = results[0] as AdminFoodPageResult;
-      final types = results[1] as List<FoodType>;
+      final foodPage = await _repository.fetchFoods(
+        page: _currentPage,
+        pageSize: _pageSize,
+        query: _searchController.text,
+        typeId: _filterTypeId,
+        sortField: switch (_activeSortField) {
+          _FoodSortField.name => 'name',
+          _FoodSortField.city => 'city',
+          null => null,
+        },
+        sortDirection: switch (_activeSortDirection) {
+          _FoodSortDirection.ascending => 'ascending',
+          _FoodSortDirection.descending => 'descending',
+          null => null,
+        },
+      );
 
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _foods
           ..clear()
           ..addAll(foodPage.foods);
         _totalCount = foodPage.totalCount;
+        _currentPage = _currentPage > _totalPages ? _totalPages : _currentPage;
+        _isLoading = false;
+        _loadError = null;
+      });
+    } catch (e) {
+      if (!mounted || requestId != _loadRequestId) return;
+      setState(() {
+        _isLoading = false;
+        _loadError = e.toString();
+      });
+      if (_foods.isNotEmpty) {
+        _showSnack('Could not refresh food items: $e');
+      }
+    }
+  }
+
+  Future<void> _loadTypes(int requestId) async {
+    try {
+      final types = await _repository.fetchFoodTypes();
+      if (!mounted || requestId != _loadRequestId) return;
+      setState(() {
         _types
           ..clear()
           ..addAll(types);
-
         if (_filterTypeId != null &&
-            !_types.any((t) => t.id == _filterTypeId)) {
+            !_types.any((type) => type.id == _filterTypeId)) {
           _filterTypeId = null;
         }
-        _currentPage = _currentPage > _totalPages ? _totalPages : _currentPage;
-        _isLoading = false;
       });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      _showSnack('Load food failed: $e');
+    } catch (error) {
+      if (!mounted || requestId != _loadRequestId) return;
+      _showSnack('Food types could not be loaded: $error');
     }
   }
 
@@ -306,9 +328,9 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
       await _repository.deleteFood(food.id);
       if (!mounted) return;
       await _loadData(showLoader: false);
-      _showSnack('"${food.name}" deleted.');
+      _showSnack('"${food.name}" archived.');
     } catch (e) {
-      _showSnack('Delete food failed: $e');
+      _showSnack('Archive food failed: $e');
     }
   }
 
@@ -444,12 +466,25 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
                 onTypeChanged: _onTypeFilterChanged,
                 onSearchChanged: _onSearchChanged,
               ),
-              child: _isLoading
+              child: _isLoading && _foods.isEmpty
                   ? const SizedBox(
                       height: 280,
                       child: Center(
                         child: CircularProgressIndicator(
                           color: AppColors.primary,
+                        ),
+                      ),
+                    )
+                  : _loadError != null && _foods.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 36),
+                      child: EmptyState(
+                        icon: Icons.cloud_off_outlined,
+                        message: 'Could not load food items.\n$_loadError',
+                        action: FilledButton.icon(
+                          onPressed: _loadData,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Retry'),
                         ),
                       ),
                     )
@@ -518,70 +553,73 @@ class _TypeFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final visibleTypes = types.take(5).toList(growable: false);
 
-    return Row(
-      children: [
-        // Search pill
-        Container(
-          width: 300,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(45),
-            border: Border.all(color: AppColors.divider),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: TextField(
-            controller: controller,
-            onChanged: onSearchChanged,
-            style: const TextStyle(fontSize: 14),
-            decoration: InputDecoration(
-              hintText: 'Search by name or city…',
-              hintStyle: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary.withValues(alpha: 0.7),
-              ),
-              prefixIcon: const Icon(
-                Icons.search_rounded,
-                size: 19,
-                color: AppColors.textSecondary,
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 13,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          // Search pill
+          Container(
+            width: 300,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(45),
+              border: Border.all(color: AppColors.divider),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: controller,
+              onChanged: onSearchChanged,
+              style: const TextStyle(fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Search by name or city…',
+                hintStyle: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary.withValues(alpha: 0.7),
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  size: 19,
+                  color: AppColors.textSecondary,
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 13,
+                ),
               ),
             ),
           ),
-        ),
 
-        const Spacer(),
+          const SizedBox(width: 24),
 
-        // "All" chip
-        _FoodFilterChip(
-          label: 'All',
-          isSelected: selectedId == null,
-          onTap: () => onTypeChanged(null),
-        ),
-        const SizedBox(width: 6),
+          // "All" chip
+          _FoodFilterChip(
+            label: 'All',
+            isSelected: selectedId == null,
+            onTap: () => onTypeChanged(null),
+          ),
+          const SizedBox(width: 6),
 
-        ...visibleTypes.map(
-          (t) => Padding(
-            padding: const EdgeInsets.only(left: 6),
-            child: _FoodFilterChip(
-              label: t.label,
-              isSelected: selectedId == t.id,
-              color: t.color,
-              onTap: () => onTypeChanged(selectedId == t.id ? null : t.id),
+          ...visibleTypes.map(
+            (t) => Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: _FoodFilterChip(
+                label: t.label,
+                isSelected: selectedId == t.id,
+                color: t.color,
+                onTap: () => onTypeChanged(selectedId == t.id ? null : t.id),
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -960,8 +998,8 @@ class _FoodRowState extends State<_FoodRow> {
                     ),
                     const SizedBox(width: 4),
                     _FoodIconAction(
-                      icon: Icons.delete_outline_rounded,
-                      tooltip: 'Delete',
+                      icon: Icons.archive_outlined,
+                      tooltip: 'Archive',
                       color: const Color(0xFFEF4444),
                       onTap: widget.onDelete,
                     ),
@@ -1595,9 +1633,9 @@ class _DeleteConfirmDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),
       ),
-      title: const Text('Delete Food'),
+      title: const Text('Archive Food'),
       content: Text(
-        'Are you sure you want to delete "$name"?\nThis action cannot be undone.',
+        'Are you sure you want to archive "$name"?\nIt will be hidden from the active catalogue and retained for history.',
       ),
       actions: [
         TextButton(
@@ -1613,7 +1651,7 @@ class _DeleteConfirmDialog extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
             ),
           ),
-          child: const Text('Delete'),
+          child: const Text('Archive'),
         ),
       ],
     );
