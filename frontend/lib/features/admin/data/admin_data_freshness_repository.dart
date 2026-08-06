@@ -112,6 +112,16 @@ class AdminDataFreshnessRepository {
     );
   }
 
+  Future<void> updateReportStatus({
+    required String reportId,
+    required String status,
+  }) async {
+    await _invoke(
+      'adminUpdateReportStatus',
+      extra: <String, Object?>{'reportId': reportId, 'status': status},
+    );
+  }
+
   Future<Map<String, dynamic>> _invoke(
     String action, {
     Map<String, Object?> extra = const <String, Object?>{},
