@@ -64,4 +64,28 @@ void main() {
     expect(opened.single.queryParameters['query'], contains('21.0285'));
     expect(opened.single.queryParameters['query'], contains('105.8542'));
   });
+
+  testWidgets('passes zone coordinates to the hotel map opener',
+      (tester) async {
+    final opened = <({double lat, double lng})>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AccommodationRecommendationCard(
+            recommendation: _recommendation(),
+            openHotels: ({required double lat, required double lng}) async {
+              opened.add((lat: lat, lng: lng));
+              return true;
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Find hotels on Google Maps').first);
+    await tester.pump();
+
+    expect(opened.single.lat, 21.0285);
+    expect(opened.single.lng, 105.8542);
+  });
 }

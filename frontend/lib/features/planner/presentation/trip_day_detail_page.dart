@@ -6,6 +6,29 @@ import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/utils/maps_launcher.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
+import 'package:hellovietnam/features/planner/presentation/lunch_anchor_selector.dart';
+import 'package:hellovietnam/features/planner/presentation/widgets/lunch_discovery_card.dart';
+
+typedef NearbyRestaurantsLauncher = Future<bool> Function({
+  required double lat,
+  required double lng,
+  required String placeName,
+  required String provinceName,
+});
+
+Future<bool> _openNearbyRestaurants({
+  required double lat,
+  required double lng,
+  required String placeName,
+  required String provinceName,
+}) {
+  return openGoogleMapsNearbyRestaurants(
+    lat: lat,
+    lng: lng,
+    placeName: placeName,
+    provinceName: provinceName,
+  );
+}
 
 void _openDayRoute(List<TripPlannerActivityData> activities) {
   final realPlaces = activities.where((a) => a.tag != 'lunch_break').toList();
@@ -27,15 +50,24 @@ void _openDayRoute(List<TripPlannerActivityData> activities) {
 }
 
 class TripDayDetailPage extends StatelessWidget {
-  const TripDayDetailPage({super.key, required this.dayIndex, this.dayData});
+  const TripDayDetailPage({
+    super.key,
+    required this.dayIndex,
+    this.dayData,
+    this.nearbyRestaurantsLauncher = _openNearbyRestaurants,
+  });
 
   final int dayIndex;
   final TripPlannerDayData? dayData;
+  final NearbyRestaurantsLauncher nearbyRestaurantsLauncher;
 
   @override
   Widget build(BuildContext context) {
     final TripPlannerDayData day =
         dayData ?? TripPlannerMockData.dayAt(dayIndex);
+    final TripPlannerActivityData? lunchAnchor = selectLunchAnchor(
+      day.activities,
+    );
     final ThemeData theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
     final List<Color> pageColors = isDark
@@ -107,40 +139,13 @@ class TripDayDetailPage extends StatelessWidget {
                       onTap: () => _openDayRoute(day.activities),
                     ),
                     const SizedBox(height: 22),
-                    ...day.activities
-                        .where((a) => a.tag != 'lunch_break')
-                        .toList()
-                        .asMap()
-                        .entries
-                        .map(
-                          (MapEntry<int, TripPlannerActivityData> entry) =>
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 18),
-                                child: _ActivityDetailCard(
-                                  activity: entry.value,
-                                  onImageTap: entry.value.idPlace.isNotEmpty
-                                      ? () => context.push(
-                                          AppRoutes.recommendedPlaceDetailPath(
-                                            idProvince: entry
-                                                    .value
-                                                    .idProvince
-                                                    .isNotEmpty
-                                                ? entry.value.idProvince
-                                                : null,
-                                            idPlace: entry.value.idPlace,
-                                          ),
-                                        )
-                                      : null,
-                                  onDirections: () => context.push(
-                                    AppRoutes.tripPlannerMapPath(
-                                      dayIndex,
-                                      entry.key,
-                                    ),
-                                    extra: entry.value,
-                                  ),
-                                ),
-                              ),
-                        ),
+                    ..._buildActivitySections(
+                      context: context,
+                      day: day,
+                      dayIndex: dayIndex,
+                      lunchAnchor: lunchAnchor,
+                      nearbyRestaurantsLauncher: nearbyRestaurantsLauncher,
+                    ),
                   ],
                 ),
               ),
@@ -149,6 +154,72 @@ class TripDayDetailPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildActivitySections({
+    required BuildContext context,
+    required TripPlannerDayData day,
+    required int dayIndex,
+    required TripPlannerActivityData? lunchAnchor,
+    required NearbyRestaurantsLauncher nearbyRestaurantsLauncher,
+  }) {
+    final List<TripPlannerActivityData> realPlaces = day.activities
+        .where((a) => a.tag != 'lunch_break')
+        .toList(growable: false);
+    final List<Widget> sections = <Widget>[];
+    for (int index = 0; index < realPlaces.length; index++) {
+      final TripPlannerActivityData activity = realPlaces[index];
+      sections.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 18),
+          child: _ActivityDetailCard(
+            activity: activity,
+            onImageTap: activity.idPlace.isNotEmpty
+                ? () => context.push(
+                    AppRoutes.recommendedPlaceDetailPath(
+                      idProvince: activity.idProvince.isNotEmpty
+                          ? activity.idProvince
+                          : null,
+                      idPlace: activity.idPlace,
+                    ),
+                  )
+                : null,
+            onDirections: () => context.push(
+              AppRoutes.tripPlannerMapPath(dayIndex, index),
+              extra: activity,
+            ),
+          ),
+        ),
+      );
+
+      if (identical(activity, lunchAnchor)) {
+        final bool hasCoordinates = hasValidMapCoordinates(
+          lat: activity.lat,
+          lng: activity.lng,
+        );
+        sections.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 18),
+            child: LunchDiscoveryCard(
+              key: const ValueKey<String>('lunch-discovery-card'),
+              anchorName: context.l10n.ui(activity.title),
+              enabled: hasCoordinates,
+              onTap: hasCoordinates
+                  ? () {
+                      nearbyRestaurantsLauncher(
+                        lat: activity.lat,
+                        lng: activity.lng,
+                        placeName: activity.title,
+                        provinceName: day.provinceName,
+                      );
+                    }
+                  : null,
+            ),
+          ),
+        );
+      }
+    }
+    return sections;
   }
 }
 
