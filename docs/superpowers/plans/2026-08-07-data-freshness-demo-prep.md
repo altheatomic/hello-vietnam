@@ -146,10 +146,40 @@
 - [x] **Step 4: Commit only preparation artifacts**
 
   ```powershell
-  git add backend/crawldata/requirements-demo.txt docs/data-freshness-demo-runbook.md docs/superpowers/plans/2026-08-07-data-freshness-demo-prep.md
+  git add backend/crawldata/requirements-demo.txt docs/data-freshness-demo-runbook.md docs/data-freshness-manual-test.md scripts/data-freshness-demo.ps1 docs/superpowers/plans/2026-08-07-data-freshness-demo-prep.md
   git diff --cached --check
   git commit -m "docs: prepare data freshness demo"
   ```
+
+### Task 5: Add a repeatable local preflight helper
+
+**Files:**
+- Create: `scripts/data-freshness-demo.ps1`
+
+**Interfaces:**
+- Consumes: The isolated crawler environment, optional `SUPABASE_URL`, and the
+  process-only `DATA_FRESHNESS_CHECK_SECRET` for an explicit checker trigger.
+- Produces: Reachability/dependency checks, a temp-directory crawler dry run, or
+  a sanitized checker summary without exposing secrets.
+
+- [x] **Step 1: Verify crawler dependencies and CLI**
+
+  `-Mode preflight` imports all dependencies and validates `--mode`/`--upsert`.
+
+- [x] **Step 2: Probe deployed functions without credentials**
+
+  When `-SupabaseUrl` or `SUPABASE_URL` is present, preflight sends `OPTIONS`
+  requests to both functions.
+
+- [x] **Step 3: Keep crawler output isolated**
+
+  `-Mode crawler` writes to the Windows temp directory and warns when a source
+  returns zero rows; it never overwrites tracked `backend/crawldata/output`.
+
+- [x] **Step 4: Gate checker execution on the owner secret**
+
+  `-Mode checker` requires the process environment secret, prints only the
+  response summary, and exits with code `2` when the secret is absent.
 
 ## Verification checklist
 
@@ -157,6 +187,10 @@
 - The isolated Python environment imports all five dependencies.
 - `crawl_seed_data_fixed_v3.py --help` exits 0.
 - The no-upsert crawl produces output without modifying Supabase.
+- `scripts/data-freshness-demo.ps1 -Mode preflight` exits 0 when the local
+  environment is ready.
+- The helper's crawler mode writes to a temp directory and preserves tracked
+  output files.
 - Both deployed freshness functions respond to `OPTIONS`.
 - Admin route and repository references are present.
 - No secret appears in tracked files, command output captured in docs, or screenshots.
