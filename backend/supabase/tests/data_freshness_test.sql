@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(15);
 
 select has_table('public', 'content_freshness');
 select has_table('public', 'content_change_proposal');
@@ -33,6 +33,12 @@ select has_function(
   'public',
   'request_content_freshness_check',
   array['text', 'uuid']
+);
+select results_eq(
+  $$ select table_name, id_column
+     from public.content_freshness_table_config('place') $$,
+  $$ values ('place'::text, 'id_place'::text) $$,
+  'content freshness table config returns the declared columns'
 );
 select has_column('public', 'activity', 'status');
 select has_column('public', 'culture', 'status');

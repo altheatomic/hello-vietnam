@@ -12,6 +12,7 @@ import '../features/admin/presentation/pages/admin_feedback_page.dart';
 import '../features/admin/presentation/pages/admin_food_page.dart';
 import '../features/admin/presentation/pages/admin_popular_app_page.dart';
 import '../features/admin/presentation/pages/admin_cf_retrain_page.dart';
+import '../features/admin/presentation/pages/admin_data_freshness_page.dart';
 import '../features/admin/presentation/pages/admin_login_page.dart';
 
 class AdminRoutes {
@@ -20,6 +21,7 @@ class AdminRoutes {
   static const users = '/admin/users';
   //static const cannedReplies = '/admin/canned-replies';
   static const reports = '/admin/reports';
+  static const dataFreshness = '/admin/data-freshness';
   static const feedback = '/admin/feedback';
   static const food = '/admin/food';
   static const provinces = '/admin/provinces';
@@ -66,6 +68,10 @@ GoRouter buildAdminRouter() {
           GoRoute(
             path: AdminRoutes.reports,
             builder: (c, s) => const AdminReportPage(),
+          ),
+          GoRoute(
+            path: AdminRoutes.dataFreshness,
+            builder: (c, s) => const AdminDataFreshnessPage(),
           ),
           GoRoute(
             path: AdminRoutes.feedback,

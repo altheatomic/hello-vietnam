@@ -128,6 +128,8 @@ export function buildGeminiRecognitionRequest(
           "Return only the required JSON schema.",
           "Choose exactly one supported result_kind.",
           "Supported results are Vietnamese or travel-relevant food, landmarks, cultural objects, and readable signs or street names.",
+          "If the image contains readable text naming a street, road, avenue, or intersection, choose result_kind sign_text (not cultural_object), set text_analysis.sign_type to street, and provide a concise map_query with can_open_map true when the name is sufficiently readable.",
+          "Keep location_hint to a short region or city label; put full explanations in summary or travel_context.",
           "Ordinary unrelated objects, people, selfies, identity documents, payment cards, and unsafe content are unsupported.",
           "Never identify a person and never transcribe sensitive documents.",
           "Use honest confidence. Do not fill irrelevant category fields or invent facts.",

@@ -48,6 +48,7 @@ Day-end cutoff rules (day_end, default 20:00):
 
 import datetime
 import math
+from typing import Callable
 
 _AVG_SPEED_KMH    = 30.0
 _DEFAULT_DURATION = 60
@@ -145,6 +146,7 @@ def _simulate_place_step(
     lunch_dur: int,
     default_dur: int,
     buffer: int,
+    travel_time_fn: Callable[[dict, dict], float] = _travel_min,
 ) -> dict:
     """
     Simulate one place visit without mutating anything.
@@ -153,6 +155,14 @@ def _simulate_place_step(
     → visit, where the lunch break is spliced in at whichever of the two
     candidate points (Option A, before travel; Option B, after travel+buffer)
     minimises deviation from [12:00, 13:30) — see module docstring.
+
+    travel_time_fn(prev, place) → minutes, defaults to Haversine-based
+    _travel_min(). route_cost_with_schedule() (SA cost fn, called many times
+    per optimisation run) always uses the Haversine default and must never
+    be passed anything else. build_day_schedule() (called once on the final
+    best route) is the only caller allowed to override this with a more
+    accurate source (e.g. a pre-fetched Goong travel-time lookup), since
+    real API calls per SA iteration would be far too slow/expensive.
 
     Returns a dict with:
       sim_current      — clock after travel + buffer + lunch + wait + visit
@@ -171,7 +181,7 @@ def _simulate_place_step(
     lunch_cost      = 0
     lunch_deviation = 0
 
-    travel      = _travel_min(prev, place) if idx > 0 else 0
+    travel      = travel_time_fn(prev, place) if idx > 0 else 0
     step_buffer = buffer if idx > 0 else 0
     dur         = int(place.get("estimated_duration_minutes") or 0) or default_dur
     open_t      = _parse_hhmm(place.get("timespan"))
@@ -257,6 +267,10 @@ def route_cost_with_schedule(
          + violation_count       × 1000
          + dropped_count         × 1500
          + lunch_deviation_total × 3 (_LUNCH_DEVIATION_PENALTY_PER_MIN)
+
+    Always uses the default Haversine travel_time_fn (_travel_min) — this
+    runs hundreds of times per SA optimisation run, so it must never call
+    out to a real API. See _simulate_place_step()'s docstring.
     """
     if not route:
         return 0.0
@@ -270,6 +284,7 @@ def route_cost_with_schedule(
         step = _simulate_place_step(
             idx, place, current, had_lunch, prev,
             lunch_start, lunch_dur, default_dur, buffer,
+            travel_time_fn=_travel_min,
         )
 
         # Drop check — if visit would end after day_end, penalise and skip
@@ -305,12 +320,22 @@ def build_day_schedule(
     lunch_start:              datetime.time = _LUNCH_START,
     lunch_duration_minutes:   int           = _LUNCH_DUR,
     day_end:                  datetime.time = _DAY_END,
+    travel_time_fn:           Callable[[dict, dict], float] | None = None,
 ) -> dict:
     """
     Build the final time schedule for one day.
 
     Side effects: writes estimated_travel_minutes / start_time / end_time /
     slot / warning / dropped / type into each place dict.
+
+    travel_time_fn: optional override for the travel-time source, forwarded
+    to _simulate_place_step(). Defaults to None, which falls back to the
+    Haversine-based _travel_min() — i.e. calling build_day_schedule() the
+    old way (no new argument) is 100% unchanged behaviour. Pass a lookup
+    built from real routing data (e.g. Goong Distance Matrix, bike vehicle)
+    to compute the final start_time/end_time from accurate travel times —
+    this is safe here because, unlike route_cost_with_schedule(), this
+    function runs exactly once, on the already-chosen best route.
 
     Returns:
         schedule              – chronological list of 'place' + 'lunch_break' entries
@@ -339,11 +364,13 @@ def build_day_schedule(
     dropped_count : int           = 0
     lunch_deviation_minutes : int = 0
     prev                          = start_point
+    effective_travel_time_fn      = travel_time_fn or _travel_min
 
     for idx, place in enumerate(places):
         step = _simulate_place_step(
             idx, place, current, had_lunch, prev,
             lunch_start, lunch_duration_minutes, default_duration_minutes, buffer_minutes,
+            travel_time_fn=effective_travel_time_fn,
         )
 
         # ── Drop check ────────────────────────────────────────────────────────

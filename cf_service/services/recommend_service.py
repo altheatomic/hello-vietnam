@@ -4,16 +4,18 @@ Province listing for the Recommend feature.
 
 Pipeline (no ML scoring — see routes/recommend.py::get_province_detail for
 the CB+CF ranked flow used once the user taps into a specific province):
-  1. Fetch all provinces from old_province (name, description_en,
-     average_rating, review_count, cover_image — all real columns, nothing
-     computed)
+  1. Fetch all provinces from province (post-merger table — 34 rows, vs the
+     old pre-merger old_province's 63; see 20260806090100_add_province_description_en.sql
+     and 20260806090200_plan_default_title_use_province.sql for the paired
+     DB-side switch) — name, description_en, average_rating, review_count,
+     cover_image — all real columns, nothing computed.
   2. Sort provinces by name with Vietnamese diacritics stripped (A-Z as
      shown on screen, not raw Vietnamese Unicode order)
 
 place_count is currently always 0 — it used to be derived from a
 place_localized_en query (best-rated place per province, for cover image +
 place_count), which has been removed now that cover_image comes straight
-from old_province. Re-add a place_count source separately if needed.
+from province.
 """
 
 from __future__ import annotations
@@ -77,7 +79,7 @@ def recommend_provinces(supabase, limit: int = 100) -> list[dict]:
     # ── Step 1: All provinces — real columns, nothing computed ────────────────
     prov_resp = (
         supabase
-        .table("old_province")
+        .table("province")
         .select(
             "id_province,name,description_en,average_rating,review_count,"
             "cover_image"

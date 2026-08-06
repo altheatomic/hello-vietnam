@@ -10,6 +10,9 @@ Planning pipeline reads:
   fetch_user_onboarding_choices
   fetch_already_rated_places
   fetch_cf_scores_for_user
+  fetch_user_factors, fetch_place_factors, compute_cf_scores_from_factors
+    (embedding read path — not wired into the pipeline yet, runs alongside
+    fetch_cf_scores_for_user for smoke-testing)
 
 Write pipeline (Phase 2):
   replace_user_interest_tags, upsert_user_interest_tags
@@ -206,6 +209,87 @@ def fetch_cf_scores_for_user(
             result[str(r["id_place"])] = float(r["score"])
 
     return result
+
+
+# ── CF factor tables (embedding path, runs alongside cf_score_cache) ───────────
+#
+# fetch_user_factors / fetch_place_factors / compute_cf_scores_from_factors are
+# NOT wired into trip_planner.py or recommend.py yet — see cf_retrain.py, which
+# now writes cf_user_factors/cf_place_factors alongside cf_score_cache so this
+# read path can be smoke-tested independently first.
+
+def fetch_user_factors(
+    supabase: Any,
+    id_user: str,
+) -> list[float] | None:
+    """Fetch the raw WALS factor vector for one user, or None if untrained."""
+    response = (
+        supabase
+        .table("cf_user_factors")
+        .select("factors")
+        .eq("id_user", id_user)
+        .limit(1)
+        .execute()
+    )
+    rows = response.data or []
+    if not rows:
+        return None
+    return [float(v) for v in rows[0]["factors"]]
+
+
+def fetch_place_factors(
+    supabase: Any,
+    place_ids: list[str],
+) -> dict[str, list[float]]:
+    """Fetch raw WALS factor vectors for the given place IDs."""
+    if not place_ids:
+        return {}
+
+    # Same chunking rationale as fetch_cf_scores_for_user: keep the PostgREST
+    # filter URL comfortably below reverse-proxy limits.
+    chunk_size = 100
+    result: dict[str, list[float]] = {}
+
+    for start in range(0, len(place_ids), chunk_size):
+        chunk = place_ids[start:start + chunk_size]
+        response = (
+            supabase
+            .table("cf_place_factors")
+            .select("id_place, factors")
+            .in_("id_place", chunk)
+            .execute()
+        )
+        for r in (response.data or []):
+            result[str(r["id_place"])] = [float(v) for v in r["factors"]]
+
+    return result
+
+
+def compute_cf_scores_from_factors(
+    user_factors: list[float] | None,
+    place_factors: dict[str, list[float]],
+) -> dict[str, float]:
+    """
+    CF scores computed at request time from raw factor vectors: sigmoid(U·V),
+    matching the formula cf_score_cache is populated with (see
+    ml/wals_model.py compute_cf_scores / its module docstring) so the two are
+    on the same [0,1] scale and drop-in interchangeable in the alpha-blend.
+    Same return shape as fetch_cf_scores_for_user — dict[id_place, score].
+
+    Unlike cf_score_cache (top-500 per user), this has no top-k cutoff: a
+    score is returned for every place_id that has a factor vector.
+    """
+    if user_factors is None or not place_factors:
+        return {}
+
+    import numpy as np
+    from scipy.special import expit as sigmoid
+
+    u = np.array(user_factors, dtype=np.float64)
+    ids = list(place_factors.keys())
+    v = np.array([place_factors[pid] for pid in ids], dtype=np.float64)
+    scores = sigmoid(v @ u)
+    return {pid: float(score) for pid, score in zip(ids, scores)}
 
 
 # ── Already rated ─────────────────────────────────────────────────────────────

@@ -55,33 +55,38 @@ Future<void> checkOverdueTrip(
             tripTitle,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.of(
+                dialogContext,
+              ).pop(_OverdueDialogAction.notYet),
+              child: Text(strings.ui('Not yet')),
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(
-            '${strings.ui('Have you completed your trip to')} '
-            '${trip.provinceName}?',
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => Navigator.of(
+                dialogContext,
+              ).pop(_OverdueDialogAction.openItinerary),
+              child: Text(strings.ui('Open Itinerary')),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.of(
+                dialogContext,
+              ).pop(_OverdueDialogAction.markCompleted),
+              child: Text(strings.ui('Mark as completed')),
+            ),
           ),
         ],
       ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.of(
-            dialogContext,
-          ).pop(_OverdueDialogAction.notYet),
-          child: Text(strings.ui('Not yet')),
-        ),
-        OutlinedButton(
-          onPressed: () => Navigator.of(
-            dialogContext,
-          ).pop(_OverdueDialogAction.openItinerary),
-          child: Text(strings.ui('Open Itinerary')),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(
-            dialogContext,
-          ).pop(_OverdueDialogAction.markCompleted),
-          child: Text(strings.ui('Mark as completed')),
-        ),
-      ],
     ),
   );
 

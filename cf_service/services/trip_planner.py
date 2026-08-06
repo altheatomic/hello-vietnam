@@ -4,11 +4,26 @@ TripPlannerService – orchestrates the full planning pipeline:
 
   [Filtering]   fetch_places_required_filter → filter_places_with_fallback
   [Module 1]    fetch tags + user interest → rank_places_by_tag_match
-  [CF Blend]    fetch_cf_scores_for_user → dynamic alpha blend → re-sort
+  [CF Blend]    fetch_user_factors/fetch_place_factors → dot-product via
+                compute_cf_scores_from_factors → dynamic alpha blend → re-sort
+                (reads cf_user_factors/cf_place_factors, not cf_score_cache —
+                see module1_repository.py)
   [Diversity]   apply_diversity_selection (slot-based subcategory allocation)
   [Module 2]    build_module2_result (K-Means + Greedy Repair)
-  [Module 3]    optimize_day_route (SA with schedule-aware cost + time windows)
-  [Persist]     save_plan
+  [Module 3]    optimize_day_route (SA with schedule-aware cost + time windows,
+                Haversine only — see schedule_builder.py)
+  [Travel data] fetch_travel_matrix_both_vehicles (Goong Distance Matrix,
+                car + bike) — called ONCE per day AFTER SA has picked the
+                final route, never inside the SA loop. Bike travel times
+                rebuild the day's final start_time/end_time (via a second
+                build_day_schedule() call with travel_time_fn overridden);
+                car is display-only. If any edge for either vehicle comes
+                back non-OK, the whole day falls back to the original
+                Haversine-based schedule from Module 3 (all-or-nothing per
+                day — never mixes Goong and Haversine within one day).
+                See services/goong_client.py.
+  [Persist]     save_plan (also persists per-edge car/bike travel time &
+                distance, see db/queries_plan.py)
 
 Trip-level interest (optional):
   If interest_option_ids is supplied, trip_planner fetches the matching
@@ -39,19 +54,27 @@ from services.module1_diversity import apply_diversity_selection
 from services.module1_repository import (
     attach_place_tags_to_places,
     build_tag_map,
+    compute_cf_scores_from_factors,
     fetch_active_tags,
     fetch_already_rated_places,
-    fetch_cf_scores_for_user,
+    fetch_place_factors,
     fetch_place_tags_for_places,
     fetch_trip_interest_option_subcategories,
     fetch_trip_interest_option_tags,
     fetch_trip_interest_options_by_ids,
+    fetch_user_factors,
     fetch_user_interest_tags,
     fetch_user_onboarding_choices,
     fetch_user_travel_profile,
 )
+from services.goong_client import fetch_travel_matrix_both_vehicles
 from services.module2_algorithm import build_module2_result
 from services.module3_optimizer import optimize_day_route
+# _travel_min (Haversine) is reused as the per-edge fallback for the rare
+# "structural" edges Goong data can't cover — see _build_goong_travel_time_fn()
+# below. Not exposing a public wrapper in schedule_builder.py for this, since
+# this pipeline stage was added without touching that module.
+from services.schedule_builder import build_day_schedule, _travel_min
 
 
 class NoTripCandidatesError(Exception):
@@ -76,6 +99,23 @@ def _fetch_initial_inputs(
     return places, profile
 
 
+def _fetch_cf_scores_via_factors(
+    supabase, id_user: str, place_ids: list[str]
+) -> dict[str, float]:
+    """
+    CF scores computed at request time from cf_user_factors/cf_place_factors,
+    replacing the cf_score_cache read path (fetch_cf_scores_for_user).
+    Returns {} — same as a full cache miss — when the user has no trained
+    factors yet, so downstream compute_alpha()/dict.get(id, 0.0) behave
+    exactly as they did on a cache miss. Does not raise.
+    """
+    user_factors = fetch_user_factors(supabase, id_user)
+    if user_factors is None:
+        return {}
+    place_factors = fetch_place_factors(supabase, place_ids)
+    return compute_cf_scores_from_factors(user_factors, place_factors)
+
+
 def _fetch_module1_inputs(supabase, id_user: str, place_ids: list[str]):
     """Avoid concurrent use of the same synchronous Supabase client."""
     return (
@@ -83,7 +123,7 @@ def _fetch_module1_inputs(supabase, id_user: str, place_ids: list[str]):
         fetch_place_tags_for_places(supabase, place_ids),
         fetch_user_interest_tags(supabase, id_user),
         fetch_already_rated_places(supabase, id_user),
-        fetch_cf_scores_for_user(supabase, id_user, place_ids),
+        _fetch_cf_scores_via_factors(supabase, id_user, place_ids),
         fetch_user_onboarding_choices(supabase, id_user),
     )
 
@@ -110,7 +150,7 @@ def _format_place(place: dict, order: int) -> dict:
         "order":                      order,
         "id_place":                   str(place["id_place"]),
         "name":                       place.get("name"),
-        "old_province":               place.get("old_province"),
+        "id_province":                place.get("id_province"),
         "slot":                       place.get("slot"),
         "start_time":                 place.get("start_time"),
         "end_time":                   place.get("end_time"),
@@ -121,6 +161,10 @@ def _format_place(place: dict, order: int) -> dict:
         "longitude":                  place.get("longitude"),
         "estimated_travel_minutes":   place.get("estimated_travel_minutes"),
         "estimated_duration_minutes": place.get("estimated_duration_minutes"),
+        "travel_time_car_seconds":    place.get("travel_time_car_seconds"),
+        "travel_time_bike_seconds":   place.get("travel_time_bike_seconds"),
+        "travel_distance_car_meters": place.get("travel_distance_car_meters"),
+        "travel_distance_bike_meters": place.get("travel_distance_bike_meters"),
         "minimum_price":              place.get("minimum_price"),
         "maximum_price":              place.get("maximum_price"),
         "cover_image":                place.get("cover_image"),
@@ -129,6 +173,91 @@ def _format_place(place: dict, order: int) -> dict:
         "cf_score":                   place.get("cf_score"),
         "final_score":                place.get("final_score"),
     }
+
+
+def _build_edge_lookups(best_route: list[dict], car_matrix: list[dict], bike_matrix: list[dict]):
+    """
+    Build {(id_place_a, id_place_b): edge_dict} lookups from Goong's
+    per-vehicle edge lists, keyed to match the consecutive pairs of
+    best_route the matrices were fetched for.
+    """
+    car_lookup: dict[tuple, dict] = {}
+    bike_lookup: dict[tuple, dict] = {}
+    for a, b, car_edge, bike_edge in zip(best_route, best_route[1:], car_matrix, bike_matrix):
+        key = (str(a.get("id_place")), str(b.get("id_place")))
+        car_lookup[key] = car_edge
+        bike_lookup[key] = bike_edge
+    return car_lookup, bike_lookup
+
+
+def _build_goong_travel_time_fn(bike_lookup: dict):
+    """
+    travel_time_fn for build_day_schedule(), backed by Goong bike data.
+
+    build_day_schedule() can call travel_time_fn(prev, place) for pairs NOT
+    present in bike_lookup — this happens for two structural reasons, not
+    Goong failures:
+      1. The very first scheduled place of the day: prev is start_point
+         (not a best_route member — no id_place, or not part of this day's
+         route), so no Goong edge exists for it.
+      2. A "skip" edge after a place got dropped mid-route (visit_end >
+         day_end): build_day_schedule keeps `prev` at the last actually
+         committed place, so the next travel_time_fn call uses a
+         (prev, place) pair that isn't adjacent in best_route, and Goong was
+         only fetched for adjacent best_route pairs.
+    Both cases fall back to Haversine (_travel_min) for just that one edge —
+    this is NOT the same as the day-level "all-or-nothing" fallback, which
+    only applies when the Goong API itself fails/returns non-OK for an edge
+    that IS in best_route.
+    """
+    def travel_time_fn(prev: dict, place: dict) -> float:
+        key = (str(prev.get("id_place")), str(place.get("id_place")))
+        edge = bike_lookup.get(key)
+        if edge is not None:
+            # round(), not a bare division: travel_time_fn is a shared
+            # interface (see schedule_builder._simulate_place_step) — both
+            # implementations (Haversine's _travel_min() below, and this one)
+            # must return the same type (int, whole minutes), or any caller
+            # of build_day_schedule() that stores minutes into an `int`
+            # column (e.g. plan_component.estimated_travel_minutes) breaks
+            # depending on which travel_time_fn happened to run.
+            return round(edge["duration_seconds"] / 60)
+        return _travel_min(prev, place)
+
+    return travel_time_fn
+
+
+def _attach_travel_data(schedule: list[dict], car_lookup: dict, bike_lookup: dict) -> None:
+    """
+    Mutates each committed 'place' entry in `schedule` with
+    travel_time_car_seconds / travel_time_bike_seconds /
+    travel_distance_car_meters / travel_distance_bike_meters, sourced from
+    the SAME lookups used to build the travel_time_fn passed to
+    build_day_schedule() — so an entry only gets Goong numbers attached if
+    Goong data was actually what produced its start_time/end_time. Structural
+    edges (first place of the day, post-drop skip edges — see
+    _build_goong_travel_time_fn docstring) are left with these 4 fields
+    unset (None), since their schedule times came from the Haversine
+    fallback, not Goong.
+
+    prev tracking mirrors build_day_schedule(): only advances on committed
+    (non-dropped) 'place' entries; lunch_break/dropped entries are skipped
+    and don't reset it.
+    """
+    prev_committed_place = None
+    for entry in schedule:
+        if entry.get("type") != "place" or entry.get("dropped"):
+            continue
+        if prev_committed_place is not None:
+            key = (str(prev_committed_place.get("id_place")), str(entry.get("id_place")))
+            car_edge = car_lookup.get(key)
+            bike_edge = bike_lookup.get(key)
+            if car_edge is not None and bike_edge is not None:
+                entry["travel_time_car_seconds"] = car_edge["duration_seconds"]
+                entry["travel_distance_car_meters"] = car_edge["distance_meters"]
+                entry["travel_time_bike_seconds"] = bike_edge["duration_seconds"]
+                entry["travel_distance_bike_meters"] = bike_edge["distance_meters"]
+        prev_committed_place = entry
 
 
 def _format_lunch_break(entry: dict) -> dict:
@@ -312,6 +441,31 @@ class TripPlannerService:
                 start_point, day_places, sa_runs=sa_runs
             )
 
+            # ── [Travel data] Goong Distance Matrix, car + bike ─────────────────
+            # Runs ONCE per day, after SA has already picked best_route — never
+            # inside the SA loop (which stays on Haversine, see
+            # schedule_builder.route_cost_with_schedule). All-or-nothing per
+            # day: if any edge for either vehicle comes back non-OK, the day
+            # keeps the Haversine-based schedule_result from optimize_day_route
+            # untouched (never mixes Goong and Haversine within one day).
+            if len(best_route) >= 2:
+                matrices = await fetch_travel_matrix_both_vehicles(best_route)
+                goong_ok = all(e["status"] == "OK" for e in matrices["car"]) and \
+                           all(e["status"] == "OK" for e in matrices["bike"])
+                if goong_ok:
+                    car_lookup, bike_lookup = _build_edge_lookups(
+                        best_route, matrices["car"], matrices["bike"]
+                    )
+                    goong_travel_time_fn = _build_goong_travel_time_fn(bike_lookup)
+                    # Recompute the day's final schedule with real bike travel
+                    # times (replaces the Haversine-based schedule_result from
+                    # optimize_day_route above).
+                    schedule_result = build_day_schedule(
+                        best_route, start_point=start_point,
+                        travel_time_fn=goong_travel_time_fn,
+                    )
+                    _attach_travel_data(schedule_result["schedule"], car_lookup, bike_lookup)
+
             formatted   = []
             place_order = 1
             for entry in schedule_result["schedule"]:
@@ -384,6 +538,10 @@ class TripPlannerService:
             "accommodation_recommendation": m2_result.get("accommodation_recommendation"),
             "debug": {
                 "filter_report":      filter_report,
+                # % of candidate places with a trained embedding (≥1 interaction
+                # recorded at last retrain) — no longer a "cache hit rate" since
+                # this comes from cf_user_factors/cf_place_factors, not
+                # cf_score_cache (see _fetch_cf_scores_via_factors above).
                 "cf_coverage":        round(len(cf_scores) / max(len(filtered_places), 1), 4),
                 "alpha":              alpha,
                 "weight_field":       weight_field,

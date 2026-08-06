@@ -436,6 +436,10 @@ class TripPlannerActivityData {
     this.idPlace = '',
     this.idProvince = '',
     this.estimatedDurationMinutes,
+    this.travelTimeCarSeconds,
+    this.travelTimeBikeSeconds,
+    this.travelDistanceCarMeters,
+    this.travelDistanceBikeMeters,
     this.minimumPrice,
     this.maximumPrice,
     this.timespan,
@@ -456,6 +460,12 @@ class TripPlannerActivityData {
   final String idPlace;
   final String idProvince;
   final int? estimatedDurationMinutes;
+  /// Goong Distance Matrix data for the edge FROM the previous activity TO
+  /// this one. Null for the first activity of the day / uncovered edges.
+  final int? travelTimeCarSeconds;
+  final int? travelTimeBikeSeconds;
+  final int? travelDistanceCarMeters;
+  final int? travelDistanceBikeMeters;
   final num? minimumPrice;
   final num? maximumPrice;
   final String? timespan;
@@ -476,6 +486,10 @@ class TripPlannerActivityData {
         'idPlace': idPlace,
         'idProvince': idProvince,
         'estimatedDurationMinutes': estimatedDurationMinutes,
+        'travelTimeCarSeconds': travelTimeCarSeconds,
+        'travelTimeBikeSeconds': travelTimeBikeSeconds,
+        'travelDistanceCarMeters': travelDistanceCarMeters,
+        'travelDistanceBikeMeters': travelDistanceBikeMeters,
         'minimumPrice': minimumPrice,
         'maximumPrice': maximumPrice,
         'timespan': timespan,
@@ -501,6 +515,12 @@ class TripPlannerActivityData {
         idProvince: json['idProvince'] as String? ?? '',
         estimatedDurationMinutes:
             (json['estimatedDurationMinutes'] as num?)?.toInt(),
+        travelTimeCarSeconds: (json['travelTimeCarSeconds'] as num?)?.toInt(),
+        travelTimeBikeSeconds: (json['travelTimeBikeSeconds'] as num?)?.toInt(),
+        travelDistanceCarMeters:
+            (json['travelDistanceCarMeters'] as num?)?.toInt(),
+        travelDistanceBikeMeters:
+            (json['travelDistanceBikeMeters'] as num?)?.toInt(),
         minimumPrice: json['minimumPrice'] as num?,
         maximumPrice: json['maximumPrice'] as num?,
         timespan: json['timespan'] as String?,

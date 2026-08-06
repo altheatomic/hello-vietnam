@@ -103,6 +103,29 @@ Deno.test("normalizeRecognition accepts readable sign text", () => {
   assertEquals(result.can_open_map, true);
 });
 
+Deno.test("promotes a misclassified street sign to the map-enabled sign flow", () => {
+  const result = normalizeRecognition(rawResult({
+    result_kind: "cultural_object",
+    detected_name: "Vietnamese Street Sign",
+    text_analysis: {
+      original_text: "ĐƯỜNG NGUYỄN DU",
+      detected_language_code: "vi",
+      detected_language_name: "Vietnamese",
+      translated_text: "Nguyen Du Street",
+      target_language_code: "en",
+      sign_type: "street",
+      travel_context: "A Vietnamese street name.",
+      map_query: "Nguyen Du Street, Vietnam",
+      can_open_map: true,
+    },
+  }));
+
+  assertEquals(result.result_kind, "sign_text");
+  assertEquals(result.can_open_map, true);
+  assertEquals(result.map_query, "Nguyen Du Street, Vietnam");
+  assertEquals(result.text_analysis?.sign_type, "street");
+});
+
 Deno.test("normalizeRecognition rejects unknown result kinds", () => {
   const result = normalizeRecognition(rawResult({ result_kind: "vehicle" }));
   assertEquals(result.result_kind, "unsupported");

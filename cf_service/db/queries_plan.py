@@ -17,6 +17,24 @@ from services.accommodation_recommendation import (
 )
 
 
+def _to_pg_int(value: float | int | None) -> int | None:
+    """
+    Coerce a numeric value to a plain int for an `int` Postgres column, or
+    None through unchanged.
+
+    Needed because Goong Distance Matrix's duration.value / distance.value
+    are NOT guaranteed to be JSON integers despite the docs implying so —
+    real responses have been observed returning floats (e.g. 9.2) for
+    short edges. Passing a Python float straight into a supabase-py insert
+    against an `int` column fails with postgrest 22P02
+    ("invalid input syntax for type integer"). round() before int() (not a
+    bare int()) so we round to nearest whole unit instead of truncating.
+    """
+    if value is None:
+        return None
+    return int(round(value))
+
+
 def save_plan(
     supabase: Any,
     id_user: str,
@@ -39,7 +57,11 @@ def save_plan(
     rpc_resp = supabase.rpc("create_plan_with_default_title", {
         "p_id_user": id_user,
         "p_id_province": id_province,
-        "p_business_old_province": first_place.get("old_province"),
+        # RPC param name kept as p_business_old_province (unchanged function
+        # signature — see 20260806090200_plan_default_title_use_province.sql)
+        # but it now carries a province.id_province value, sourced from the
+        # place dict's "id_province" field (was "old_province" pre-switch).
+        "p_business_old_province": first_place.get("id_province"),
         "p_n_days": n_days,
         "p_start_at": start_at.isoformat(),
         "p_end_at": end_at.isoformat(),
@@ -66,7 +88,11 @@ def save_plan(
                 "slot": place.get("slot"),
                 "start_time": place.get("start_time"),
                 "end_time": place.get("end_time"),
-                "estimated_travel_minutes": place.get("estimated_travel_minutes"),
+                "estimated_travel_minutes": _to_pg_int(place.get("estimated_travel_minutes")),
+                "travel_time_car_seconds": _to_pg_int(place.get("travel_time_car_seconds")),
+                "travel_time_bike_seconds": _to_pg_int(place.get("travel_time_bike_seconds")),
+                "travel_distance_car_meters": _to_pg_int(place.get("travel_distance_car_meters")),
+                "travel_distance_bike_meters": _to_pg_int(place.get("travel_distance_bike_meters")),
                 "cb_score": place.get("tag_match"),   # tag_match stored in cb_score column
                 "cf_score": place.get("cf_score"),
                 "final_score": place.get("final_score"),
@@ -98,6 +124,8 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
         .table("plan_component")
         .select(
             "day,slot,visit_order,start_time,end_time,estimated_travel_minutes,"
+            "travel_time_car_seconds,travel_time_bike_seconds,"
+            "travel_distance_car_meters,travel_distance_bike_meters,"
             "cb_score,cf_score,final_score,id_place"
         )
         .eq("id_plan", id_plan)
@@ -150,6 +178,10 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
             "start_time": r.get("start_time"),
             "end_time": r.get("end_time"),
             "estimated_travel_minutes": r.get("estimated_travel_minutes"),
+            "travel_time_car_seconds": r.get("travel_time_car_seconds"),
+            "travel_time_bike_seconds": r.get("travel_time_bike_seconds"),
+            "travel_distance_car_meters": r.get("travel_distance_car_meters"),
+            "travel_distance_bike_meters": r.get("travel_distance_bike_meters"),
             "tag_match": r.get("cb_score"),
             "cf_score": r.get("cf_score"),
             "final_score": r.get("final_score"),
@@ -381,7 +413,10 @@ def clone_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
         .table("plan_component")
         .select(
             "day,time_part,id_place,visit_order,slot,"
-            "estimated_travel_minutes,cb_score,cf_score,final_score"
+            "estimated_travel_minutes,"
+            "travel_time_car_seconds,travel_time_bike_seconds,"
+            "travel_distance_car_meters,travel_distance_bike_meters,"
+            "cb_score,cf_score,final_score"
         )
         .eq("id_plan", id_plan)
         .execute()
@@ -411,6 +446,10 @@ def clone_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
                 "visit_order":              r.get("visit_order"),
                 "slot":                     r.get("slot"),
                 "estimated_travel_minutes": r.get("estimated_travel_minutes"),
+                "travel_time_car_seconds":     r.get("travel_time_car_seconds"),
+                "travel_time_bike_seconds":    r.get("travel_time_bike_seconds"),
+                "travel_distance_car_meters":  r.get("travel_distance_car_meters"),
+                "travel_distance_bike_meters": r.get("travel_distance_bike_meters"),
                 "cb_score":                 r.get("cb_score"),
                 "cf_score":                 r.get("cf_score"),
                 "final_score":              r.get("final_score"),

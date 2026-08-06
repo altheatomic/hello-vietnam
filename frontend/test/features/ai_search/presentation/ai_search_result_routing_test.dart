@@ -8,6 +8,27 @@ import 'package:hellovietnam/features/ai_search/domain/ai_recognition_result.dar
 import 'package:hellovietnam/features/ai_search/presentation/ai_search_page.dart';
 
 void main() {
+  testWidgets('long AI location hint does not overflow the result header', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(400, 642));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AiSearchPage(
+          initialHistoryEntry: _signHistoryEntry(
+            locationHint:
+                'Commonly seen at street intersections in cities and towns throughout Vietnam',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('restoring a sign result does not request location', (
     WidgetTester tester,
   ) async {
@@ -139,18 +160,20 @@ class _FakeMapCoordinator implements AiRecognitionMapCoordinator {
       true;
 }
 
-AiRecognitionHistoryEntry _signHistoryEntry() {
+AiRecognitionHistoryEntry _signHistoryEntry({
+  String locationHint = 'Ho Chi Minh City',
+}) {
   return AiRecognitionHistoryEntry(
     id: 'sign-1',
     createdAt: DateTime.utc(2026, 7, 23),
     thumbnailBytes: Uint8List.fromList(_transparentPixel),
-    result: const AiSearchResult(
+    result: AiSearchResult(
       kind: AiRecognitionKind.signText,
       confidence: 0.91,
       detectedName: 'DUONG NGUYEN HUE',
       subtitle: 'Vietnamese street sign',
       summary: 'A street name.',
-      locationHint: 'Ho Chi Minh City',
+      locationHint: locationHint,
       categoryText: 'Street sign',
       primaryTags: <String>[],
       secondaryTags: <String>[],

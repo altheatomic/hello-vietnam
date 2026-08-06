@@ -5,6 +5,10 @@ tables (`place`, `activity`, `culture`, `food`, and `local_products`). Supabase
 is the source of truth; crawlers only write deterministic identities and
 source-owned operational fields.
 
+For a tester-facing checklist with SQL fixtures, UI steps, expected results,
+and evidence requirements, see
+[data-freshness-manual-test.md](data-freshness-manual-test.md).
+
 ## Components and secrets
 
 - Migration: `backend/supabase/migrations/20260803000100_data_freshness.sql`
