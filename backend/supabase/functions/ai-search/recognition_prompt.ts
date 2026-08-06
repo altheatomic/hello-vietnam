@@ -140,7 +140,6 @@ export function buildGeminiRecognitionRequest(
       }],
     },
     generationConfig: {
-      temperature: 0.2,
       responseMimeType: "application/json",
       responseSchema: recognitionResponseSchema,
     },
