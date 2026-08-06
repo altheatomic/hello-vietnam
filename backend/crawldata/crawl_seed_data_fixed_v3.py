@@ -4,13 +4,18 @@ import json
 import os
 import re
 import time
-import uuid
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup, Tag, NavigableString
+
+from source_identity import (
+    canonical_source_url,
+    deterministic_content_uuid,
+    source_external_id,
+)
 
 
 HEADERS = {
@@ -228,6 +233,10 @@ class ActivityRecord:
     review_count: int
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
+    status: str = "active"
+    source_type: str = "wikipedia"
+    source_url: Optional[str] = None
+    source_external_id: Optional[str] = None
 
 
 @dataclass
@@ -247,6 +256,10 @@ class CultureRecord:
     review_count: int
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
+    status: str = "active"
+    source_type: str = "wikipedia"
+    source_url: Optional[str] = None
+    source_external_id: Optional[str] = None
 
 
 @dataclass
@@ -265,6 +278,41 @@ class LocalProductRecord:
     review_count: int
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
+    status: str = "active"
+    source_type: str = "wikipedia"
+    source_url: Optional[str] = None
+    source_external_id: Optional[str] = None
+
+
+def wikipedia_identity(content_type: str, url: str) -> Dict[str, str]:
+    """Return canonical source metadata for a Wikipedia-backed row."""
+
+    canonical_url = canonical_source_url(url)
+    external_id = source_external_id("wikipedia", canonical_url)
+    return {
+        "id": deterministic_content_uuid(content_type, "wikipedia", external_id),
+        "source_type": "wikipedia",
+        "source_url": canonical_url,
+        "source_external_id": external_id,
+    }
+
+
+def wikipedia_composite_identity(
+    content_type: str, list_url: str, region: Optional[str], name: str
+) -> Dict[str, str]:
+    """Build a stable identity when a list item has no detail page."""
+
+    canonical_list_url = canonical_source_url(list_url)
+    composite = "|".join(
+        [canonical_list_url, clean_text(region) or "", clean_text(name) or ""]
+    )
+    external_id = source_external_id("wikipedia", composite)
+    return {
+        "id": deterministic_content_uuid(content_type, "wikipedia", external_id),
+        "source_type": "wikipedia",
+        "source_url": canonical_list_url,
+        "source_external_id": external_id,
+    }
 
 
 # =========================
@@ -320,11 +368,13 @@ def crawl_activities(urls: List[str]) -> List[Dict[str, Any]]:
             if not title:
                 continue
 
+            identity = wikipedia_identity("activity", url)
+
             desc = first_paragraph(soup)
             img = first_image(soup, url)
 
             record = ActivityRecord(
-                id=str(uuid.uuid4()),
+                id=identity["id"],
                 name=title,
                 cover_image=img,
                 gallery=[img] if img else None,
@@ -336,6 +386,9 @@ def crawl_activities(urls: List[str]) -> List[Dict[str, Any]]:
                 safety_notes=infer_safety_notes(title, desc),
                 average_rating=None,
                 review_count=0,
+                source_type=identity["source_type"],
+                source_url=identity["source_url"],
+                source_external_id=identity["source_external_id"],
             )
             rows.append(asdict(record))
         except Exception as e:
@@ -376,11 +429,13 @@ def crawl_culture(urls: List[str]) -> List[Dict[str, Any]]:
             if not title:
                 continue
 
+            identity = wikipedia_identity("culture", url)
+
             desc = first_paragraph(soup)
             img = first_image(soup, url)
 
             record = CultureRecord(
-                id=str(uuid.uuid4()),
+                id=identity["id"],
                 name=title,
                 cover_image=img,
                 gallery=[img] if img else None,
@@ -393,6 +448,9 @@ def crawl_culture(urls: List[str]) -> List[Dict[str, Any]]:
                 notable_figures=None,
                 average_rating=None,
                 review_count=0,
+                source_type=identity["source_type"],
+                source_url=identity["source_url"],
+                source_external_id=identity["source_external_id"],
             )
             rows.append(asdict(record))
         except Exception as e:
@@ -471,6 +529,13 @@ def parse_specialities_list_page(url: str, limit: int = 120) -> List[Dict[str, A
                     if first_link and first_link.get("href", "").startswith("/wiki/"):
                         detail_url = absolute_url(url, first_link.get("href"))
 
+                if detail_url:
+                    identity = wikipedia_identity("local_product", detail_url)
+                else:
+                    identity = wikipedia_composite_identity(
+                        "local_product", url, current_region, name
+                    )
+
                 detail_desc = None
                 detail_img = None
                 if detail_url:
@@ -482,7 +547,7 @@ def parse_specialities_list_page(url: str, limit: int = 120) -> List[Dict[str, A
                         pass
 
                 record = LocalProductRecord(
-                    id=str(uuid.uuid4()),
+                    id=identity["id"],
                     name=name,
                     cover_image=detail_img,
                     gallery=[detail_img] if detail_img else None,
@@ -494,6 +559,9 @@ def parse_specialities_list_page(url: str, limit: int = 120) -> List[Dict[str, A
                     trusted_places=current_region,
                     average_rating=None,
                     review_count=0,
+                    source_type=identity["source_type"],
+                    source_url=identity["source_url"],
+                    source_external_id=identity["source_external_id"],
                 )
                 rows.append(asdict(record))
                 if len(rows) >= limit:
@@ -510,11 +578,13 @@ def crawl_local_products_fallback(urls: List[str]) -> List[Dict[str, Any]]:
             title = heading_text(soup.select_one("h1"))
             if not title:
                 continue
+
+            identity = wikipedia_identity("local_product", url)
             desc = first_paragraph(soup)
             img = first_image(soup, url)
 
             record = LocalProductRecord(
-                id=str(uuid.uuid4()),
+                id=identity["id"],
                 name=title,
                 cover_image=img,
                 gallery=[img] if img else None,
@@ -526,6 +596,9 @@ def crawl_local_products_fallback(urls: List[str]) -> List[Dict[str, Any]]:
                 trusted_places=None,
                 average_rating=None,
                 review_count=0,
+                source_type=identity["source_type"],
+                source_url=identity["source_url"],
+                source_external_id=identity["source_external_id"],
             )
             rows.append(asdict(record))
         except Exception as e:
@@ -549,6 +622,95 @@ def crawl_local_products(limit: int = 120) -> List[Dict[str, Any]]:
 
 
 # =========================
+# Optional Supabase upsert
+# =========================
+
+CONTENT_TABLES = {
+    "activity": {"table": "activity", "primary_key": "id"},
+    "culture": {"table": "culture", "primary_key": "id"},
+    "local_products": {"table": "local_products", "primary_key": "id"},
+}
+
+
+def require_supabase_env() -> tuple[str, str]:
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
+    if not url or not key:
+        raise RuntimeError(
+            "--upsert requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
+        )
+    return url, key
+
+
+def upsert_rows_to_supabase(mode: str, rows: List[Dict[str, Any]]) -> None:
+    """Insert new rows and update only source-owned fields on reruns.
+
+    The initial insert may carry the scraped descriptive fields so a demo can
+    bootstrap content. Existing rows are then updated only for the source-owned
+    identity/name/status fields; curated descriptions, media, tags, and ratings
+    are never overwritten by a rerun.
+    """
+
+    if not rows:
+        return
+    from supabase import create_client
+
+    url, key = require_supabase_env()
+    table_config = CONTENT_TABLES[mode]
+    table_name = table_config["table"]
+    primary_key = table_config["primary_key"]
+    content_type = "local_product" if mode == "local_products" else mode
+    client = create_client(url, key)
+
+    # A conflict-safe insert preserves the existing editorial record. New rows
+    # still receive the full crawler payload for the initial bootstrap.
+    insert_payload = []
+    for row in rows:
+        payload = {
+            key: value
+            for key, value in row.items()
+            if key not in {"source_type", "source_url", "source_external_id"}
+            and value is not None
+        }
+        insert_payload.append(payload)
+    client.table(table_name).upsert(
+        insert_payload,
+        on_conflict=primary_key,
+        ignore_duplicates=True,
+    ).execute()
+
+    # Only these fields are allowed to change on a rerun.
+    for row in rows:
+        source_patch = {
+            key: row[key]
+            for key in ("name", "status")
+            if row.get(key) is not None
+        }
+        if source_patch:
+            client.table(table_name).update(source_patch).eq(
+                primary_key, row["id"]
+            ).execute()
+
+    freshness_payload = [
+        {
+            "content_type": content_type,
+            "content_id": row["id"],
+            "source_type": row["source_type"],
+            "source_url": row.get("source_url"),
+            "source_external_id": row.get("source_external_id"),
+            "availability_type": "evergreen",
+            "freshness_status": "due",
+            "next_check_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+        for row in rows
+    ]
+    client.table("content_freshness").upsert(
+        freshness_payload,
+        on_conflict="content_type,content_id",
+    ).execute()
+
+
+# =========================
 # Main
 # =========================
 
@@ -569,6 +731,11 @@ def main():
         default=120,
         help="Max rows for local_products",
     )
+    parser.add_argument(
+        "--upsert",
+        action="store_true",
+        help="Write new content and freshness metadata to Supabase",
+    )
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -578,18 +745,24 @@ def main():
         dump_json(activities, os.path.join(args.output_dir, "activity.json"))
         dump_csv(activities, os.path.join(args.output_dir, "activity.csv"))
         print(f"[OK] activity -> {len(activities)} rows")
+        if args.upsert:
+            upsert_rows_to_supabase("activity", activities)
 
     if args.mode in ("culture", "all"):
         culture = crawl_culture(CULTURE_SEED_URLS)
         dump_json(culture, os.path.join(args.output_dir, "culture.json"))
         dump_csv(culture, os.path.join(args.output_dir, "culture.csv"))
         print(f"[OK] culture -> {len(culture)} rows")
+        if args.upsert:
+            upsert_rows_to_supabase("culture", culture)
 
     if args.mode in ("local_products", "all"):
         local_products = crawl_local_products(limit=args.limit)
         dump_json(local_products, os.path.join(args.output_dir, "local_products.json"))
         dump_csv(local_products, os.path.join(args.output_dir, "local_products.csv"))
         print(f"[OK] local_products -> {len(local_products)} rows")
+        if args.upsert:
+            upsert_rows_to_supabase("local_products", local_products)
         if local_products:
             print("[DEBUG] first local product:", local_products[0]["name"])
 

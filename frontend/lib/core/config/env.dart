@@ -19,6 +19,10 @@ class Env {
     'EXPLORE_FUNCTION',
     defaultValue: 'explore',
   );
+  static const dataFreshnessFunction = String.fromEnvironment(
+    'DATA_FRESHNESS_FUNCTION',
+    defaultValue: 'data-freshness',
+  );
   static const currencyRatesFunction = String.fromEnvironment(
     'CURRENCY_RATES_FUNCTION',
     defaultValue: 'currency-rates',

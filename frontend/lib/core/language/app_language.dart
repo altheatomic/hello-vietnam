@@ -332,8 +332,7 @@ class AppStrings {
 
   static const Map<String, String> _viText = <String, String>{
     'Still on this trip?': 'Bạn vẫn đang trong chuyến đi?',
-    'Have you completed your trip to':
-        'Bạn đã hoàn thành chuyến đi đến',
+    'Have you completed your trip to': 'Bạn đã hoàn thành chuyến đi đến',
     'Not yet': 'Chưa',
     'Mark as completed': 'Đánh dấu đã hoàn thành',
     'Update your start date?': 'Cập nhật lại ngày bắt đầu?',
@@ -364,6 +363,24 @@ class AppStrings {
     'Get Started': 'Bắt đầu',
     'Discover': 'Khám phá',
     'Destination': 'Điểm đến',
+    'Information has not been verified recently':
+        'Thông tin chưa được xác minh gần đây',
+    'This information is being checked again.':
+        'Thông tin này đang được kiểm tra lại.',
+    'Report incorrect information': 'Báo thông tin không chính xác',
+    'This place is closed': 'Địa điểm đã đóng cửa',
+    'Wrong opening hours': 'Sai giờ mở cửa',
+    'Wrong location': 'Sai địa điểm',
+    'Event has ended': 'Sự kiện đã kết thúc',
+    'Other': 'Khác',
+    'Optional note': 'Ghi chú (không bắt buộc)',
+    'Tell us what is incorrect': 'Cho chúng tôi biết thông tin nào sai',
+    'Please choose a reason.': 'Vui lòng chọn lý do.',
+    'Thanks for helping keep this information accurate.':
+        'Cảm ơn bạn đã giúp thông tin chính xác hơn.',
+    'You already reported this information.':
+        'Bạn đã báo thông tin này trước đó.',
+    'Daily report limit reached.': 'Đã đạt giới hạn báo cáo trong ngày.',
     'Login to Start Your': 'Đăng nhập để bắt đầu',
     'Amazing Trips': 'Chuyến đi tuyệt vời',
     'Enter your email': 'Nhập email',
@@ -457,7 +474,6 @@ class AppStrings {
     'Missing information': 'Thiếu thông tin',
     'Inappropriate image/video': 'Ảnh/video không phù hợp',
     'Map/address issue': 'Lỗi bản đồ/địa chỉ',
-    'Other': 'Khác',
     'Please select one': 'Vui lòng chọn một mục',
     'Description': 'Mô tả',
     'Image or video': 'Ảnh hoặc video',
@@ -1206,5 +1222,17 @@ class AppStrings {
     'Open Popular Apps': 'Mở ứng dụng phổ biến',
     'Open Notifications': 'Mở thông báo',
     'Open Profile': 'Mở hồ sơ',
+    'Possible Match': 'Có thể khớp',
+    'Landmark': 'Điểm tham quan',
+    'Cultural Object': 'Vật thể văn hóa',
+    'Street Sign': 'Biển hiệu đường',
+    'Original Text': 'Văn bản gốc',
+    'Find on Map': 'Tìm trên bản đồ',
+    'Continue Without Location': 'Tiếp tục không có vị trí',
+    'Open Settings': 'Mở Cài đặt',
+    'Take Another Photo': 'Chụp ảnh khác',
+    'Choose Another Image': 'Chọn ảnh khác',
+    'Could Not Recognize Clearly': 'Không thể nhận diện rõ',
+    'Image Type Not Supported': 'Loại ảnh chưa được hỗ trợ',
   };
 }

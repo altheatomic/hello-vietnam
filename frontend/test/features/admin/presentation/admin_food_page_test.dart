@@ -39,6 +39,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Pho'), findsOneWidget);
+    expect(find.byTooltip('Archive'), findsOneWidget);
     expect(find.textContaining('Could not load food items'), findsNothing);
   });
 

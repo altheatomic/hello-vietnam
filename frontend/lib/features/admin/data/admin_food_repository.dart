@@ -57,6 +57,10 @@ class AdminFoodRepository {
 
     dynamic filter = _client.from(_foodTable).select('*');
 
+    // Archived records remain in the database for auditability but should not
+    // appear in the active admin catalogue.
+    filter = filter.neq(columns.statusColumn, 'archived');
+
     final trimmedTypeId = typeId?.trim();
     if (trimmedTypeId != null && trimmedTypeId.isNotEmpty) {
       filter = filter.eq(columns.typeColumn, trimmedTypeId);
@@ -209,6 +213,7 @@ class AdminFoodRepository {
       cityColumn: 'id_province',
       imageColumn: 'image_path',
       descriptionColumn: 'description',
+      statusColumn: 'status',
     );
   }
 
@@ -281,6 +286,7 @@ class AdminFoodRepository {
       'city': food.city,
       'urlImage': food.urlImage,
       'description': food.description,
+      'status': food.status,
     };
   }
 
@@ -341,6 +347,13 @@ class AdminFoodRepository {
         'description',
         'desc',
       ]),
+      status:
+          _firstString(row, <String>[
+            columns.statusColumn,
+            'status',
+            'state',
+          ]) ??
+          'active',
     );
   }
 
@@ -352,6 +365,7 @@ class AdminFoodRepository {
       city: _readNullableString(json, 'city') ?? 'Unknown',
       urlImage: _readNullableString(json, 'urlImage'),
       description: _readNullableString(json, 'description'),
+      status: _readNullableString(json, 'status') ?? 'active',
     );
   }
 
@@ -424,6 +438,7 @@ class _FoodTableColumns {
     required this.cityColumn,
     required this.imageColumn,
     required this.descriptionColumn,
+    required this.statusColumn,
   });
 
   final String idColumn;
@@ -432,6 +447,7 @@ class _FoodTableColumns {
   final String cityColumn;
   final String imageColumn;
   final String descriptionColumn;
+  final String statusColumn;
 
   bool get cityIsForeignKey =>
       cityColumn == 'id_province' ||

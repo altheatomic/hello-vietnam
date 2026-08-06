@@ -6,12 +6,12 @@ import 'dart:ui' as ui;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'ai_search_service.dart';
+import '../domain/ai_recognition_result.dart';
 
 abstract interface class AiRecognitionHistoryStore {
   Future<List<AiRecognitionHistoryEntry>> load();
 
-  Future<AiRecognitionHistoryEntry> save({
+  Future<AiRecognitionHistoryEntry?> save({
     required AiSearchResult result,
     required Uint8List imageBytes,
   });
@@ -121,10 +121,11 @@ class AiRecognitionHistoryRepository implements AiRecognitionHistoryStore {
   }
 
   @override
-  Future<AiRecognitionHistoryEntry> save({
+  Future<AiRecognitionHistoryEntry?> save({
     required AiSearchResult result,
     required Uint8List imageBytes,
   }) async {
+    if (!result.isHistoryEligible) return null;
     if (imageBytes.isEmpty) {
       throw const FormatException('Cannot save an empty recognition image.');
     }

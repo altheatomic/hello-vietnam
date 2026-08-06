@@ -35,6 +35,50 @@ _SUBCATEGORY_EN: dict[str, str] = {
 }
 
 
+def remove_freshness_ineligible_places(
+    supabase: Any,
+    places: list[dict],
+) -> list[dict]:
+    """Remove only freshness states that are unsafe for itinerary planning.
+
+    A missing freshness row is retained for migration compatibility, and stale
+    content remains usable with the warning rendered by the client. Metadata
+    failures fail open so a rollout cannot blank the planner unexpectedly.
+    """
+
+    if not places:
+        return places
+    content_ids = [
+        str(place.get("id_place"))
+        for place in places
+        if place.get("id_place") is not None
+    ]
+    if not content_ids:
+        return places
+    try:
+        response = (
+            supabase
+            .table("content_freshness")
+            .select("content_id,freshness_status")
+            .eq("content_type", "place")
+            .in_("content_id", content_ids)
+            .execute()
+        )
+        blocked = {
+            str(row.get("content_id"))
+            for row in (response.data or [])
+            if str(row.get("freshness_status", "")).lower()
+            in {"needs_review", "expired"}
+        }
+        return [
+            place
+            for place in places
+            if str(place.get("id_place")) not in blocked
+        ]
+    except Exception:
+        return places
+
+
 def fetch_nearby_amenities(
     supabase: Any,
     lat: float,
@@ -127,6 +171,7 @@ def fetch_places_near_point(
         .execute()
     )
     candidates = resp.data or []
+    candidates = remove_freshness_ineligible_places(supabase, candidates)
 
     within = [
         p for p in candidates
@@ -178,6 +223,6 @@ def fetch_places_required_filter(
         .execute()
     )
 
-    rows = response.data or []
+    rows = remove_freshness_ineligible_places(supabase, response.data or [])
     _PROVINCE_PLACES_CACHE.set(cache_key, rows)
     return rows

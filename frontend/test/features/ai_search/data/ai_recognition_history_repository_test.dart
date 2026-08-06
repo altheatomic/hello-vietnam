@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hellovietnam/features/ai_search/data/ai_recognition_history_repository.dart';
 import 'package:hellovietnam/features/ai_search/data/ai_search_service.dart';
+import 'package:hellovietnam/features/ai_search/domain/ai_recognition_result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -22,10 +23,10 @@ void main() {
     final AiRecognitionHistoryRepository repository =
         AiRecognitionHistoryRepository(userId: 'user-1');
 
-    final AiRecognitionHistoryEntry saved = await repository.save(
+    final AiRecognitionHistoryEntry saved = (await repository.save(
       result: _result('Bun bo Hue'),
       imageBytes: imageBytes,
-    );
+    ))!;
     final List<AiRecognitionHistoryEntry> entries = await repository.load();
 
     expect(entries, hasLength(1));
@@ -101,14 +102,14 @@ void main() {
   test('deletes only the requested recognition entry', () async {
     final AiRecognitionHistoryRepository repository =
         AiRecognitionHistoryRepository(userId: 'user-1');
-    final AiRecognitionHistoryEntry first = await repository.save(
+    final AiRecognitionHistoryEntry first = (await repository.save(
       result: _result('First'),
       imageBytes: imageBytes,
-    );
-    final AiRecognitionHistoryEntry second = await repository.save(
+    ))!;
+    final AiRecognitionHistoryEntry second = (await repository.save(
       result: _result('Second'),
       imageBytes: imageBytes,
-    );
+    ))!;
 
     await repository.delete(second.id);
 
@@ -116,6 +117,73 @@ void main() {
     expect(entries.map((AiRecognitionHistoryEntry item) => item.id), <String>[
       first.id,
     ]);
+  });
+
+  test('does not save unclear or unsupported results', () async {
+    final AiRecognitionHistoryRepository repository =
+        AiRecognitionHistoryRepository(userId: 'user-1');
+
+    final AiRecognitionHistoryEntry? unclear = await repository.save(
+      result: _result('Unknown', kind: AiRecognitionKind.unclear),
+      imageBytes: imageBytes,
+    );
+    final AiRecognitionHistoryEntry? unsupported = await repository.save(
+      result: _result('Unsupported', kind: AiRecognitionKind.unsupported),
+      imageBytes: imageBytes,
+    );
+
+    expect(unclear, isNull);
+    expect(unsupported, isNull);
+    expect(await repository.load(), isEmpty);
+  });
+
+  test('saves readable signs but rejects empty OCR', () async {
+    final AiRecognitionHistoryRepository repository =
+        AiRecognitionHistoryRepository(userId: 'user-1');
+
+    final AiRecognitionHistoryEntry? readable = await repository.save(
+      result: _result(
+        'NGUYEN HUE',
+        kind: AiRecognitionKind.signText,
+        textAnalysis: const AiRecognitionTextAnalysis(
+          originalText: 'NGUYEN HUE',
+          detectedLanguageCode: 'vi',
+          detectedLanguageName: 'Vietnamese',
+          translatedText: 'Nguyen Hue',
+          targetLanguageCode: 'en',
+          signType: 'street',
+          travelContext: 'Street name',
+          mapQuery: 'Nguyen Hue, Vietnam',
+          canOpenMap: true,
+        ),
+      ),
+      imageBytes: imageBytes,
+    );
+    final AiRecognitionHistoryEntry? unreadable = await repository.save(
+      result: _result(
+        'Unreadable',
+        kind: AiRecognitionKind.signText,
+        textAnalysis: const AiRecognitionTextAnalysis(
+          originalText: '',
+          detectedLanguageCode: '',
+          detectedLanguageName: '',
+          translatedText: '',
+          targetLanguageCode: 'en',
+          signType: 'street',
+          travelContext: '',
+          mapQuery: '',
+          canOpenMap: false,
+        ),
+      ),
+      imageBytes: imageBytes,
+    );
+
+    expect(readable, isNotNull);
+    expect(unreadable, isNull);
+    expect(
+      (await repository.load()).single.result.kind,
+      AiRecognitionKind.signText,
+    );
   });
 }
 
@@ -137,9 +205,13 @@ Future<Uint8List> _createTestImage() async {
   }
 }
 
-AiSearchResult _result(String name) {
+AiSearchResult _result(
+  String name, {
+  AiRecognitionKind kind = AiRecognitionKind.food,
+  AiRecognitionTextAnalysis? textAnalysis,
+}) {
   return AiSearchResult(
-    resultType: 'food',
+    kind: kind,
     confidence: 0.93,
     detectedName: name,
     subtitle: 'Vietnamese dish',
@@ -162,5 +234,6 @@ AiSearchResult _result(String name) {
       name: 'Bun bo Hue',
       matchScore: 0.97,
     ),
+    textAnalysis: textAnalysis,
   );
 }

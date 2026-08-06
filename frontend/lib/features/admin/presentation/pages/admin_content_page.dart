@@ -147,14 +147,18 @@ class _AdminContentPageState extends State<AdminContentPage> {
   }
 
   Future<void> _confirmDelete(AdminContentRecord record) async {
+    final bool archives = _config.fields.any((field) => field.key == 'status');
+    final String action = archives ? 'Archive' : 'Delete';
     final confirmed = await showDialog<bool>(
       context: context,
       barrierColor: const Color(0x80152B43),
       builder: (context) {
         return AlertDialog(
-          title: Text('Delete ${_config.primaryField.label}?'),
+          title: Text('$action ${_config.primaryField.label}?'),
           content: Text(
-            'This will permanently delete "${_displayName(record)}".',
+            archives
+                ? '"${_displayName(record)}" will be hidden from active results and retained for history.'
+                : 'This will permanently delete "${_displayName(record)}".',
           ),
           actions: [
             TextButton(
@@ -166,7 +170,7 @@ class _AdminContentPageState extends State<AdminContentPage> {
                 backgroundColor: const Color(0xFFEF4444),
               ),
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Delete'),
+              child: Text(action),
             ),
           ],
         );
@@ -177,11 +181,11 @@ class _AdminContentPageState extends State<AdminContentPage> {
     try {
       await _repository.delete(_config, record);
       if (!mounted) return;
-      _showSnack('Deleted.');
+      _showSnack(archives ? 'Archived.' : 'Deleted.');
       await _loadRecords(showLoader: false);
     } catch (error) {
       if (!mounted) return;
-      _showSnack('Delete failed: $error');
+      _showSnack('$action failed: $error');
     }
   }
 
@@ -357,6 +361,9 @@ class _AdminContentPageState extends State<AdminContentPage> {
                       record: record,
                       onEdit: () => _openForm(record),
                       onDelete: () => _confirmDelete(record),
+                      archives: _config.fields.any(
+                        (field) => field.key == 'status',
+                      ),
                     );
                   },
                 ),
@@ -475,6 +482,7 @@ class _TableRow extends StatelessWidget {
     required this.record,
     required this.onEdit,
     required this.onDelete,
+    required this.archives,
   });
 
   final AdminContentResourceConfig config;
@@ -482,6 +490,7 @@ class _TableRow extends StatelessWidget {
   final AdminContentRecord record;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final bool archives;
 
   @override
   Widget build(BuildContext context) {
@@ -519,10 +528,15 @@ class _TableRow extends StatelessWidget {
                   icon: const Icon(Icons.edit_outlined, size: 19),
                 ),
                 IconButton(
-                  tooltip: 'Delete',
+                  tooltip: archives ? 'Archive' : 'Delete',
                   onPressed: onDelete,
                   color: const Color(0xFFEF4444),
-                  icon: const Icon(Icons.delete_outline_rounded, size: 19),
+                  icon: Icon(
+                    archives
+                        ? Icons.archive_outlined
+                        : Icons.delete_outline_rounded,
+                    size: 19,
+                  ),
                 ),
               ],
             ),

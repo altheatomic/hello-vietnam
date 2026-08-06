@@ -9,6 +9,7 @@ import '../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../features/admin/presentation/pages/admin_food_page.dart';
 import '../features/admin/presentation/pages/admin_popular_app_page.dart';
 import '../features/admin/presentation/pages/admin_cf_retrain_page.dart';
+import '../features/admin/presentation/pages/admin_data_freshness_page.dart';
 import '../features/admin/presentation/pages/admin_report_page.dart';
 import '../features/admin/presentation/pages/admin_user_page.dart';
 
@@ -25,6 +26,7 @@ class AdminWebRoutes {
   static const localProducts = '/admin/local-products';
   static const popularApps = '/admin/popular-apps';
   static const cfRetrain = '/admin/cf-retrain';
+  static const dataFreshness = '/admin/data-freshness';
 }
 
 final adminRootNavigatorKey = GlobalKey<NavigatorState>();
@@ -98,6 +100,10 @@ GoRouter buildAdminWebRouter() {
           GoRoute(
             path: AdminWebRoutes.cfRetrain,
             builder: (c, s) => const AdminCfRetrainPage(),
+          ),
+          GoRoute(
+            path: AdminWebRoutes.dataFreshness,
+            builder: (c, s) => const AdminDataFreshnessPage(),
           ),
         ],
       ),
