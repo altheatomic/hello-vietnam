@@ -2,7 +2,10 @@
 
 import unittest
 
-from services.accommodation_recommendation import build_accommodation_recommendation
+from services.accommodation_recommendation import (
+    build_accommodation_recommendation,
+    build_accommodation_recommendation_from_itinerary_days,
+)
 from services.module2_algorithm import build_module2_result
 
 
@@ -109,3 +112,33 @@ class AccommodationRecommendationTests(unittest.TestCase):
         )
 
         self.assertIn("accommodation_recommendation", result)
+
+    def test_saved_itinerary_days_can_rebuild_recommendation(self):
+        days = [
+            {
+                "day": day,
+                "places": [
+                    {
+                        "latitude": latitude,
+                        "longitude": longitude,
+                    },
+                ],
+            }
+            for day, latitude, longitude in [
+                (1, 21.02, 105.84),
+                (2, 21.03, 105.85),
+                (3, 21.04, 105.86),
+                (4, 20.85, 106.60),
+                (5, 20.86, 106.61),
+                (6, 20.87, 106.62),
+                (7, 20.88, 106.63),
+            ]
+        ]
+
+        result = build_accommodation_recommendation_from_itinerary_days(days)
+
+        self.assertEqual(result["strategy"], "multi_zone")
+        self.assertEqual(
+            [(zone["day_from"], zone["day_to"]) for zone in result["zones"]],
+            [(1, 3), (4, 7)],
+        )

@@ -221,3 +221,27 @@ def build_accommodation_recommendation(
                 best_multi = candidate
 
     return best_multi or single_result
+
+
+def build_accommodation_recommendation_from_itinerary_days(
+    days: list[dict],
+    **kwargs: Any,
+) -> dict | None:
+    """Rebuild a recommendation from places returned by a saved plan."""
+    day_clusters: list[dict] = []
+    for day in days:
+        coordinates = []
+        for place in day.get("places") or []:
+            if _valid_centroid((place.get("latitude"), place.get("longitude"))):
+                coordinates.append((float(place["latitude"]), float(place["longitude"])))
+        centroid = (
+            (
+                sum(latitude for latitude, _ in coordinates) / len(coordinates),
+                sum(longitude for _, longitude in coordinates) / len(coordinates),
+            )
+            if coordinates
+            else None
+        )
+        day_clusters.append({"day": day.get("day"), "centroid": centroid})
+
+    return build_accommodation_recommendation(day_clusters, **kwargs)

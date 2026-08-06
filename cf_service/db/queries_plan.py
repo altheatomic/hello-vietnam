@@ -12,6 +12,10 @@ import uuid
 import datetime
 from typing import Any
 
+from services.accommodation_recommendation import (
+    build_accommodation_recommendation_from_itinerary_days,
+)
+
 
 def save_plan(
     supabase: Any,
@@ -168,6 +172,18 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
     )
     print(f"[getPlan] response_first_place={first_response_place}")
 
+    response_days = [
+        {
+            "day": d,
+            "date": (start_date_obj + datetime.timedelta(days=d - 1)).isoformat(),
+            "places": places,
+        }
+        for d, places in sorted(days_map.items())
+    ]
+    accommodation_recommendation = (
+        build_accommodation_recommendation_from_itinerary_days(response_days)
+    )
+
     return {
         "id_plan": str(plan_row["id_plan"]),
         "custom_title": plan_row.get("custom_title"),
@@ -175,14 +191,8 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
         "end_at": str(plan_row["end_at"]),
         "city_province": str(plan_row.get("city_province") or ""),
         "created_at": str(plan_row["created_at"]),
-        "days": [
-            {
-                "day": d,
-                "date": (start_date_obj + datetime.timedelta(days=d - 1)).isoformat(),
-                "places": places,
-            }
-            for d, places in sorted(days_map.items())
-        ],
+        "days": response_days,
+        "accommodation_recommendation": accommodation_recommendation,
     }
 
 
