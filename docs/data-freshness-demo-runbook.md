@@ -290,7 +290,7 @@ Trình tự trình bày nên là:
 
 Lưu ý để nói đúng trong demo:
 
-- Nút lớn `Kiểm tra ngay` hiện reload dữ liệu trang; nó chưa trigger checker.
+- Nút lớn `Tải lại dữ liệu` chỉ reload dữ liệu trang; nó không trigger checker.
 - Nút `Kiểm tra lại` chỉ đặt row về `due`; checker sẽ xử lý ở lượt chạy tiếp theo.
 - Admin page đang quản lý freshness/proposal/report/run history, chưa phải giao
   diện điều khiển Python crawler.

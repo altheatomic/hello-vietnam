@@ -107,7 +107,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
                 FilledButton.icon(
                   onPressed: _loading ? null : _reload,
                   icon: const Icon(Icons.update_rounded),
-                  label: const Text('Kiểm tra ngay'),
+                  label: const Text('Tải lại dữ liệu'),
                 ),
               ],
             ),

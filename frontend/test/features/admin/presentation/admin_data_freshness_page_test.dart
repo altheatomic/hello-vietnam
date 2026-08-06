@@ -18,6 +18,8 @@ void main() {
     expect(find.text('Báo sai'), findsOneWidget);
     expect(find.text('Dữ liệu stale'), findsOneWidget);
     expect(find.text('Lịch sử chạy'), findsOneWidget);
+    expect(find.text('Tải lại dữ liệu'), findsOneWidget);
+    expect(find.text('Kiểm tra ngay'), findsNothing);
     expect(find.text('Old Street'), findsOneWidget);
     expect(find.text('New Street'), findsOneWidget);
   });
