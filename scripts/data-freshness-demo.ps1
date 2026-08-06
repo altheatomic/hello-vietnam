@@ -9,7 +9,7 @@ param(
     [int]$Limit = 5,
 
     [ValidateRange(1, 50)]
-    [int]$CheckerBatchSize = 10
+    [int]$CheckerBatchSize = 5
 )
 
 $ErrorActionPreference = 'Stop'

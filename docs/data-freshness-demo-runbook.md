@@ -98,6 +98,20 @@ cron sẽ bỏ qua request một cách an toàn.
 > deploy Edge Function/configure cron với URL của project đích rồi kiểm tra lại
 > `cron.job` và một lần trigger thủ công.
 
+### 2.4. Trạng thái remote đã xác minh
+
+Với project `ziouozppetvvdrzgojcx` đã liên kết trong workspace, kiểm tra ngày
+2026-08-07 cho thấy migration `20260803000100`, `20260806100000` và
+`20260807000100` đã áp dụng; cron `data-freshness-daily` đang active với lịch
+`15 2 * * *`; Vault và Edge Function secret có cùng digest; checker đang
+`ACTIVE`, `verify_jwt = false`, còn admin API `verify_jwt = true`; database có
+1 tài khoản admin.
+
+Lượt demo nhỏ gần nhất dùng `batchSize = 5` đã `completed`, kiểm tra 5 dòng,
+0 lỗi, tạo 3 proposal và 1 unchanged. Các lượt batch 50 trước đó có partial
+failure do OSM rate-limit/timeout; vì vậy dùng batch 5 trong buổi demo và giữ
+output run này làm bằng chứng dự phòng.
+
 ## 3. Chạy manual crawler
 
 ### 3.1. Dry run trước
@@ -177,6 +191,9 @@ Response cần có:
 - `checkedCount`
 - `failedCount`
 - `status` (`completed`, `partial_failure` hoặc `failed`)
+
+`batchSize` là tùy chọn, tối đa 50. Dùng `5` trong demo để tránh nguồn OSM
+rate-limit; cron hằng ngày không truyền trường này và dùng batch mặc định 50.
 
 Kiểm tra run mới nhất:
 
