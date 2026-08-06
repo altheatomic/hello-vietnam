@@ -34,7 +34,28 @@ py -3.11 -m venv .demo-venv
 
 Nếu máy chỉ có Python 3.14, dùng `py -3.14` thay cho `py -3.11`.
 
-### 2.2. Supabase owner-only setup
+### 2.2. Helper chạy nhanh
+
+Từ thư mục gốc repo, có thể chạy preflight và crawler mà không ghi đè output
+đang tracked. Crawler helper ghi file vào thư mục tạm của Windows:
+
+```powershell
+cd D:\Work\hello-vietnam
+Set-ExecutionPolicy -Scope Process Bypass
+.\scripts\data-freshness-demo.ps1 -Mode preflight -SupabaseUrl $env:SUPABASE_URL
+.\scripts\data-freshness-demo.ps1 -Mode crawler -Limit 5
+```
+
+Sau khi đã set secret trong terminal hiện tại, trigger checker bằng:
+
+```powershell
+.\scripts\data-freshness-demo.ps1 -Mode checker -SupabaseUrl $env:SUPABASE_URL
+```
+
+Nếu secret chưa có, helper dừng với mã `2` và không in giá trị secret. Không lưu
+secret vào file `.ps1`, `.env` tracked hoặc ảnh chụp màn hình.
+
+### 2.3. Supabase owner-only setup
 
 Các bước này cần người có quyền Supabase và không đưa secret vào source code:
 
@@ -99,12 +120,13 @@ Các mode khác:
 
 ### 3.3. Tình trạng nguồn đã kiểm tra
 
-Trong lần kiểm tra chuẩn bị ngày 2026-08-07, parser đã chạy được sau khi cài
-`lxml`, nhưng Wikipedia trả HTTP 429 cho một số URL và `local_products` trả về
-0 rows. Vì vậy không coi exit code 0 là bằng chứng dữ liệu mới đã được crawl.
-Nếu nguồn tiếp tục rate-limit vào lúc demo, dùng output `activity.json` hoặc
-`culture.json` đã chuẩn bị từ trước để minh họa payload và nói rõ đó là fallback
-đã cache; không chạy lại job live nhiều lần để tránh bị rate-limit nặng hơn.
+Trong lần kiểm tra chuẩn bị ngày 2026-08-07, parser chạy được sau khi cài
+`lxml`. Một lần dry run trả về 0 rows, còn helper chạy lại sau đó lấy được 2
+rows; nhiều URL fallback của Wikipedia vẫn trả HTTP 429. Vì vậy không coi exit
+code 0 hoặc một lần crawl đơn lẻ là bằng chứng nguồn luôn ổn định. Nếu nguồn
+tiếp tục rate-limit vào lúc demo, dùng output `activity.json` hoặc `culture.json`
+đã chuẩn bị từ trước để minh họa payload và nói rõ đó là fallback đã cache; không
+chạy lại job live nhiều lần để tránh bị rate-limit nặng hơn.
 
 ## 4. Chạy freshness checker trong demo
 
