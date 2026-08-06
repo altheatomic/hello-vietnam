@@ -6,6 +6,7 @@ import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
+import 'package:hellovietnam/features/planner/data/accommodation_recommendation_calculator.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
@@ -226,6 +227,11 @@ class _TripResultPageState extends State<TripResultPage> {
 
   @override
   Widget build(BuildContext context) {
+    final AccommodationRecommendation? localAccommodationRecommendation =
+        calculateAccommodationRecommendation(widget.plan.days);
+    final AccommodationRecommendation? accommodationRecommendation =
+        localAccommodationRecommendation ??
+            widget.plan.accommodationRecommendation;
     final days = _convertPlan(
       widget.plan,
       idProvince: widget.plan.cityProvince ?? widget.wizard?.idProvince ?? '',
@@ -385,11 +391,10 @@ class _TripResultPageState extends State<TripResultPage> {
                       ],
                     ),
                     const SizedBox(height: 34),
-                    if (widget.plan.accommodationRecommendation != null &&
-                        widget.plan.accommodationRecommendation!.zones.isNotEmpty) ...<Widget>[
+                    if (accommodationRecommendation != null &&
+                        accommodationRecommendation.zones.isNotEmpty) ...<Widget>[
                       AccommodationRecommendationCard(
-                        recommendation:
-                            widget.plan.accommodationRecommendation!,
+                        recommendation: accommodationRecommendation,
                       ),
                       const SizedBox(height: 12),
                     ],
