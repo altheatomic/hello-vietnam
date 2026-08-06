@@ -63,6 +63,10 @@ def save_plan(
                 "start_time": place.get("start_time"),
                 "end_time": place.get("end_time"),
                 "estimated_travel_minutes": place.get("estimated_travel_minutes"),
+                "travel_time_car_seconds": place.get("travel_time_car_seconds"),
+                "travel_time_bike_seconds": place.get("travel_time_bike_seconds"),
+                "travel_distance_car_meters": place.get("travel_distance_car_meters"),
+                "travel_distance_bike_meters": place.get("travel_distance_bike_meters"),
                 "cb_score": place.get("tag_match"),   # tag_match stored in cb_score column
                 "cf_score": place.get("cf_score"),
                 "final_score": place.get("final_score"),
@@ -94,6 +98,8 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
         .table("plan_component")
         .select(
             "day,slot,visit_order,start_time,end_time,estimated_travel_minutes,"
+            "travel_time_car_seconds,travel_time_bike_seconds,"
+            "travel_distance_car_meters,travel_distance_bike_meters,"
             "cb_score,cf_score,final_score,id_place"
         )
         .eq("id_plan", id_plan)
@@ -146,6 +152,10 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
             "start_time": r.get("start_time"),
             "end_time": r.get("end_time"),
             "estimated_travel_minutes": r.get("estimated_travel_minutes"),
+            "travel_time_car_seconds": r.get("travel_time_car_seconds"),
+            "travel_time_bike_seconds": r.get("travel_time_bike_seconds"),
+            "travel_distance_car_meters": r.get("travel_distance_car_meters"),
+            "travel_distance_bike_meters": r.get("travel_distance_bike_meters"),
             "tag_match": r.get("cb_score"),
             "cf_score": r.get("cf_score"),
             "final_score": r.get("final_score"),
@@ -371,7 +381,10 @@ def clone_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
         .table("plan_component")
         .select(
             "day,time_part,id_place,visit_order,slot,"
-            "estimated_travel_minutes,cb_score,cf_score,final_score"
+            "estimated_travel_minutes,"
+            "travel_time_car_seconds,travel_time_bike_seconds,"
+            "travel_distance_car_meters,travel_distance_bike_meters,"
+            "cb_score,cf_score,final_score"
         )
         .eq("id_plan", id_plan)
         .execute()
@@ -401,6 +414,10 @@ def clone_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
                 "visit_order":              r.get("visit_order"),
                 "slot":                     r.get("slot"),
                 "estimated_travel_minutes": r.get("estimated_travel_minutes"),
+                "travel_time_car_seconds":     r.get("travel_time_car_seconds"),
+                "travel_time_bike_seconds":    r.get("travel_time_bike_seconds"),
+                "travel_distance_car_meters":  r.get("travel_distance_car_meters"),
+                "travel_distance_bike_meters": r.get("travel_distance_bike_meters"),
                 "cb_score":                 r.get("cb_score"),
                 "cf_score":                 r.get("cf_score"),
                 "final_score":              r.get("final_score"),
