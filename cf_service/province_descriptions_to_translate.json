@@ -1,380 +1,206 @@
 [
   {
-    "id_province": "6f3240c9-cc33-4ee6-a8c6-1a5b6b87c906",
-    "name": "Hà Nội",
-    "description_vi": "Thủ đô Việt Nam với lịch sử lâu đời",
-    "description_en": "Vietnam's capital city with a long history"
-  },
-  {
-    "id_province": "81a15bed-747b-4abc-b18b-3756b81bf944",
-    "name": "Hà Giang",
-    "description_vi": "Vùng cao nguyên đá và bản sắc dân tộc",
-    "description_en": "A rocky plateau region rich in ethnic culture"
-  },
-  {
-    "id_province": "b7918d61-c56e-4721-904c-567909526b8a",
-    "name": "Cao Bằng",
-    "description_vi": "Tỉnh miền núi nổi tiếng với thác Bản Giốc",
-    "description_en": "A mountainous province famous for Ban Gioc Waterfall"
-  },
-  {
-    "id_province": "148d261b-28b5-4c4b-a687-73f82268a9c3",
-    "name": "Bắc Kạn",
-    "description_vi": "Vùng núi với hồ Ba Bể nổi tiếng",
-    "description_en": "A mountainous region known for Ba Be Lake"
-  },
-  {
-    "id_province": "3198e3df-52cc-4320-9b07-52f8408fe69c",
-    "name": "Tuyên Quang",
-    "description_vi": "Vùng lịch sử cách mạng và thiên nhiên xanh",
-    "description_en": "A region of revolutionary history and lush nature"
-  },
-  {
-    "id_province": "e1388744-613c-431e-b85f-2845fc301d54",
-    "name": "Lào Cai",
-    "description_vi": "Nổi tiếng với Sa Pa và ruộng bậc thang",
-    "description_en": "Famous for Sa Pa and its terraced rice fields"
-  },
-  {
-    "id_province": "79903cde-65c7-49cd-b9ef-7cfe5435f8c4",
-    "name": "Yên Bái",
-    "description_vi": "Vùng núi với Mù Cang Chải nổi tiếng",
-    "description_en": "A mountainous region known for Mu Cang Chai"
-  },
-  {
-    "id_province": "9911c5a6-4bf1-42af-a221-a7146c908b3e",
-    "name": "Thái Nguyên",
-    "description_vi": "Trung tâm chè lớn của Việt Nam",
-    "description_en": "Vietnam's major tea-producing hub"
-  },
-  {
-    "id_province": "972fae90-94ae-4bcd-a966-608d1048a5aa",
-    "name": "Lạng Sơn",
-    "description_vi": "Tỉnh biên giới với nhiều cửa khẩu quan trọng",
-    "description_en": "A border province with several major checkpoints"
-  },
-  {
-    "id_province": "dc19f8e4-0e0f-42f4-98cf-3b8c52437226",
-    "name": "Quảng Ninh",
-    "description_vi": "Nổi tiếng với vịnh Hạ Long",
-    "description_en": "Famous for Ha Long Bay"
-  },
-  {
-    "id_province": "23d6f159-acef-41c4-ae34-37a377e87f44",
-    "name": "Bắc Giang",
-    "description_vi": "Vùng trung du nổi tiếng với vải thiều",
-    "description_en": "A midland region famous for lychee"
-  },
-  {
-    "id_province": "0e895821-e631-4d9e-bf97-4ef7f3eebb3e",
-    "name": "Phú Thọ",
-    "description_vi": "Đất tổ Hùng Vương",
-    "description_en": "The ancestral land of the Hung Kings"
-  },
-  {
-    "id_province": "5861241c-e256-4ec8-b321-d15e2c3cf267",
-    "name": "Vĩnh Phúc",
-    "description_vi": "Vùng trung du gần Hà Nội, nổi tiếng với Tam Đảo",
-    "description_en": "A midland region near Hanoi, known for Tam Dao"
-  },
-  {
-    "id_province": "a7150491-549c-4781-8f96-7623a81ef6fa",
-    "name": "Bắc Ninh",
-    "description_vi": "Vùng văn hóa quan họ đặc trưng",
-    "description_en": "Home to the distinctive Quan Ho folk singing culture"
-  },
-  {
-    "id_province": "759fa697-d332-4de3-8759-6db611d579f6",
-    "name": "Hải Dương",
-    "description_vi": "Vùng đất hiếu học, nổi tiếng bánh đậu xanh",
-    "description_en": "A land known for its scholarly tradition and mung bean cake"
-  },
-  {
-    "id_province": "392f42fb-4181-4655-93bc-5ad74dc4d699",
-    "name": "Hải Phòng",
-    "description_vi": "Thành phố cảng lớn của miền Bắc",
-    "description_en": "A major port city in northern Vietnam"
-  },
-  {
-    "id_province": "5cb8c5a0-53b4-4dfb-9b8c-7f547a9babe8",
-    "name": "Hưng Yên",
-    "description_vi": "Vùng đất truyền thống và làng nghề",
-    "description_en": "A land of tradition and craft villages"
-  },
-  {
-    "id_province": "97441f93-a078-453f-be84-ee4168406bf1",
-    "name": "Thái Bình",
-    "description_vi": "Vùng đồng bằng với truyền thống nông nghiệp",
-    "description_en": "A delta region with a strong agricultural tradition"
-  },
-  {
-    "id_province": "664952ad-6c85-4f2d-9a96-e01f86e0a0f6",
-    "name": "Hà Nam",
-    "description_vi": "Cửa ngõ phía nam của đồng bằng sông Hồng",
-    "description_en": "The southern gateway of the Red River Delta"
-  },
-  {
-    "id_province": "e55762ba-3d9c-4eac-93e4-b35b6e3d70ef",
-    "name": "Nam Định",
-    "description_vi": "Vùng đất giàu truyền thống văn hóa và dệt may",
-    "description_en": "A land rich in cultural tradition and textile heritage"
-  },
-  {
-    "id_province": "336b7b41-fa17-4f27-9958-5c948a7dd18c",
-    "name": "Ninh Bình",
-    "description_vi": "Nổi tiếng với Tràng An và Tam Cốc",
-    "description_en": "Famous for Trang An and Tam Coc"
-  },
-  {
-    "id_province": "1a98c41e-bc37-4269-a97b-4ecf3d12a600",
-    "name": "Điện Biên",
-    "description_vi": "Gắn liền với chiến thắng Điện Biên Phủ",
-    "description_en": "Renowned for the historic Dien Bien Phu victory"
-  },
-  {
-    "id_province": "c95652b8-9567-4063-8a5f-0f6b12f75c39",
-    "name": "Lai Châu",
-    "description_vi": "Tỉnh vùng cao với cảnh quan hoang sơ",
-    "description_en": "A highland province with pristine landscapes"
-  },
-  {
-    "id_province": "4d2519ec-e17c-4940-a426-baf5a99612d2",
-    "name": "Sơn La",
-    "description_vi": "Vùng núi cao với văn hóa dân tộc đa dạng",
-    "description_en": "A high mountain region with diverse ethnic cultures"
-  },
-  {
-    "id_province": "1b590654-3765-448c-9668-d1a17c4ea13a",
-    "name": "Hòa Bình",
-    "description_vi": "Cửa ngõ Tây Bắc với văn hóa Mường đặc sắc",
-    "description_en": "The gateway to the Northwest, known for Muong culture"
-  },
-  {
-    "id_province": "03530a14-a5f2-4aad-bd93-f127cb0718f4",
-    "name": "Thanh Hóa",
-    "description_vi": "Tỉnh lớn với nhiều di sản và bãi biển đẹp",
-    "description_en": "A large province with rich heritage and beautiful beaches"
-  },
-  {
-    "id_province": "2aa64231-5f3b-47ca-b94a-f73511ee66c0",
-    "name": "Nghệ An",
-    "description_vi": "Quê hương Chủ tịch Hồ Chí Minh",
-    "description_en": "The homeland of President Ho Chi Minh"
-  },
-  {
-    "id_province": "7b9b3190-cf4d-486b-a036-40e3ac6b69c9",
+    "id_province": "305b2c7e-a998-465a-b5b4-25f91b0b15a7",
     "name": "Hà Tĩnh",
-    "description_vi": "Vùng đất giàu truyền thống văn hóa",
-    "description_en": "A land rich in cultural tradition"
+    "description_vi": "Hà Tĩnh là tỉnh ven biển Bắc Trung Bộ, có đường bờ biển dài với nhiều bãi tắm đẹp như Thiên Cầm, Hoành Sơn. Nơi đây còn là quê hương của nhiều danh nhân văn hóa, với ngã ba Đồng Lộc lịch sử và phong cảnh non nước hữu tình.",
+    "description_en": "Ha Tinh is a coastal province in the North Central Coast, with a long shoreline dotted with beautiful beaches like Thien Cam and Hoanh Son. It is also the homeland of many cultural figures, home to the historic Dong Loc Junction and picturesque landscapes."
   },
   {
-    "id_province": "b7b14f00-b928-4dbe-9d45-d9b04c5265dc",
-    "name": "Quảng Bình",
-    "description_vi": "Nổi tiếng với Phong Nha - Kẻ Bàng",
-    "description_en": "Famous for Phong Nha - Ke Bang"
+    "id_province": "f81fff2f-8e0b-406c-8750-c926edd1300a",
+    "name": "Hải Phòng",
+    "description_vi": "Hải Phòng, còn được gọi là Thành phố hoa phượng đỏ, là cảng biển lớn nhất miền Bắc. Du lịch nơi đây phát triển rực rỡ nhờ Vườn quốc gia Cát Bà, Vịnh Lan Hạ xinh đẹp và văn hóa ẩm thực đường phố đặc trưng, hấp dẫn.",
+    "description_en": "Hai Phong, known as the City of Red Flame Trees, is the largest port city in northern Vietnam. Tourism here thrives thanks to Cat Ba National Park, the beautiful Lan Ha Bay, and a distinctive, enticing street food culture."
   },
   {
-    "id_province": "2cac5ef5-5966-404b-a1ec-6e449abc4d02",
-    "name": "Quảng Trị",
-    "description_vi": "Địa danh lịch sử thời chiến tranh",
-    "description_en": "A historic wartime landmark region"
-  },
-  {
-    "id_province": "38b3a2c6-815a-4a14-ab9e-1644acdde5cf",
-    "name": "Thừa Thiên Huế",
-    "description_vi": "Cố đô với di sản văn hóa thế giới",
-    "description_en": "The former imperial capital and a world cultural heritage site"
-  },
-  {
-    "id_province": "7f676e66-e5f4-4af6-a6e1-4549340e987d",
-    "name": "Đà Nẵng",
-    "description_vi": "Thành phố biển hiện đại và du lịch phát triển",
-    "description_en": "A modern coastal city with thriving tourism"
-  },
-  {
-    "id_province": "3d2723cf-66f7-4d1e-87da-a34617212260",
-    "name": "Quảng Nam",
-    "description_vi": "Vùng đất di sản với Hội An và Mỹ Sơn",
-    "description_en": "A heritage land home to Hoi An and My Son"
-  },
-  {
-    "id_province": "932fa77b-9017-4652-83d3-a60d45dd1866",
-    "name": "Quảng Ngãi",
-    "description_vi": "Vùng ven biển với đặc sản địa phương",
-    "description_en": "A coastal region known for local specialties"
-  },
-  {
-    "id_province": "1b808b6a-b876-4aed-b85b-8305b44ab82e",
-    "name": "Bình Định",
-    "description_vi": "Nổi tiếng với võ cổ truyền và biển đẹp",
-    "description_en": "Famous for traditional martial arts and beautiful beaches"
-  },
-  {
-    "id_province": "e99495c5-ac35-42b8-bd33-38fd623b66ac",
-    "name": "Phú Yên",
-    "description_vi": "Vùng biển đẹp với ghềnh đá đĩa",
-    "description_en": "A beautiful coastal region known for Ghenh Da Dia rock reef"
-  },
-  {
-    "id_province": "18a3009e-d1b5-45e5-a196-3b8ea92bb650",
-    "name": "Khánh Hòa",
-    "description_vi": "Nổi tiếng với Nha Trang",
-    "description_en": "Famous for Nha Trang"
-  },
-  {
-    "id_province": "0c7e24a7-3d55-4988-b735-466c2f51bfdb",
-    "name": "Ninh Thuận",
-    "description_vi": "Vùng khô hạn với văn hóa Chăm đặc sắc",
-    "description_en": "An arid region with distinctive Cham culture"
-  },
-  {
-    "id_province": "06d9e830-713f-4c42-8b79-2273bb06ba05",
-    "name": "Bình Thuận",
-    "description_vi": "Nổi tiếng với Mũi Né và thanh long",
-    "description_en": "Famous for Mui Ne and dragon fruit"
-  },
-  {
-    "id_province": "8a216a88-95da-4e01-99b3-207f4d056a65",
-    "name": "Kon Tum",
-    "description_vi": "Vùng cao nguyên với nhà rông và văn hóa bản địa",
-    "description_en": "A highland region known for communal houses and indigenous culture"
-  },
-  {
-    "id_province": "be400a01-938d-4372-81a1-a22cbb475821",
-    "name": "Gia Lai",
-    "description_vi": "Vùng cao nguyên với văn hóa cồng chiêng",
-    "description_en": "A highland region known for its gong culture"
-  },
-  {
-    "id_province": "cd8c13e2-15d8-48d1-bba3-c6a93bc36c80",
-    "name": "Đắk Lắk",
-    "description_vi": "Thủ phủ cà phê của Việt Nam",
-    "description_en": "Vietnam's coffee capital"
-  },
-  {
-    "id_province": "7212e883-b770-463f-a7d6-29d583469fe0",
-    "name": "Đắk Nông",
-    "description_vi": "Vùng cao nguyên với cảnh quan núi lửa",
-    "description_en": "A highland region with volcanic landscapes"
-  },
-  {
-    "id_province": "2a50e1e2-2aff-4430-a71a-2a59f80cf18f",
-    "name": "Lâm Đồng",
-    "description_vi": "Vùng cao nguyên với Đà Lạt",
-    "description_en": "A highland region home to Da Lat"
-  },
-  {
-    "id_province": "8adb497f-80b5-4d70-82a0-258b005c5844",
-    "name": "Bình Phước",
-    "description_vi": "Vùng đất đỏ bazan, nổi tiếng điều",
-    "description_en": "A red basalt soil region famous for cashew nuts"
-  },
-  {
-    "id_province": "a39f41f0-e4ab-4717-856f-e9cb40af7d24",
-    "name": "Tây Ninh",
-    "description_vi": "Tỉnh biên giới với núi Bà Đen",
-    "description_en": "A border province home to Ba Den Mountain"
-  },
-  {
-    "id_province": "7117589b-e05e-4be2-b5e9-a4e3dcfc2064",
-    "name": "Bình Dương",
-    "description_vi": "Trung tâm công nghiệp phát triển mạnh",
-    "description_en": "A rapidly developing industrial hub"
-  },
-  {
-    "id_province": "d8829970-9b65-4aa5-9386-1eb7ac25496b",
-    "name": "Đồng Nai",
-    "description_vi": "Khu công nghiệp phát triển mạnh",
-    "description_en": "A rapidly developing industrial region"
-  },
-  {
-    "id_province": "c649ea8c-fc74-4712-ae5e-789a6879b664",
-    "name": "Bà Rịa - Vũng Tàu",
-    "description_vi": "Tỉnh ven biển với du lịch phát triển",
-    "description_en": "A coastal province with thriving tourism"
-  },
-  {
-    "id_province": "230e26ed-0118-4f62-96b5-ac0eb3ca1c1b",
+    "id_province": "094014a7-b8f6-481a-bbce-5ed6cdd457c5",
     "name": "Hồ Chí Minh",
-    "description_vi": "Trung tâm kinh tế lớn nhất Việt Nam",
-    "description_en": "Vietnam's largest economic center"
+    "description_vi": "Thành phố Hồ Chí Minh là trung tâm kinh tế, văn hóa, giáo dục và khoa học công nghệ lớn nhất Việt Nam. Thành phố mang vẻ đẹp năng động, hiện đại với những tòa nhà chọc trời, nhưng cũng giữ được nét cổ kính qua các công trình kiến trúc thời Pháp thuộc và hệ thống bảo tàng phong phú.",
+    "description_en": "Ho Chi Minh City is Vietnam's largest hub for economy, culture, education, and technology. The city combines dynamic, modern skylines with a timeless charm preserved through French colonial architecture and a rich network of museums."
   },
   {
-    "id_province": "11950e85-98e4-4e47-9595-96768c0751d8",
-    "name": "Long An",
-    "description_vi": "Cửa ngõ nối Đông Nam Bộ với miền Tây",
-    "description_en": "The gateway linking the Southeast to the Mekong Delta"
-  },
-  {
-    "id_province": "71579aaf-489e-428b-ba67-cdfc355a3220",
-    "name": "Tiền Giang",
-    "description_vi": "Vùng sông nước với cù lao và chợ nổi",
-    "description_en": "A riverine region known for islets and floating markets"
-  },
-  {
-    "id_province": "6f7018bd-e705-4610-a54e-c242f43b229b",
-    "name": "Bến Tre",
-    "description_vi": "Xứ dừa nổi tiếng của Việt Nam",
-    "description_en": "Vietnam's famous coconut land"
-  },
-  {
-    "id_province": "3b13a4c4-a7b4-444c-b0a5-2a86114f789f",
-    "name": "Trà Vinh",
-    "description_vi": "Vùng đất giao thoa văn hóa Khmer",
-    "description_en": "A land where Khmer culture flourishes"
-  },
-  {
-    "id_province": "e19d5ec8-fc4f-4ef4-a57b-34c407b90d8f",
-    "name": "Vĩnh Long",
-    "description_vi": "Nổi tiếng với vườn trái cây",
-    "description_en": "Famous for its fruit orchards"
-  },
-  {
-    "id_province": "91b22a92-226d-4314-b81e-cd4dcda01a29",
-    "name": "Đồng Tháp",
-    "description_vi": "Vùng sông nước với sen đặc trưng",
-    "description_en": "A riverine region famous for its lotus flowers"
-  },
-  {
-    "id_province": "a7bb7aa9-fe35-4d8c-952a-a6457043b7fe",
+    "id_province": "048f25d9-ff8c-4185-97b0-a0cabda5369d",
     "name": "An Giang",
-    "description_vi": "Vùng núi và văn hóa đa dạng",
-    "description_en": "A region of mountains and diverse culture"
+    "description_vi": "An Giang là một tỉnh thuộc vùng đồng bằng sông Cửu Long, nổi bật với sự giao thoa văn hóa đặc sắc của các dân tộc Kinh, Hoa, Chăm, Khmer. Nơi đây nổi tiếng với phong cảnh hữu tình, dãy Thất Sơn huyền bí, rừng tràm Trà Sư xanh ngát và những khu chợ nổi sầm uất trên sông.",
+    "description_en": "An Giang is a Mekong Delta province known for the vibrant blend of Kinh, Hoa, Cham, and Khmer cultures. It boasts scenic landscapes, the mystical Seven Mountains, the lush green Tra Su melaleuca forest, and bustling floating markets."
   },
   {
-    "id_province": "516ba327-e216-48e8-bc22-a1e470ff3ecf",
-    "name": "Kiên Giang",
-    "description_vi": "Nổi tiếng với Phú Quốc và biển đảo",
-    "description_en": "Famous for Phu Quoc and its islands"
+    "id_province": "20461761-311f-4c50-8649-5dac8e1ee3ad",
+    "name": "Đồng Tháp",
+    "description_vi": "Đồng Tháp Mười nổi danh với những cánh đồng hoa sen thơm ngát, vườn quốc gia Tràm Chim và các khu sinh thái ngập nước. Đây là điểm đến lý tưởng để du khách trải nghiệm cuộc sống miền Tây sông nước yên bình, mộc mạc.",
+    "description_en": "The Dong Thap Muoi region is famed for its fragrant lotus fields, Tram Chim National Park, and wetland ecosystems. It's an ideal destination to experience the peaceful, rustic river life of the Mekong Delta."
   },
   {
-    "id_province": "bfbe113e-4e12-4caf-93b1-9577fefb5e20",
+    "id_province": "4057967f-0310-4600-8b38-981aa99a5186",
+    "name": "Lạng Sơn",
+    "description_vi": "Lạng Sơn là tỉnh miền núi biên giới phía Bắc, nổi tiếng với di tích Ải Chi Lăng, động Tam Thanh, núi Tô Thị. Nơi đây là cửa ngõ giao thương quan trọng và là điểm du lịch văn hóa, mua sắm hấp dẫn nhờ những khu chợ sầm uất.",
+    "description_en": "Lang Son is a northern border mountain province, known for the Chi Lang Pass relic, Tam Thanh Cave, and To Thi Mountain. It serves as an important trading gateway and an appealing cultural and shopping destination with its bustling markets."
+  },
+  {
+    "id_province": "1c626b4b-a0b8-4c6f-bef3-2c29d2b9cdb4",
+    "name": "Gia Lai",
+    "description_vi": "Gia Lai là một tỉnh vùng cao nằm ở phía bắc Tây Nguyên, nổi tiếng với Biển Hồ (T'Nưng) thơ mộng, núi lửa Chư Đăng Ya hùng vĩ và những rẫy cà phê bạt ngàn. Văn hóa cồng chiêng Tây Nguyên là một điểm nhấn đặc biệt thu hút du khách đến với mảnh đất này.",
+    "description_en": "Gia Lai is a highland province in the northern Central Highlands, known for the poetic T'Nung Lake, the majestic Chu Dang Ya volcano, and endless coffee plantations. The Central Highlands' gong culture is a special highlight that draws visitors here."
+  },
+  {
+    "id_province": "53452a6f-e761-489b-acaf-32646fda968d",
+    "name": "Nghệ An",
+    "description_vi": "Nghệ An là tỉnh có diện tích lớn nhất Việt Nam, sở hữu địa hình đa dạng từ núi cao đến đồng bằng và biển. Quê hương của Chủ tịch Hồ Chí Minh (làng Sen) thu hút khách du lịch bởi các di tích lịch sử, bãi biển Cửa Lò và vườn quốc gia Pù Mát.",
+    "description_en": "Nghe An is Vietnam's largest province by area, with terrain ranging from high mountains to plains and coastline. The homeland of President Ho Chi Minh (Sen Village) draws visitors with its historical sites, Cua Lo beach, and Pu Mat National Park."
+  },
+  {
+    "id_province": "69e1a0ac-2830-48ac-8159-f37041b2f2a2",
     "name": "Cần Thơ",
-    "description_vi": "Trung tâm miền Tây với chợ nổi",
-    "description_en": "The heart of the Mekong Delta, known for floating markets"
+    "description_vi": "Cần Thơ là thành phố trung tâm của đồng bằng sông Cửu Long, vang danh với chợ nổi Cái Răng nhộn nhịp lúc bình minh, bến Ninh Kiều thơ mộng. Nơi đây mang đậm nét văn hóa miệt vườn sông nước thân thiện, hiền hòa.",
+    "description_en": "Can Tho is the central city of the Mekong Delta, famed for the bustling Cai Rang floating market at dawn and the poetic Ninh Kieu wharf. It carries the friendly, gentle river-garden culture of the region."
   },
   {
-    "id_province": "8ed8ee0e-e77d-4345-b949-a21f40780734",
-    "name": "Hậu Giang",
-    "description_vi": "Vùng đồng bằng với hệ thống kênh rạch dày đặc",
-    "description_en": "A delta region with a dense network of canals"
+    "id_province": "575ecef9-d2b5-4cc0-9777-87e5ecd19a93",
+    "name": "Khánh Hòa",
+    "description_vi": "Khánh Hòa là thủ phủ du lịch biển của Nam Trung Bộ, với viên ngọc Vịnh Nha Trang nằm trong top những vịnh biển đẹp nhất thế giới. Tỉnh có đường bờ biển dài, cát trắng, nước trong xanh và nhiều hòn đảo hoang sơ tuyệt đẹp.",
+    "description_en": "Khanh Hoa is the beach tourism capital of the South Central Coast, home to the jewel of Nha Trang Bay, ranked among the world's most beautiful bays. The province has a long coastline with white sand, clear water, and stunning pristine islands."
   },
   {
-    "id_province": "9368cf5d-9d7a-4528-9609-e56ec0ffdd29",
-    "name": "Sóc Trăng",
-    "description_vi": "Vùng đất đa văn hóa Kinh Khmer Hoa",
-    "description_en": "A multicultural land shared by Kinh, Khmer, and Hoa communities"
+    "id_province": "8167556d-eef7-4b7f-ae22-3b648df1d258",
+    "name": "Đắk Lắk",
+    "description_vi": "Đắk Lắk tọa lạc ở trung tâm Tây Nguyên, nơi được ví như thủ phủ cà phê của Việt Nam. Tỉnh nổi tiếng với Hồ Lắk, thác Dray Nur, Dray Sap và văn hóa cồng chiêng, lễ hội đua voi đặc sắc của cộng đồng người Ê đê, M'Nông.",
+    "description_en": "Dak Lak sits at the heart of the Central Highlands, often called Vietnam's coffee capital. The province is known for Lak Lake, Dray Nur and Dray Sap waterfalls, and the distinctive gong culture and elephant racing festivals of the E De and M'Nong communities."
   },
   {
-    "id_province": "15bd02b9-5895-4570-97c2-3fe929648345",
-    "name": "Bạc Liêu",
-    "description_vi": "Nổi tiếng với đờn ca tài tử và điện gió",
-    "description_en": "Famous for don ca tai tu music and wind power fields"
+    "id_province": "5b6f26e7-1bde-46d0-bd42-3cee05f80d0e",
+    "name": "Điện Biên",
+    "description_vi": "Điện Biên gắn liền với chiến thắng lịch sử Điện Biên Phủ lừng lẫy năm châu. Tỉnh Tây Bắc này không chỉ thu hút bởi các di tích lịch sử hào hùng mà còn bởi khung cảnh thiên nhiên kỳ vĩ và cánh đồng Mường Thanh trù phú.",
+    "description_en": "Dien Bien is forever tied to the historic Dien Bien Phu victory that resonated across the world. This northwestern province draws visitors not only with its heroic historical sites but also its majestic natural scenery and the fertile Muong Thanh fields."
   },
   {
-    "id_province": "c169c9c4-1ef1-4544-bd70-e5c0f824691f",
+    "id_province": "a993a9a7-eb73-407f-9b2f-af0c226468ee",
+    "name": "Phú Thọ",
+    "description_vi": "Phú Thọ là vùng đất Tổ thiêng liêng, cội nguồn của dân tộc Việt Nam với Khu di tích lịch sử đền Hùng. Tỉnh còn nổi tiếng với đồi chè Long Cốc và những di sản văn hóa phi vật thể như hát Xoan, tín ngưỡng thờ cúng Hùng Vương.",
+    "description_en": "Phu Tho is the sacred ancestral homeland of the Vietnamese people, home to the Hung Kings Temple historical site. The province is also known for the Long Coc tea hills and intangible cultural heritages such as Xoan singing and Hung King worship."
+  },
+  {
+    "id_province": "62c4f60b-cbef-45e7-8470-4a89c67c2cd8",
+    "name": "Hưng Yên",
+    "description_vi": "Hưng Yên là một vùng đất hiền hòa nằm ở trung tâm đồng bằng sông Hồng, nổi tiếng với Phố Hiến sầm uất một thời và đặc sản nhãn lồng tiến vua. Tỉnh gìn giữ được nhiều giá trị văn hóa truyền thống, làng nghề và các đình chùa cổ kính.",
+    "description_en": "Hung Yen is a gentle land at the heart of the Red River Delta, known for the once-thriving Pho Hien trading town and its royal specialty longan fruit. The province preserves many traditional cultural values, craft villages, and ancient temples."
+  },
+  {
+    "id_province": "5ad79717-8719-4248-b5a7-b1df4333b44a",
+    "name": "Đồng Nai",
+    "description_vi": "Đồng Nai là tỉnh cửa ngõ nối liền Đông Nam Bộ, giàu tiềm năng du lịch sinh thái với Vườn quốc gia Cát Tiên, hồ Trị An và nhiều khu du lịch ven sông. Đây cũng là một trung tâm công nghiệp lớn của miền Nam.",
+    "description_en": "Dong Nai is a gateway province linking the Southeast region, rich in ecotourism potential with Cat Tien National Park, Tri An Lake, and numerous riverside resorts. It is also a major industrial hub of southern Vietnam."
+  },
+  {
+    "id_province": "963edbc6-e46b-4a6a-8ddc-37ce6eab32e1",
+    "name": "Lào Cai",
+    "description_vi": "Lào Cai nổi danh toàn cầu với thị trấn mờ sương Sa Pa và đỉnh Fansipan - nóc nhà Đông Dương. Phong cảnh ruộng bậc thang ngoạn mục cùng bản sắc văn hóa rực rỡ của các dân tộc H'Mông, Dao đỏ tạo nên sức hút khó cưỡng.",
+    "description_en": "Lao Cai is globally renowned for the misty town of Sa Pa and Fansipan Peak, the 'roof of Indochina.' Spectacular terraced rice fields alongside the vibrant cultural identity of the H'Mong and Red Dao peoples create an irresistible appeal."
+  },
+  {
+    "id_province": "b5f3ef5e-dc49-4482-88e3-a8048cb32639",
+    "name": "Huế",
+    "description_vi": "Thừa Thiên Huế từng là kinh đô của nhà Nguyễn, nổi tiếng với Quần thể di tích Cố đô và Nhã nhạc cung đình được UNESCO công nhận. Huế mang một vẻ đẹp trầm mặc, thơ mộng bên dòng sông Hương, kết hợp với tinh hoa ẩm thực phong phú.",
+    "description_en": "Thua Thien Hue was once the imperial capital of the Nguyen Dynasty, known for its UNESCO-recognized Complex of Hue Monuments and royal court music. Hue carries a quiet, poetic beauty along the Perfume River, paired with a rich culinary heritage."
+  },
+  {
+    "id_province": "dff2a30f-2481-4a61-bbc6-ee30cb410912",
+    "name": "Ninh Bình",
+    "description_vi": "Ninh Bình được ví như 'Vịnh Hạ Long trên cạn', tự hào với Quần thể danh thắng Tràng An, Tam Cốc - Bích Động và cố đô Hoa Lư lịch sử. Du khách đến đây luôn bị choáng ngợp bởi những dãy núi đá vôi trập trùng trên dòng sông xanh biếc.",
+    "description_en": "Ninh Binh is known as 'Ha Long Bay on land,' proud of the Trang An Scenic Landscape Complex, Tam Coc - Bich Dong, and the historic ancient capital of Hoa Lu. Visitors are always awed by the rolling limestone mountains rising above emerald rivers."
+  },
+  {
+    "id_province": "c902dd6c-151a-4578-94c3-f0eaede519bf",
     "name": "Cà Mau",
-    "description_vi": "Điểm cực Nam của Việt Nam",
-    "description_en": "The southernmost point of Vietnam"
+    "description_vi": "Cà Mau là cực Nam của Tổ quốc, nơi có hệ sinh thái rừng ngập mặn bao la, Vườn quốc gia Mũi Cà Mau và rừng U Minh Hạ. Mảnh đất hào sảng này mang đến cho du khách những trải nghiệm ẩm thực biển và đặc sản rừng trứ danh.",
+    "description_en": "Ca Mau is the southernmost point of Vietnam, home to a vast mangrove ecosystem, Ca Mau Cape National Park, and U Minh Ha forest. This generous land offers visitors seafood experiences and renowned forest specialties."
+  },
+  {
+    "id_province": "bef31367-331b-43da-b683-31fbf697a1c3",
+    "name": "Tuyên Quang",
+    "description_vi": "Tuyên Quang là vùng quê hương cách mạng, nơi lưu giữ các di tích lịch sử Tân Trào. Tỉnh sở hữu phong cảnh thiên nhiên hữu tình, núi rừng nguyên sinh và lễ hội Thành Tuyên rực rỡ với các mô hình đèn Trung thu khổng lồ.",
+    "description_en": "Tuyen Quang is a revolutionary homeland, preserving the historic Tan Trao relics. The province boasts picturesque natural scenery, primeval forests, and the vibrant Thanh Tuyen Festival featuring giant Mid-Autumn lantern displays."
+  },
+  {
+    "id_province": "cce31c04-ef46-46ee-8ba5-455814dc516f",
+    "name": "Quảng Ngãi",
+    "description_vi": "Quảng Ngãi mang vẻ đẹp hoang sơ, yên bình với viên ngọc xanh Đảo Lý Sơn nổi tiếng về nghề trồng tỏi và cảnh quan núi lửa độc đáo. Vùng đất này cũng gắn với dòng sông Trà Khúc và nhiều giá trị văn hóa đan xen của duyên hải Trung Bộ.",
+    "description_en": "Quang Ngai carries a pristine, peaceful beauty with the emerald jewel of Ly Son Island, known for garlic farming and unique volcanic landscapes. This land is also tied to the Tra Khuc River and the intertwined cultural values of the Central Coast."
+  },
+  {
+    "id_province": "090c3757-0a20-43c3-9ea1-28db795f9e2b",
+    "name": "Bắc Ninh",
+    "description_vi": "Bắc Ninh là vùng đất địa linh nhân kiệt, cái nôi của Dân ca Quan họ được UNESCO công nhận là di sản văn hóa phi vật thể. Tỉnh có nhiều di tích lịch sử, làng nghề truyền thống và các lễ hội dân gian mang đậm bản sắc văn hóa vùng Đồng bằng sông Hồng.",
+    "description_en": "Bac Ninh is a land of talent and heritage, the birthplace of Quan Ho folk singing recognized by UNESCO as intangible cultural heritage. The province has many historical sites, traditional craft villages, and folk festivals rich in Red River Delta culture."
+  },
+  {
+    "id_province": "0fec831a-5b6a-4adb-9f34-e4a8d020b5fd",
+    "name": "Lai Châu",
+    "description_vi": "Lai Châu là một tỉnh biên giới thuộc vùng Tây Bắc, sở hữu cảnh quan thiên nhiên hùng vĩ với những dãy núi trùng điệp, đèo dốc quanh co và hệ thống hang động tuyệt đẹp. Đây là nơi sinh sống của nhiều dân tộc thiểu số với bản sắc văn hóa đa dạng và độc đáo.",
+    "description_en": "Lai Chau is a northwestern border province with majestic natural scenery, featuring endless mountain ranges, winding mountain passes, and a stunning cave system. It is home to many ethnic minorities with diverse and unique cultural identities."
+  },
+  {
+    "id_province": "1d3dff91-ea04-4315-a189-87f5cdae0a7a",
+    "name": "Quảng Trị",
+    "description_vi": "Quảng Trị là vùng đất miền Trung oai hùng, lưu giữ nhiều di tích lịch sử cách mạng như Thành Cổ Quảng Trị, Địa đạo Vịnh Mốc và cầu Hiền Lương. Bên cạnh đó, tỉnh cũng có những bãi biển đẹp và hoang sơ, thích hợp cho du lịch nghỉ dưỡng.",
+    "description_en": "Quang Tri is a heroic Central Vietnam land, preserving many revolutionary historical sites such as Quang Tri Ancient Citadel, Vinh Moc Tunnels, and Hien Luong Bridge. The province also has beautiful, unspoiled beaches suited for relaxing getaways."
+  },
+  {
+    "id_province": "2d171ee3-71fe-41bd-af99-3e9e3ce1362c",
+    "name": "Vĩnh Long",
+    "description_vi": "Vĩnh Long nằm ở trung tâm châu thổ đồng bằng sông Cửu Long, trứ danh với những miệt vườn cây ăn trái trĩu quả quanh năm. Du lịch sinh thái, homestay trên các cù lao xanh mướt là những trải nghiệm không thể bỏ qua khi đến đây.",
+    "description_en": "Vinh Long sits at the heart of the Mekong Delta, renowned for its year-round fruit orchards heavy with produce. Ecotourism and homestays on lush green river islets are unmissable experiences when visiting here."
+  },
+  {
+    "id_province": "3355c4a1-ccb1-46be-99e5-046d5f55b891",
+    "name": "Hà Nội",
+    "description_vi": "Thủ đô Hà Nội là trái tim của cả nước, tự hào với hơn 1000 năm văn hiến. Thành phố hòa quyện giữa nét đẹp cổ kính của Khu phố cổ, Hồ Gươm, các đền chùa trầm mặc với sự phát triển hiện đại và nhịp sống nhộn nhịp, văn hóa ẩm thực tinh tế.",
+    "description_en": "Hanoi, the capital, is the heart of the country, proud of over 1,000 years of civilization. The city blends the timeless charm of the Old Quarter, Hoan Kiem Lake, and quiet temples with modern development, a lively pace of life, and refined culinary culture."
+  },
+  {
+    "id_province": "573f1962-f8f8-4e4b-a753-611f6b6d53b8",
+    "name": "Sơn La",
+    "description_vi": "Sơn La thuộc vùng núi Tây Bắc, nổi bật với đồi chè Mộc Châu xanh mướt, những thung lũng hoa dã quỳ, mận, đào khoe sắc theo mùa. Tỉnh còn có di tích Nhà tù Sơn La và công trình Thủy điện Sơn La lớn nhất Đông Nam Á.",
+    "description_en": "Son La lies in the northwestern mountains, standout for the lush green Moc Chau tea hills and valleys of wild sunflowers, plum, and peach blossoms in season. The province also has the Son La Prison relic and Southeast Asia's largest hydroelectric plant."
+  },
+  {
+    "id_province": "7ceb9499-a19f-4c2e-9e6b-cb326b267a26",
+    "name": "Thái Nguyên",
+    "description_vi": "Thái Nguyên được mệnh danh là 'Đệ nhất danh trà' với những đồi chè Tân Cương bát ngát. Tỉnh còn sở hữu hồ Núi Cốc huyền thoại, di tích ATK Định Hóa và nền văn hóa đa dạng của các dân tộc anh em.",
+    "description_en": "Thai Nguyen is known as the 'First Tea Land' with the sprawling Tan Cuong tea hills. The province also boasts the legendary Nui Coc Lake, the ATK Dinh Hoa relic, and the diverse culture of its many ethnic communities."
+  },
+  {
+    "id_province": "49fa7ad8-b892-494d-a712-bb49802200c1",
+    "name": "Lâm Đồng",
+    "description_vi": "Lâm Đồng nằm trên cao nguyên Lâm Viên, có khí hậu ôn đới quanh năm mát mẻ. Trái tim của tỉnh là thành phố Đà Lạt - 'Thành phố ngàn hoa', với những rừng thông lãng mạn, hồ nước trong xanh, thác nước hùng vĩ và các kiến trúc Pháp cổ kính.",
+    "description_en": "Lam Dong sits on the Lam Vien Plateau, with a cool, temperate climate year-round. The heart of the province is Da Lat, the 'City of a Thousand Flowers,' with romantic pine forests, clear lakes, majestic waterfalls, and ancient French architecture."
+  },
+  {
+    "id_province": "925a0422-ac39-4406-b0bb-8b9284cefb88",
+    "name": "Đà Nẵng",
+    "description_vi": "Đà Nẵng là thành phố đáng sống bậc nhất Việt Nam, kết hợp hài hòa giữa núi, sông, biển. Nơi đây sở hữu bãi biển Mỹ Khê tuyệt đẹp, Bán đảo Sơn Trà, danh thắng Ngũ Hành Sơn và là cửa ngõ để khám phá các di sản miền Trung.",
+    "description_en": "Da Nang is one of Vietnam's most livable cities, harmoniously blending mountains, rivers, and sea. It boasts the stunning My Khe Beach, Son Tra Peninsula, the Marble Mountains, and serves as a gateway to explore Central Vietnam's heritage sites."
+  },
+  {
+    "id_province": "c9c07eee-232e-4d50-bc7c-10555f506c84",
+    "name": "Cao Bằng",
+    "description_vi": "Cao Bằng là tỉnh miền núi phía Đông Bắc, thu hút du khách bởi cảnh sắc thiên nhiên hùng vĩ, trong đó phải kể đến Thác Bản Giốc tuyệt đẹp và Động Ngườm Ngao kỳ bí. Các di tích cách mạng như Pác Bó cũng là điểm đến quan trọng.",
+    "description_en": "Cao Bang is a northeastern mountain province that draws visitors with its majestic natural scenery, most notably the stunning Ban Gioc Waterfall and the mysterious Nguom Ngao Cave. Revolutionary sites like Pac Bo are also important destinations."
+  },
+  {
+    "id_province": "7d908303-17ac-42f9-b5d1-0ac2aa081b54",
+    "name": "Tây Ninh",
+    "description_vi": "Tây Ninh là mảnh đất biên giới phía Tây Nam, điểm nhấn là ngọn núi Bà Đen thiêng liêng cao nhất Nam Bộ và Tòa thánh Cao Đài kiến trúc độc đáo. Tỉnh là cầu nối giao thương với Campuchia và có nhiều khu du lịch tâm linh, sinh thái.",
+    "description_en": "Tay Ninh is a southwestern border land, highlighted by the sacred Ba Den Mountain, the tallest peak in the South, and the uniquely designed Cao Dai Holy See. The province is a trade link with Cambodia and offers many spiritual and eco-tourism sites."
+  },
+  {
+    "id_province": "ec57e18a-83ac-4cfe-a425-885bd61a8d1b",
+    "name": "Thanh Hóa",
+    "description_vi": "Thanh Hóa là tỉnh lớn, giao thoa giữa Bắc Bộ và Bắc Trung Bộ, có nền văn hóa Đông Sơn lâu đời. Những điểm sáng du lịch của tỉnh bao gồm bãi biển Sầm Sơn, Di sản văn hóa thế giới Thành nhà Hồ và khu bảo tồn thiên nhiên Pù Luông.",
+    "description_en": "Thanh Hoa is a large province bridging the North and North Central Coast, home to the ancient Dong Son culture. Its tourism highlights include Sam Son Beach, the Ho Dynasty Citadel World Heritage Site, and Pu Luong Nature Reserve."
+  },
+  {
+    "id_province": "8f9d18e3-7e24-4e36-bf50-a3823c1f78df",
+    "name": "Quảng Ninh",
+    "description_vi": "Quảng Ninh là một tỉnh ven biển có di sản thiên nhiên thế giới Vịnh Hạ Long, Vịnh Lan Hạ với hàng ngàn hòn đảo đá vôi kỳ vĩ. Tỉnh phát triển mạnh mẽ về du lịch, khai thác than và các khu vui chơi giải trí đẳng cấp quốc tế.",
+    "description_en": "Quang Ninh is a coastal province home to the world natural heritage sites of Ha Long Bay and Lan Ha Bay, with thousands of majestic limestone islands. The province thrives in tourism, coal mining, and world-class entertainment complexes."
   }
 ]

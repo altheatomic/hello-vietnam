@@ -150,7 +150,7 @@ def _format_place(place: dict, order: int) -> dict:
         "order":                      order,
         "id_place":                   str(place["id_place"]),
         "name":                       place.get("name"),
-        "old_province":               place.get("old_province"),
+        "id_province":                place.get("id_province"),
         "slot":                       place.get("slot"),
         "start_time":                 place.get("start_time"),
         "end_time":                   place.get("end_time"),

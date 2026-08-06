@@ -52,7 +52,7 @@ class _TripLocationPageState extends State<TripLocationPage> {
     try {
       final List<ReferenceRecord> rows = await ReferenceDataCacheRepository
           .instance
-          .getOldProvinces();
+          .getProvinces();
 
       if (!mounted) return;
 

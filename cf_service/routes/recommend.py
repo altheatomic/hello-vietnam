@@ -108,7 +108,7 @@ def _get_province_detail_sync(
 
     # Province name
     prov_rows = (
-        supabase.table("old_province")
+        supabase.table("province")
         .select("name")
         .eq("id_province", id_province)
         .limit(1)

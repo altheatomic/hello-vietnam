@@ -74,7 +74,10 @@ USER_ID = "dd16ba71-c26b-44dd-a3f4-61973f268822"  # control.blank (no history â€
 INTEREST_CULTURE_HISTORY = "24e0f953-f3aa-4b69-9e91-2b3724c086d3"
 
 PROVINCES = {
-    "Ho Chi Minh": "230e26ed-0118-4f62-96b5-ac0eb3ca1c1b",
+    # province.id_province (post-merger table) â€” verified via direct DB
+    # query; old_province.id_province ("230e26ed-...") is a different UUID
+    # space entirely (0% overlap, see old_province -> province migration).
+    "Ho Chi Minh": "094014a7-b8f6-481a-bbce-5ed6cdd457c5",
     "An Giang":    None,  # filled in by _lookup_province_ids()
     "Quang Ninh":  None,
     "Vinh Long":   None,
@@ -103,12 +106,12 @@ REPAIR_ACTIONS = [
 def _lookup_province_ids(supabase) -> dict[str, str]:
     """Resolve the 4 provinces not already hardcoded, by Vietnamese name."""
     names = list(_PROVINCE_NAMES_VI.values())
-    resp = supabase.table("old_province").select("id_province,name").in_("name", names).execute()
+    resp = supabase.table("province").select("id_province,name").in_("name", names).execute()
     by_name = {row["name"]: str(row["id_province"]) for row in (resp.data or [])}
     resolved = dict(PROVINCES)
     for key, vi_name in _PROVINCE_NAMES_VI.items():
         if vi_name not in by_name:
-            raise ValueError(f"Could not resolve province '{vi_name}' in old_province table")
+            raise ValueError(f"Could not resolve province '{vi_name}' in province table")
         resolved[key] = by_name[vi_name]
     return resolved
 

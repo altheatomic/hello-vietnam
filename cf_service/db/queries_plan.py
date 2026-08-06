@@ -53,7 +53,11 @@ def save_plan(
     rpc_resp = supabase.rpc("create_plan_with_default_title", {
         "p_id_user": id_user,
         "p_id_province": id_province,
-        "p_business_old_province": first_place.get("old_province"),
+        # RPC param name kept as p_business_old_province (unchanged function
+        # signature — see 20260806090200_plan_default_title_use_province.sql)
+        # but it now carries a province.id_province value, sourced from the
+        # place dict's "id_province" field (was "old_province" pre-switch).
+        "p_business_old_province": first_place.get("id_province"),
         "p_n_days": n_days,
         "p_start_at": start_at.isoformat(),
         "p_end_at": end_at.isoformat(),
