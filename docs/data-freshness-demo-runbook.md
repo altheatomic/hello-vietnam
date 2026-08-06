@@ -61,11 +61,25 @@ Các bước này cần người có quyền Supabase và không đưa secret v�
 
 - Migration `backend/supabase/migrations/20260803000100_data_freshness.sql` đã
   được apply ở local/staging.
-- Edge Function `data-freshness-check` đã deploy.
+- Edge Function `data-freshness-check` đã deploy với **JWT verification tắt**;
+  function tự xác thực bằng `x-data-freshness-secret` vì cron không gửi JWT.
 - Edge Function `data-freshness` đã deploy.
 - `DATA_FRESHNESS_CHECK_SECRET` đã set cho Edge Function.
 - Vault secret `data_freshness_check_secret` đã set và có cùng giá trị.
 - Có user đăng nhập với `user_account.role = 'admin'`.
+
+Nếu cần deploy lại bằng CLI (sau khi đã `npx --yes supabase login`), chạy từ
+repo root với project ref đích:
+
+```powershell
+npx --yes supabase functions deploy data-freshness-check `
+  --project-ref <PROJECT_REF> --no-verify-jwt --workdir backend
+npx --yes supabase functions deploy data-freshness `
+  --project-ref <PROJECT_REF> --workdir backend
+```
+
+Không dùng `--no-verify-jwt` cho `data-freshness`; endpoint đó vẫn yêu cầu
+Authorization của tài khoản admin.
 
 Kiểm tra cron trên **local/staging**:
 

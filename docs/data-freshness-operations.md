@@ -30,7 +30,9 @@ must never be bundled into Flutter, crawler output, or a client-side config.
 
 1. Apply the migration from `backend`.
 2. Set the Vault secret and the Edge Function secret.
-3. Deploy `data-freshness-check` and `data-freshness`.
+3. Deploy `data-freshness-check` with JWT verification disabled (its
+   `x-data-freshness-secret` is the application-level guard), then deploy
+   `data-freshness` with normal JWT verification.
 4. Confirm that `data-freshness-daily` exists in `cron.job`.
 5. Open `/admin/data-freshness` and verify the overview cards and run history.
 
