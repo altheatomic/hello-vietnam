@@ -200,7 +200,10 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
 
     final String? idPlan = response.idPlan?.trim();
     if (idPlan != null && idPlan.isNotEmpty) {
-      context.push(AppRoutes.tripPlannerResultPath(idPlan: idPlan));
+      context.push(
+        AppRoutes.tripPlannerResultPath(idPlan: idPlan),
+        extra: response,
+      );
     } else {
       context.push(AppRoutes.tripPlannerResultPath(), extra: response);
     }

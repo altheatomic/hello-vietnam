@@ -59,6 +59,25 @@ void main() {
     expect(find.byType(VietnamJourneyLoadingScreen), findsNothing);
   });
 
+  testWidgets('keeps the generated accommodation recommendation after reload',
+      (tester) async {
+    final loading = Completer<TripPlanResponse>();
+
+    await tester.pumpWidget(
+      _testApp(
+        draft: _draftWithAccommodationRecommendation,
+        loadPlan: (_) => loading.future,
+        timelineFactory: _shortTimeline,
+      ),
+    );
+
+    loading.complete(_plan);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+
+    expect(find.text('Accommodation area recommendation'), findsOneWidget);
+  });
+
   testWidgets('shows the existing error view without a success exit', (
     tester,
   ) async {
@@ -168,13 +187,14 @@ void main() {
 
 Widget _testApp({
   String idPlan = 'plan-42',
+  TripPlanResponse? draft,
   required TripPlanLoader loadPlan,
   required JourneyLoadingTimeline Function() timelineFactory,
 }) {
   return MaterialApp(
     home: TripResultLoader(
       idPlan: idPlan,
-      draft: null,
+      draft: draft,
       loadPlan: loadPlan,
       timelineFactory: timelineFactory,
     ),
@@ -191,4 +211,24 @@ JourneyLoadingTimeline _shortTimeline() {
 const TripPlanResponse _plan = TripPlanResponse(
   idPlan: 'plan-42',
   days: <TripPlanDay>[],
+);
+
+const TripPlanResponse _draftWithAccommodationRecommendation = TripPlanResponse(
+  idPlan: 'plan-42',
+  days: <TripPlanDay>[],
+  accommodationRecommendation: AccommodationRecommendation(
+    version: 1,
+    strategy: 'single_zone',
+    zones: <AccommodationZone>[
+      AccommodationZone(
+        zoneIndex: 1,
+        dayFrom: 1,
+        dayTo: 3,
+        latitude: 21.0285,
+        longitude: 105.8542,
+        googleMapsQuery: 'hotels near 21.0285,105.8542',
+      ),
+    ],
+    evaluation: AccommodationEvaluation(),
+  ),
 );
