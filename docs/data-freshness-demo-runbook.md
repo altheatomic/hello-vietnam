@@ -195,7 +195,7 @@ insert into public.content_freshness (
 values (
   'place', '<UUID_1>', 'wikipedia',
   'https://en.wikipedia.org/wiki/Hoi_An',
-  'wikipedia:https://en.wikipedia.org/wiki/Hoi_An',
+  'demo:wikipedia:stale:<UUID_1>',
   'business', 'stale', 1, now() - interval '1 minute'
 )
 on conflict (content_type, content_id) do update set
@@ -219,7 +219,7 @@ insert into public.content_freshness (
 values (
   'place', '<UUID_2>', 'wikipedia',
   'https://en.wikipedia.org/wiki/Hanoi',
-  'wikipedia:https://en.wikipedia.org/wiki/Hanoi',
+  'demo:wikipedia:review:<UUID_2>',
   'business', 'needs_review', 2, now()
 )
 on conflict (content_type, content_id) do update set

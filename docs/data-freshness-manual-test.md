@@ -72,7 +72,7 @@ insert into public.content_freshness (
 values (
   'place', '<PLACE_STALE>', 'wikipedia',
   'https://en.wikipedia.org/wiki/Hoi_An',
-  'wikipedia:https://en.wikipedia.org/wiki/Hoi_An',
+  'demo:wikipedia:stale:<PLACE_STALE>',
   'business', 'stale', now() - interval '1 minute'
 )
 on conflict (content_type, content_id) do update set
@@ -96,7 +96,7 @@ insert into public.content_freshness (
 values (
   'place', '<PLACE_REVIEW>', 'wikipedia',
   'https://en.wikipedia.org/wiki/Hanoi',
-  'wikipedia:https://en.wikipedia.org/wiki/Hanoi',
+  'demo:wikipedia:review:<PLACE_REVIEW>',
   'business', 'needs_review', 2, now()
 )
 on conflict (content_type, content_id) do update set
@@ -144,7 +144,7 @@ where content_type = 'place' and content_id = '<PLACE_REVIEW>';
 update public.content_freshness
 set source_type = 'wikipedia',
     source_url = 'https://en.wikipedia.org/wiki/Water_puppetry',
-    source_external_id = 'wikipedia:https://en.wikipedia.org/wiki/Water_puppetry',
+    source_external_id = 'demo:wikipedia:event:<PLACE_EVENT>',
     availability_type = 'scheduled_event',
     valid_until = now() - interval '1 hour',
     freshness_status = 'due',
@@ -161,7 +161,7 @@ Node ID dưới đây chỉ dùng cho staging/local để adapter nhận HTTP 40
 update public.content_freshness
 set source_type = 'osm',
     source_url = 'https://www.openstreetmap.org/node/999999999999999',
-    source_external_id = 'osm:node:999999999999999',
+    source_external_id = 'demo:osm:missing:<PLACE_MISSING>',
     availability_type = 'business',
     freshness_status = 'due',
     consecutive_missing_count = 0,
