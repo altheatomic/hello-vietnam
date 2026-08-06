@@ -181,6 +181,41 @@
   `-Mode checker` requires the process environment secret, prints only the
   response summary, and exits with code `2` when the secret is absent.
 
+### Task 6: Recover the linked freshness pipeline for the demo
+
+**Files:**
+- Modify: `backend/supabase/functions/data-freshness-check/source_adapter.ts`
+- Modify: `backend/supabase/functions/data-freshness-check/osm_source_adapter.ts`
+- Create: `backend/supabase/migrations/20260807000100_fix_data_freshness_source_selection.sql`
+- Test: `backend/supabase/functions/data-freshness-check/source_adapter_test.ts`
+
+**Interfaces:**
+- Consumes: Existing OSM identities, Overpass, and the linked Supabase project.
+- Produces: A bounded, identifiable OSM request path and a checker claim query
+  that skips unsupported `legacy_import` rows.
+
+- [x] **Step 1: Reconstruct missing OSM URLs**
+
+  The adapter derives `https://www.openstreetmap.org/{type}/{id}` when the
+  backfill contains only `osm:{node|way|relation}:{id}`. The migration filled
+  all 6,150 existing OSM rows with a source URL.
+
+- [x] **Step 2: Make Overpass requests acceptable and bounded**
+
+  OSM requests use POST, identify the client with a User-Agent, and enforce a
+  per-request timeout. The tests cover POST, header, and timeout behavior.
+
+- [x] **Step 3: Skip unsupported legacy sources**
+
+  `claim_due_content_freshness` now claims only `osm`, `wikipedia`, or `wiki`
+  rows, leaving legacy rows visible for later source configuration.
+
+- [x] **Step 4: Deploy and verify the linked project**
+
+  The migration is marked applied, `data-freshness-check` is deployed with
+  `verify_jwt = false`, and an admin batch of five completed with 5 checked,
+  0 failed, 3 proposals, and 1 unchanged row.
+
 ## Verification checklist
 
 - `requirements-demo.txt` contains all imports required by the selected crawler.
@@ -192,6 +227,9 @@
 - The helper's crawler mode writes to a temp directory and preserves tracked
   output files.
 - Both deployed freshness functions respond to `OPTIONS`.
+- The linked project has the freshness migration, active cron, secret parity,
+  one admin account, and a successful small checker run.
 - Admin route and repository references are present.
 - No secret appears in tracked files, command output captured in docs, or screenshots.
-- Remote cron and secret parity are explicitly marked owner-only until queried.
+- Remote cron, secret parity, function deployment, and admin count have been
+  queried on the linked project; other staging projects remain owner-only.
