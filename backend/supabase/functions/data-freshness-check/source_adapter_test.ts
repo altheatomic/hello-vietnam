@@ -120,9 +120,11 @@ Deno.test("OSM normalizes only operational fields", async () => {
 Deno.test("OSM sends the Overpass query with POST", async () => {
   let method: string | undefined;
   let body: BodyInit | null | undefined;
+  let userAgent: string | null | undefined;
   const adapter = new OsmSourceAdapter(async (_url, init) => {
     method = init?.method;
     body = init?.body;
+    userAgent = new Headers(init?.headers).get("user-agent");
     return new Response(JSON.stringify({ elements: [] }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -131,6 +133,7 @@ Deno.test("OSM sends the Overpass query with POST", async () => {
   await adapter.fetch(fixtureOsmFreshness(), AbortSignal.timeout(100));
   assertEquals(method, "POST");
   assertStringIncludes(String(body), "data=");
+  assertEquals(userAgent, "HelloVietnamDataFreshness/1.0");
 });
 
 Deno.test("source adapter turns an aborted request into an error", async () => {

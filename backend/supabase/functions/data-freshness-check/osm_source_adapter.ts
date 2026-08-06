@@ -109,6 +109,7 @@ export class OsmSourceAdapter implements SourceAdapter {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
         Accept: "application/json",
+        "User-Agent": "HelloVietnamDataFreshness/1.0",
       },
       body: new URLSearchParams({ data: query }),
     });
