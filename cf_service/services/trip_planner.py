@@ -214,7 +214,14 @@ def _build_goong_travel_time_fn(bike_lookup: dict):
         key = (str(prev.get("id_place")), str(place.get("id_place")))
         edge = bike_lookup.get(key)
         if edge is not None:
-            return edge["duration_seconds"] / 60
+            # round(), not a bare division: travel_time_fn is a shared
+            # interface (see schedule_builder._simulate_place_step) — both
+            # implementations (Haversine's _travel_min() below, and this one)
+            # must return the same type (int, whole minutes), or any caller
+            # of build_day_schedule() that stores minutes into an `int`
+            # column (e.g. plan_component.estimated_travel_minutes) breaks
+            # depending on which travel_time_fn happened to run.
+            return round(edge["duration_seconds"] / 60)
         return _travel_min(prev, place)
 
     return travel_time_fn

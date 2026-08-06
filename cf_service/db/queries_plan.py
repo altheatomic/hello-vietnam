@@ -80,7 +80,7 @@ def save_plan(
                 "slot": place.get("slot"),
                 "start_time": place.get("start_time"),
                 "end_time": place.get("end_time"),
-                "estimated_travel_minutes": place.get("estimated_travel_minutes"),
+                "estimated_travel_minutes": _to_pg_int(place.get("estimated_travel_minutes")),
                 "travel_time_car_seconds": _to_pg_int(place.get("travel_time_car_seconds")),
                 "travel_time_bike_seconds": _to_pg_int(place.get("travel_time_bike_seconds")),
                 "travel_distance_car_meters": _to_pg_int(place.get("travel_distance_car_meters")),
