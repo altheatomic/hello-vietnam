@@ -114,31 +114,46 @@ class TripDayDetailPage extends StatelessWidget {
                         .entries
                         .map(
                           (MapEntry<int, TripPlannerActivityData> entry) =>
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 18),
-                                child: _ActivityDetailCard(
-                                  activity: entry.value,
-                                  onImageTap: entry.value.idPlace.isNotEmpty
-                                      ? () => context.push(
-                                          AppRoutes.recommendedPlaceDetailPath(
-                                            idProvince: entry
-                                                    .value
-                                                    .idProvince
-                                                    .isNotEmpty
-                                                ? entry.value.idProvince
-                                                : null,
-                                            idPlace: entry.value.idPlace,
-                                          ),
-                                        )
-                                      : null,
-                                  onDirections: () => context.push(
-                                    AppRoutes.tripPlannerMapPath(
-                                      dayIndex,
-                                      entry.key,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  if (entry.key > 0)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                      child: _TravelTimeRow(
+                                        activity: entry.value,
+                                      ),
                                     ),
-                                    extra: entry.value,
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 18),
+                                    child: _ActivityDetailCard(
+                                      activity: entry.value,
+                                      onImageTap:
+                                          entry.value.idPlace.isNotEmpty
+                                          ? () => context.push(
+                                              AppRoutes.recommendedPlaceDetailPath(
+                                                idProvince: entry
+                                                        .value
+                                                        .idProvince
+                                                        .isNotEmpty
+                                                    ? entry.value.idProvince
+                                                    : null,
+                                                idPlace: entry.value.idPlace,
+                                              ),
+                                            )
+                                          : null,
+                                      onDirections: () => context.push(
+                                        AppRoutes.tripPlannerMapPath(
+                                          dayIndex,
+                                          entry.key,
+                                        ),
+                                        extra: entry.value,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
                         ),
                   ],
@@ -263,6 +278,95 @@ class _ActivityDetailCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Travel time/distance row between two consecutive place cards, sourced
+/// from Goong Distance Matrix data attached to `activity` (the edge FROM
+/// the previous activity TO this one — see TripPlannerActivityData docs).
+/// Renders bike first, then car; hides entirely if neither has data, and
+/// hides a single line if only one vehicle has data (both are edge cases
+/// covered by the backend's per-day all-or-nothing Goong fallback).
+class _TravelTimeRow extends StatelessWidget {
+  const _TravelTimeRow({required this.activity});
+
+  final TripPlannerActivityData activity;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasBike = activity.travelTimeBikeSeconds != null;
+    final bool hasCar = activity.travelTimeCarSeconds != null;
+    if (!hasBike && !hasCar) return const SizedBox.shrink();
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 8,
+      children: <Widget>[
+        if (hasBike)
+          _TravelModeChip(
+            icon: Icons.two_wheeler,
+            seconds: activity.travelTimeBikeSeconds!,
+            meters: activity.travelDistanceBikeMeters,
+          ),
+        if (hasCar)
+          _TravelModeChip(
+            icon: Icons.directions_car,
+            seconds: activity.travelTimeCarSeconds!,
+            meters: activity.travelDistanceCarMeters,
+          ),
+      ],
+    );
+  }
+}
+
+class _TravelModeChip extends StatelessWidget {
+  const _TravelModeChip({
+    required this.icon,
+    required this.seconds,
+    required this.meters,
+  });
+
+  final IconData icon;
+  final int seconds;
+  final int? meters;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final int minutes = (seconds / 60).round();
+    final String label = meters != null
+        ? '$minutes ${context.l10n.ui('min')} · ${_formatDistance(meters!)}'
+        : '$minutes ${context.l10n.ui('min')}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 15, color: colors.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Same < 1km/>= 1km threshold and no-space-before-unit format already used
+/// for nearby-place distances in trip_map_page.dart, adapted for a meters
+/// (int) input instead of a distanceKm (double) one.
+String _formatDistance(int meters) {
+  if (meters < 1000) return '${meters}m';
+  return '${(meters / 1000).toStringAsFixed(1)}km';
 }
 
 List<String> _activityFacts(

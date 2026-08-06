@@ -13,6 +13,24 @@ import datetime
 from typing import Any
 
 
+def _to_pg_int(value: float | int | None) -> int | None:
+    """
+    Coerce a numeric value to a plain int for an `int` Postgres column, or
+    None through unchanged.
+
+    Needed because Goong Distance Matrix's duration.value / distance.value
+    are NOT guaranteed to be JSON integers despite the docs implying so —
+    real responses have been observed returning floats (e.g. 9.2) for
+    short edges. Passing a Python float straight into a supabase-py insert
+    against an `int` column fails with postgrest 22P02
+    ("invalid input syntax for type integer"). round() before int() (not a
+    bare int()) so we round to nearest whole unit instead of truncating.
+    """
+    if value is None:
+        return None
+    return int(round(value))
+
+
 def save_plan(
     supabase: Any,
     id_user: str,
@@ -63,10 +81,10 @@ def save_plan(
                 "start_time": place.get("start_time"),
                 "end_time": place.get("end_time"),
                 "estimated_travel_minutes": place.get("estimated_travel_minutes"),
-                "travel_time_car_seconds": place.get("travel_time_car_seconds"),
-                "travel_time_bike_seconds": place.get("travel_time_bike_seconds"),
-                "travel_distance_car_meters": place.get("travel_distance_car_meters"),
-                "travel_distance_bike_meters": place.get("travel_distance_bike_meters"),
+                "travel_time_car_seconds": _to_pg_int(place.get("travel_time_car_seconds")),
+                "travel_time_bike_seconds": _to_pg_int(place.get("travel_time_bike_seconds")),
+                "travel_distance_car_meters": _to_pg_int(place.get("travel_distance_car_meters")),
+                "travel_distance_bike_meters": _to_pg_int(place.get("travel_distance_bike_meters")),
                 "cb_score": place.get("tag_match"),   # tag_match stored in cb_score column
                 "cf_score": place.get("cf_score"),
                 "final_score": place.get("final_score"),
