@@ -128,6 +128,10 @@ tiếp tục rate-limit vào lúc demo, dùng output `activity.json` hoặc `cul
 đã chuẩn bị từ trước để minh họa payload và nói rõ đó là fallback đã cache; không
 chạy lại job live nhiều lần để tránh bị rate-limit nặng hơn.
 
+Tại thời điểm chuẩn bị, các output tracked còn có sẵn: `activity.json` (15 rows),
+`culture.json` (9 rows) và `local_products.json` (9 rows). Hãy kiểm tra lại số
+rows trước khi trình bày vì dữ liệu có thể được thay đổi bởi một lần crawl khác.
+
 ## 4. Chạy freshness checker trong demo
 
 Đây là cách chạy ngay, không phải chờ cron. Secret chỉ nằm trong biến môi trường
