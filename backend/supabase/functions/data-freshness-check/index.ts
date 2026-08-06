@@ -4,7 +4,10 @@ import { createClient } from "@supabase/supabase-js";
 
 import { corsHeaders } from "../_shared/cors.ts";
 import { SupabaseDataFreshnessGateway } from "./data_freshness_gateway.ts";
-import { runFreshnessCheck } from "./data_freshness_handler.ts";
+import {
+  normalizeBatchSize,
+  runFreshnessCheck,
+} from "./data_freshness_handler.ts";
 import { adapterFor } from "./source_adapter.ts";
 
 Deno.serve(async (request: Request): Promise<Response> => {
@@ -31,6 +34,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
       gateway: new SupabaseDataFreshnessGateway(client),
       adapterFor,
       triggerType,
+      batchSize: normalizeBatchSize(body.batchSize),
     });
     return withCors(jsonResponse(result, 200));
   } catch (error) {

@@ -6,6 +6,7 @@ import type {
 import type { SourceAdapter } from "./source_adapter.ts";
 import {
   type DataFreshnessGateway,
+  normalizeBatchSize,
   runFreshnessCheck,
 } from "./data_freshness_handler.ts";
 
@@ -52,6 +53,14 @@ class FakeGateway implements DataFreshnessGateway {
     this.finished.push({ runId, status });
   }
 }
+
+Deno.test("normalizes an optional checker batch size", () => {
+  assertEquals(normalizeBatchSize(undefined), undefined);
+  assertEquals(normalizeBatchSize("5"), 5);
+  assertEquals(normalizeBatchSize(0), 1);
+  assertEquals(normalizeBatchSize(100), 50);
+  assertEquals(normalizeBatchSize("invalid"), undefined);
+});
 
 Deno.test("checker claims 50 and continues after an adapter error", async () => {
   const gateway = new FakeGateway();

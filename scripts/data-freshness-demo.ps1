@@ -6,7 +6,10 @@ param(
     [string]$SupabaseUrl = '',
 
     [ValidateRange(1, 50)]
-    [int]$Limit = 5
+    [int]$Limit = 5,
+
+    [ValidateRange(1, 50)]
+    [int]$CheckerBatchSize = 10
 )
 
 $ErrorActionPreference = 'Stop'
@@ -120,7 +123,10 @@ function Invoke-FreshnessChecker {
         'Content-Type' = 'application/json'
         'x-data-freshness-secret' = $secret
     }
-    $body = @{ triggerType = 'admin' } | ConvertTo-Json -Compress
+    $body = @{
+        triggerType = 'admin'
+        batchSize = $CheckerBatchSize
+    } | ConvertTo-Json -Compress
     $result = Invoke-RestMethod `
         -Uri "$baseUrl/functions/v1/data-freshness-check" `
         -Method Post `

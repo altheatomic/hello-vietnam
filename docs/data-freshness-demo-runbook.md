@@ -49,7 +49,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 Sau khi đã set secret trong terminal hiện tại, trigger checker bằng:
 
 ```powershell
-.\scripts\data-freshness-demo.ps1 -Mode checker -SupabaseUrl $env:SUPABASE_URL
+.\scripts\data-freshness-demo.ps1 -Mode checker -CheckerBatchSize 5 -SupabaseUrl $env:SUPABASE_URL
 ```
 
 Nếu secret chưa có, helper dừng với mã `2` và không in giá trị secret. Không lưu
@@ -167,7 +167,7 @@ Invoke-RestMethod `
   -Uri 'https://<project-ref>.supabase.co/functions/v1/data-freshness-check' `
   -Method Post `
   -Headers $headers `
-  -Body '{"triggerType":"admin"}'
+  -Body '{"triggerType":"admin","batchSize":5}'
 ```
 
 Response cần có:
