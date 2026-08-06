@@ -4,7 +4,10 @@ import {
   WikipediaSourceAdapter,
 } from "./wikipedia_source_adapter.ts";
 import { OsmSourceAdapter } from "./osm_source_adapter.ts";
-import { SOURCE_HOST_ALLOWLIST } from "./source_adapter.ts";
+import {
+  fetchSourceResponse,
+  SOURCE_HOST_ALLOWLIST,
+} from "./source_adapter.ts";
 
 function fixtureWikipediaFreshness(
   sourceUrl = "https://en.wikipedia.org/wiki/Hoi_An",
@@ -143,4 +146,23 @@ Deno.test("source adapter turns an aborted request into an error", async () => {
   });
   const result = await adapter.fetch(fixtureWikipediaFreshness(), AbortSignal.timeout(100));
   assertEquals(result.outcome, "error");
+});
+
+Deno.test("source requests time out when a provider never responds", async () => {
+  const parent = new AbortController();
+  const keepAlive = setTimeout(() => parent.abort(), 100);
+  const result = await fetchSourceResponse(
+    "https://en.wikipedia.org/wiki/Hoi_An",
+    parent.signal,
+    {
+      timeoutMs: 5,
+      fetchFn: async (_url, init) => await new Promise<Response>((_, reject) => {
+        const abort = () => reject(new DOMException("aborted", "AbortError"));
+        if (init?.signal?.aborted) abort();
+        else init?.signal?.addEventListener("abort", abort, { once: true });
+      }),
+    },
+  );
+  clearTimeout(keepAlive);
+  assertEquals(result, { kind: "error", error: "Source request timed out." });
 });
