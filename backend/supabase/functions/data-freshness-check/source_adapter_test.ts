@@ -24,9 +24,11 @@ function fixtureWikipediaFreshness(
   };
 }
 
-function fixtureOsmFreshness(): ContentFreshnessRow {
+function fixtureOsmFreshness(
+  sourceUrl: string | null = "https://www.openstreetmap.org/node/123",
+): ContentFreshnessRow {
   return {
-    ...fixtureWikipediaFreshness("https://www.openstreetmap.org/node/123"),
+    ...fixtureWikipediaFreshness(sourceUrl ?? ""),
     contentType: "place",
     sourceType: "osm",
     sourceExternalId: "osm:node:123",
@@ -52,6 +54,12 @@ Deno.test("rejects a source URL outside the configured allowlist", async () => {
 Deno.test("OSM 404 is a valid missing result", async () => {
   const adapter = new OsmSourceAdapter(async () => new Response("", { status: 404 }));
   const result = await adapter.fetch(fixtureOsmFreshness(), AbortSignal.timeout(100));
+  assertEquals(result, { outcome: "missing" });
+});
+
+Deno.test("OSM derives a source URL when the backfill only has an external id", async () => {
+  const adapter = new OsmSourceAdapter(async () => new Response("", { status: 404 }));
+  const result = await adapter.fetch(fixtureOsmFreshness(null), AbortSignal.timeout(100));
   assertEquals(result, { outcome: "missing" });
 });
 

@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(15);
+select plan(16);
 
 select has_table('public', 'content_freshness');
 select has_table('public', 'content_change_proposal');
@@ -33,6 +33,13 @@ select has_function(
   'public',
   'request_content_freshness_check',
   array['text', 'uuid']
+);
+select results_eq(
+  $$ select public.content_freshness_source_is_supported(source_type)
+     from (values ('osm'::text), ('wikipedia'::text), ('wiki'::text), ('legacy_import'::text))
+       as sources(source_type) $$,
+  $$ values (true), (true), (true), (false) $$,
+  'freshness checker only claims configured source adapters'
 );
 select results_eq(
   $$ select table_name, id_column
