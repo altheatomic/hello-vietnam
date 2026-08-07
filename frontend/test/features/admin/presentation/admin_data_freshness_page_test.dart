@@ -21,9 +21,40 @@ void main() {
     expect(find.text('Old Street'), findsOneWidget);
     expect(find.text('New Street'), findsOneWidget);
   });
+
+  testWidgets('opens report details from the report tab', (tester) async {
+    final _FakeRepository repository = _FakeRepository(
+      reports: const <AdminFreshnessReport>[
+        AdminFreshnessReport(
+          id: 'report-1',
+          contentType: 'activity',
+          contentId: 'activity-1',
+          reason: 'event_ended',
+          note: 'The event has ended.',
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      MaterialApp(home: AdminDataFreshnessPage(repository: repository)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Báo sai'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Xem chi tiết'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Chi tiết báo sai'), findsOneWidget);
+    expect(find.textContaining('activity-1'), findsOneWidget);
+    expect(find.text('The event has ended.').last, findsOneWidget);
+  });
 }
 
 class _FakeRepository extends AdminDataFreshnessRepository {
+  _FakeRepository({this.reports = const <AdminFreshnessReport>[]});
+
+  final List<AdminFreshnessReport> reports;
+
   @override
   Future<AdminFreshnessOverview> getOverview() async =>
       const AdminFreshnessOverview(due: 2, pending: 1);
@@ -50,9 +81,9 @@ class _FakeRepository extends AdminDataFreshnessRepository {
   Future<AdminFreshnessPaged<AdminFreshnessReport>> listReports({
     required int page,
     required int pageSize,
-  }) async => const AdminFreshnessPaged<AdminFreshnessReport>(
-    totalCount: 0,
-    items: <AdminFreshnessReport>[],
+  }) async => AdminFreshnessPaged<AdminFreshnessReport>(
+    totalCount: reports.length,
+    items: reports,
   );
 
   @override

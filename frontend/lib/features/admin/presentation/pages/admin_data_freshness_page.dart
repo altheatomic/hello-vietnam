@@ -155,8 +155,10 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
             : Column(
                 children: _reports.items
                     .map(
-                      (AdminFreshnessReport report) =>
-                          AdminFreshnessReportCard(report: report),
+                      (AdminFreshnessReport report) => AdminFreshnessReportCard(
+                        report: report,
+                        onOpenDetails: () => _showReportDetails(report),
+                      ),
                     )
                     .toList(growable: false),
               );
@@ -266,6 +268,62 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
       if (mounted) setState(() => _processingProposal = null);
     }
   }
+
+  Future<void> _showReportDetails(AdminFreshnessReport report) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: const Text('Chi tiết báo sai'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              _ReportDetailRow(
+                label: 'Nội dung',
+                value:
+                    '${report.contentType ?? 'Không rõ'} · ${report.contentId ?? 'Không rõ'}',
+              ),
+              _ReportDetailRow(label: 'Lý do', value: report.reason),
+              _ReportDetailRow(
+                label: 'Ghi chú',
+                value: report.note?.trim().isNotEmpty == true
+                    ? report.note!.trim()
+                    : 'Không có',
+              ),
+              _ReportDetailRow(label: 'Trạng thái', value: report.status),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportDetailRow extends StatelessWidget {
+  const _ReportDetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 3),
+        SelectableText(value),
+      ],
+    ),
+  );
 }
 
 class _ErrorRetry extends StatelessWidget {
