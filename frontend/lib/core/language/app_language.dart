@@ -345,6 +345,11 @@ class AppStrings {
     'Could not end trip. Please try again.':
         'Không thể kết thúc chuyến đi. Vui lòng thử lại.',
     'Trip marked as completed.': 'Đã đánh dấu chuyến đi hoàn thành.',
+    'Ongoing trip': 'Chuyến đi đang diễn ra',
+    'You have an ongoing trip. End it to start this one?':
+        'Bạn đang có một chuyến đi khác. Kết thúc chuyến đó để bắt đầu chuyến này?',
+    'Keep current trip': 'Giữ chuyến đi hiện tại',
+    'End & start this one': 'Kết thúc & bắt đầu chuyến này',
     'Could not update start date. Please try again.':
         'Không thể cập nhật ngày bắt đầu. Vui lòng thử lại.',
     'Select new start date': 'Chọn ngày bắt đầu mới',

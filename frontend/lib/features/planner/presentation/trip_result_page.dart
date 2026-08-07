@@ -15,6 +15,8 @@ import 'package:hellovietnam/features/planner/presentation/widgets/start_date_pi
 import 'package:hellovietnam/features/planner/presentation/widgets/trip_share_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+enum _OngoingTripConflictAction { keep, endAndStart }
+
 class TripResultPage extends StatefulWidget {
   const TripResultPage({
     super.key,
@@ -80,6 +82,78 @@ class _TripResultPageState extends State<TripResultPage> {
 
   Future<void> _handleStartTrip(List<TripPlannerDayData> days) async {
     final String? idPlan = widget.plan.idPlan;
+
+    // If another trip is already active, confirm ending it before starting
+    // this one — starting the SAME active trip again (idPlan matches) falls
+    // through unchanged, exactly as before this check was added.
+    if (TripStore.instance.hasActiveTrip &&
+        TripStore.instance.activeTrip!.idPlan != idPlan) {
+      final ActiveTrip ongoingTrip = TripStore.instance.activeTrip!;
+      final _OngoingTripConflictAction? action =
+          await showDialog<_OngoingTripConflictAction>(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext dialogContext) => AlertDialog(
+              title: Text(context.l10n.ui('Ongoing trip')),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    ongoingTrip.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    context.l10n.ui(
+                      'You have an ongoing trip. End it to start this one?',
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(
+                        dialogContext,
+                      ).pop(_OngoingTripConflictAction.keep),
+                      child: Text(context.l10n.ui('Keep current trip')),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(
+                        dialogContext,
+                      ).pop(_OngoingTripConflictAction.endAndStart),
+                      child: Text(context.l10n.ui('End & start this one')),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+
+      if (action != _OngoingTripConflictAction.endAndStart) {
+        return; // keep, or dialog dismissed — old trip stays untouched
+      }
+
+      try {
+        await TripStore.instance.endTripByPlan(ongoingTrip.idPlan!);
+      } catch (e) {
+        if (mounted) {
+          _showSnackBar(
+            context.l10n.ui('Could not end trip. Please try again.'),
+          );
+        }
+        return;
+      }
+      if (!mounted) return;
+    }
+
     final DateTime? startAt = widget.plan.startAt;
 
     if (idPlan != null && startAt != null) {
