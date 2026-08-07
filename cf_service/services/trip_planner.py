@@ -537,11 +537,19 @@ class TripPlannerService:
             "days": days,
             "debug": {
                 "filter_report":      filter_report,
-                # % of candidate places with a trained embedding (≥1 interaction
-                # recorded at last retrain) — no longer a "cache hit rate" since
-                # this comes from cf_user_factors/cf_place_factors, not
-                # cf_score_cache (see _fetch_cf_scores_via_factors above).
-                "cf_coverage":        round(len(cf_scores) / max(len(filtered_places), 1), 4),
+                # % of candidate places (filtered_places) for which the CF
+                # model predicts POSITIVE affinity for this specific user
+                # (cf_score > 0.5, the sigmoid midpoint / U·V=0 threshold) —
+                # not merely "place has a trained embedding". The numerator
+                # is filtered directly from filtered_places (not a separate
+                # data source), so cf_coverage is always a subset count and
+                # can never exceed 1.0.
+                "cf_coverage":        round(
+                    len([p for p in filtered_places
+                         if cf_scores.get(str(p["id_place"]), 0.0) > 0.5])
+                    / max(len(filtered_places), 1),
+                    4,
+                ),
                 "alpha":              alpha,
                 "weight_field":       weight_field,
                 "trip_interest_used": bool(trip_selected_options),

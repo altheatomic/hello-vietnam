@@ -645,11 +645,14 @@ def build_effective_interest_state(
 def compute_alpha(cf_scores: dict, total_places: int) -> float:
     """
     Dynamic CB/CF blend weight based on CF coverage for this candidate set.
+    Coverage = % of candidate places with a POSITIVE predicted CF affinity
+    (cf_score > 0.5, the sigmoid midpoint / U·V=0) — not merely "has a score
+    at all". cf_scores is expected to be dict[id_place, float].
     Shared by recommend_service.py, trip_planner.py, and routes/recommend.py.
     """
     if total_places == 0:
         return 1.0
-    coverage = len(cf_scores) / total_places
+    coverage = len([s for s in cf_scores.values() if s > 0.5]) / total_places
     if coverage == 0:   return 1.0
     if coverage < 0.10: return 0.7
     if coverage < 0.30: return 0.5
