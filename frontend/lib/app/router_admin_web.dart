@@ -65,32 +65,43 @@ GoRouter buildAdminWebRouter() {
           ),
           GoRoute(
             path: AdminWebRoutes.food,
-            builder: (c, s) => const AdminFoodPage(),
+            builder: (c, s) => AdminFoodPage(
+              initialEditId: s.uri.queryParameters['editId'],
+            ),
           ),
           GoRoute(
             path: AdminWebRoutes.provinces,
-            builder: (c, s) =>
-                const AdminContentPage(config: AdminContentConfigs.province),
+            builder: (c, s) => AdminContentPage(
+              config: AdminContentConfigs.province,
+              initialEditId: s.uri.queryParameters['editId'],
+            ),
           ),
           GoRoute(
             path: AdminWebRoutes.places,
-            builder: (c, s) =>
-                const AdminContentPage(config: AdminContentConfigs.place),
+            builder: (c, s) => AdminContentPage(
+              config: AdminContentConfigs.place,
+              initialEditId: s.uri.queryParameters['editId'],
+            ),
           ),
           GoRoute(
             path: AdminWebRoutes.activities,
-            builder: (c, s) =>
-                const AdminContentPage(config: AdminContentConfigs.activity),
+            builder: (c, s) => AdminContentPage(
+              config: AdminContentConfigs.activity,
+              initialEditId: s.uri.queryParameters['editId'],
+            ),
           ),
           GoRoute(
             path: AdminWebRoutes.cultures,
-            builder: (c, s) =>
-                const AdminContentPage(config: AdminContentConfigs.culture),
+            builder: (c, s) => AdminContentPage(
+              config: AdminContentConfigs.culture,
+              initialEditId: s.uri.queryParameters['editId'],
+            ),
           ),
           GoRoute(
             path: AdminWebRoutes.localProducts,
-            builder: (c, s) => const AdminContentPage(
+            builder: (c, s) => AdminContentPage(
               config: AdminContentConfigs.localProduct,
+              initialEditId: s.uri.queryParameters['editId'],
             ),
           ),
           GoRoute(

@@ -16,6 +16,12 @@ const DEFAULT_OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 const OSM_ID_PATTERN = /^osm:(node|way|relation):(\d+)$/i;
 const TIME_RANGE_PATTERN = /(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/;
 
+function canonicalOsmSourceUrl(sourceExternalId: string | null): string | null {
+  const match = sourceExternalId?.match(OSM_ID_PATTERN);
+  if (!match) return null;
+  return `https://www.openstreetmap.org/${match[1].toLowerCase()}/${match[2]}`;
+}
+
 function cleanText(value: unknown): string | null {
   const text = String(value ?? "").replace(/\s+/g, " ").trim();
   return text || null;
@@ -83,13 +89,14 @@ export class OsmSourceAdapter implements SourceAdapter {
     freshness: ContentFreshnessRow,
     signal: AbortSignal,
   ): Promise<SourceResult> {
-    const sourceUrl = freshness.sourceUrl ?? "";
-    if (!isAllowedSourceUrl(sourceUrl)) {
-      return { outcome: "error", error: "Source host is not allowed." };
-    }
     const match = freshness.sourceExternalId?.match(OSM_ID_PATTERN);
     if (!match) {
       return { outcome: "error", error: "Invalid OSM source identity." };
+    }
+    const sourceUrl = freshness.sourceUrl?.trim() ||
+      canonicalOsmSourceUrl(freshness.sourceExternalId);
+    if (!sourceUrl || !isAllowedSourceUrl(sourceUrl)) {
+      return { outcome: "error", error: "Source host is not allowed." };
     }
 
     const [_, elementType, elementId] = match;
@@ -98,9 +105,11 @@ export class OsmSourceAdapter implements SourceAdapter {
       fetchFn: this.fetchFn,
       delay: this.delay,
       extraAllowedUrl: this.overpassUrl,
+      method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
         Accept: "application/json",
+        "User-Agent": "HelloVietnamDataFreshness/1.0",
       },
       body: new URLSearchParams({ data: query }),
     });
@@ -124,4 +133,4 @@ export class OsmSourceAdapter implements SourceAdapter {
   }
 }
 
-export { DEFAULT_OVERPASS_URL };
+export { DEFAULT_OVERPASS_URL, canonicalOsmSourceUrl };

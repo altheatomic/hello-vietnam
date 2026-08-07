@@ -20,6 +20,18 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
+  testWidgets('uses dark text for the translation input', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: TranslatePage()));
+
+    final TextField input = tester.widget<TextField>(
+      find.byType(TextField).first,
+    );
+    expect(input.style?.color, const Color(0xFF172033));
+    expect(input.cursorColor, const Color(0xFF172033));
+  });
+
   testWidgets('uses the dark scaffold and semantic surfaces', (
     WidgetTester tester,
   ) async {

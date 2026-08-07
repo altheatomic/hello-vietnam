@@ -19,6 +19,29 @@ export type AdapterOptions = {
   overpassUrl?: string;
 };
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+
+function requestSignalWithTimeout(
+  parentSignal: AbortSignal,
+  timeoutMs: number,
+): { signal: AbortSignal; cleanup: () => void } {
+  const controller = new AbortController();
+  const abortFromParent = () => controller.abort(parentSignal.reason);
+  if (parentSignal.aborted) {
+    abortFromParent();
+  } else {
+    parentSignal.addEventListener("abort", abortFromParent, { once: true });
+  }
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      clearTimeout(timer);
+      parentSignal.removeEventListener("abort", abortFromParent);
+    },
+  };
+}
+
 export const SOURCE_HOST_ALLOWLIST = new Set([
   "overpass-api.de",
   "www.openstreetmap.org",
@@ -69,7 +92,9 @@ export async function fetchSourceResponse(
     delay?: DelayLike;
     extraAllowedUrl?: string;
     headers?: HeadersInit;
+    method?: string;
     body?: BodyInit;
+    timeoutMs?: number;
   } = {},
 ): Promise<FetchSourceResponse> {
   if (!isAllowedSourceUrl(rawUrl, options.extraAllowedUrl)) {
@@ -80,12 +105,17 @@ export async function fetchSourceResponse(
   const delay = options.delay ?? DEFAULT_DELAY;
   let requestUrl = rawUrl;
   for (let attempt = 0; attempt < 3; attempt += 1) {
+    const request = requestSignalWithTimeout(
+      signal,
+      Math.max(1, options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS),
+    );
     try {
       const response = await fetchFn(requestUrl, {
+        method: options.method,
         headers: options.headers,
         body: options.body,
         redirect: "manual",
-        signal,
+        signal: request.signal,
       });
 
       if (response.status === 404 || response.status === 410) {
@@ -120,6 +150,8 @@ export async function fetchSourceResponse(
         continue;
       }
       return { kind: "error", error: classifyRequestError(error, signal) };
+    } finally {
+      request.cleanup();
     }
   }
   return { kind: "error", error: "Source request failed after retries." };

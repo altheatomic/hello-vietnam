@@ -72,7 +72,7 @@ insert into public.content_freshness (
 values (
   'place', '<PLACE_STALE>', 'wikipedia',
   'https://en.wikipedia.org/wiki/Hoi_An',
-  'wikipedia:https://en.wikipedia.org/wiki/Hoi_An',
+  'demo:wikipedia:stale:<PLACE_STALE>',
   'business', 'stale', now() - interval '1 minute'
 )
 on conflict (content_type, content_id) do update set
@@ -89,14 +89,33 @@ on conflict (content_type, content_id) do update set
 ### 2.2. Tạo proposal cần duyệt
 
 ```sql
-with freshness as (
+insert into public.content_freshness (
+  content_type, content_id, source_type, source_url, source_external_id,
+  availability_type, freshness_status, consecutive_missing_count, next_check_at
+)
+values (
+  'place', '<PLACE_REVIEW>', 'wikipedia',
+  'https://en.wikipedia.org/wiki/Hanoi',
+  'demo:wikipedia:review:<PLACE_REVIEW>',
+  'business', 'needs_review', 2, now()
+)
+on conflict (content_type, content_id) do update set
+  source_type = excluded.source_type,
+  source_url = excluded.source_url,
+  source_external_id = excluded.source_external_id,
+  availability_type = excluded.availability_type,
+  freshness_status = excluded.freshness_status,
+  consecutive_missing_count = excluded.consecutive_missing_count,
+  next_check_at = excluded.next_check_at,
+  last_error = null;
+
+delete from public.content_change_proposal
+where freshness_id = (
   select id
   from public.content_freshness
   where content_type = 'place' and content_id = '<PLACE_REVIEW>'
-), cleanup as (
-  delete from public.content_change_proposal
-  where freshness_id = (select id from freshness) and decision = 'pending'
-)
+) and decision = 'pending';
+
 insert into public.content_change_proposal (
   freshness_id, change_type, before_data, proposed_data,
   changed_fields, reason, confidence, decision
@@ -108,8 +127,9 @@ select
   '{"status":"archived"}'::jsonb,
   '["status"]'::jsonb,
   'possibly_closed', 0.95, 'pending'
-from freshness f
-join public.place p on p.id_place = '<PLACE_REVIEW>';
+from public.content_freshness f
+join public.place p on p.id_place = '<PLACE_REVIEW>'
+where f.content_type = 'place' and f.content_id = '<PLACE_REVIEW>';
 
 update public.content_freshness
 set freshness_status = 'needs_review',
@@ -124,7 +144,7 @@ where content_type = 'place' and content_id = '<PLACE_REVIEW>';
 update public.content_freshness
 set source_type = 'wikipedia',
     source_url = 'https://en.wikipedia.org/wiki/Water_puppetry',
-    source_external_id = 'wikipedia:https://en.wikipedia.org/wiki/Water_puppetry',
+    source_external_id = 'demo:wikipedia:event:<PLACE_EVENT>',
     availability_type = 'scheduled_event',
     valid_until = now() - interval '1 hour',
     freshness_status = 'due',
@@ -141,7 +161,7 @@ Node ID dưới đây chỉ dùng cho staging/local để adapter nhận HTTP 40
 update public.content_freshness
 set source_type = 'osm',
     source_url = 'https://www.openstreetmap.org/node/999999999999999',
-    source_external_id = 'osm:node:999999999999999',
+    source_external_id = 'demo:osm:missing:<PLACE_MISSING>',
     availability_type = 'business',
     freshness_status = 'due',
     consecutive_missing_count = 0,

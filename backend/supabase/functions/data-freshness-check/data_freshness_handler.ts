@@ -39,6 +39,16 @@ export type FreshnessCheckOptions = {
   signal?: AbortSignal;
 };
 
+export function normalizeBatchSize(value: unknown): number | undefined {
+  const candidate = typeof value === "number"
+    ? value
+    : typeof value === "string" && value.trim() !== ""
+    ? Number(value)
+    : NaN;
+  if (!Number.isFinite(candidate)) return undefined;
+  return Math.min(Math.max(Math.trunc(candidate), 1), 50);
+}
+
 function sourceSnapshot(content: JsonObject): JsonObject {
   return Object.fromEntries(
     SOURCE_OWNED_FIELDS
