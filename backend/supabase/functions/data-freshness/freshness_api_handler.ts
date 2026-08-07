@@ -15,6 +15,10 @@ export interface FreshnessApiGateway {
     appliedData: JsonObject,
   ): Promise<JsonObject>;
   requestCheck(contentType: string, contentId: string): Promise<void>;
+  updateReportStatus(
+    reportId: string,
+    status: "pending" | "in_progress" | "resolved" | "dismissed",
+  ): Promise<JsonObject>;
 }
 
 export type FreshnessApiHandlerInput = {
@@ -112,6 +116,16 @@ export async function handleFreshnessApiRequest(
         const contentId = requiredId(body.contentId, "contentId");
         await input.gateway.requestCheck(contentType, contentId);
         return response({ ok: true }, 200);
+      }
+      case "adminUpdateReportStatus": {
+        requireAdmin(input.isAdmin);
+        const reportId = requiredId(body.reportId, "reportId");
+        const status = text(body.status);
+        if (!new Set(["pending", "in_progress", "resolved", "dismissed"]).has(status)) {
+          throw badRequest("Unsupported report status.");
+        }
+        const report = await input.gateway.updateReportStatus(reportId, status as "pending" | "in_progress" | "resolved" | "dismissed");
+        return response({ report }, 200);
       }
       default:
         return response({ error: "Unsupported action." }, 400);

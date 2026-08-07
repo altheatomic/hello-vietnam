@@ -59,9 +59,13 @@ class AdminContentRepository {
       final escaped = trimmedQuery
           .replaceAll('%', r'\%')
           .replaceAll(',', r'\,');
-      filter = filter.or(
-        searchableColumns.map((column) => '$column.ilike.%$escaped%').join(','),
-      );
+      final searchParts = searchableColumns
+          .map((column) => '$column.ilike.%$escaped%')
+          .toList(growable: true);
+      if (_looksLikeUuid(trimmedQuery)) {
+        searchParts.add('${config.idColumn}.eq.$trimmedQuery');
+      }
+      filter = filter.or(searchParts.join(','));
     }
 
     final SupabasePagedRows pageRows = await _resolvedTableClient.pagedRows(
@@ -126,6 +130,10 @@ class AdminContentRepository {
     }
     return normalized.join(', ');
   }
+
+  bool _looksLikeUuid(String value) => RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+  ).hasMatch(value);
 
   Future<AdminContentRecord> create(
     AdminContentResourceConfig config,

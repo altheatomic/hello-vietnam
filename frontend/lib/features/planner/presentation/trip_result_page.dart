@@ -6,11 +6,13 @@ import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
+import 'package:hellovietnam/features/planner/data/accommodation_recommendation_calculator.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
+import 'package:hellovietnam/features/planner/presentation/widgets/accommodation_recommendation_card.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/start_date_picker_sheet.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/trip_share_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -225,9 +227,15 @@ class _TripResultPageState extends State<TripResultPage> {
 
   @override
   Widget build(BuildContext context) {
+    final AccommodationRecommendation? localAccommodationRecommendation =
+        calculateAccommodationRecommendation(widget.plan.days);
+    final AccommodationRecommendation? accommodationRecommendation =
+        localAccommodationRecommendation ??
+            widget.plan.accommodationRecommendation;
     final days = _convertPlan(
       widget.plan,
       idProvince: widget.plan.cityProvince ?? widget.wizard?.idProvince ?? '',
+      provinceName: widget.wizard?.provinceName ?? 'Vietnam',
     );
     final ThemeData theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
@@ -383,6 +391,13 @@ class _TripResultPageState extends State<TripResultPage> {
                       ],
                     ),
                     const SizedBox(height: 34),
+                    if (accommodationRecommendation != null &&
+                        accommodationRecommendation.zones.isNotEmpty) ...<Widget>[
+                      AccommodationRecommendationCard(
+                        recommendation: accommodationRecommendation,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     Text(
                       context.l10n.ui('Your Itinerary'),
                       style: TextStyle(
@@ -420,6 +435,7 @@ class _TripResultPageState extends State<TripResultPage> {
 List<TripPlannerDayData> _convertPlan(
   TripPlanResponse plan, {
   required String idProvince,
+  required String provinceName,
 }) {
   const gradients = <List<Color>>[
     <Color>[Color(0xFFE9F0FD), Color(0xFFE7FAFD), Color(0xFFD6F7F6)],
@@ -487,6 +503,7 @@ List<TripPlannerDayData> _convertPlan(
       moreActivitiesLabel: count > shown ? '+ ${count - shown} more' : '',
       gradientColors: gradients[i % gradients.length],
       activities: activities,
+      provinceName: provinceName,
     );
   }).toList();
 }

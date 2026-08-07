@@ -67,7 +67,7 @@ void main() {
         harness.resultUri,
         Uri.parse('/trip-planner/result?idPlan=budget-plan'),
       );
-      expect(harness.resultExtra, isNull);
+      expect(harness.resultExtra, same(_persistedPlan));
     },
   );
 
@@ -110,6 +110,38 @@ void main() {
       expect(harness.resultVisits, 1);
       expect(harness.resultUri, Uri.parse('/trip-planner/result?draft=true'));
       expect(harness.resultExtra, same(_draftPlan));
+    },
+  );
+
+  testWidgets(
+    'interest generation keeps the generated draft when a saved plan id exists',
+    (tester) async {
+      final generation = Completer<TripPlanResponse>();
+      final harness = await _pumpInterestPage(
+        tester,
+        generateTrip: (request) => generation.future,
+      );
+
+      await tester.tap(find.text('Culture & History'));
+      await tester.pump();
+      await tester.tap(find.text('Generate'));
+      await tester.pump();
+
+      generation.complete(_persistedPlan);
+      await tester.pump();
+
+      tester
+          .widget<VietnamJourneyLoadingScreen>(
+            find.byType(VietnamJourneyLoadingScreen),
+          )
+          .onExitComplete!();
+      await tester.pumpAndSettle();
+
+      expect(
+        harness.resultUri,
+        Uri.parse('/trip-planner/result?idPlan=budget-plan'),
+      );
+      expect(harness.resultExtra, same(_persistedPlan));
     },
   );
 

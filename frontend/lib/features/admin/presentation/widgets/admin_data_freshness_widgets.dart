@@ -12,11 +12,11 @@ class AdminFreshnessOverviewCards extends StatelessWidget {
       ('Due / stale', overview.due, Icons.schedule),
       ('Pending', overview.pending, Icons.rate_review_outlined),
       (
-        'Tự hết hạn hôm nay',
+        'Auto-expired today',
         overview.autoExpiredToday,
         Icons.event_busy_outlined,
       ),
-      ('Run lỗi', overview.failedRuns, Icons.error_outline),
+      ('Failed runs', overview.failedRuns, Icons.error_outline),
     ];
     return Wrap(
       spacing: 12,
@@ -151,14 +151,9 @@ class AdminFreshnessReportCard extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Chip(
-            label: Text(report.status),
-            visualDensity: VisualDensity.compact,
-          ),
-          const SizedBox(width: 8),
           TextButton(
             onPressed: onOpenDetails,
-            child: const Text('Xem chi tiết'),
+            child: const Text('View details'),
           ),
         ],
       ),

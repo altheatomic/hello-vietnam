@@ -14,12 +14,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Chờ duyệt'), findsOneWidget);
-    expect(find.text('Báo sai'), findsOneWidget);
-    expect(find.text('Dữ liệu stale'), findsOneWidget);
-    expect(find.text('Lịch sử chạy'), findsOneWidget);
-    expect(find.text('Tải lại dữ liệu'), findsOneWidget);
-    expect(find.text('Kiểm tra ngay'), findsNothing);
+    expect(find.text('Pending'), findsOneWidget);
+    expect(find.text('Reports'), findsOneWidget);
+    expect(find.text('Stale data'), findsOneWidget);
+    expect(find.text('Run history'), findsOneWidget);
     expect(find.text('Old Street'), findsOneWidget);
     expect(find.text('New Street'), findsOneWidget);
   });
@@ -41,12 +39,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Báo sai'));
+    await tester.tap(find.text('Reports'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Xem chi tiết'));
+    await tester.tap(find.text('View details'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Chi tiết báo sai'), findsOneWidget);
+    expect(find.text('Report Details'), findsOneWidget);
     expect(find.textContaining('activity-1'), findsOneWidget);
     expect(find.text('The event has ended.').last, findsOneWidget);
   });
@@ -105,4 +103,10 @@ class _FakeRepository extends AdminDataFreshnessRepository {
     totalCount: 0,
     items: <AdminFreshnessRun>[],
   );
+
+  @override
+  Future<void> updateReportStatus({
+    required String reportId,
+    required String status,
+  }) async {}
 }

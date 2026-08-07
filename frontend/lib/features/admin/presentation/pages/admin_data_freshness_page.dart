@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/features/admin/data/admin_data_freshness_repository.dart';
 import 'package:hellovietnam/features/admin/domain/admin_data_freshness.dart';
+import 'package:hellovietnam/features/admin/presentation/widgets/freshness_report_detail_dialog.dart';
 
 import '../widgets/admin_data_freshness_widgets.dart';
 
@@ -43,10 +45,10 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
   String? _processingProposal;
 
   static const List<String> _tabs = <String>[
-    'Chờ duyệt',
-    'Báo sai',
-    'Dữ liệu stale',
-    'Lịch sử chạy',
+    'Pending',
+    'Reports',
+    'Stale data',
+    'Run history',
   ];
 
   @override
@@ -107,7 +109,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
                 FilledButton.icon(
                   onPressed: _loading ? null : _reload,
                   icon: const Icon(Icons.update_rounded),
-                  label: const Text('Tải lại dữ liệu'),
+                  label: const Text('Update now'),
                 ),
               ],
             ),
@@ -151,7 +153,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
     switch (_tab) {
       case 1:
         return _reports.items.isEmpty
-            ? const AdminFreshnessEmptyState(label: 'Chưa có báo sai đang mở.')
+            ? const AdminFreshnessEmptyState(label: 'No open reports.')
             : Column(
                 children: _reports.items
                     .map(
@@ -165,7 +167,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
       case 2:
         return _stale.items.isEmpty
             ? const AdminFreshnessEmptyState(
-                label: 'Không có dữ liệu stale cần hiển thị.',
+                label: 'No stale data to display.',
               )
             : Column(
                 children: _stale.items
@@ -179,7 +181,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
               );
       case 3:
         return _runs.items.isEmpty
-            ? const AdminFreshnessEmptyState(label: 'Chưa có lịch sử chạy.')
+            ? const AdminFreshnessEmptyState(label: 'No run history yet.')
             : Column(
                 children: _runs.items
                     .map(
@@ -191,7 +193,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
       default:
         return _queue.items.isEmpty
             ? const AdminFreshnessEmptyState(
-                label: 'Không có đề xuất chờ duyệt.',
+                label: 'No pending proposals.',
               )
             : Column(
                 children: _queue.items
@@ -269,61 +271,70 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
     }
   }
 
-  Future<void> _showReportDetails(AdminFreshnessReport report) {
+  Future<void> _showReportDetails(AdminFreshnessReport report) async {
+    AdminFreshnessReport current = report;
+    if (report.status == 'open' || report.status == 'pending') {
+      try {
+        await _repository.updateReportStatus(
+          reportId: report.id,
+          status: 'in_progress',
+        );
+        current = report.copyWith(status: 'in_progress');
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not update report status: $error')),
+          );
+        }
+      }
+    }
     return showDialog<void>(
       context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: const Text('Chi tiết báo sai'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _ReportDetailRow(
-                label: 'Nội dung',
-                value:
-                    '${report.contentType ?? 'Không rõ'} · ${report.contentId ?? 'Không rõ'}',
-              ),
-              _ReportDetailRow(label: 'Lý do', value: report.reason),
-              _ReportDetailRow(
-                label: 'Ghi chú',
-                value: report.note?.trim().isNotEmpty == true
-                    ? report.note!.trim()
-                    : 'Không có',
-              ),
-              _ReportDetailRow(label: 'Trạng thái', value: report.status),
-            ],
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Đóng'),
-          ),
-        ],
+      barrierColor: const Color(0x80152B43),
+      builder: (BuildContext dialogContext) => FreshnessReportDetailDialog(
+        report: current,
+        onClose: () => Navigator.of(dialogContext).pop(),
+        onEdit: () {
+          Navigator.of(dialogContext).pop();
+          _openReportedItem(current);
+        },
+        onResolve: () => _resolveReport(current),
       ),
     );
   }
-}
 
-class _ReportDetailRow extends StatelessWidget {
-  const _ReportDetailRow({required this.label, required this.value});
+  Future<void> _resolveReport(
+    AdminFreshnessReport report,
+  ) async {
+    try {
+      await _repository.updateReportStatus(
+        reportId: report.id,
+        status: 'resolved',
+      );
+      await _reload();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not resolve report: $error')),
+        );
+      }
+    }
+  }
 
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-        const SizedBox(height: 3),
-        SelectableText(value),
-      ],
-    ),
-  );
+  void _openReportedItem(AdminFreshnessReport report) {
+    final String? id = report.contentId;
+    if (id == null || id.isEmpty) return;
+    final String? basePath = switch (report.contentType) {
+      'place' => '/admin/places',
+      'activity' => '/admin/activities',
+      'culture' => '/admin/cultures',
+      'food' => '/admin/food',
+      'local_product' => '/admin/local-products',
+      _ => null,
+    };
+    if (basePath == null) return;
+    context.go('$basePath?editId=$id');
+  }
 }
 
 class _ErrorRetry extends StatelessWidget {
