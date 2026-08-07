@@ -33,7 +33,6 @@ class TripPlanResponse {
     this.cityProvince,
     this.startAt,
     this.endAt,
-    this.accommodationRecommendation,
     required this.days,
   });
 
@@ -42,23 +41,7 @@ class TripPlanResponse {
   final String? cityProvince;
   final DateTime? startAt;
   final DateTime? endAt;
-  final AccommodationRecommendation? accommodationRecommendation;
   final List<TripPlanDay> days;
-
-  TripPlanResponse copyWith({
-    AccommodationRecommendation? accommodationRecommendation,
-  }) {
-    return TripPlanResponse(
-      idPlan: idPlan,
-      customTitle: customTitle,
-      cityProvince: cityProvince,
-      startAt: startAt,
-      endAt: endAt,
-      accommodationRecommendation: accommodationRecommendation ??
-          this.accommodationRecommendation,
-      days: days,
-    );
-  }
 
   factory TripPlanResponse.fromJson(Map<String, dynamic> json) {
     final rawDays = json['days'] as List<dynamic>? ?? <dynamic>[];
@@ -84,116 +67,7 @@ class TripPlanResponse {
       cityProvince: json['city_province'] as String?,
       startAt: startAt,
       endAt: endAt,
-      accommodationRecommendation:
-          json['accommodation_recommendation'] is Map
-              ? AccommodationRecommendation.fromJson(
-                  Map<String, dynamic>.from(
-                    json['accommodation_recommendation'] as Map,
-                  ),
-                )
-              : null,
       days: days,
-    );
-  }
-}
-
-class AccommodationRecommendation {
-  const AccommodationRecommendation({
-    required this.version,
-    required this.strategy,
-    required this.zones,
-    required this.evaluation,
-  });
-
-  final int version;
-  final String strategy;
-  final List<AccommodationZone> zones;
-  final AccommodationEvaluation evaluation;
-
-  factory AccommodationRecommendation.fromJson(Map<String, dynamic> json) {
-    final rawZones = json['zones'];
-    final zones = rawZones is List
-        ? rawZones
-            .whereType<Map>()
-            .map(
-              (zone) => AccommodationZone.fromJson(
-                Map<String, dynamic>.from(zone),
-              ),
-            )
-            .toList()
-        : <AccommodationZone>[];
-    final rawEvaluation = json['evaluation'];
-    return AccommodationRecommendation(
-      version: (json['version'] as num?)?.toInt() ?? 1,
-      strategy: json['strategy'] as String? ?? 'single_zone',
-      zones: zones,
-      evaluation: rawEvaluation is Map
-          ? AccommodationEvaluation.fromJson(
-              Map<String, dynamic>.from(rawEvaluation),
-            )
-          : const AccommodationEvaluation(),
-    );
-  }
-}
-
-class AccommodationZone {
-  const AccommodationZone({
-    required this.zoneIndex,
-    required this.dayFrom,
-    required this.dayTo,
-    required this.latitude,
-    required this.longitude,
-    required this.googleMapsQuery,
-  });
-
-  final int zoneIndex;
-  final int dayFrom;
-  final int dayTo;
-  final double latitude;
-  final double longitude;
-  final String googleMapsQuery;
-
-  factory AccommodationZone.fromJson(Map<String, dynamic> json) {
-    final latitude = (json['latitude'] as num?)?.toDouble();
-    final longitude = (json['longitude'] as num?)?.toDouble();
-    return AccommodationZone(
-      zoneIndex: (json['zone_index'] as num?)?.toInt() ?? 0,
-      dayFrom: (json['day_from'] as num?)?.toInt() ?? 0,
-      dayTo: (json['day_to'] as num?)?.toInt() ?? 0,
-      latitude: latitude ?? 0.0,
-      longitude: longitude ?? 0.0,
-      googleMapsQuery: json['google_maps_query'] as String? ??
-          'hotels near ${latitude ?? 0.0},${longitude ?? 0.0}',
-    );
-  }
-}
-
-class AccommodationEvaluation {
-  const AccommodationEvaluation({
-    this.singleZoneCostKm = 0.0,
-    this.selectedCostKm = 0.0,
-    this.reductionRatio = 0.0,
-    this.minZoneSeparationKm = 50.0,
-    this.minCostReductionRatio = 0.35,
-  });
-
-  final double singleZoneCostKm;
-  final double selectedCostKm;
-  final double reductionRatio;
-  final double minZoneSeparationKm;
-  final double minCostReductionRatio;
-
-  factory AccommodationEvaluation.fromJson(Map<String, dynamic> json) {
-    return AccommodationEvaluation(
-      singleZoneCostKm:
-          (json['single_zone_cost_km'] as num?)?.toDouble() ?? 0.0,
-      selectedCostKm:
-          (json['selected_cost_km'] as num?)?.toDouble() ?? 0.0,
-      reductionRatio: (json['reduction_ratio'] as num?)?.toDouble() ?? 0.0,
-      minZoneSeparationKm:
-          (json['min_zone_separation_km'] as num?)?.toDouble() ?? 50.0,
-      minCostReductionRatio:
-          (json['min_cost_reduction_ratio'] as num?)?.toDouble() ?? 0.35,
     );
   }
 }

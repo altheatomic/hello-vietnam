@@ -50,10 +50,6 @@ class FakeFreshnessApiGateway implements FreshnessApiGateway {
   }
 
   async requestCheck(): Promise<void> {}
-
-  async updateReportStatus(): Promise<JsonObject> {
-    return {};
-  }
 }
 
 Deno.test("submitReport forwards the authenticated user payload", async () => {

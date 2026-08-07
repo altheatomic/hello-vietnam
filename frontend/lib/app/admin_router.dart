@@ -79,43 +79,32 @@ GoRouter buildAdminRouter() {
           ),
           GoRoute(
             path: AdminRoutes.food,
-            builder: (c, s) => AdminFoodPage(
-              initialEditId: s.uri.queryParameters['editId'],
-            ),
+            builder: (c, s) => const AdminFoodPage(),
           ),
           GoRoute(
             path: AdminRoutes.provinces,
-            builder: (c, s) => AdminContentPage(
-              config: AdminContentConfigs.province,
-              initialEditId: s.uri.queryParameters['editId'],
-            ),
+            builder: (c, s) =>
+                const AdminContentPage(config: AdminContentConfigs.province),
           ),
           GoRoute(
             path: AdminRoutes.places,
-            builder: (c, s) => AdminContentPage(
-              config: AdminContentConfigs.place,
-              initialEditId: s.uri.queryParameters['editId'],
-            ),
+            builder: (c, s) =>
+                const AdminContentPage(config: AdminContentConfigs.place),
           ),
           GoRoute(
             path: AdminRoutes.activities,
-            builder: (c, s) => AdminContentPage(
-              config: AdminContentConfigs.activity,
-              initialEditId: s.uri.queryParameters['editId'],
-            ),
+            builder: (c, s) =>
+                const AdminContentPage(config: AdminContentConfigs.activity),
           ),
           GoRoute(
             path: AdminRoutes.cultures,
-            builder: (c, s) => AdminContentPage(
-              config: AdminContentConfigs.culture,
-              initialEditId: s.uri.queryParameters['editId'],
-            ),
+            builder: (c, s) =>
+                const AdminContentPage(config: AdminContentConfigs.culture),
           ),
           GoRoute(
             path: AdminRoutes.localProducts,
-            builder: (c, s) => AdminContentPage(
+            builder: (c, s) => const AdminContentPage(
               config: AdminContentConfigs.localProduct,
-              initialEditId: s.uri.queryParameters['editId'],
             ),
           ),
           GoRoute(

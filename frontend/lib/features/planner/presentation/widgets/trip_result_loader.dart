@@ -78,17 +78,8 @@ class _TripResultLoaderState extends State<TripResultLoader> {
           await (widget.loadPlan?.call(idPlan) ??
               TripRepository().getPlan(idPlan));
       if (!mounted || loadGeneration != _loadGeneration) return;
-      final AccommodationRecommendation? draftRecommendation =
-          widget.draft?.accommodationRecommendation;
-      final TripPlanResponse displayedPlan =
-          plan.accommodationRecommendation == null &&
-                  draftRecommendation != null
-              ? plan.copyWith(
-                  accommodationRecommendation: draftRecommendation,
-                )
-              : plan;
       setState(() {
-        _loadedPlan = displayedPlan;
+        _loadedPlan = plan;
       });
     } catch (error) {
       if (!mounted || loadGeneration != _loadGeneration) return;

@@ -12,11 +12,10 @@ import '../widgets/admin_form_components.dart';
 import '../widgets/admin_section_header.dart';
 
 class AdminContentPage extends StatefulWidget {
-  const AdminContentPage({super.key, required this.config, this.repository, this.initialEditId});
+  const AdminContentPage({super.key, required this.config, this.repository});
 
   final AdminContentResourceConfig config;
   final AdminContentRepository? repository;
-  final String? initialEditId;
 
   @override
   State<AdminContentPage> createState() => _AdminContentPageState();
@@ -34,7 +33,6 @@ class _AdminContentPageState extends State<AdminContentPage> {
   int _loadRequestId = 0;
   bool _isLoading = true;
   String? _errorMessage;
-  bool _openedInitialEdit = false;
 
   AdminContentResourceConfig get _config => widget.config;
 
@@ -48,9 +46,6 @@ class _AdminContentPageState extends State<AdminContentPage> {
   void initState() {
     super.initState();
     _repository = widget.repository ?? AdminContentRepository();
-    if (widget.initialEditId?.isNotEmpty == true) {
-      _searchController.text = widget.initialEditId!;
-    }
     _loadRecords();
   }
 
@@ -78,22 +73,6 @@ class _AdminContentPageState extends State<AdminContentPage> {
         _isLoading = true;
         _errorMessage = null;
       });
-      final String? initialId = widget.initialEditId;
-      if (!_openedInitialEdit && initialId != null && initialId.isNotEmpty) {
-        AdminContentRecord? match;
-        for (final AdminContentRecord record in _records) {
-          if (record.id == initialId) {
-            match = record;
-            break;
-          }
-        }
-        if (match != null) {
-          _openedInitialEdit = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _openForm(match);
-          });
-        }
-      }
     }
 
     try {

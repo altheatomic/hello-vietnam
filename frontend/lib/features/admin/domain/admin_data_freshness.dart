@@ -94,20 +94,16 @@ class AdminFreshnessReport {
   const AdminFreshnessReport({
     required this.id,
     this.reporterUserId,
-    this.reporterName,
-    this.reporterEmail,
     this.contentType,
     this.contentId,
     this.reason = '',
     this.note,
-    this.status = 'pending',
+    this.status = 'open',
     this.createdAt,
   });
 
   final String id;
   final String? reporterUserId;
-  final String? reporterName;
-  final String? reporterEmail;
   final String? contentType;
   final String? contentId;
   final String reason;
@@ -115,30 +111,15 @@ class AdminFreshnessReport {
   final String status;
   final DateTime? createdAt;
 
-  AdminFreshnessReport copyWith({String? status}) => AdminFreshnessReport(
-    id: id,
-    reporterUserId: reporterUserId,
-    reporterName: reporterName,
-    reporterEmail: reporterEmail,
-    contentType: contentType,
-    contentId: contentId,
-    reason: reason,
-    note: note,
-    status: status ?? this.status,
-    createdAt: createdAt,
-  );
-
   factory AdminFreshnessReport.fromJson(Map<String, dynamic> json) =>
       AdminFreshnessReport(
         id: _string(json['id']) ?? '',
         reporterUserId: _string(json['reporter_user_id']),
-        reporterName: _string(json['reporter_name']),
-        reporterEmail: _string(json['reporter_email']),
         contentType: _string(json['content_type']),
         contentId: _string(json['content_id']),
         reason: _string(json['reason']) ?? '',
         note: _string(json['note']),
-        status: _string(json['status']) ?? 'pending',
+        status: _string(json['status']) ?? 'open',
         createdAt: _date(json['created_at']),
       );
 }

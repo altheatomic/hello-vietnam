@@ -223,18 +223,10 @@ class AdminFoodRepository {
       columns.nameColumn,
       columns.descriptionColumn,
     };
-    final filters = searchableColumns
+    return searchableColumns
         .map((column) => '$column.ilike.%$escaped%')
-        .toList(growable: true);
-    if (_looksLikeUuid(query)) {
-      filters.add('${columns.idColumn}.eq.$query');
-    }
-    return filters.join(',');
+        .join(',');
   }
-
-  bool _looksLikeUuid(String value) => RegExp(
-    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
-  ).hasMatch(value);
 
   Future<Map<String, String>> _loadCityNames(
     List<Map<String, dynamic>> rows,
