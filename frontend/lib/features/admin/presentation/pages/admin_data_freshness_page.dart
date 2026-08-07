@@ -288,6 +288,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
         }
       }
     }
+    if (!mounted) return;
     return showDialog<void>(
       context: context,
       barrierColor: const Color(0x80152B43),
