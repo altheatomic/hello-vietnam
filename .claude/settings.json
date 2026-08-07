@@ -170,7 +170,13 @@
       "Bash(python -m py_compile config.py services/module2_algorithm.py services/schedule_builder.py)",
       "Bash(python -m py_compile main.py)",
       "Bash(python -m py_compile routes/trip.py db/queries_plan.py)",
-      "Bash(python -m py_compile main.py routes/trip.py db/queries_plan.py)"
+      "Bash(python -m py_compile main.py routes/trip.py db/queries_plan.py)",
+      "Bash(git fetch *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git merge *)",
+      "Bash(python -m py_compile jobs/cf_retrain.py services/module1_repository.py)",
+      "Bash(echo \"exit=$?\")"
     ],
     "additionalDirectories": [
       "\\tmp",
