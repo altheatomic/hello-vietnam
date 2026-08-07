@@ -105,4 +105,10 @@ class _FakeRepository extends AdminDataFreshnessRepository {
     totalCount: 0,
     items: <AdminFreshnessRun>[],
   );
+
+  @override
+  Future<void> updateReportStatus({
+    required String reportId,
+    required String status,
+  }) async {}
 }

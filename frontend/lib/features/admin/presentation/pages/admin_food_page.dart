@@ -14,9 +14,10 @@ import '../widgets/food_type_manager_dialog.dart';
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 class AdminFoodPage extends StatefulWidget {
-  const AdminFoodPage({super.key, this.repository});
+  const AdminFoodPage({super.key, this.repository, this.initialEditId});
 
   final AdminFoodRepository? repository;
+  final String? initialEditId;
 
   @override
   State<AdminFoodPage> createState() => _AdminFoodPageState();
@@ -45,10 +46,14 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
   int _totalCount = 0;
   int _currentPage = 1;
   static const int _pageSize = 8;
+  bool _openedInitialEdit = false;
 
   @override
   void initState() {
     super.initState();
+    if (widget.initialEditId?.isNotEmpty == true) {
+      _searchController.text = widget.initialEditId!;
+    }
     _loadData();
   }
 
@@ -66,6 +71,22 @@ class _AdminFoodPageState extends State<AdminFoodPage> {
         _isLoading = true;
         _loadError = null;
       });
+      final String? initialId = widget.initialEditId;
+      if (!_openedInitialEdit && initialId != null && initialId.isNotEmpty) {
+        AdminFood? match;
+        for (final AdminFood food in _foods) {
+          if (food.id == initialId) {
+            match = food;
+            break;
+          }
+        }
+        if (match != null) {
+          _openedInitialEdit = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _openEdit(match!);
+          });
+        }
+      }
     }
 
     unawaited(_loadTypes(requestId));
