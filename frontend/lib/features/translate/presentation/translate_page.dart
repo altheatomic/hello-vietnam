@@ -840,8 +840,8 @@ class _InputCard extends StatelessWidget {
               ),
               border: InputBorder.none,
             ),
-            cursorColor: Colors.white,
-            style: const TextStyle(fontSize: 17, color: Colors.white),
+            cursorColor: const Color(0xFF172033),
+            style: const TextStyle(fontSize: 17, color: Color(0xFF172033)),
           ),
           Row(
             children: <Widget>[
