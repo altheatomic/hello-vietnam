@@ -56,6 +56,14 @@ def _place_response(place: dict) -> dict:
     }
 
 
+def _place_detail_response(place: dict) -> dict:
+    """Return the detail-only shape; list/card payloads stay short-form."""
+
+    response = _place_response(place)
+    response["detailed_description"] = place.get("detailed_description")
+    return response
+
+
 @router.get("/api/recommend/provinces")
 async def get_recommended_provinces(
     # id_user is required because the recommend edge function always sends
@@ -198,6 +206,7 @@ def _get_recommended_place_sync(supabase, id_place: str):
         supabase.table("place_localized_en")
         .select(
             "id_place,name,short_description,address,phone,website,"
+            "detailed_description,"
             "cover_image,gallery,average_rating,review_count,"
             "estimated_duration_minutes,minimum_price,maximum_price,"
             "timespan,timeclose,place_subcategory(name)"
@@ -209,6 +218,6 @@ def _get_recommended_place_sync(supabase, id_place: str):
     )
     if not rows:
         return {"place": None}
-    result = {"place": _place_response(rows[0])}
+    result = {"place": _place_detail_response(rows[0])}
     _PLACE_DETAIL_CACHE.set(id_place, result)
     return result
