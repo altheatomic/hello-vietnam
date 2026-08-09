@@ -39,9 +39,20 @@ Opening-time rules:
 Day-end cutoff rules (day_end, default 20:00):
   - After computing a place's projected end_time (post travel + wait + duration),
     if end_time > day_end the place is DROPPED.
+  - This check is done in elapsed minutes since day_start (a plain, never-
+    wrapping int — see _minutes_to_cutoff()/_simulate_place_step()), NOT on
+    the wall-clock datetime.time value. A route whose accumulated travel +
+    wait + duration exceeds 24h would otherwise wrap a bare datetime.time
+    back to an early-looking hour (e.g. 25:34 -> "01:34"), silently
+    defeating a plain `visit_end > day_end` comparison — this can happen in
+    practice for candidates spread across a geographically wide province
+    (e.g. a post-merger province spanning 200+ km) combined with n_days=1,
+    where Module 2's clustering is a no-op (cluster_count == 1) and does
+    nothing to keep same-day candidates close together.
   - Dropped places are marked with "dropped": True and excluded from schedule.
-  - current_time and prev are NOT advanced for dropped places; the next place's
-    travel is calculated from the last actually-visited predecessor.
+  - current_time, current_elapsed and prev are NOT advanced for dropped
+    places; the next place's travel is calculated from the last
+    actually-visited predecessor.
   - Edge case: if ALL places are dropped, the first place is force-kept with a
     warning rather than returning an empty day.
 """
@@ -94,12 +105,28 @@ def _parse_hhmm(s) -> datetime.time | None:
 
 def _add(t: datetime.time, minutes: int) -> datetime.time:
     """
-    Known limitation: wraps silently past 24h (returns a bare time-of-day,
-    e.g. 25:00 -> 01:00), which can defeat the visit_end > day_end drop
-    check for abnormally large `minutes`. Input duration is expected to
-    stay sane — see the clamp on estimated_duration_minutes in
-    services/module2_algorithm.py's estimate_duration_minutes()
-    (MAX_SINGLE_PLACE_DURATION_MINUTES in config.py).
+    Wraps silently past 24h (e.g. 25:00 -> 01:00) — a bare datetime.time has
+    no day component, so this alone can never distinguish "past midnight"
+    from "same day". This is no longer a correctness hazard for the
+    day-end cutoff: that check now runs on `elapsed_minutes` (plain int,
+    counted from day_start, never wrapped — see _simulate_place_step()),
+    never on a value that has been through this function.
+
+    Two call sites remain:
+      - Speculative, inside _simulate_place_step() (option_b_start, lunch_end,
+        sim_current, visit_end): these CAN still wrap for a place whose true
+        elapsed time is abnormally large. Harmless — the drop check that
+        follows uses the never-wrapping elapsed_minutes twin instead, and a
+        dropped place's wrapped datetime.time values are discarded, never
+        written to output.
+      - Output formatting, inside build_day_schedule() (right before writing
+        place["start_time"]/["end_time"]): only reached for a place that
+        already passed the elapsed-minutes drop check, i.e.
+        elapsed_visit_end <= minutes_to(day_end) — always well under 1440
+        for any sane day window — so this specific call is guaranteed not
+        to wrap.
+    Do not feed this a raw, unvalidated elapsed-minutes total for output
+    without going through (or re-deriving) that same bound first.
     """
     base = datetime.datetime.combine(datetime.date.today(), t)
     return (base + datetime.timedelta(minutes=minutes)).time()
@@ -107,6 +134,19 @@ def _add(t: datetime.time, minutes: int) -> datetime.time:
 
 def _mins(t: datetime.time) -> int:
     return t.hour * 60 + t.minute
+
+
+def _minutes_to_cutoff(day_start: datetime.time, day_end: datetime.time) -> int:
+    """
+    Minutes from day_start to day_end (e.g. 08:00 -> 20:00 = 720), computed
+    once per call and used as the never-wrapping reference for the day-end
+    drop check — see _simulate_place_step()'s `elapsed_minutes` and the
+    module docstring's "Day-end cutoff rules". Wraps forward (+ 24h) only
+    for the degenerate case of day_end <= day_start, which isn't a realistic
+    config but keeps this a sane non-negative value regardless.
+    """
+    delta = _mins(day_end) - _mins(day_start)
+    return delta if delta >= 0 else delta + 24 * 60
 
 
 def _fmt(t: datetime.time) -> str:
@@ -140,6 +180,7 @@ def _simulate_place_step(
     idx: int,
     place: dict,
     current: datetime.time,
+    current_elapsed: int,
     had_lunch: bool,
     prev: dict,
     lunch_start: datetime.time,
@@ -164,10 +205,29 @@ def _simulate_place_step(
     accurate source (e.g. a pre-fetched Goong travel-time lookup), since
     real API calls per SA iteration would be far too slow/expensive.
 
+    current_elapsed: minutes since day_start that `current` corresponds to,
+    tracked as a plain int in lockstep with every addition also applied to
+    `current` via _add() below — but NEVER wrapped (no modulo, no 24h
+    rollover). This is the only value the day-end drop check may trust: a
+    wrapped datetime.time (e.g. "07:34") can look "early" even after 30+
+    hours have actually elapsed, but its int twin keeps counting past 1440
+    with no ambiguity. See _minutes_to_cutoff() and the module docstring's
+    "Day-end cutoff rules". The datetime.time values below remain exactly
+    as before — still used for the lunch/opening-hour decisions and (once a
+    place is confirmed NOT dropped) for output formatting; per the
+    elapsed-vs-cutoff invariant enforced by both callers, current_elapsed
+    for any place actually reaching this function is always
+    <= minutes_to(day_end), which is always far under 1440 for any sane
+    day window — so the datetime.time side of this function never wraps in
+    practice for a place that ends up committed.
+
     Returns a dict with:
       sim_current      — clock after travel + buffer + lunch + wait + visit
       visit_start       — clock at which visit begins
       visit_end         — clock at which visit ends (= visit_start + duration)
+      elapsed_visit_end  — visit_end's never-wrapping minutes-since-day_start
+                           twin — the ONLY value the day-end cutoff check may
+                           compare against minutes_to(day_end).
       sim_had_lunch     — whether lunch has been consumed after this step
       travel            — travel minutes (0 for idx == 0)
       wait              — wait minutes for opening
@@ -189,6 +249,8 @@ def _simulate_place_step(
     # Candidate lunch insertion points.
     option_a_start = current                               # right after current activity, before travel
     option_b_start = _add(current, travel + step_buffer)    # right after travel+buffer, before opening-wait
+    elapsed_option_a_start = current_elapsed
+    elapsed_option_b_start = current_elapsed + travel + step_buffer
 
     lunch_needed = False
     if not sim_had_lunch:
@@ -202,8 +264,10 @@ def _simulate_place_step(
         use_a = dev_a <= dev_b
 
         chosen_start    = option_a_start if use_a else option_b_start
+        elapsed_chosen_start = elapsed_option_a_start if use_a else elapsed_option_b_start
         lunch_deviation = dev_a if use_a else dev_b
         lunch_end       = _add(chosen_start, lunch_dur)
+        elapsed_lunch_end = elapsed_chosen_start + lunch_dur
 
         lunch_entry = {
             "type":             "lunch_break",
@@ -218,26 +282,34 @@ def _simulate_place_step(
         if use_a:
             # Order: lunch → travel → buffer → opening-wait → visit
             sim_current = _add(lunch_end, travel + step_buffer)
+            elapsed_sim_current = elapsed_lunch_end + travel + step_buffer
         else:
             # Order: travel → buffer → lunch → opening-wait → visit
             sim_current = lunch_end
+            elapsed_sim_current = elapsed_lunch_end
     else:
         sim_current = option_b_start
+        elapsed_sim_current = elapsed_option_b_start
 
     # Opening wait (after the lunch decision, whichever branch was taken)
     wait = 0
     if open_t and sim_current < open_t:
         wait        = _mins(open_t) - _mins(sim_current)
         sim_current = open_t
+    elapsed_sim_current += wait   # mirrors the `sim_current = open_t` jump above
 
     # Visit
     visit_start = sim_current
     visit_end   = _add(visit_start, dur)
+    elapsed_visit_start = elapsed_sim_current
+    elapsed_visit_end   = elapsed_visit_start + dur
 
     return {
         "sim_current":   visit_end,   # clock after visit (before buffer)
         "visit_start":   visit_start,
         "visit_end":     visit_end,
+        "elapsed_visit_start": elapsed_visit_start,
+        "elapsed_visit_end":   elapsed_visit_end,
         "sim_had_lunch": sim_had_lunch,
         "travel":        travel,
         "wait":          wait,
@@ -275,20 +347,24 @@ def route_cost_with_schedule(
     if not route:
         return 0.0
 
-    current    = day_start
+    current         = day_start
+    current_elapsed = 0   # minutes since day_start — never wraps, see _minutes_to_cutoff()
+    minutes_to_cutoff = _minutes_to_cutoff(day_start, day_end)
     had_lunch  = False
     total_cost = 0.0
     prev       = start
 
     for idx, place in enumerate(route):
         step = _simulate_place_step(
-            idx, place, current, had_lunch, prev,
+            idx, place, current, current_elapsed, had_lunch, prev,
             lunch_start, lunch_dur, default_dur, buffer,
             travel_time_fn=_travel_min,
         )
 
-        # Drop check — if visit would end after day_end, penalise and skip
-        if step["visit_end"] > day_end:
+        # Drop check — compared on never-wrapping elapsed minutes, NOT on the
+        # wall-clock visit_end (which can wrap past midnight and silently
+        # defeat a plain `> day_end` comparison — see _add()'s docstring).
+        if step["elapsed_visit_end"] > minutes_to_cutoff:
             total_cost += _DROP_PENALTY
             # prev stays as the last actually-visited place
             continue
@@ -302,9 +378,10 @@ def route_cost_with_schedule(
         if close_t and step["visit_end"] > close_t:
             total_cost += _VIOLATION_PENALTY
 
-        current   = step["visit_end"]
-        had_lunch = step["sim_had_lunch"]
-        prev      = place
+        current         = step["visit_end"]
+        current_elapsed = step["elapsed_visit_end"]
+        had_lunch       = step["sim_had_lunch"]
+        prev            = place
 
     return total_cost
 
@@ -355,8 +432,10 @@ def build_day_schedule(
             "lunch_deviation_minutes": 0,
         }
 
-    schedule      : list[dict]   = []
-    current       : datetime.time = day_start
+    schedule        : list[dict]   = []
+    current         : datetime.time = day_start
+    current_elapsed : int          = 0   # minutes since day_start — never wraps
+    minutes_to_cutoff : int        = _minutes_to_cutoff(day_start, day_end)
     had_lunch     : bool          = False
     total_travel  : int           = 0
     total_wait    : int           = 0
@@ -368,23 +447,35 @@ def build_day_schedule(
 
     for idx, place in enumerate(places):
         step = _simulate_place_step(
-            idx, place, current, had_lunch, prev,
+            idx, place, current, current_elapsed, had_lunch, prev,
             lunch_start, lunch_duration_minutes, default_duration_minutes, buffer_minutes,
             travel_time_fn=effective_travel_time_fn,
         )
 
         # ── Drop check ────────────────────────────────────────────────────────
-        if step["visit_end"] > day_end:
+        # Compared on never-wrapping elapsed minutes, NOT on the wall-clock
+        # visit_end — a wall-clock comparison can wrap past midnight for
+        # abnormally large cumulative travel (e.g. candidates spread across
+        # a wide post-merger province) and silently defeat a plain
+        # `visit_end > day_end` check. See _add()'s and
+        # _minutes_to_cutoff()'s docstrings.
+        if step["elapsed_visit_end"] > minutes_to_cutoff:
+            overrun_hours = (step["elapsed_visit_end"] - minutes_to_cutoff) / 60
             place["dropped"]    = True
             place["type"]       = "place"
             place["start_time"] = None
             place["end_time"]   = None
             place["slot"]       = None
-            place["warning"]    = f"Dropped — projected end {_fmt(step['visit_end'])} exceeds day cutoff {_fmt(day_end)}"
+            place["warning"]    = (
+                f"Dropped — projected visit would end {overrun_hours:.1f}h past "
+                f"day cutoff {_fmt(day_end)} ({step['elapsed_visit_end']} elapsed "
+                f"minutes since {_fmt(day_start)} vs a {minutes_to_cutoff}-minute day)"
+            )
             place["estimated_travel_minutes"] = None
             dropped_count += 1
             schedule.append(place)   # include in schedule so caller can inspect/filter
-            # current, had_lunch, prev all stay as the last committed state
+            # current, current_elapsed, had_lunch, prev all stay as the last
+            # committed state
             continue
 
         # ── Commit ────────────────────────────────────────────────────────────
@@ -406,16 +497,26 @@ def build_day_schedule(
             warning = f"May close at {_fmt(close_t)} before visit ends"
             violations += 1
 
+        # Format wall-clock strings from elapsed_minutes (the single source
+        # of truth), not from the parallel datetime.time values computed
+        # above — this is the only place in this function allowed to feed
+        # an elapsed-minutes total into _add(), and it is safe to do so
+        # here specifically because the drop check above already proved
+        # elapsed_visit_end <= minutes_to_cutoff (« 1440) for this place.
+        visit_start_fmt = _add(day_start, step["elapsed_visit_start"])
+        visit_end_fmt   = _add(day_start, step["elapsed_visit_end"])
+
         place["dropped"]    = False
         place["type"]       = "place"
-        place["start_time"] = _fmt(step["visit_start"])
-        place["end_time"]   = _fmt(step["visit_end"])
-        place["slot"]       = _slot(step["visit_start"])
+        place["start_time"] = _fmt(visit_start_fmt)
+        place["end_time"]   = _fmt(visit_end_fmt)
+        place["slot"]       = _slot(visit_start_fmt)
         place["warning"]    = warning
 
         schedule.append(place)
-        current = step["visit_end"]
-        prev    = place
+        current         = step["visit_end"]
+        current_elapsed = step["elapsed_visit_end"]
+        prev            = place
 
     # ── Edge case: ALL places dropped — force-keep the first ─────────────────
     has_real_place = any(
