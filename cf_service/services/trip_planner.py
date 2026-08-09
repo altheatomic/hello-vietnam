@@ -593,6 +593,7 @@ class TripPlannerService:
             "custom_title": custom_title,
             "city_province": id_province,
             "days": days,
+            "accommodation_recommendation": m2_result.get("accommodation_recommendation"),
             "debug": {
                 "filter_report":      filter_report,
                 # % of candidate places (filtered_places) for which the CF

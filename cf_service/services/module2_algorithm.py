@@ -37,6 +37,7 @@ from config import (
     REPAIR_DISTANCE_RHO,
     REPAIR_RELAXED_DISTANCE_RHO,
 )
+from services.accommodation_recommendation import build_accommodation_recommendation
 from services.filters import parse_date
 
 logger = logging.getLogger(__name__)
@@ -404,8 +405,18 @@ def build_module2_result(
     candidate_places, rejected_places, limits = prepare_module2_candidates(top_places, total_days, pace_level)
 
     if not candidate_places:
+        empty_day_clusters = [
+            {
+                "day": d + 1,
+                "date": (parse_date(start_date) + timedelta(days=d)).isoformat(),
+                "places": [],
+                "warnings": ["no_candidates"],
+            }
+            for d in range(total_days)
+        ]
         return {
-            "day_clusters": [{"day": d + 1, "date": (parse_date(start_date) + timedelta(days=d)).isoformat(), "places": [], "warnings": ["no_candidates"]} for d in range(total_days)],
+            "day_clusters": empty_day_clusters,
+            "accommodation_recommendation": None,
             "backup_places": [], "optional_places": [], "rejected_places": rejected_places,
             "limits": limits,
             "summary": {"total_days": total_days, "candidate_count": 0, "selected_main_place_count": 0, "backup_place_count": 0, "optional_place_count": 0, "rejected_place_count": len(rejected_places)},
@@ -433,11 +444,14 @@ def build_module2_result(
         day_cluster["total_duration_minutes"] = day_total_duration(day_cluster)
         day_cluster["place_count"] = len(day_cluster["places"])
 
+    accommodation_recommendation = build_accommodation_recommendation(day_clusters)
+
     backup_places = deduplicate_places(sorted(backup_places, key=lambda p: float(p.get("module1_score") or 0.0), reverse=True))
     optional_places = deduplicate_places(sorted(optional_places, key=lambda p: float(p.get("module1_score") or 0.0), reverse=True))
 
     return {
         "day_clusters": day_clusters,
+        "accommodation_recommendation": accommodation_recommendation,
         "initial_day_clusters": initial_day_clusters,
         "backup_places": backup_places,
         "initial_backup_places": initial_backup_places,

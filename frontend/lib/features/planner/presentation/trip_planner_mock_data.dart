@@ -383,6 +383,7 @@ class TripPlannerDayData {
     required this.moreActivitiesLabel,
     required this.activities,
     required this.gradientColors,
+    this.provinceName = '',
   });
 
   final String dayLabel;
@@ -391,6 +392,7 @@ class TripPlannerDayData {
   final String moreActivitiesLabel;
   final List<TripPlannerActivityData> activities;
   final List<Color> gradientColors;
+  final String provinceName;
 
   Map<String, dynamic> toJson() => {
         'dayLabel': dayLabel,
@@ -399,6 +401,7 @@ class TripPlannerDayData {
         'moreActivitiesLabel': moreActivitiesLabel,
         'activities': activities.map((a) => a.toJson()).toList(),
         'gradientColors': gradientColors.map((c) => c.toARGB32()).toList(),
+        'provinceName': provinceName,
       };
 
   factory TripPlannerDayData.fromJson(Map<String, dynamic> json) =>
@@ -413,6 +416,7 @@ class TripPlannerDayData {
         gradientColors: (json['gradientColors'] as List)
             .map((v) => Color(v as int))
             .toList(),
+        provinceName: json['provinceName'] as String? ?? '',
       );
 }
 
