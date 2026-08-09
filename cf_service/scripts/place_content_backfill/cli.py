@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 from .constants import (
     DEFAULT_COLLECT_WORKER_CHUNK_SIZE,
     DEFAULT_GENERATE_WORKER_CHUNK_SIZE,
     DEFAULT_VALIDATE_WORKER_CHUNK_SIZE,
+    new_run_id,
 )
+from .artifacts import ArtifactStore
+from .repository import audit_scope
 
 
 def _add_selectors(parser: argparse.ArgumentParser, *, run_required: bool = False) -> None:
@@ -76,12 +79,19 @@ def _require_confirmation(parser: argparse.ArgumentParser, args: argparse.Namesp
         parser.error(f"{args.command} requires --confirm")
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(argv: Sequence[str] | None = None, *, client: Any | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     _require_confirmation(parser, args)
     if getattr(args, "worker_chunk_size", 1) <= 0:
         parser.error("--worker-chunk-size must be positive")
+    if args.command == "audit":
+        if client is None:
+            parser.error("audit requires an explicitly injected read-only Supabase client")
+        run_id = args.run_id or new_run_id()
+        store = ArtifactStore(Path(".artifacts/place-content"), run_id)
+        audit_scope(client, artifact_store=store, run_id=run_id)
+        return 0
     # Task-specific command implementations are layered onto this safe parser
     # by later phases. Keeping this fallback side-effect free prevents a parser
     # smoke test from opening a database connection.
