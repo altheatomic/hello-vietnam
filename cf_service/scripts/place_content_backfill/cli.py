@@ -100,6 +100,15 @@ def _write_worker_status(path: Path | None, payload: dict[str, Any]) -> None:
     os.replace(temporary, path)
 
 
+def _artifact_root() -> Path:
+    """Resolve the repository-level artifact directory from either CLI cwd."""
+
+    current = Path.cwd().resolve()
+    if current.name == "cf_service":
+        return current.parent / ".artifacts/place-content"
+    return current / ".artifacts/place-content"
+
+
 def _load_selected_baseline(store: ArtifactStore, place_ids: set[str]):
     for row in store.iter_stream("baseline"):
         if str(row.get("place_id")) in place_ids:
@@ -137,7 +146,7 @@ def _validate_review_edit_from_artifacts(
 
 
 def _run_collect(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
-    root = Path(".artifacts/place-content")
+    root = _artifact_root()
     store = ArtifactStore(root, args.run_id)
     if not store.path("baseline").exists():
         parser.error("collect requires a baseline.jsonl artifact for the run")
@@ -196,13 +205,13 @@ def main(argv: Sequence[str] | None = None, *, client: Any | None = None) -> int
         if client is None:
             parser.error("audit requires an explicitly injected read-only Supabase client")
         run_id = args.run_id or new_run_id()
-        store = ArtifactStore(Path(".artifacts/place-content"), run_id)
+        store = ArtifactStore(_artifact_root(), run_id)
         audit_scope(client, artifact_store=store, run_id=run_id)
         return 0
     if args.command == "collect":
         return _run_collect(args, parser)
     if args.command == "review-import":
-        store = ArtifactStore(Path(".artifacts/place-content"), args.run_id)
+        store = ArtifactStore(_artifact_root(), args.run_id)
         import_review_csv(
             store,
             args.file,
