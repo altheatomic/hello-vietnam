@@ -168,15 +168,15 @@ def _extract_place_tag_names(place: dict, id_tag_to_name: dict[str, str]) -> lis
     (empty if the place has no tag past the threshold), never None.
 
     tag_name is read from the row's nested "tag" object when present, else
-    falls back to id_tag_to_name[id_tag] — same fallback need as the
-    existing id_tag_map (see its comment above): place_tag rows can come
-    back without the nested tag object depending on the query path (verified
-    live against the real DB while building this feature — fetch_place_tags_
-    for_places' multi-line .select() string returns rows missing the nested
-    "tag" embed when combined with .in_(), a pre-existing issue in
-    module1_repository.py, unrelated to this function and out of scope here
-    — this fallback makes tag-name lookup correct regardless of whether/when
-    that gets fixed upstream).
+    falls back to id_tag_to_name[id_tag] — defense-in-depth, same pattern as
+    the existing id_tag_map (see its comment above). fetch_place_tags_for_
+    places() (module1_repository.py) used to return rows missing the nested
+    "tag" embed due to a multi-line .select() string bug — now fixed at the
+    source (select is single-line, verified live to return the embed
+    correctly). This fallback is kept anyway rather than removed: id_tag is
+    always present on these rows regardless of embed shape, so this costs
+    nothing and protects against the same class of bug recurring upstream
+    without a caller having to notice.
     """
     rows = place.get("place_tag") or []
     scored_names: list[tuple[float, str]] = []
