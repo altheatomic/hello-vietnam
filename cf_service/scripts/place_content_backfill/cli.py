@@ -213,6 +213,10 @@ def main(argv: Sequence[str] | None = None, *, client: Any | None = None) -> int
             ),
         )
         return 0
+    if args.command in {"apply", "rollback"}:
+        parser.error(
+            f"{args.command} is owner-approved only; Phase A does not create a database connection"
+        )
     # Task-specific command implementations are layered onto this safe parser
     # by later phases. Keeping this fallback side-effect free prevents a parser
     # smoke test from opening a database connection.
