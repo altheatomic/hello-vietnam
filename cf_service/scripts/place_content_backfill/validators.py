@@ -219,6 +219,23 @@ def find_near_duplicates(
 ) -> dict[str, tuple[str, ...]]:
     """Find similar text via a temporary SQLite gram index, never a matrix."""
 
+    return find_near_duplicates_stream(
+        texts.items(),
+        threshold=threshold,
+        chunk_size=chunk_size,
+        sqlite_path=sqlite_path,
+    )
+
+
+def find_near_duplicates_stream(
+    texts: Iterable[tuple[str, str]],
+    *,
+    threshold: float = DUPLICATE_THRESHOLD,
+    chunk_size: int = 200,
+    sqlite_path: str | Path | None = None,
+) -> dict[str, tuple[str, ...]]:
+    """Index a text iterator in bounded chunks and compare through SQLite."""
+
     if not 0 < threshold <= 1:
         raise ValueError("threshold must be in (0, 1]")
     if chunk_size <= 0:
@@ -237,18 +254,28 @@ def find_near_duplicates(
             connection.execute("create table grams(place_id text not null, gram text not null, primary key(place_id, gram))")
             connection.execute("create index grams_by_gram on grams(gram)")
             connection.execute("create table gram_counts(place_id text primary key, count integer not null)")
-            ids = list(texts.keys())
-            for start in range(0, len(ids), chunk_size):
+            chunk: list[tuple[str, str]] = []
+
+            def write_chunk(values: list[tuple[str, str]]) -> None:
                 rows = []
                 counts = []
-                for place_id in ids[start:start + chunk_size]:
-                    grams = _five_grams(texts[place_id])
+                for place_id, text in values:
+                    grams = _five_grams(text)
                     rows.extend((place_id, gram) for gram in grams)
                     counts.append((place_id, len(grams)))
                 connection.executemany("insert into grams(place_id, gram) values (?, ?)", rows)
                 connection.executemany("insert into gram_counts(place_id, count) values (?, ?)", counts)
                 connection.commit()
-            for place_id in ids:
+
+            for place_id, text in texts:
+                chunk.append((str(place_id), text))
+                if len(chunk) == chunk_size:
+                    write_chunk(chunk)
+                    chunk.clear()
+            if chunk:
+                write_chunk(chunk)
+
+            for (place_id,) in connection.execute("select place_id from gram_counts order by place_id"):
                 grams = [row[0] for row in connection.execute("select gram from grams where place_id = ?", (place_id,))]
                 if not grams:
                     continue
@@ -452,6 +479,7 @@ def rebuild_review_artifacts(
 
 __all__ = [
     "find_near_duplicates",
+    "find_near_duplicates_stream",
     "import_review_csv",
     "rebuild_review_artifacts",
     "validate_edited_fields",
