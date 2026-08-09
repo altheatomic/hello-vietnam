@@ -92,6 +92,10 @@ def save_plan(
                 "cb_score": place.get("tag_match"),   # tag_match stored in cb_score column
                 "cf_score": place.get("cf_score"),
                 "final_score": place.get("final_score"),
+                # Already list[str], never None (_extract_place_tag_names()
+                # guarantees this) — supabase-py serializes it straight to a
+                # Postgres text[] literal, no _to_pg_int()-style coercion needed.
+                "tags": place.get("tags") or [],
             })
 
     if rows:
@@ -122,7 +126,7 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
             "day,slot,visit_order,start_time,end_time,estimated_travel_minutes,"
             "travel_time_car_seconds,travel_time_bike_seconds,"
             "travel_distance_car_meters,travel_distance_bike_meters,"
-            "cb_score,cf_score,final_score,id_place"
+            "cb_score,cf_score,final_score,id_place,tags"
         )
         .eq("id_plan", id_plan)
         .order("day")
@@ -181,6 +185,7 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
             "tag_match": r.get("cb_score"),
             "cf_score": r.get("cf_score"),
             "final_score": r.get("final_score"),
+            "tags": r.get("tags") or [],
             "id_place": place_data.get("id_place"),
             "name": place_data.get("name"),
             "latitude": place_data.get("latitude"),
@@ -406,7 +411,7 @@ def clone_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
             "estimated_travel_minutes,"
             "travel_time_car_seconds,travel_time_bike_seconds,"
             "travel_distance_car_meters,travel_distance_bike_meters,"
-            "cb_score,cf_score,final_score"
+            "cb_score,cf_score,final_score,tags"
         )
         .eq("id_plan", id_plan)
         .execute()
@@ -443,6 +448,7 @@ def clone_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
                 "cb_score":                 r.get("cb_score"),
                 "cf_score":                 r.get("cf_score"),
                 "final_score":              r.get("final_score"),
+                "tags":                     r.get("tags") or [],
             }
             for r in src_components
         ]
