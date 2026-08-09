@@ -144,7 +144,57 @@ def _derive_start_point(places: list) -> dict:
     return {"latitude": avg_lat, "longitude": avg_lon}
 
 
-def _format_place(place: dict, order: int) -> dict:
+# Same threshold used by test_module1_eval.py's ground-truth definition —
+# high enough to drop noisy auto-tagged rows (e.g. Duong Dong Market's
+# "beach" tag at confidence 0.40 — a real place_tag row, but not
+# representative of what the place actually is) while keeping genuine tags
+# (e.g. that same place's "culture"/"local_market"/"shopping" rows, all at
+# confidence 1.0).
+PLACE_TAG_CONFIDENCE_THRESHOLD = 0.7
+# Caps the chip row in the UI — a heavily auto-tagged place can have 8+ rows
+# past the confidence threshold; 4 keeps the detail page from overflowing
+# while still showing enough to differentiate places (a market vs a beach).
+MAX_PLACE_TAGS_RETURNED = 4
+
+
+def _extract_place_tag_names(place: dict, id_tag_to_name: dict[str, str]) -> list[str]:
+    """
+    Real tag_name list for this place — NOT matched_user_tags (that's the
+    subset that matched one specific user's interest weights; this is the
+    place's own full tag set from place_tag, already attached in-memory by
+    attach_place_tags_to_places() during Module 1, no extra DB query needed).
+    Filtered to PLACE_TAG_CONFIDENCE_THRESHOLD, sorted by confidence_score
+    descending, capped at MAX_PLACE_TAGS_RETURNED. Always returns a list
+    (empty if the place has no tag past the threshold), never None.
+
+    tag_name is read from the row's nested "tag" object when present, else
+    falls back to id_tag_to_name[id_tag] — same fallback need as the
+    existing id_tag_map (see its comment above): place_tag rows can come
+    back without the nested tag object depending on the query path (verified
+    live against the real DB while building this feature — fetch_place_tags_
+    for_places' multi-line .select() string returns rows missing the nested
+    "tag" embed when combined with .in_(), a pre-existing issue in
+    module1_repository.py, unrelated to this function and out of scope here
+    — this fallback makes tag-name lookup correct regardless of whether/when
+    that gets fixed upstream).
+    """
+    rows = place.get("place_tag") or []
+    scored_names: list[tuple[float, str]] = []
+    for row in rows:
+        confidence = float(row.get("confidence_score") or 0.0)
+        if confidence < PLACE_TAG_CONFIDENCE_THRESHOLD:
+            continue
+        tag_name = (row.get("tag") or {}).get("tag_name")
+        if not tag_name:
+            tag_name = id_tag_to_name.get(str(row.get("id_tag") or ""))
+        if not tag_name:
+            continue
+        scored_names.append((confidence, tag_name))
+    scored_names.sort(key=lambda item: item[0], reverse=True)
+    return [name for _, name in scored_names[:MAX_PLACE_TAGS_RETURNED]]
+
+
+def _format_place(place: dict, order: int, id_tag_to_name: dict[str, str]) -> dict:
     return {
         "type":                       "place",
         "order":                      order,
@@ -172,6 +222,7 @@ def _format_place(place: dict, order: int) -> dict:
         "tag_match":                  place.get("tag_match"),
         "cf_score":                   place.get("cf_score"),
         "final_score":                place.get("final_score"),
+        "tags":                       _extract_place_tag_names(place, id_tag_to_name),
     }
 
 
@@ -327,6 +378,13 @@ class TripPlannerService:
             for tag in tags
             if tag.get("id_tag") and tag.get("tag_code")
         }
+        # {id_tag (str) → tag_name} — same fallback need as id_tag_map above,
+        # for _extract_place_tag_names()'s display-name lookup.
+        id_tag_to_name = {
+            str(tag["id_tag"]): tag["tag_name"]
+            for tag in tags
+            if tag.get("id_tag") and tag.get("tag_name")
+        }
 
         places_with_tags = attach_place_tags_to_places(filtered_places, place_tag_rows)
 
@@ -474,7 +532,7 @@ class TripPlannerService:
                 if entry.get("type") == "lunch_break":
                     formatted.append(_format_lunch_break(entry))
                 else:
-                    formatted.append(_format_place(entry, order=place_order))
+                    formatted.append(_format_place(entry, order=place_order, id_tag_to_name=id_tag_to_name))
                     place_order += 1
 
             days.append({

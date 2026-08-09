@@ -123,6 +123,7 @@ class TripPlanPlace {
     this.tagMatch,
     this.cfScore,
     this.finalScore,
+    this.tags = const <String>[],
   });
 
   /// 'place' or 'lunch_break'
@@ -155,6 +156,11 @@ class TripPlanPlace {
   final double? tagMatch;
   final double? cfScore;
   final double? finalScore;
+  /// Real tag_name list for this place (place_tag rows above the backend's
+  /// confidence threshold, highest confidence first, capped) — NOT the same
+  /// as tagMatch (a score) or a per-user match; this is the place's own
+  /// full tag set. Always a list, never null (empty if no tag qualified).
+  final List<String> tags;
 
   bool get isLunchBreak => type == 'lunch_break';
 
@@ -175,6 +181,11 @@ class TripPlanPlace {
             .whereType<Map<String, dynamic>>()
             .toList()
         : <Map<String, dynamic>>[];
+
+    final rawTags = json['tags'];
+    final tags = rawTags is List
+        ? rawTags.whereType<String>().toList()
+        : <String>[];
 
     final TripPlanPlace place = TripPlanPlace(
       type:                       json['type'] as String? ?? 'place',
@@ -202,6 +213,7 @@ class TripPlanPlace {
       tagMatch:                   (json['tag_match'] as num?)?.toDouble(),
       cfScore:                    (json['cf_score'] as num?)?.toDouble(),
       finalScore:                 (json['final_score'] as num?)?.toDouble(),
+      tags:                       tags,
     );
     debugPrint(
       '[TripPlanPlace.fromJson] coverImage=${place.coverImage} '

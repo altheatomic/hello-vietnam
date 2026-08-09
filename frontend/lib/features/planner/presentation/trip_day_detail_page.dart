@@ -247,8 +247,16 @@ class _ActivityDetailCard extends StatelessWidget {
               height: 1.2,
             ),
           ),
-          const SizedBox(height: 12),
-          _CategoryChip(label: context.l10n.ui(activity.tag)),
+          if (activity.tags.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: activity.tags
+                  .map((String tag) => _CategoryChip(label: context.l10n.ui(tag)))
+                  .toList(growable: false),
+            ),
+          ],
           if (_activityFacts(context, activity).isNotEmpty) ...<Widget>[
             const SizedBox(height: 14),
             Wrap(

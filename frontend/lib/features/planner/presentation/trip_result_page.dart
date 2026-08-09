@@ -526,7 +526,12 @@ List<TripPlannerDayData> _convertPlan(
         title: p.name.isEmpty ? 'Place ${p.order}' : p.name,
         time: p.startTime ?? _slotToTime(p.slot),
         slot: _capitalizeSlot(p.slot),
-        tag: 'culture',
+        // 'tag' is now only a sentinel ('lunch_break' vs anything else, see
+        // the a.tag != 'lunch_break' filters elsewhere) — real category
+        // chips come from 'tags' below, sourced from the place's actual
+        // place_tag rows, not a hard-coded value.
+        tag: 'place',
+        tags: p.tags,
         description: '',
         distanceLabel: p.estimatedTravelMinutes != null
             ? '~${p.estimatedTravelMinutes} min travel'
