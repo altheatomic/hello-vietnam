@@ -238,9 +238,8 @@ OSM name:vi
 English name priority is:
 
 ```text
-verified OSM name:en
-→ verified Wikidata English label
-→ Vietnamese proper name plus translated place-type suffix
+Vietnamese proper name plus translated place-type prefix or suffix
+→ verified official English institution/brand name that preserves identity
 ```
 
 The approved fallback policy is option 3: preserve the proper-name component
@@ -261,10 +260,16 @@ Rules:
 - Translate only an allowlisted generic prefix or suffix such as river,
   mountain, lake, pagoda, temple, market, bridge, museum, church, beach, park,
   station, or airport.
+- For geographic, religious, and market names, this structural rule takes
+  precedence over an exonym that translates the meaning of the proper-name
+  token. For example, `Sông Hương` displays as `Hương River`; `Perfume River`
+  may be retained only as source metadata or a search alias, not as the
+  primary display name.
 - Do not translate proper-name tokens by dictionary meaning. `Cái Cấm` must
   never become `Forbidden`; `Bề Bề Nội` must never become `Interior Surface`.
-- Use an externally supplied English name only when its source is explicit and
-  verified for the same place.
+- Use an externally supplied English institution or brand name only when its
+  source is explicit, verified for the same place, and does not violate the
+  protected proper-name rule.
 - Record the chosen rule, source field, confidence, and rejected alternatives
   in each proposal.
 
