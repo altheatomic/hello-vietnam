@@ -159,6 +159,57 @@ class ArtifactStore:
             handle.flush()
             os.fsync(handle.fileno())
 
+    def replace_derived_outputs(
+        self,
+        rows: Iterable[tuple[Mapping[str, Any] | None, Mapping[str, Any] | None]],
+        fieldnames: Sequence[str] = REVIEW_CSV_FIELDS,
+    ) -> None:
+        """Atomically rebuild approved JSONL and review CSV in one stream.
+
+        Each input tuple contains an optional approved record and an optional
+        review row.  The iterator is consumed once, so validation can rebuild
+        both derived artifacts without retaining all proposals or CSV rows.
+        """
+
+        approved_descriptor, approved_name = tempfile.mkstemp(
+            prefix=".approved-", suffix=".tmp", dir=self.run_dir
+        )
+        review_descriptor, review_name = tempfile.mkstemp(
+            prefix=".needs-review-", suffix=".tmp", dir=self.run_dir
+        )
+        approved_path = Path(approved_name)
+        review_path = Path(review_name)
+        try:
+            with (
+                os.fdopen(approved_descriptor, "w", encoding="utf-8", newline="") as approved_handle,
+                os.fdopen(review_descriptor, "w", encoding="utf-8", newline="") as review_handle,
+            ):
+                writer = csv.DictWriter(
+                    review_handle,
+                    fieldnames=tuple(fieldnames),
+                    extrasaction="ignore",
+                )
+                writer.writeheader()
+                for approved_record, review_row in rows:
+                    if approved_record is not None:
+                        approved_handle.write(_json_dump(dict(approved_record)) + "\n")
+                    if review_row is not None:
+                        _reject_secrets(review_row)
+                        writer.writerow({
+                            field: review_row.get(field, "")
+                            for field in fieldnames
+                        })
+                approved_handle.flush()
+                os.fsync(approved_handle.fileno())
+                review_handle.flush()
+                os.fsync(review_handle.fileno())
+            os.replace(approved_path, self.path("approved"))
+            os.replace(review_path, self.path("needs-review"))
+            _fsync_directory(self.run_dir)
+        finally:
+            approved_path.unlink(missing_ok=True)
+            review_path.unlink(missing_ok=True)
+
     def iter_review_csv(self) -> Iterator[dict[str, str]]:
         destination = self.path("needs-review")
         if not destination.exists():

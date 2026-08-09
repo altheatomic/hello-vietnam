@@ -16,8 +16,9 @@ from .constants import (
 )
 from .artifacts import ArtifactStore, ChunkSupervisor
 from .repository import audit_scope
-from .models import BaselineRecord
+from .models import BaselineRecord, Proposal, SourceSnapshot
 from .sources import collect_worker
+from .validators import import_review_csv, validate_edited_fields
 
 
 def _add_selectors(parser: argparse.ArgumentParser, *, run_required: bool = False) -> None:
@@ -105,6 +106,36 @@ def _load_selected_baseline(store: ArtifactStore, place_ids: set[str]):
             yield BaselineRecord.model_validate(row)
 
 
+def _find_artifact_record(store: ArtifactStore, stream: str, place_id: str) -> dict[str, Any] | None:
+    for row in store.iter_stream(stream):
+        if str(row.get("place_id")) == place_id:
+            return row
+    return None
+
+
+def _proposal_from_artifact(row: dict[str, Any]) -> Proposal:
+    payload = row.get("proposal", row)
+    return Proposal.model_validate(payload)
+
+
+def _validate_review_edit_from_artifacts(
+    store: ArtifactStore,
+    place_id: str,
+    edited_fields: dict[str, str],
+) -> bool:
+    baseline_row = _find_artifact_record(store, "baseline", place_id)
+    source_row = _find_artifact_record(store, "sources", place_id)
+    proposal_row = _find_artifact_record(store, "proposals", place_id)
+    if baseline_row is None or source_row is None or proposal_row is None:
+        return False
+    return validate_edited_fields(
+        _proposal_from_artifact(proposal_row),
+        BaselineRecord.model_validate(baseline_row),
+        SourceSnapshot.model_validate(source_row),
+        edited_fields,
+    )
+
+
 def _run_collect(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     root = Path(".artifacts/place-content")
     store = ArtifactStore(root, args.run_id)
@@ -170,6 +201,18 @@ def main(argv: Sequence[str] | None = None, *, client: Any | None = None) -> int
         return 0
     if args.command == "collect":
         return _run_collect(args, parser)
+    if args.command == "review-import":
+        store = ArtifactStore(Path(".artifacts/place-content"), args.run_id)
+        import_review_csv(
+            store,
+            args.file,
+            validate_edit=lambda place_id, fields: _validate_review_edit_from_artifacts(
+                store,
+                place_id,
+                dict(fields),
+            ),
+        )
+        return 0
     # Task-specific command implementations are layered onto this safe parser
     # by later phases. Keeping this fallback side-effect free prevents a parser
     # smoke test from opening a database connection.
