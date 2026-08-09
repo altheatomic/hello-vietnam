@@ -12,6 +12,7 @@ and evidence requirements, see
 ## Components and secrets
 
 - Migration: `backend/supabase/migrations/20260803000100_data_freshness.sql`
+- Remediation migration: `backend/supabase/migrations/20260807000100_fix_data_freshness_source_selection.sql`
 - Checker Edge Function: `data-freshness-check`
 - Authenticated report/admin Edge Function: `data-freshness`
 - Cron job: `data-freshness-daily`, scheduled at 02:15 UTC
@@ -19,14 +20,28 @@ and evidence requirements, see
 - Supabase Vault secret: `data_freshness_check_secret`
 - Edge Function secret: `DATA_FRESHNESS_CHECK_SECRET`
 
+The migration currently points the cron HTTP request at the configured project
+URL `ziouozppetvvdrzgojcx`. A different staging project must override that URL
+before claiming that its cron is active.
+
 The checker secret must be identical in Vault and the Edge Function secret. It
 must never be bundled into Flutter, crawler output, or a client-side config.
+
+The remediation migration reconstructs missing OSM source URLs from stable
+`osm:{node|way|relation}:{id}` identities and prevents `legacy_import` rows from
+being claimed until a real source adapter is configured.
+
+For a live walkthrough, call the checker with `{"triggerType":"admin","batchSize":5}`
+to keep the run short and reduce OSM rate limits. The scheduled cron continues
+to use the default batch of 50.
 
 ## Deployment order
 
 1. Apply the migration from `backend`.
 2. Set the Vault secret and the Edge Function secret.
-3. Deploy `data-freshness-check` and `data-freshness`.
+3. Deploy `data-freshness-check` with JWT verification disabled (its
+   `x-data-freshness-secret` is the application-level guard), then deploy
+   `data-freshness` with normal JWT verification.
 4. Confirm that `data-freshness-daily` exists in `cron.job`.
 5. Open `/admin/data-freshness` and verify the overview cards and run history.
 

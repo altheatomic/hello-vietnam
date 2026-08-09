@@ -144,7 +144,57 @@ def _derive_start_point(places: list) -> dict:
     return {"latitude": avg_lat, "longitude": avg_lon}
 
 
-def _format_place(place: dict, order: int) -> dict:
+# Same threshold used by test_module1_eval.py's ground-truth definition —
+# high enough to drop noisy auto-tagged rows (e.g. Duong Dong Market's
+# "beach" tag at confidence 0.40 — a real place_tag row, but not
+# representative of what the place actually is) while keeping genuine tags
+# (e.g. that same place's "culture"/"local_market"/"shopping" rows, all at
+# confidence 1.0).
+PLACE_TAG_CONFIDENCE_THRESHOLD = 0.7
+# Caps the chip row in the UI — a heavily auto-tagged place can have 8+ rows
+# past the confidence threshold; 4 keeps the detail page from overflowing
+# while still showing enough to differentiate places (a market vs a beach).
+MAX_PLACE_TAGS_RETURNED = 4
+
+
+def _extract_place_tag_names(place: dict, id_tag_to_name: dict[str, str]) -> list[str]:
+    """
+    Real tag_name list for this place — NOT matched_user_tags (that's the
+    subset that matched one specific user's interest weights; this is the
+    place's own full tag set from place_tag, already attached in-memory by
+    attach_place_tags_to_places() during Module 1, no extra DB query needed).
+    Filtered to PLACE_TAG_CONFIDENCE_THRESHOLD, sorted by confidence_score
+    descending, capped at MAX_PLACE_TAGS_RETURNED. Always returns a list
+    (empty if the place has no tag past the threshold), never None.
+
+    tag_name is read from the row's nested "tag" object when present, else
+    falls back to id_tag_to_name[id_tag] — defense-in-depth, same pattern as
+    the existing id_tag_map (see its comment above). fetch_place_tags_for_
+    places() (module1_repository.py) used to return rows missing the nested
+    "tag" embed due to a multi-line .select() string bug — now fixed at the
+    source (select is single-line, verified live to return the embed
+    correctly). This fallback is kept anyway rather than removed: id_tag is
+    always present on these rows regardless of embed shape, so this costs
+    nothing and protects against the same class of bug recurring upstream
+    without a caller having to notice.
+    """
+    rows = place.get("place_tag") or []
+    scored_names: list[tuple[float, str]] = []
+    for row in rows:
+        confidence = float(row.get("confidence_score") or 0.0)
+        if confidence < PLACE_TAG_CONFIDENCE_THRESHOLD:
+            continue
+        tag_name = (row.get("tag") or {}).get("tag_name")
+        if not tag_name:
+            tag_name = id_tag_to_name.get(str(row.get("id_tag") or ""))
+        if not tag_name:
+            continue
+        scored_names.append((confidence, tag_name))
+    scored_names.sort(key=lambda item: item[0], reverse=True)
+    return [name for _, name in scored_names[:MAX_PLACE_TAGS_RETURNED]]
+
+
+def _format_place(place: dict, order: int, id_tag_to_name: dict[str, str]) -> dict:
     return {
         "type":                       "place",
         "order":                      order,
@@ -172,6 +222,7 @@ def _format_place(place: dict, order: int) -> dict:
         "tag_match":                  place.get("tag_match"),
         "cf_score":                   place.get("cf_score"),
         "final_score":                place.get("final_score"),
+        "tags":                       _extract_place_tag_names(place, id_tag_to_name),
     }
 
 
@@ -327,6 +378,13 @@ class TripPlannerService:
             for tag in tags
             if tag.get("id_tag") and tag.get("tag_code")
         }
+        # {id_tag (str) → tag_name} — same fallback need as id_tag_map above,
+        # for _extract_place_tag_names()'s display-name lookup.
+        id_tag_to_name = {
+            str(tag["id_tag"]): tag["tag_name"]
+            for tag in tags
+            if tag.get("id_tag") and tag.get("tag_name")
+        }
 
         places_with_tags = attach_place_tags_to_places(filtered_places, place_tag_rows)
 
@@ -474,7 +532,7 @@ class TripPlannerService:
                 if entry.get("type") == "lunch_break":
                     formatted.append(_format_lunch_break(entry))
                 else:
-                    formatted.append(_format_place(entry, order=place_order))
+                    formatted.append(_format_place(entry, order=place_order, id_tag_to_name=id_tag_to_name))
                     place_order += 1
 
             days.append({
@@ -537,11 +595,19 @@ class TripPlannerService:
             "days": days,
             "debug": {
                 "filter_report":      filter_report,
-                # % of candidate places with a trained embedding (≥1 interaction
-                # recorded at last retrain) — no longer a "cache hit rate" since
-                # this comes from cf_user_factors/cf_place_factors, not
-                # cf_score_cache (see _fetch_cf_scores_via_factors above).
-                "cf_coverage":        round(len(cf_scores) / max(len(filtered_places), 1), 4),
+                # % of candidate places (filtered_places) for which the CF
+                # model predicts POSITIVE affinity for this specific user
+                # (cf_score > 0.5, the sigmoid midpoint / U·V=0 threshold) —
+                # not merely "place has a trained embedding". The numerator
+                # is filtered directly from filtered_places (not a separate
+                # data source), so cf_coverage is always a subset count and
+                # can never exceed 1.0.
+                "cf_coverage":        round(
+                    len([p for p in filtered_places
+                         if cf_scores.get(str(p["id_place"]), 0.0) > 0.5])
+                    / max(len(filtered_places), 1),
+                    4,
+                ),
                 "alpha":              alpha,
                 "weight_field":       weight_field,
                 "trip_interest_used": bool(trip_selected_options),

@@ -40,6 +40,7 @@ class _TripDurationPageState extends State<TripDurationPage> {
       onNext: _onNext,
       body: DateRangeCalendar(
         firstDate: DateTime.now(),
+        allowOneDayMode: true,
         onRangeChanged: (DateTimeRange? range) =>
             setState(() => _selectedRange = range),
       ),

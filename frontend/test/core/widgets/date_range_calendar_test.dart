@@ -121,4 +121,129 @@ void main() {
     await tester.tap(find.text('20').first);
     expect(callbackCount, 1);
   });
+
+  testWidgets('keeps the default range selection behavior', (
+    WidgetTester tester,
+  ) async {
+    final List<DateTimeRange?> changes = <DateTimeRange?>[];
+    await tester.pumpWidget(
+      AppLanguageScope(
+        controller: AppLanguageController.instance,
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 700,
+              child: DateRangeCalendar(
+                firstDate: DateTime(2026),
+                onRangeChanged: changes.add,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('one-day-trip-toggle')), findsNothing);
+
+    await tester.tap(find.text('20').first);
+    expect(changes, <DateTimeRange?>[null]);
+
+    await tester.tap(find.text('22').first);
+    expect(
+      changes.last,
+      DateTimeRange(start: DateTime(2026, 1, 20), end: DateTime(2026, 1, 22)),
+    );
+
+    await tester.tap(find.text('22').first);
+    expect(changes.last, isNull);
+  });
+
+  testWidgets('one-day mode selects, replaces, and deselects one date', (
+    WidgetTester tester,
+  ) async {
+    final List<DateTimeRange?> changes = <DateTimeRange?>[];
+    await tester.pumpWidget(
+      AppLanguageScope(
+        controller: AppLanguageController.instance,
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 700,
+              child: DateRangeCalendar(
+                firstDate: DateTime(2026),
+                allowOneDayMode: true,
+                onRangeChanged: changes.add,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('one-day-trip-toggle')));
+    expect(changes, <DateTimeRange?>[null]);
+
+    await tester.tap(find.text('20').first);
+    expect(
+      changes.last,
+      DateTimeRange(start: DateTime(2026, 1, 20), end: DateTime(2026, 1, 20)),
+    );
+
+    await tester.tap(find.text('22').first);
+    expect(
+      changes.last,
+      DateTimeRange(start: DateTime(2026, 1, 22), end: DateTime(2026, 1, 22)),
+    );
+
+    await tester.tap(find.text('22').first);
+    expect(changes.last, isNull);
+  });
+
+  testWidgets('switching modes resets or preserves the start as specified', (
+    WidgetTester tester,
+  ) async {
+    final List<DateTimeRange?> changes = <DateTimeRange?>[];
+    await tester.pumpWidget(
+      AppLanguageScope(
+        controller: AppLanguageController.instance,
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 700,
+              child: DateRangeCalendar(
+                firstDate: DateTime(2026),
+                allowOneDayMode: true,
+                onRangeChanged: changes.add,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('20').first);
+    await tester.tap(find.text('22').first);
+    expect(changes.last, isNotNull);
+
+    await tester.tap(find.byKey(const Key('one-day-trip-toggle')));
+    expect(changes.last, isNull);
+
+    await tester.tap(find.text('23').first);
+    expect(
+      changes.last,
+      DateTimeRange(start: DateTime(2026, 1, 23), end: DateTime(2026, 1, 23)),
+    );
+
+    await tester.tap(find.byKey(const Key('one-day-trip-toggle')));
+    expect(changes.last, isNull);
+
+    await tester.tap(find.text('25').first);
+    expect(
+      changes.last,
+      DateTimeRange(start: DateTime(2026, 1, 23), end: DateTime(2026, 1, 25)),
+    );
+  });
 }

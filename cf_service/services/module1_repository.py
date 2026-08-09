@@ -78,20 +78,15 @@ def fetch_place_tags_for_places(
         response = (
             supabase
             .table("place_tag")
-            .select(
-                """
-                id_place,
-                id_tag,
-                confidence_score,
-                source,
-                tag (
-                    id_tag,
-                    tag_code,
-                    tag_name,
-                    tag_group
-                )
-                """
-            )
+            # Single-line select — a multi-line/indented string here silently
+            # breaks the nested tag(...) embed when combined with .in_():
+            # PostgREST returns rows with unrelated columns (created_at,
+            # tag_role) instead of the requested "tag" object. Verified live
+            # against the real DB: the exact same column list on one line
+            # returns the correct nested tag{id_tag,tag_code,tag_name,
+            # tag_group} object; only the formatting differs. Keep this on
+            # one line.
+            .select("id_place,id_tag,confidence_score,source,tag(id_tag,tag_code,tag_name,tag_group)")
             .in_("id_place", chunk)
             .execute()
         )

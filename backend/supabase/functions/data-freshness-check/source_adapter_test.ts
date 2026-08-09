@@ -4,7 +4,10 @@ import {
   WikipediaSourceAdapter,
 } from "./wikipedia_source_adapter.ts";
 import { OsmSourceAdapter } from "./osm_source_adapter.ts";
-import { SOURCE_HOST_ALLOWLIST } from "./source_adapter.ts";
+import {
+  fetchSourceResponse,
+  SOURCE_HOST_ALLOWLIST,
+} from "./source_adapter.ts";
 
 function fixtureWikipediaFreshness(
   sourceUrl = "https://en.wikipedia.org/wiki/Hoi_An",
@@ -24,9 +27,11 @@ function fixtureWikipediaFreshness(
   };
 }
 
-function fixtureOsmFreshness(): ContentFreshnessRow {
+function fixtureOsmFreshness(
+  sourceUrl: string | null = "https://www.openstreetmap.org/node/123",
+): ContentFreshnessRow {
   return {
-    ...fixtureWikipediaFreshness("https://www.openstreetmap.org/node/123"),
+    ...fixtureWikipediaFreshness(sourceUrl ?? ""),
     contentType: "place",
     sourceType: "osm",
     sourceExternalId: "osm:node:123",
@@ -52,6 +57,12 @@ Deno.test("rejects a source URL outside the configured allowlist", async () => {
 Deno.test("OSM 404 is a valid missing result", async () => {
   const adapter = new OsmSourceAdapter(async () => new Response("", { status: 404 }));
   const result = await adapter.fetch(fixtureOsmFreshness(), AbortSignal.timeout(100));
+  assertEquals(result, { outcome: "missing" });
+});
+
+Deno.test("OSM derives a source URL when the backfill only has an external id", async () => {
+  const adapter = new OsmSourceAdapter(async () => new Response("", { status: 404 }));
+  const result = await adapter.fetch(fixtureOsmFreshness(null), AbortSignal.timeout(100));
   assertEquals(result, { outcome: "missing" });
 });
 
@@ -109,6 +120,25 @@ Deno.test("OSM normalizes only operational fields", async () => {
   }
 });
 
+Deno.test("OSM sends the Overpass query with POST", async () => {
+  let method: string | undefined;
+  let body: BodyInit | null | undefined;
+  let userAgent: string | null | undefined;
+  const adapter = new OsmSourceAdapter(async (_url, init) => {
+    method = init?.method;
+    body = init?.body;
+    userAgent = new Headers(init?.headers).get("user-agent");
+    return new Response(JSON.stringify({ elements: [] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  });
+  await adapter.fetch(fixtureOsmFreshness(), AbortSignal.timeout(100));
+  assertEquals(method, "POST");
+  assertStringIncludes(String(body), "data=");
+  assertEquals(userAgent, "HelloVietnamDataFreshness/1.0");
+});
+
 Deno.test("source adapter turns an aborted request into an error", async () => {
   const adapter = new WikipediaSourceAdapter(async (_url, init) => {
     init?.signal?.throwIfAborted();
@@ -116,4 +146,23 @@ Deno.test("source adapter turns an aborted request into an error", async () => {
   });
   const result = await adapter.fetch(fixtureWikipediaFreshness(), AbortSignal.timeout(100));
   assertEquals(result.outcome, "error");
+});
+
+Deno.test("source requests time out when a provider never responds", async () => {
+  const parent = new AbortController();
+  const keepAlive = setTimeout(() => parent.abort(), 100);
+  const result = await fetchSourceResponse(
+    "https://en.wikipedia.org/wiki/Hoi_An",
+    parent.signal,
+    {
+      timeoutMs: 5,
+      fetchFn: async (_url, init) => await new Promise<Response>((_, reject) => {
+        const abort = () => reject(new DOMException("aborted", "AbortError"));
+        if (init?.signal?.aborted) abort();
+        else init?.signal?.addEventListener("abort", abort, { once: true });
+      }),
+    },
+  );
+  clearTimeout(keepAlive);
+  assertEquals(result, { kind: "error", error: "Source request timed out." });
 });

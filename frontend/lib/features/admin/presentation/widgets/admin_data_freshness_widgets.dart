@@ -151,11 +151,6 @@ class AdminFreshnessReportCard extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Chip(
-            label: Text(report.status),
-            visualDensity: VisualDensity.compact,
-          ),
-          const SizedBox(width: 8),
           TextButton(
             onPressed: onOpenDetails,
             child: const Text('Xem chi tiết'),

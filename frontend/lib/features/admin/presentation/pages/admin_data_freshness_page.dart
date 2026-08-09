@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hellovietnam/features/admin/data/admin_data_freshness_repository.dart';
 import 'package:hellovietnam/features/admin/domain/admin_data_freshness.dart';
+import 'package:hellovietnam/features/admin/presentation/widgets/freshness_report_detail_dialog.dart';
 
 import '../widgets/admin_data_freshness_widgets.dart';
 
@@ -104,11 +106,11 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
                     ),
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: _loading ? null : _reload,
-                  icon: const Icon(Icons.update_rounded),
-                  label: const Text('Kiểm tra ngay'),
-                ),
+                  FilledButton.icon(
+                    onPressed: _loading ? null : _reload,
+                    icon: const Icon(Icons.update_rounded),
+                    label: const Text('Tải lại dữ liệu'),
+                  ),
               ],
             ),
             const SizedBox(height: 18),
@@ -269,61 +271,71 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
     }
   }
 
-  Future<void> _showReportDetails(AdminFreshnessReport report) {
+  Future<void> _showReportDetails(AdminFreshnessReport report) async {
+    AdminFreshnessReport current = report;
+    if (report.status == 'open' || report.status == 'pending') {
+      try {
+        await _repository.updateReportStatus(
+          reportId: report.id,
+          status: 'in_progress',
+        );
+        current = report.copyWith(status: 'in_progress');
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Không thể cập nhật trạng thái báo sai: $error')),
+          );
+        }
+      }
+    }
+    if (!mounted) return;
     return showDialog<void>(
       context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: const Text('Chi tiết báo sai'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _ReportDetailRow(
-                label: 'Nội dung',
-                value:
-                    '${report.contentType ?? 'Không rõ'} · ${report.contentId ?? 'Không rõ'}',
-              ),
-              _ReportDetailRow(label: 'Lý do', value: report.reason),
-              _ReportDetailRow(
-                label: 'Ghi chú',
-                value: report.note?.trim().isNotEmpty == true
-                    ? report.note!.trim()
-                    : 'Không có',
-              ),
-              _ReportDetailRow(label: 'Trạng thái', value: report.status),
-            ],
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Đóng'),
-          ),
-        ],
+      barrierColor: const Color(0x80152B43),
+      builder: (BuildContext dialogContext) => FreshnessReportDetailDialog(
+        report: current,
+        onClose: () => Navigator.of(dialogContext).pop(),
+        onEdit: () {
+          Navigator.of(dialogContext).pop();
+          _openReportedItem(current);
+        },
+        onResolve: () => _resolveReport(current),
       ),
     );
   }
-}
 
-class _ReportDetailRow extends StatelessWidget {
-  const _ReportDetailRow({required this.label, required this.value});
+  Future<void> _resolveReport(
+    AdminFreshnessReport report,
+  ) async {
+    try {
+      await _repository.updateReportStatus(
+        reportId: report.id,
+        status: 'resolved',
+      );
+      await _reload();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không thể xử lý báo sai: $error')),
+        );
+      }
+    }
+  }
 
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-        const SizedBox(height: 3),
-        SelectableText(value),
-      ],
-    ),
-  );
+  void _openReportedItem(AdminFreshnessReport report) {
+    final String? id = report.contentId;
+    if (id == null || id.isEmpty) return;
+    final String? basePath = switch (report.contentType) {
+      'place' => '/admin/places',
+      'activity' => '/admin/activities',
+      'culture' => '/admin/cultures',
+      'food' => '/admin/food',
+      'local_product' => '/admin/local-products',
+      _ => null,
+    };
+    if (basePath == null) return;
+    context.go('$basePath?editId=$id');
+  }
 }
 
 class _ErrorRetry extends StatelessWidget {

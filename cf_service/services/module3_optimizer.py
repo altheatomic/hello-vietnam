@@ -8,6 +8,7 @@ Greedy init still uses pure haversine distance (fast, directionally correct).
 SA neighbour moves: swap + reverse-segment + insert.
 """
 
+import hashlib
 import math
 import random
 
@@ -55,22 +56,22 @@ def greedy_route(start: dict, places: list) -> list:
 
 # ── SA neighbour moves ────────────────────────────────────────────────────────
 
-def _move_swap(route):
-    i, j = random.sample(range(len(route)), 2)
+def _move_swap(route, rng: random.Random):
+    i, j = rng.sample(range(len(route)), 2)
     new  = route.copy()
     new[i], new[j] = new[j], new[i]
     return new
 
 
-def _move_reverse_segment(route):
-    i, j = sorted(random.sample(range(len(route)), 2))
+def _move_reverse_segment(route, rng: random.Random):
+    i, j = sorted(rng.sample(range(len(route)), 2))
     return route[:i] + route[i:j + 1][::-1] + route[j + 1:]
 
 
-def _move_insert(route):
+def _move_insert(route, rng: random.Random):
     n = len(route)
-    i = random.randrange(n)
-    j = random.randrange(n - 1)
+    i = rng.randrange(n)
+    j = rng.randrange(n - 1)
     if j >= i:
         j += 1
     new   = route.copy()
@@ -84,16 +85,20 @@ _MOVES = [_move_swap, _move_reverse_segment, _move_insert]
 
 # ── Simulated Annealing ───────────────────────────────────────────────────────
 
-def _simulated_annealing(cost_fn, initial_route,
+def _simulated_annealing(cost_fn, initial_route, rng: random.Random,
                           T_initial=1.0, T_min=0.0001,
-                          alpha=0.9, I_multiplier=12, seed=None):
+                          alpha=0.9, I_multiplier=12):
     """
     cost_fn(route) → float  — must be pure (no side effects / dict mutations).
     Greedy init and SA moves only shuffle the list; cost_fn reads place dicts.
-    """
-    if seed is not None:
-        random.seed(seed)
 
+    rng: a random.Random instance, created once by the caller (see
+    optimize_day_route()) and reused across all sa_runs restarts — NOT
+    reseeded here. This keeps each restart's exploration genuinely different
+    (the shared instance's internal state keeps advancing call to call)
+    while still making the overall optimize_day_route() call reproducible
+    for identical input, since rng's starting state is deterministic.
+    """
     n = len(initial_route)
     if n <= 1:
         return initial_route
@@ -106,7 +111,7 @@ def _simulated_annealing(cost_fn, initial_route,
 
     while T > T_min:
         for _ in range(I):
-            new_route = random.choice(_MOVES)(current_route)
+            new_route = rng.choice(_MOVES)(current_route, rng)
             new_cost  = cost_fn(new_route)
             delta     = new_cost - current_cost
 
@@ -114,7 +119,7 @@ def _simulated_annealing(cost_fn, initial_route,
                 current_route, current_cost = new_route, new_cost
                 if current_cost < best_cost:
                     best_cost, best_route = current_cost, current_route.copy()
-            elif random.random() < math.exp(-delta / T):
+            elif rng.random() < math.exp(-delta / T):
                 current_route, current_cost = new_route, new_cost
         T *= alpha
 
@@ -123,10 +128,32 @@ def _simulated_annealing(cost_fn, initial_route,
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
+def derive_seed(start: dict, places: list) -> int:
+    """
+    Deterministic seed from the actual optimization input — changes
+    naturally whenever the place set or start point changes, so two
+    different days/trips/users don't silently replay the same random
+    exploration just because they happen to share a place count.
+
+    Order-independent (sorted place IDs) so Module 2's clustering order
+    doesn't affect the derived seed. Uses hashlib, NOT the built-in hash() —
+    hash() on strings is randomized per-process by PYTHONHASHSEED unless
+    explicitly disabled, which would silently break reproducibility across
+    worker restarts/redeploys.
+    """
+    place_ids_sorted = sorted(str(p.get("id_place", "")) for p in places)
+    seed_material = (
+        f"{start.get('latitude', 0):.4f},{start.get('longitude', 0):.4f}|"
+        + ",".join(place_ids_sorted)
+    )
+    return int(hashlib.sha256(seed_material.encode()).hexdigest(), 16) % (2**32)
+
+
 def optimize_day_route(
     start: dict,
     places: list,
     sa_runs: int = 2,
+    seed_override: int | None = None,
 ) -> tuple[list, dict]:
     """
     Returns (best_route, schedule_result).
@@ -134,6 +161,19 @@ def optimize_day_route(
     schedule_result is the output of build_day_schedule() applied to
     best_route — it includes 'schedule', 'total_travel_minutes',
     'total_wait_minutes', 'violation_count'.
+
+    seed_override: optional explicit seed, mainly for callers that
+    deliberately want a DIFFERENT result per call with the same (start,
+    places) — e.g. test_module3_benchmark.py measuring variance across
+    repeated SA runs. Production (trip_planner.py) doesn't pass this, so it
+    gets the default: a seed derived from (start, places) via derive_seed(),
+    making the same trip/day input always produce the same route.
+
+    A single random.Random instance is created ONCE here, before the
+    sa_runs loop, and reused (not reseeded) across every restart — so the
+    sa_runs restarts still explore genuinely different neighbourhoods of the
+    search space (multi-restart diversity is preserved), while the overall
+    result is reproducible for identical input.
 
     Import is deferred (inside function) to avoid circular dependency:
       schedule_builder → (no imports from module3)
@@ -149,15 +189,18 @@ def optimize_day_route(
     def cost_fn(route: list) -> float:
         return route_cost_with_schedule(route, start)
 
+    base_seed = seed_override if seed_override is not None else derive_seed(start, places)
+    rng = random.Random(base_seed)
+
     initial_route = greedy_route(start, places)
     best_route    = initial_route
     best_cost     = cost_fn(initial_route)
 
-    for seed in range(sa_runs):
+    for _ in range(sa_runs):
         candidate = _simulated_annealing(
-            cost_fn, initial_route,
+            cost_fn, initial_route, rng,
             T_initial=1.0, T_min=0.0001, alpha=0.9,
-            I_multiplier=12, seed=seed,
+            I_multiplier=12,
         )
         cost = cost_fn(candidate)
         if cost < best_cost:

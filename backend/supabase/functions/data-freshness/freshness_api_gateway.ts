@@ -86,14 +86,26 @@ export class SupabaseFreshnessApiGateway implements FreshnessApiGateway {
     const { data, count, error } = await this.serviceClient
       .from("content_report")
       .select(
-        "id,reporter_user_id,content_type,content_id,reason,note,status,created_at,resolved_at",
+        "id,reporter_user_id,content_type,content_id,reason,note,status,created_at,resolved_at,reporter:user_account!content_report_reporter_user_id_fkey(full_name,username)",
         { count: "exact" },
       )
-      .eq("status", "open")
+      .in("status", ["pending", "in_progress"])
       .order("created_at", { ascending: false })
       .range(...rangeFor(page, pageSize));
     if (error) throw new Error(error.message);
-    return { rows: asRows(data), totalCount: count ?? 0 };
+    const rows = asRows(data).map((row) => {
+      const profile = row.reporter && typeof row.reporter === "object"
+        ? row.reporter as Record<string, unknown>
+        : {};
+      const fullName = String(profile.full_name ?? "").trim();
+      const username = String(profile.username ?? "").trim();
+      return {
+        ...row,
+        reporter_name: fullName || username.split("@")[0] || null,
+        reporter_email: username || null,
+      };
+    });
+    return { rows, totalCount: count ?? 0 };
   }
 
   async listRuns(page: number, pageSize: number): Promise<PagedRows> {
@@ -133,6 +145,25 @@ export class SupabaseFreshnessApiGateway implements FreshnessApiGateway {
       p_content_id: contentId,
     });
     if (error) throw new Error(error.message);
+  }
+
+  async updateReportStatus(
+    reportId: string,
+    status: "pending" | "in_progress" | "resolved" | "dismissed",
+  ): Promise<JsonObject> {
+    const { data, error } = await this.serviceClient
+      .from("content_report")
+      .update({
+        status,
+        resolved_at: status === "resolved" || status === "dismissed"
+          ? new Date().toISOString()
+          : null,
+      })
+      .eq("id", reportId)
+      .select("id,reporter_user_id,content_type,content_id,reason,note,status,created_at,resolved_at")
+      .single();
+    if (error) throw new Error(error.message);
+    return (data ?? {}) as JsonObject;
   }
 }
 

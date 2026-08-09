@@ -16,11 +16,13 @@ class DateRangeCalendar extends StatefulWidget {
     super.key,
     this.initialRange,
     this.firstDate,
+    this.allowOneDayMode = false,
     required this.onRangeChanged,
   });
 
   final DateTimeRange? initialRange;
   final DateTime? firstDate;
+  final bool allowOneDayMode;
   final void Function(DateTimeRange?) onRangeChanged;
 
   @override
@@ -32,6 +34,7 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
   late final DateTime _initialVisibleDate;
   DateTime? _start;
   DateTime? _end;
+  bool _isOneDayMode = false;
   final GlobalKey _initialMonthKey = GlobalKey();
   bool _didScheduleInitialReveal = false;
 
@@ -80,37 +83,74 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
   DateTime _dateOnly(DateTime value) =>
       DateTime(value.year, value.month, value.day);
 
+  void _handleOneDayTap(DateTime day) {
+    if (_start != null &&
+        _end != null &&
+        _isSameDate(day, _start!) &&
+        _isSameDate(day, _end!)) {
+      _start = null;
+      _end = null;
+    } else {
+      _start = day;
+      _end = day;
+    }
+  }
+
+  void _handleRangeTap(DateTime day) {
+    if (_start == null) {
+      _start = day;
+      _end = null;
+    } else if (_end == null) {
+      if (_isSameDate(day, _start!)) {
+        _start = null;
+      } else if (day.isBefore(_start!)) {
+        _end = _start;
+        _start = day;
+      } else {
+        _end = day;
+      }
+    } else {
+      final bool tappedStart = _isSameDate(day, _start!);
+      final bool tappedEnd = _isSameDate(day, _end!);
+      if (tappedStart && tappedEnd) {
+        _start = null;
+        _end = null;
+      } else if (tappedStart) {
+        _start = _end;
+        _end = null;
+      } else if (tappedEnd) {
+        _end = null;
+      } else {
+        _start = day;
+        _end = null;
+      }
+    }
+  }
+
+  void _setOneDayMode(bool enabled) {
+    if (_isOneDayMode == enabled) return;
+    setState(() {
+      _isOneDayMode = enabled;
+      if (enabled) {
+        _start = null;
+        _end = null;
+      } else if (_start != null &&
+          _end != null &&
+          _isSameDate(_start!, _end!)) {
+        _end = null;
+      }
+    });
+    widget.onRangeChanged(null);
+  }
+
   void _onDayTap(DateTime day) {
     final DateTime? firstDate = widget.firstDate;
     if (firstDate != null && day.isBefore(_dateOnly(firstDate))) return;
     setState(() {
-      if (_start == null) {
-        _start = day;
-        _end = null;
-      } else if (_end == null) {
-        if (_isSameDate(day, _start!)) {
-          _start = null;
-        } else if (day.isBefore(_start!)) {
-          _end = _start;
-          _start = day;
-        } else {
-          _end = day;
-        }
+      if (_isOneDayMode) {
+        _handleOneDayTap(day);
       } else {
-        final bool tappedStart = _isSameDate(day, _start!);
-        final bool tappedEnd = _isSameDate(day, _end!);
-        if (tappedStart && tappedEnd) {
-          _start = null;
-          _end = null;
-        } else if (tappedStart) {
-          _start = _end;
-          _end = null;
-        } else if (tappedEnd) {
-          _end = null;
-        } else {
-          _start = day;
-          _end = null;
-        }
+        _handleRangeTap(day);
       }
     });
     widget.onRangeChanged(
@@ -264,6 +304,19 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
                 isComplete: _hasRange,
               ),
             ),
+            if (widget.allowOneDayMode) ...<Widget>[
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _OneDayTripChip(
+                    selected: _isOneDayMode,
+                    onTap: () => _setOneDayMode(!_isOneDayMode),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             if (hasBoundedHeight) Expanded(child: monthList) else monthList,
           ],
@@ -274,6 +327,70 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
 }
 
 // ── Private sub-widgets ───────────────────────────────────────────────────────
+
+class _OneDayTripChip extends StatelessWidget {
+  const _OneDayTripChip({required this.selected, required this.onTap});
+
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const Key('one-day-trip-toggle'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? (isDark
+                      ? theme.colorScheme.primary.withValues(alpha: 0.16)
+                      : const Color(0xFFEEF9FF))
+                : theme.colorScheme.surface.withValues(alpha: 0.88),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF22B7F1)
+                  : (isDark
+                        ? theme.colorScheme.outline
+                        : const Color(0xFFD8EAF3)),
+              width: selected ? 1.8 : 1.2,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (selected) ...<Widget>[
+                const Icon(
+                  Icons.check_rounded,
+                  size: 18,
+                  color: Color(0xFF22B7F1),
+                ),
+                const SizedBox(width: 7),
+              ],
+              Text(
+                context.l10n.ui('1-Day Trip'),
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: selected
+                      ? const Color(0xFF1FAFE6)
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _NavCircleButton extends StatelessWidget {
   const _NavCircleButton({required this.icon, required this.onTap});

@@ -2,6 +2,11 @@ import { createClient } from "@supabase/supabase-js";
 import { loadFoodCatalog } from "./food_catalog.ts";
 import { findBestFoodMatch } from "./food_matcher.ts";
 import {
+  configuredGeminiKeys,
+  configuredGeminiModels,
+  requestGeminiWithFallback,
+} from "./gemini_fallback.ts";
+import {
   normalizeRecognition,
   unsupportedRecognition,
 } from "./recognition_contract.ts";
@@ -35,13 +40,12 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "Method not allowed." }, 405);
   }
 
-  const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-  const geminiModel = Deno.env.get("GEMINI_AI_SEARCH_MODEL") ??
-    "gemini-2.5-flash";
+  const geminiApiKeys = configuredGeminiKeys(Deno.env.get);
+  const geminiModels = configuredGeminiModels(Deno.env.get);
 
-  if (!geminiApiKey) {
+  if (geminiApiKeys.length === 0) {
     return jsonResponse(
-      { error: "Server is missing GEMINI_API_KEY secret." },
+      { error: "Server is missing a GEMINI_API_KEY secret." },
       500,
     );
   }
@@ -69,19 +73,25 @@ Deno.serve(async (request) => {
     targetLanguageName,
   });
 
-  const geminiResponse = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`,
-    {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": geminiApiKey,
-        "Content-Type": "application/json",
+  let geminiResult;
+  try {
+    geminiResult = await requestGeminiWithFallback({
+      apiKeys: geminiApiKeys,
+      models: geminiModels,
+      body: geminiRequest,
+    });
+  } catch (error) {
+    return jsonResponse(
+      {
+        error: error instanceof Error
+          ? error.message
+          : "Gemini request failed.",
       },
-      body: JSON.stringify(geminiRequest),
-    },
-  );
-
-  const geminiData = await geminiResponse.json();
+      502,
+    );
+  }
+  const geminiResponse = geminiResult.response;
+  const geminiData = geminiResult.data as Record<string, any> | null;
 
   if (!geminiResponse.ok) {
     return jsonResponse(
@@ -99,7 +109,7 @@ Deno.serve(async (request) => {
         ...unsupportedRecognition("unsafe_content"),
         db_match: null,
         provider: "gemini",
-        model: geminiModel,
+        model: geminiResult.model,
       },
       200,
     );
@@ -137,7 +147,7 @@ Deno.serve(async (request) => {
       ...normalized,
       db_match: databaseMatch,
       provider: "gemini",
-      model: geminiModel,
+      model: geminiResult.model,
     },
     200,
   );
