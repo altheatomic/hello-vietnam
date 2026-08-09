@@ -42,7 +42,7 @@ from db.place_repository import fetch_places_required_filter
 from services.module3_optimizer import greedy_route, haversine_km, optimize_day_route
 from services.schedule_builder import route_cost_with_schedule
 
-PROVINCE_HCM = "230e26ed-0118-4f62-96b5-ac0eb3ca1c1b"  # Ho Chi Minh — large candidate pool
+PROVINCE_HCM = "094014a7-b8f6-481a-bbce-5ed6cdd457c5"  # Ho Chi Minh — large candidate pool (province table, post-merger)
 N_VALUES = [4, 6, 8, 10, 12]
 DRAWS_PER_N = 10
 SA_REPEATS_PER_DRAW = 10

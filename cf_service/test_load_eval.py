@@ -57,7 +57,7 @@ load_dotenv()
 
 # ── Fixed test fixtures (same as test_performance_eval.py, verified real IDs) ─
 USER_ID = "dd16ba71-c26b-44dd-a3f4-61973f268822"       # control.blank (no history)
-PROVINCE_HCM = "230e26ed-0118-4f62-96b5-ac0eb3ca1c1b"  # Hồ Chí Minh — same pool for every request
+PROVINCE_HCM = "094014a7-b8f6-481a-bbce-5ed6cdd457c5"  # Hồ Chí Minh — same pool for every request
 N_DAYS = 2
 
 DIRECT_URL = "http://localhost:8000/api/trips/plan"

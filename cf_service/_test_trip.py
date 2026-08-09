@@ -12,7 +12,7 @@ import urllib.request
 API = "http://localhost:8000"
 
 USER_ID     = "e4bb33fb-5f1b-49a6-9a00-93c67183afde"
-PROVINCE_ID = "230e26ed-0118-4f62-96b5-ac0eb3ca1c1b"
+PROVINCE_ID = "094014a7-b8f6-481a-bbce-5ed6cdd457c5"
 
 PAYLOAD_NO_SAVE = {
     "id_user":     USER_ID,

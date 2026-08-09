@@ -19,7 +19,7 @@ import requests
 BASE_URL = "http://localhost:8000"
 
 # id_province = Hồ Chí Minh (xác nhận qua bảng `province`, không phải `city_province`)
-ID_PROVINCE_HCM = "230e26ed-0118-4f62-96b5-ac0eb3ca1c1b"
+ID_PROVINCE_HCM = "094014a7-b8f6-481a-bbce-5ed6cdd457c5"
 
 # id_trip_interest_option của 'culture_history' — LƯU Ý: đây phải là UUID
 # (id_trip_interest_option), KHÔNG phải option_code string 'culture_history'.
