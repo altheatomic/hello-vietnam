@@ -9,7 +9,11 @@ from unittest.mock import patch
 import httpx
 
 from scripts.place_content_backfill.artifacts import ArtifactStore, WorkerFailure
-from scripts.place_content_backfill.cli import main
+from scripts.place_content_backfill.cli import (
+    _budget_state_from_proposals,
+    _repair_budget_from_environment,
+    main,
+)
 from scripts.place_content_backfill.models import (
     BaselineRecord,
     GeneratedContent,
@@ -21,6 +25,7 @@ from scripts.place_content_backfill.generator import (
     BudgetCaps,
     BudgetExceeded,
     BudgetState,
+    BudgetLedger,
     ContentIssue,
     DeepSeekClient,
     GenerationCache,
@@ -538,8 +543,11 @@ class PlaceContentGeneratorTest(unittest.IsolatedAsyncioTestCase):
                 )
             self.assertEqual(count, 1)
             proposal = store.read_all("proposals")[0]["proposal"]
+            artifact = store.read_all("proposals")[0]
             self.assertEqual(proposal["provider_models"], ["deepseek-v4-flash", "deepseek-v4-pro"])
             self.assertTrue(proposal["repair_used"])
+            self.assertTrue(artifact["usage_checkpointed"])
+            self.assertEqual(len(artifact["provider_usages"]), 2)
 
     async def test_malformed_primary_and_repair_stop_after_two_calls(self):
         calls = {"primary": 0, "repair": 0}
@@ -838,6 +846,106 @@ class PlaceContentGenerateCliTest(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
+    def test_budget_ledger_checkpoints_only_the_unpersisted_delta(self):
+        state = BudgetState(
+            request_count=1,
+            request_attempts=1,
+            input_tokens=10,
+            output_tokens=20,
+            estimated_cost_usd=0.01,
+        )
+        ledger = BudgetLedger(self.store, BudgetState())
+        ledger.checkpoint(
+            state,
+            reason="provider-response",
+            provider_role="primary",
+            model="deepseek-v4-flash",
+        )
+        ledger.checkpoint(
+            state,
+            reason="provider-response",
+            provider_role="primary",
+            model="deepseek-v4-flash",
+        )
+        rows = self.store.read_all("generation-budget")
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["request_attempts"], 1)
+        self.assertEqual(rows[0]["provider_role"], "primary")
+
+    def test_usage_checkpointed_proposal_is_not_counted_twice_on_resume(self):
+        self.store.append_jsonl(
+            "proposals",
+            {
+                "place_id": "legacy",
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 20,
+                    "total_tokens": 30,
+                    "estimated_cost_usd": 0.01,
+                    "request_attempts": 1,
+                },
+                "cache_hit": False,
+            },
+        )
+        self.store.append_jsonl(
+            "proposals",
+            {
+                "place_id": "new",
+                "usage": {
+                    "prompt_tokens": 100,
+                    "completion_tokens": 200,
+                    "total_tokens": 300,
+                    "estimated_cost_usd": 0.02,
+                    "request_attempts": 1,
+                },
+                "usage_checkpointed": True,
+                "cache_hit": False,
+            },
+        )
+        self.store.append_jsonl(
+            "generation-budget",
+            {
+                "request_count": 1,
+                "request_attempts": 1,
+                "repair_request_attempts": 1,
+                "input_tokens": 100,
+                "output_tokens": 200,
+                "estimated_cost_usd": 0.02,
+                "provider_role": "repair",
+                "model": "deepseek-v4-pro",
+            },
+        )
+        state = _budget_state_from_proposals(self.store)
+        self.assertEqual(state.request_count, 2)
+        self.assertEqual(state.request_attempts, 2)
+        self.assertEqual(state.repair_request_attempts, 1)
+        self.assertEqual(state.input_tokens, 110)
+        self.assertEqual(state.output_tokens, 220)
+
+    def test_generate_worker_requires_explicit_repair_model_prices_and_cap(self):
+        environment = self.provider_environment()
+        for missing in (
+            "DEEPSEEK_REPAIR_MODEL",
+            "DEEPSEEK_REPAIR_INPUT_COST_PER_MILLION_USD",
+            "DEEPSEEK_REPAIR_OUTPUT_COST_PER_MILLION_USD",
+            "DEEPSEEK_MAX_REPAIR_REQUESTS",
+        ):
+            with self.subTest(missing=missing):
+                values = dict(environment)
+                values.pop(missing)
+                with patch.dict(os.environ, values, clear=True):
+                    with self.assertRaisesRegex(ValueError, rf"missing: {missing}"):
+                        _repair_budget_from_environment(
+                            BudgetCaps(
+                                max_requests=5,
+                                max_input_tokens=5000,
+                                max_output_tokens=5000,
+                                max_estimated_cost_usd=1.0,
+                                input_cost_per_million_usd=0.14,
+                                output_cost_per_million_usd=0.28,
+                            )
+                        )
+
     def provider_environment(self, **overrides):
         values = {
             "DEEPSEEK_API_KEY": "unit-test-key",
@@ -848,6 +956,10 @@ class PlaceContentGenerateCliTest(unittest.TestCase):
             "DEEPSEEK_MAX_INPUT_TOKENS": "10000",
             "DEEPSEEK_MAX_OUTPUT_TOKENS": "1400",
             "DEEPSEEK_MAX_ESTIMATED_COST_USD": "1.00",
+            "DEEPSEEK_REPAIR_MODEL": "deepseek-test-repair",
+            "DEEPSEEK_REPAIR_INPUT_COST_PER_MILLION_USD": "0.435",
+            "DEEPSEEK_REPAIR_OUTPUT_COST_PER_MILLION_USD": "0.87",
+            "DEEPSEEK_MAX_REPAIR_REQUESTS": "1",
         }
         values.update(overrides)
         return values
@@ -919,6 +1031,7 @@ class PlaceContentGenerateCliTest(unittest.TestCase):
             )
 
         async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        repair_async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
         previous = Path.cwd()
         try:
             os.chdir(self.root)
@@ -926,7 +1039,7 @@ class PlaceContentGenerateCliTest(unittest.TestCase):
                 patch.dict(os.environ, self.provider_environment(), clear=True),
                 patch(
                     "scripts.place_content_backfill.generator.httpx.AsyncClient",
-                    return_value=async_client,
+                    side_effect=[async_client, repair_async_client],
                 ),
             ):
                 try:
@@ -966,6 +1079,7 @@ class PlaceContentGenerateCliTest(unittest.TestCase):
             return httpx.Response(500)
 
         async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        repair_async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
         previous = Path.cwd()
         try:
             os.chdir(self.root)
@@ -973,7 +1087,7 @@ class PlaceContentGenerateCliTest(unittest.TestCase):
                 patch.dict(os.environ, self.provider_environment(), clear=True),
                 patch(
                     "scripts.place_content_backfill.generator.httpx.AsyncClient",
-                    return_value=async_client,
+                    side_effect=[async_client, repair_async_client],
                 ),
             ):
                 try:
@@ -991,6 +1105,7 @@ class PlaceContentGenerateCliTest(unittest.TestCase):
             return httpx.Response(500)
 
         async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        repair_async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
         status_path = self.store.run_dir / "worker.status.json"
         previous = Path.cwd()
         try:
@@ -999,7 +1114,7 @@ class PlaceContentGenerateCliTest(unittest.TestCase):
                 patch.dict(os.environ, self.provider_environment(), clear=True),
                 patch(
                     "scripts.place_content_backfill.generator.httpx.AsyncClient",
-                    return_value=async_client,
+                    side_effect=[async_client, repair_async_client],
                 ),
             ):
                 with self.assertRaises(BudgetExceeded):
@@ -1024,6 +1139,9 @@ class PlaceContentGenerateCliTest(unittest.TestCase):
         status = json.loads(status_path.read_text(encoding="utf-8"))
         self.assertFalse(status["ok"])
         self.assertEqual(status["error_type"], "BudgetExceeded")
+        budget_rows = self.store.read_all("generation-budget")
+        self.assertEqual(sum(row["request_attempts"] for row in budget_rows), 1)
+        self.assertEqual(budget_rows[-1]["reason"], "worker-failure")
         self.assertNotIn("unit-test-key", status_path.read_text(encoding="utf-8"))
 
     def test_generation_supervisor_refuses_to_resume_after_failed_worker(self):

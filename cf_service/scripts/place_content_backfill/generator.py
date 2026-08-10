@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import hashlib
 import json
 from pathlib import Path
@@ -138,6 +138,48 @@ class BudgetState:
             usage.prompt_tokens * float(caps.input_cost_per_million_usd)
             + usage.completion_tokens * float(caps.output_cost_per_million_usd)
         ) / 1_000_000
+
+
+class BudgetLedger:
+    """Persist only budget deltas so provider usage survives worker failure."""
+
+    _FIELDS = (
+        "request_count",
+        "request_attempts",
+        "repair_request_attempts",
+        "input_tokens",
+        "output_tokens",
+        "estimated_cost_usd",
+    )
+
+    def __init__(self, artifact_store: ArtifactStore, initial_state: BudgetState) -> None:
+        self.artifact_store = artifact_store
+        self._checkpointed_state = replace(initial_state)
+
+    def checkpoint(
+        self,
+        state: BudgetState,
+        *,
+        reason: str,
+        provider_role: str | None = None,
+        model: str | None = None,
+    ) -> None:
+        deltas: dict[str, int | float] = {}
+        for field_name in self._FIELDS:
+            current = getattr(state, field_name)
+            previous = getattr(self._checkpointed_state, field_name)
+            delta = current - previous
+            if delta < 0:
+                raise ValueError(f"budget state moved backwards for {field_name}")
+            deltas[field_name] = delta
+        if any(deltas[field_name] != 0 for field_name in self._FIELDS):
+            record: dict[str, Any] = {**deltas, "reason": reason}
+            if provider_role is not None:
+                record["provider_role"] = provider_role
+            if model is not None:
+                record["model"] = model
+            self.artifact_store.append_jsonl("generation-budget", record)
+        self._checkpointed_state = replace(state)
 
 
 @dataclass(frozen=True)
@@ -752,6 +794,10 @@ async def generate_worker(
                 "baseline_input_hash": result.proposal.baseline_input_hash,
                 "proposal": result.proposal.model_dump(mode="json"),
                 "usage": result.usage.as_dict(),
+                "provider_usages": [
+                    usage.as_dict() for usage in result.provider_usages
+                ],
+                "usage_checkpointed": bool(result.provider_usages),
                 "cache_hit": result.cache_hit,
             },
         )
@@ -761,6 +807,7 @@ async def generate_worker(
 __all__ = [
     "BudgetCaps",
     "BudgetExceeded",
+    "BudgetLedger",
     "BudgetState",
     "ContentIssue",
     "DeepSeekClient",

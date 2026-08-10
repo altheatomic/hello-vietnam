@@ -20,6 +20,7 @@ from .generator import (
     MAX_OUTPUT_TOKENS,
     BudgetCaps,
     BudgetExceeded,
+    BudgetLedger,
     BudgetState,
     DeepSeekClient,
     estimate_generation_input_tokens,
@@ -253,12 +254,36 @@ def _provider_budget_from_environment() -> BudgetCaps:
         raise ValueError("DeepSeek runtime caps and prices must be numeric") from exc
 
 
+def _repair_budget_from_environment(global_caps: BudgetCaps) -> BudgetCaps:
+    try:
+        _required_environment("DEEPSEEK_REPAIR_MODEL")
+        return BudgetCaps(
+            max_requests=global_caps.max_requests,
+            max_input_tokens=global_caps.max_input_tokens,
+            max_output_tokens=global_caps.max_output_tokens,
+            max_estimated_cost_usd=global_caps.max_estimated_cost_usd,
+            input_cost_per_million_usd=float(
+                _required_environment("DEEPSEEK_REPAIR_INPUT_COST_PER_MILLION_USD")
+            ),
+            output_cost_per_million_usd=float(
+                _required_environment("DEEPSEEK_REPAIR_OUTPUT_COST_PER_MILLION_USD")
+            ),
+            max_repair_requests=int(_required_environment("DEEPSEEK_MAX_REPAIR_REQUESTS")),
+        )
+    except ValueError as exc:
+        if str(exc).startswith("required runtime variable is missing:"):
+            raise
+        raise ValueError("DeepSeek repair runtime caps and prices must be numeric") from exc
+
+
 def _budget_state_from_proposals(store: ArtifactStore) -> BudgetState:
     state = BudgetState()
     for row in store.iter_stream("proposals"):
         usage = row.get("usage")
         if not isinstance(usage, dict):
             raise ValueError("proposal artifact is missing provider usage")
+        if bool(row.get("usage_checkpointed")):
+            continue
         if not bool(row.get("cache_hit")):
             state.request_count += 1
         state.request_attempts += int(
@@ -272,6 +297,7 @@ def _budget_state_from_proposals(store: ArtifactStore) -> BudgetState:
     for row in store.iter_stream("generation-budget"):
         state.request_count += int(row.get("request_count") or 0)
         state.request_attempts += int(row.get("request_attempts") or 0)
+        state.repair_request_attempts += int(row.get("repair_request_attempts") or 0)
         state.input_tokens += int(row.get("input_tokens") or 0)
         state.output_tokens += int(row.get("output_tokens") or 0)
         state.estimated_cost_usd += float(row.get("estimated_cost_usd") or 0.0)
@@ -285,6 +311,7 @@ def _budget_status(state: BudgetState) -> dict[str, int | float]:
         "input_tokens": state.input_tokens,
         "output_tokens": state.output_tokens,
         "estimated_cost_usd": state.estimated_cost_usd,
+        "repair_request_attempts": state.repair_request_attempts,
     }
 
 
@@ -455,22 +482,50 @@ async def _generate_selected_worker(
     place_ids: set[str],
     *,
     max_places: int,
-    budget: BudgetCaps,
+    primary_budget: BudgetCaps,
+    repair_budget: BudgetCaps,
     budget_state: BudgetState,
 ) -> tuple[int, BudgetState]:
-    async with DeepSeekClient(
-        api_key=_required_environment("DEEPSEEK_API_KEY"),
-        model=_required_environment("DEEPSEEK_CONTENT_MODEL"),
-        budget=budget,
-        budget_state=budget_state,
-    ) as provider:
-        count = await generate_worker(
-            _load_generation_items(store, place_ids),
-            store,
-            provider,
-            max_places=max_places,
+    ledger = BudgetLedger(store, budget_state)
+
+    def checkpoint(current_state: BudgetState, usage) -> None:
+        ledger.checkpoint(
+            current_state,
+            reason="provider-response",
+            provider_role=usage.provider_role,
+            model=usage.model,
         )
-        return count, provider.state
+
+    try:
+        async with (
+            DeepSeekClient(
+                api_key=_required_environment("DEEPSEEK_API_KEY"),
+                model=_required_environment("DEEPSEEK_CONTENT_MODEL"),
+                budget=primary_budget,
+                budget_state=budget_state,
+                provider_role="primary",
+                usage_checkpoint=checkpoint,
+            ) as primary,
+            DeepSeekClient(
+                api_key=_required_environment("DEEPSEEK_API_KEY"),
+                model=_required_environment("DEEPSEEK_REPAIR_MODEL"),
+                budget=repair_budget,
+                budget_state=budget_state,
+                provider_role="repair",
+                usage_checkpoint=checkpoint,
+            ) as repair,
+        ):
+            count = await generate_worker(
+                _load_generation_items(store, place_ids),
+                store,
+                primary,
+                repair_provider=repair,
+                max_places=max_places,
+            )
+            return count, primary.state
+    except Exception:
+        ledger.checkpoint(budget_state, reason="worker-failure")
+        raise
 
 
 def _run_generate(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
@@ -502,6 +557,7 @@ def _run_generate(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
         _required_environment("DEEPSEEK_API_KEY")
         _required_environment("DEEPSEEK_CONTENT_MODEL")
         budget = _provider_budget_from_environment()
+        repair_budget = _repair_budget_from_environment(budget)
         initial_state = _budget_state_from_proposals(store)
         _ensure_generation_batch_fits_budget(store, pending, initial_state, budget)
 
@@ -544,6 +600,7 @@ def _run_generate(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
     if not set(args.worker_place_ids).issubset(set(manifest.place_ids)):
         parser.error("worker place ID list is outside the manifest")
     budget = _provider_budget_from_environment()
+    repair_budget = _repair_budget_from_environment(budget)
     initial_state = _budget_state_from_proposals(store)
     selected = {str(place_id) for place_id in args.worker_place_ids}
     try:
@@ -552,7 +609,8 @@ def _run_generate(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
                 store,
                 selected,
                 max_places=args.worker_chunk_size,
-                budget=budget,
+                primary_budget=budget,
+                repair_budget=repair_budget,
                 budget_state=initial_state,
             )
         )
