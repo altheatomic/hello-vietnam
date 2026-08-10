@@ -330,6 +330,7 @@ def route_cost_with_schedule(
     lunch_start: datetime.time = _LUNCH_START,
     lunch_dur:   int           = _LUNCH_DUR,
     day_end:     datetime.time = _DAY_END,
+    travel_time_fn: Callable[[dict, dict], float] | None = None,
 ) -> float:
     """
     Evaluate a candidate route order for SA without mutating any place dict.
@@ -340,12 +341,21 @@ def route_cost_with_schedule(
          + dropped_count         × 1500
          + lunch_deviation_total × 3 (_LUNCH_DEVIATION_PENALTY_PER_MIN)
 
-    Always uses the default Haversine travel_time_fn (_travel_min) — this
-    runs hundreds of times per SA optimisation run, so it must never call
-    out to a real API. See _simulate_place_step()'s docstring.
+    travel_time_fn: optional override, defaults to None which falls back to
+    the Haversine-based _travel_min() — i.e. calling this the old way (no
+    new argument) is 100% unchanged behaviour, same as build_day_schedule()'s
+    existing travel_time_fn parameter (see its docstring). Still must never
+    be passed anything that calls out to a real API — this runs hundreds of
+    times per SA optimisation run. module3_optimizer.optimize_day_route()
+    passes a precomputed Haversine lookup here (same _travel_min() values,
+    just computed once upfront instead of per call) — see
+    _simulate_place_step()'s docstring for why a real API travel_time_fn
+    (e.g. Goong) may only ever be passed to build_day_schedule(), never here.
     """
     if not route:
         return 0.0
+
+    effective_travel_time_fn = travel_time_fn or _travel_min
 
     current         = day_start
     current_elapsed = 0   # minutes since day_start — never wraps, see _minutes_to_cutoff()
@@ -358,7 +368,7 @@ def route_cost_with_schedule(
         step = _simulate_place_step(
             idx, place, current, current_elapsed, had_lunch, prev,
             lunch_start, lunch_dur, default_dur, buffer,
-            travel_time_fn=_travel_min,
+            travel_time_fn=effective_travel_time_fn,
         )
 
         # Drop check — compared on never-wrapping elapsed minutes, NOT on the
