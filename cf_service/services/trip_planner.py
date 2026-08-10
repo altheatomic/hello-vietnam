@@ -144,6 +144,39 @@ def _derive_start_point(places: list) -> dict:
     return {"latitude": avg_lat, "longitude": avg_lon}
 
 
+def _start_point_for_day(day_cluster: dict, fallback_places: list) -> dict:
+    """
+    Each day's start_point is now derived independently from that day's own
+    cluster centroid — NOT chained from the previous day's optimized last
+    stop (the old `start_point = best_route[-1]` carried across loop
+    iterations). This is what makes the days independent of each other and
+    safe to run concurrently (see the day loop in plan()).
+
+    day_cluster["centroid"] is a (lat, lon) tuple already computed by
+    Module 2 (module2_algorithm.py's compute_centroid()/build_initial_day_
+    clusters()) and kept in sync with the day's final `places` by
+    recompute_day_centroid() whenever greedy repair moves places between
+    days — so by the time plan() reaches Module 3, it always reflects the
+    places actually in this day_cluster.
+
+    Falls back to _derive_start_point() (this day's own places, then the
+    whole trip's top_places) only for the degenerate case of an empty day
+    cluster, where compute_centroid() returns None.
+
+    Trade-off accepted: day N no longer starts geographically near where
+    day N-1's route ended — a soft continuity nicety, not a hard schedule
+    rule enforced anywhere in schedule_builder.py — traded for running all
+    days' SA + Goong concurrently instead of sequentially.
+    """
+    centroid = day_cluster.get("centroid")
+    if centroid is not None:
+        return {"latitude": centroid[0], "longitude": centroid[1]}
+    day_places = day_cluster.get("places") or []
+    if day_places:
+        return _derive_start_point(day_places)
+    return _derive_start_point(fallback_places)
+
+
 # Same threshold used by test_module1_eval.py's ground-truth definition —
 # high enough to drop noisy auto-tagged rows (e.g. Duong Dong Market's
 # "beach" tag at confidence 0.40 — a real place_tag row, but not
@@ -489,11 +522,20 @@ class TripPlannerService:
         _t_m3_0 = time.perf_counter()
 
         # ── [Module 3 – Route optimization] ───────────────────────────────────
-        start_point = _derive_start_point(top_places)
-        days = []
-
-        for day_cluster in day_clusters:
+        # Each day is now independent (start_point comes from that day's own
+        # cluster centroid, not from the previous day's optimized last stop —
+        # see _start_point_for_day()), so all days run concurrently via
+        # asyncio.gather() instead of one-at-a-time. No shared mutable state
+        # between days: each day_cluster["places"] is a disjoint set of place
+        # dicts (Module 2's clustering assigns every place to exactly one
+        # day), optimize_day_route() creates its own fresh random.Random(seed)
+        # per call, and _build_edge_lookups()/_attach_travel_data() below
+        # only ever touch this day's own best_route/schedule_result — nothing
+        # here is a global or cross-day-shared object.
+        async def _plan_one_day(day_cluster: dict) -> dict:
             day_places = day_cluster["places"]
+            start_point = _start_point_for_day(day_cluster, top_places)
+
             best_route, schedule_result = await asyncio.to_thread(
                 optimize_day_route,
                 start_point, day_places, sa_runs=sa_runs
@@ -535,14 +577,18 @@ class TripPlannerService:
                     formatted.append(_format_place(entry, order=place_order, id_tag_to_name=id_tag_to_name))
                     place_order += 1
 
-            days.append({
+            return {
                 "day":    day_cluster["day"],
                 "date":   day_cluster["date"],
                 "places": formatted,
-            })
+            }
 
-            if best_route:
-                start_point = best_route[-1]
+        # asyncio.gather() preserves input order in its result list
+        # regardless of which day finishes first — day_clusters[i] always
+        # maps to days[i], so save_plan()'s day numbering stays correct.
+        days = list(await asyncio.gather(
+            *(_plan_one_day(day_cluster) for day_cluster in day_clusters)
+        ))
 
         timing_ms["module3_sa_schedule"] = round((time.perf_counter() - _t_m3_0) * 1000, 1)
         _t_save_0 = time.perf_counter()
