@@ -43,6 +43,16 @@ class BaselineRecord(StrictModel):
     longitude: float | None = None
     source: str | None = None
     source_place_id: str | None = None
+    wikidata: str | None = None
+    wikipedia: str | None = None
+    official_name: str | None = None
+    website: str | None = None
+    freshness_source_type: str | None = None
+    freshness_source_url: str | None = None
+    freshness_source_external_id: str | None = None
+    availability_type: str | None = None
+    valid_from: str | None = None
+    valid_until: str | None = None
     subcategory_id: str | None = None
     subcategory_name: str | None = None
     subcategory_category: str | None = None

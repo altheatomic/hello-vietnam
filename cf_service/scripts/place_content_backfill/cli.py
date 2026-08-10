@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
+from pathlib import Path
 from typing import Sequence
 
 
@@ -34,7 +37,42 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command in {"apply", "rollback"} and not args.confirm:
         parser.error(f"{args.command} requires --confirm")
-    # Later tasks attach the database-backed handlers. Keeping this shell
+    if args.command == "audit":
+        if args.scope != "approved-five":
+            parser.error("only --scope approved-five is supported")
+        from db.supabase_client import get_supabase_client
+
+        from .constants import APPROVED_PROVINCES, PROVINCE_EXPECTED_COUNTS
+        from .repository import audit_scope
+
+        root = Path(
+            os.environ.get(
+                "PLACE_CONTENT_ARTIFACT_ROOT",
+                str(Path.cwd() / ".artifacts" / "place-content"),
+            )
+        )
+        manifest, records = audit_scope(
+            get_supabase_client(),
+            str(root),
+            province_ids=APPROVED_PROVINCES,
+        )
+        counts = {province_id: 0 for province_id in APPROVED_PROVINCES}
+        for record in records:
+            counts[record.province_id] += 1
+        print(
+            json.dumps(
+                {
+                    "run_id": manifest.run_id,
+                    "total": len(records),
+                    "province_counts": counts,
+                    "expected_total": sum(PROVINCE_EXPECTED_COUNTS.values()),
+                    "outside_scope": 0,
+                },
+                separators=(",", ":"),
+            )
+        )
+        return 0
+    # Later tasks attach the remaining handlers. Keeping those commands
     # side-effect free makes argument/safety tests independent of credentials.
     return 0
 
