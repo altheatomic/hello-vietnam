@@ -10,17 +10,15 @@
 -- overdue_notified_at marks that the user has already been asked "did you
 -- finish your trip?" once, so the client-pull check in Home doesn't ask again
 -- every time the app opens.
-alter table plan
+alter table public.plan
     add column if not exists activated_at        timestamp with time zone,
     add column if not exists ended_at             timestamp with time zone,
     add column if not exists overdue_notified_at  timestamp with time zone;
 
 -- Matches the exact predicate used by cf_service's get_overdue_plans(): an
 -- activated, not-yet-ended, not-yet-notified plan whose end_at has passed.
--- This same index is what a future pg_cron job scanning the same predicate
--- (Option A) would rely on — no schema change needed to upgrade to it.
 create index if not exists idx_plan_overdue_check
-    on plan (end_at)
+    on public.plan (end_at)
     where activated_at is not null
       and ended_at is null
       and overdue_notified_at is null;
