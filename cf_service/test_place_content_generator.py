@@ -11,8 +11,10 @@ import httpx
 from scripts.place_content_backfill.artifacts import ArtifactStore, WorkerFailure
 from scripts.place_content_backfill.cli import (
     _budget_state_from_proposals,
+    _ensure_generation_batch_fits_budget,
     _repair_budget_from_environment,
     main,
+    project_generation_budget,
 )
 from scripts.place_content_backfill.models import (
     BaselineRecord,
@@ -1193,9 +1195,9 @@ class PlaceContentGenerateCliTest(unittest.TestCase):
             return subprocess.CompletedProcess(command, 0)
 
         environment = self.provider_environment(
-            DEEPSEEK_MAX_REQUESTS="100",
+            DEEPSEEK_MAX_REQUESTS="105",
             DEEPSEEK_MAX_INPUT_TOKENS="250000",
-            DEEPSEEK_MAX_OUTPUT_TOKENS="140000",
+            DEEPSEEK_MAX_OUTPUT_TOKENS="150000",
             DEEPSEEK_MAX_ESTIMATED_COST_USD="1.00",
         )
         previous = Path.cwd()
@@ -1316,6 +1318,114 @@ class PlaceContentGenerateCliTest(unittest.TestCase):
         finally:
             os.chdir(previous)
 
+        run_process.assert_not_called()
+
+    def test_mixed_provider_projection_reserves_bounded_repairs(self):
+        place_ids = self.prepare_full_pilot()
+        primary_caps = BudgetCaps(
+            max_requests=110,
+            max_input_tokens=250000,
+            max_output_tokens=200000,
+            max_estimated_cost_usd=1.0,
+            input_cost_per_million_usd=0.14,
+            output_cost_per_million_usd=0.28,
+        )
+        repair_caps = BudgetCaps(
+            max_requests=110,
+            max_input_tokens=250000,
+            max_output_tokens=200000,
+            max_estimated_cost_usd=1.0,
+            input_cost_per_million_usd=0.435,
+            output_cost_per_million_usd=0.87,
+            max_repair_requests=10,
+        )
+        projection = project_generation_budget(
+            self.store,
+            tuple(place_ids),
+            BudgetState(),
+            primary_caps,
+            repair_caps,
+        )
+        self.assertEqual(projection.request_attempts, 110)
+        self.assertEqual(projection.repair_request_attempts, 10)
+        self.assertEqual(projection.output_tokens, 110 * 1400)
+        self.assertGreater(projection.estimated_cost_usd, 0)
+
+    def test_mixed_provider_projection_resumes_only_pending_places(self):
+        place_ids = self.prepare_full_pilot()
+        self.store.append_jsonl(
+            "proposals",
+            {
+                "place_id": place_ids[0],
+                "baseline_input_hash": "baseline-000",
+                "usage": {
+                    "prompt_tokens": 100,
+                    "completion_tokens": 120,
+                    "total_tokens": 220,
+                    "estimated_cost_usd": 0.0000476,
+                    "request_attempts": 1,
+                },
+                "cache_hit": False,
+            },
+        )
+        state = _budget_state_from_proposals(self.store)
+        primary_caps = BudgetCaps(
+            max_requests=110,
+            max_input_tokens=250000,
+            max_output_tokens=200000,
+            max_estimated_cost_usd=1.0,
+            input_cost_per_million_usd=0.14,
+            output_cost_per_million_usd=0.28,
+        )
+        repair_caps = BudgetCaps(
+            max_requests=110,
+            max_input_tokens=250000,
+            max_output_tokens=200000,
+            max_estimated_cost_usd=1.0,
+            input_cost_per_million_usd=0.435,
+            output_cost_per_million_usd=0.87,
+            max_repair_requests=10,
+        )
+        projection = project_generation_budget(
+            self.store,
+            tuple(place_ids[1:]),
+            state,
+            primary_caps,
+            repair_caps,
+        )
+        self.assertEqual(projection.request_attempts, 110)
+        self.assertEqual(projection.repair_request_attempts, 10)
+
+    def test_mixed_provider_preflight_refuses_before_launch_when_request_cap_is_one_low(self):
+        self.prepare_full_pilot()
+        environment = self.provider_environment(
+            DEEPSEEK_MAX_REQUESTS="109",
+            DEEPSEEK_MAX_INPUT_TOKENS="250000",
+            DEEPSEEK_MAX_OUTPUT_TOKENS="200000",
+            DEEPSEEK_MAX_ESTIMATED_COST_USD="1.00",
+            DEEPSEEK_MAX_REPAIR_REQUESTS="10",
+        )
+        previous = Path.cwd()
+        try:
+            os.chdir(self.root)
+            with (
+                patch.dict(os.environ, environment, clear=True),
+                patch("scripts.place_content_backfill.artifacts.subprocess.run") as run_process,
+            ):
+                with self.assertRaises(BudgetExceeded):
+                    main(
+                        [
+                            "generate",
+                            "--run-id",
+                            self.run_id,
+                            "--pilot",
+                            "--confirm-provider",
+                            "--worker-chunk-size",
+                            "25",
+                        ]
+                    )
+        finally:
+            os.chdir(previous)
         run_process.assert_not_called()
 
 

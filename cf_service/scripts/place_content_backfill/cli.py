@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
@@ -415,36 +416,84 @@ def _completed_generation_hashes(store: ArtifactStore) -> dict[str, str]:
     return completed
 
 
+@dataclass(frozen=True)
+class GenerationBudgetProjection:
+    request_attempts: int
+    repair_request_attempts: int
+    input_tokens: int
+    output_tokens: int
+    estimated_cost_usd: float
+
+
+def project_generation_budget(
+    store: ArtifactStore,
+    pending_ids: tuple[str, ...],
+    state: BudgetState,
+    primary_caps: BudgetCaps,
+    repair_caps: BudgetCaps,
+) -> GenerationBudgetProjection:
+    estimated_input_tokens = 0
+    repair_input_estimates: list[int] = []
+    for record, snapshot, name_decision in _load_generation_items(
+        store,
+        set(pending_ids),
+    ):
+        primary_input = estimate_generation_input_tokens(record, snapshot, name_decision)
+        estimated_input_tokens += primary_input
+        repair_input_estimates.append(primary_input + MAX_OUTPUT_TOKENS + 512)
+    repair_allowance = min(
+        len(pending_ids),
+        max(0, repair_caps.max_repair_requests - state.repair_request_attempts),
+    )
+    repair_input_tokens = sum(
+        sorted(repair_input_estimates, reverse=True)[:repair_allowance]
+    )
+    projected_input = state.input_tokens + estimated_input_tokens + repair_input_tokens
+    projected_output = state.output_tokens + (
+        len(pending_ids) + repair_allowance
+    ) * MAX_OUTPUT_TOKENS
+    projected_cost = state.estimated_cost_usd + (
+        estimated_input_tokens * float(primary_caps.input_cost_per_million_usd)
+        + len(pending_ids)
+        * MAX_OUTPUT_TOKENS
+        * float(primary_caps.output_cost_per_million_usd)
+        + repair_input_tokens * float(repair_caps.input_cost_per_million_usd)
+        + repair_allowance
+        * MAX_OUTPUT_TOKENS
+        * float(repair_caps.output_cost_per_million_usd)
+    ) / 1_000_000
+    return GenerationBudgetProjection(
+        request_attempts=state.request_attempts + len(pending_ids) + repair_allowance,
+        repair_request_attempts=state.repair_request_attempts + repair_allowance,
+        input_tokens=projected_input,
+        output_tokens=projected_output,
+        estimated_cost_usd=projected_cost,
+    )
+
+
 def _ensure_generation_batch_fits_budget(
     store: ArtifactStore,
     pending_ids: tuple[str, ...],
     state: BudgetState,
-    caps: BudgetCaps,
-) -> None:
-    estimated_input_tokens = sum(
-        estimate_generation_input_tokens(record, snapshot, name_decision)
-        for record, snapshot, name_decision in _load_generation_items(
-            store,
-            set(pending_ids),
-        )
+    primary_caps: BudgetCaps,
+    repair_caps: BudgetCaps,
+) -> GenerationBudgetProjection:
+    projection = project_generation_budget(
+        store,
+        pending_ids,
+        state,
+        primary_caps,
+        repair_caps,
     )
-    projected_requests = state.request_attempts + len(pending_ids)
-    projected_input = state.input_tokens + estimated_input_tokens
-    projected_output = state.output_tokens + len(pending_ids) * MAX_OUTPUT_TOKENS
-    projected_cost = state.estimated_cost_usd + (
-        estimated_input_tokens * float(caps.input_cost_per_million_usd)
-        + len(pending_ids)
-        * MAX_OUTPUT_TOKENS
-        * float(caps.output_cost_per_million_usd)
-    ) / 1_000_000
-    if projected_requests > caps.max_requests:
+    if projection.request_attempts > primary_caps.max_requests:
         raise BudgetExceeded("pilot request cap is insufficient before generation")
-    if projected_input > caps.max_input_tokens:
+    if projection.input_tokens > primary_caps.max_input_tokens:
         raise BudgetExceeded("pilot input-token cap is insufficient before generation")
-    if projected_output > caps.max_output_tokens:
+    if projection.output_tokens > primary_caps.max_output_tokens:
         raise BudgetExceeded("pilot output-token cap is insufficient before generation")
-    if projected_cost > caps.max_estimated_cost_usd:
+    if projection.estimated_cost_usd > primary_caps.max_estimated_cost_usd:
         raise BudgetExceeded("pilot estimated-cost cap is insufficient before generation")
+    return projection
 
 
 def _load_generation_items(store: ArtifactStore, place_ids: set[str]):
@@ -559,7 +608,13 @@ def _run_generate(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
         budget = _provider_budget_from_environment()
         repair_budget = _repair_budget_from_environment(budget)
         initial_state = _budget_state_from_proposals(store)
-        _ensure_generation_batch_fits_budget(store, pending, initial_state, budget)
+        _ensure_generation_batch_fits_budget(
+            store,
+            pending,
+            initial_state,
+            budget,
+            repair_budget,
+        )
 
         supervisor = ChunkSupervisor(store)
         supervisor.run_serial(
