@@ -12,6 +12,8 @@ from urllib.parse import urljoin, urlparse
 
 import httpx
 
+from .http import request_with_retry
+
 
 MAX_BODY_BYTES = 1024 * 1024
 MAX_REDIRECTS = 3
@@ -48,7 +50,9 @@ async def extract_official_metadata(
 ) -> OfficialMetadata:
     current = validate_official_url(url)
     for _ in range(MAX_REDIRECTS + 1):
-        response = await client.get(
+        response = await request_with_retry(
+            client,
+            "GET",
             current,
             follow_redirects=False,
             timeout=15,

@@ -9,6 +9,7 @@ from urllib.parse import unquote
 import httpx
 
 from ..models import BaselineRecord, SourceFact
+from .http import request_with_retry
 
 
 _QID = re.compile(r"^Q[1-9][0-9]*$")
@@ -66,7 +67,9 @@ async def fetch_wikimedia_facts(
     facts: list[SourceFact] = []
     qid = record.wikidata
     if is_wikidata_id(qid):
-        response = await client.get(
+        response = await request_with_retry(
+            client,
+            "GET",
             "https://www.wikidata.org/w/api.php",
             params={
                 "action": "wbgetentities",
@@ -107,7 +110,9 @@ async def fetch_wikimedia_facts(
     wikipedia = parse_wikipedia_tag(record.wikipedia)
     if wikipedia:
         lang, title = wikipedia
-        response = await client.get(
+        response = await request_with_retry(
+            client,
+            "GET",
             f"https://{lang}.wikipedia.org/w/api.php",
             params={
                 "action": "query",

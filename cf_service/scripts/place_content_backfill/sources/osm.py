@@ -8,6 +8,7 @@ from typing import Any, Iterable, Sequence
 import httpx
 
 from ..models import SourceFact
+from .http import request_with_retry
 
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
@@ -62,7 +63,9 @@ async def collect_osm_facts(
     facts: list[SourceFact] = []
     for batch in _chunks(tuple(osm_ids), 100):
         query = build_overpass_query(batch)
-        response = await client.post(
+        response = await request_with_retry(
+            client,
+            "POST",
             OVERPASS_URL,
             data={"data": query},
             timeout=30,

@@ -5,6 +5,7 @@ import httpx
 
 from scripts.place_content_backfill.models import BaselineRecord, TranslationBaseline
 from scripts.place_content_backfill.sources.osm import parse_osm_id
+from scripts.place_content_backfill.sources.osm import collect_osm_facts
 from scripts.place_content_backfill.sources.website import (
     extract_official_metadata,
     validate_official_url,
@@ -92,6 +93,27 @@ class PlaceContentSourcesTest(unittest.TestCase):
             self.assertEqual(result.title, "Huong River")
             self.assertEqual(result.description, "A river in Hue.")
             self.assertEqual(result.name, "Huong River")
+
+        asyncio.run(run())
+
+    def test_source_requests_retry_rate_limit_without_duplicate_data(self):
+        async def run():
+            calls = 0
+
+            async def handler(request: httpx.Request) -> httpx.Response:
+                nonlocal calls
+                calls += 1
+                if calls == 1:
+                    return httpx.Response(429, headers={"retry-after": "0"})
+                return httpx.Response(
+                    200,
+                    json={"elements": [{"type": "node", "id": 123, "tags": {"name": "Sông Hương"}}]},
+                )
+
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                facts = await collect_osm_facts(client, ["osm:node:123"])
+            self.assertEqual(calls, 2)
+            self.assertEqual([fact.fact_id for fact in facts], ["osm.name"])
 
         asyncio.run(run())
 
