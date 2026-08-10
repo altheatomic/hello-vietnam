@@ -10,6 +10,10 @@ Output requirements:
 - Use this JSON shape as a guide, replacing every placeholder with grounded
   content and supplied fact IDs:
   {"vi_short":"...","en_short":"...","vi_long":"...","en_long":"...","fact_ids":["fact-id"],"warnings":[]}
+- Target 25-35 whitespace-delimited words for each short description and
+  100-130 whitespace-delimited words for each long description.
+- Count each field before returning JSON and revise any field outside the
+  required validator ranges.
 - Short descriptions contain 20–45 whitespace-delimited words.
 - Long descriptions contain 90–160 whitespace-delimited words.
 - Use only claims supported by the supplied fact IDs.

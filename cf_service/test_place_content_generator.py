@@ -115,6 +115,8 @@ class PlaceContentGeneratorTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(payload["response_format"], {"type": "json_object"})
             self.assertEqual(payload["thinking"], {"type": "disabled"})
             self.assertIn('"vi_short"', payload["messages"][0]["content"])
+            self.assertIn("Target 25-35 whitespace-delimited words", payload["messages"][0]["content"])
+            self.assertIn("Count each field before returning JSON", payload["messages"][0]["content"])
             self.assertIn("Thiên Mụ Pagoda", payload["messages"][0]["content"])
             self.assertIn("osm:node:1:name", payload["messages"][1]["content"])
             return httpx.Response(
