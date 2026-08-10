@@ -1,8 +1,12 @@
+import os
+from contextlib import redirect_stdout
+from io import StringIO
 import tempfile
 import unittest
 from pathlib import Path
 
 from scripts.place_content_backfill.artifacts import ArtifactStore
+from scripts.place_content_backfill.cli import main
 from scripts.place_content_backfill.models import (
     BaselineRecord,
     GeneratedContent,
@@ -216,6 +220,112 @@ class PlaceContentValidatorsTest(unittest.TestCase):
             decisions = list(store.iter_stream("review-decisions"))
             self.assertEqual(decisions[0]["decision"], "approve")
             self.assertEqual(decisions[1]["decision"], "edit")
+
+    def test_validate_worker_writes_validation_and_review_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_id = "20260810-120000-abcdef12"
+            store = ArtifactStore(Path(tmp) / ".artifacts/place-content", run_id)
+            store.write_manifest(
+                {
+                    "run_id": run_id,
+                    "province_ids": [baseline().province_id],
+                    "place_ids": ["place-1"],
+                    "expected_total": 1,
+                    "pilot_place_ids": ["place-1"],
+                }
+            )
+            current_baseline = baseline()
+            current_source = source_snapshot()
+            current_proposal = proposal()
+            store.append_jsonl("baseline", current_baseline.model_dump(mode="json"))
+            store.append_jsonl("sources", current_source.model_dump(mode="json"))
+            store.append_jsonl(
+                "proposals",
+                {
+                    "place_id": current_proposal.place_id,
+                    "baseline_input_hash": current_proposal.baseline_input_hash,
+                    "proposal": current_proposal.model_dump(mode="json"),
+                    "usage": {
+                        "prompt_tokens": 100,
+                        "completion_tokens": 120,
+                        "total_tokens": 220,
+                        "estimated_cost_usd": 0.0000476,
+                    },
+                    "cache_hit": False,
+                },
+            )
+            previous = Path.cwd()
+            try:
+                os.chdir(tmp)
+                result = main(
+                    [
+                        "validate",
+                        "--run-id",
+                        run_id,
+                        "--worker-chunk-size",
+                        "100",
+                        "--worker-status-path",
+                        str(store.run_dir / "worker.status.json"),
+                        "--worker-place-ids",
+                        "place-1",
+                    ]
+                )
+            finally:
+                os.chdir(previous)
+
+            self.assertEqual(result, 0)
+            validations = list(store.iter_stream("validations"))
+            self.assertEqual(len(validations), 1)
+            self.assertTrue(validations[0]["passed"])
+            self.assertEqual(len(list(store.iter_review_csv())), 1)
+
+    def test_status_reports_sanitized_run_counts_and_budget(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_id = "20260810-120000-abcdef12"
+            store = ArtifactStore(Path(tmp) / ".artifacts/place-content", run_id)
+            store.write_manifest(
+                {
+                    "run_id": run_id,
+                    "province_ids": [baseline().province_id],
+                    "place_ids": ["place-1"],
+                    "expected_total": 1,
+                    "pilot_place_ids": ["place-1"],
+                }
+            )
+            store.append_jsonl("baseline", baseline().model_dump(mode="json"))
+            store.append_jsonl("sources", source_snapshot().model_dump(mode="json"))
+            proposal_value = proposal()
+            store.append_jsonl(
+                "proposals",
+                {
+                    "place_id": proposal_value.place_id,
+                    "baseline_input_hash": proposal_value.baseline_input_hash,
+                    "proposal": proposal_value.model_dump(mode="json"),
+                    "usage": {
+                        "prompt_tokens": 100,
+                        "completion_tokens": 120,
+                        "total_tokens": 220,
+                        "estimated_cost_usd": 0.0000476,
+                        "request_attempts": 1,
+                    },
+                    "cache_hit": False,
+                },
+            )
+            previous = Path.cwd()
+            output = StringIO()
+            try:
+                os.chdir(tmp)
+                with redirect_stdout(output):
+                    result = main(["status", "--run-id", run_id])
+            finally:
+                os.chdir(previous)
+
+            self.assertEqual(result, 0)
+            text = output.getvalue()
+            self.assertIn(f"run_id={run_id}", text)
+            self.assertIn("baseline=1", text)
+            self.assertIn("proposals=1", text)
+            self.assertIn("request_attempts=1", text)
 
 
 if __name__ == "__main__":

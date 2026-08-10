@@ -4,7 +4,7 @@ import asyncio
 from dataclasses import dataclass
 import hashlib
 import json
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 import httpx
 
@@ -77,6 +77,7 @@ async def fetch_bytes(
     retries: int = MAX_RETRIES,
     backoff_base: float = 0.25,
     sleep=asyncio.sleep,
+    before_attempt: Callable[[], None] | None = None,
 ) -> FetchResult:
     """Fetch with bounded retries and streamed body accounting."""
 
@@ -84,6 +85,8 @@ async def fetch_bytes(
     request_headers.update(headers or {})
     last_error: Exception | None = None
     for attempt in range(retries):
+        if before_attempt is not None:
+            before_attempt()
         response: httpx.Response | None = None
         try:
             async with client.stream(

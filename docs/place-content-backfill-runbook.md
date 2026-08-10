@@ -71,6 +71,10 @@ explicit and below the owner's approved budget. Never print the environment:
 export DEEPSEEK_CONTENT_MODEL='<OWNER_APPROVED_MODEL>'
 export DEEPSEEK_INPUT_COST_PER_MILLION_USD='<OWNER_SUPPLIED_INPUT_PRICE>'
 export DEEPSEEK_OUTPUT_COST_PER_MILLION_USD='<OWNER_SUPPLIED_OUTPUT_PRICE>'
+export DEEPSEEK_MAX_REQUESTS='<OWNER_APPROVED_REQUEST_CAP>'
+export DEEPSEEK_MAX_INPUT_TOKENS='<OWNER_APPROVED_INPUT_TOKEN_CAP>'
+export DEEPSEEK_MAX_OUTPUT_TOKENS='<OWNER_APPROVED_OUTPUT_TOKEN_CAP>'
+export DEEPSEEK_MAX_ESTIMATED_COST_USD='<OWNER_APPROVED_COST_CAP>'
 ```
 
 Use a secret manager or an interactive shell for production-shaped values;
@@ -133,6 +137,24 @@ PY
 Collect, generate, validate, and export review artifacts only in bounded
 fresh worker chunks. Keep the provider disabled until the migration, model,
 prompt, and budget have been approved.
+
+After the owner approves the model, prices, and caps, call the real provider
+only from the owner terminal that holds `DEEPSEEK_API_KEY`. The explicit
+confirmation flag is required; the supervisor launches fresh workers serially
+and never places the secret in a command argument:
+
+```zsh
+(cd cf_service && python3 -m scripts.place_content_backfill.cli generate \
+  --run-id "$RUN_ID" --pilot --confirm-provider)
+(cd cf_service && python3 -m scripts.place_content_backfill.cli validate \
+  --run-id "$RUN_ID" --pilot)
+```
+
+The generation gate fails before any request if the aggregate request,
+input-token, output-token, or estimated-cost cap cannot cover the remaining
+pilot. A 429/5xx retry consumes another request-cap unit; if the cap is
+reached, stop and reconcile the run before retrying. Review every row in
+`needs-review.csv`; deterministic validation does not approve content.
 
 ## Human review and the pilot gate
 
