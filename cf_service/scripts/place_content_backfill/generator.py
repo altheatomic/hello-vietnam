@@ -5,7 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 import httpx
 
@@ -34,6 +34,17 @@ _UNSUPPORTED_CLAIM_RE = re.compile(
 class ProviderOutputError(ValueError):
     """Raised when provider output is not strict grounded JSON."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        candidate: GeneratedContent | None = None,
+        usage: "ProviderUsage | None" = None,
+    ) -> None:
+        super().__init__(message)
+        self.candidate = candidate
+        self.usage = usage
+
 
 @dataclass(frozen=True)
 class ContentIssue:
@@ -54,6 +65,7 @@ class BudgetCaps:
     max_estimated_cost_usd: float
     input_cost_per_million_usd: float | None
     output_cost_per_million_usd: float | None
+    max_repair_requests: int = 0
 
     def __post_init__(self) -> None:
         if self.input_cost_per_million_usd is None or self.output_cost_per_million_usd is None:
@@ -67,6 +79,7 @@ class BudgetCaps:
                 self.max_estimated_cost_usd,
                 self.input_cost_per_million_usd,
                 self.output_cost_per_million_usd,
+                self.max_repair_requests,
             )
         ):
             raise ValueError("budget caps and prices must be non-negative")
@@ -79,14 +92,27 @@ class BudgetState:
     input_tokens: int = 0
     output_tokens: int = 0
     estimated_cost_usd: float = 0.0
+    repair_request_attempts: int = 0
 
-    def ensure_can_request(self, caps: BudgetCaps, input_tokens: int, output_limit: int) -> None:
+    def ensure_can_request(
+        self,
+        caps: BudgetCaps,
+        input_tokens: int,
+        output_limit: int,
+        *,
+        provider_role: str = "primary",
+    ) -> None:
         projected_cost = self.estimated_cost_usd + (
             input_tokens * float(caps.input_cost_per_million_usd)
             + output_limit * float(caps.output_cost_per_million_usd)
         ) / 1_000_000
         if self.request_attempts + 1 > caps.max_requests:
             raise BudgetExceeded("request cap would be exceeded")
+        if (
+            provider_role == "repair"
+            and self.repair_request_attempts + 1 > caps.max_repair_requests
+        ):
+            raise BudgetExceeded("repair request cap would be exceeded")
         if self.input_tokens + input_tokens > caps.max_input_tokens:
             raise BudgetExceeded("input-token cap would be exceeded")
         if self.output_tokens + output_limit > caps.max_output_tokens:
@@ -94,10 +120,15 @@ class BudgetState:
         if projected_cost > caps.max_estimated_cost_usd:
             raise BudgetExceeded("estimated-cost cap would be exceeded")
 
-    def reserve_request_attempt(self, caps: BudgetCaps) -> None:
+    def reserve_request_attempt(self, caps: BudgetCaps, *, provider_role: str = "primary") -> None:
         if self.request_attempts + 1 > caps.max_requests:
             raise BudgetExceeded("request cap would be exceeded")
         self.request_attempts += 1
+        if provider_role == "repair":
+            if self.repair_request_attempts + 1 > caps.max_repair_requests:
+                self.request_attempts -= 1
+                raise BudgetExceeded("repair request cap would be exceeded")
+            self.repair_request_attempts += 1
 
     def record(self, usage: "ProviderUsage", caps: BudgetCaps) -> None:
         self.request_count += 1
@@ -116,6 +147,8 @@ class ProviderUsage:
     total_tokens: int
     estimated_cost_usd: float
     request_attempts: int = 1
+    provider_role: str = "primary"
+    model: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -124,6 +157,8 @@ class ProviderUsage:
             "total_tokens": self.total_tokens,
             "estimated_cost_usd": self.estimated_cost_usd,
             "request_attempts": self.request_attempts,
+            "provider_role": self.provider_role,
+            "model": self.model,
         }
 
 
@@ -384,16 +419,22 @@ class DeepSeekClient:
         http_client: httpx.AsyncClient | None = None,
         backoff_base: float = 0.25,
         budget_state: BudgetState | None = None,
+        provider_role: str = "primary",
+        usage_checkpoint: Callable[[BudgetState, ProviderUsage], None] | None = None,
     ) -> None:
         if not api_key or not api_key.strip():
             raise ValueError("DeepSeek API key must be supplied explicitly at runtime")
         if not model or not model.strip():
             raise ValueError("DeepSeek model must be supplied explicitly at runtime")
+        if provider_role not in {"primary", "repair"}:
+            raise ValueError("provider role must be primary or repair")
         self.api_key = api_key
         self.model = model
         self.budget = budget
         self.state = budget_state or BudgetState()
         self.backoff_base = backoff_base
+        self.provider_role = provider_role
+        self.usage_checkpoint = usage_checkpoint
         self._owns_client = http_client is None
         self._client = http_client or httpx.AsyncClient(
             transport=transport,
@@ -412,11 +453,19 @@ class DeepSeekClient:
 
     async def complete(self, system_prompt: str, user_prompt: str) -> tuple[GeneratedContent, ProviderUsage]:
         input_tokens = _estimate_tokens(system_prompt + "\n" + user_prompt)
-        self.state.ensure_can_request(self.budget, input_tokens, MAX_OUTPUT_TOKENS)
+        self.state.ensure_can_request(
+            self.budget,
+            input_tokens,
+            MAX_OUTPUT_TOKENS,
+            provider_role=self.provider_role,
+        )
         attempts_before_request = self.state.request_attempts
 
         def reserve_attempt() -> None:
-            self.state.reserve_request_attempt(self.budget)
+            self.state.reserve_request_attempt(
+                self.budget,
+                provider_role=self.provider_role,
+            )
 
         payload = {
             "model": self.model,
@@ -439,18 +488,26 @@ class DeepSeekClient:
             backoff_base=self.backoff_base,
             before_attempt=reserve_attempt,
         )
+        envelope: dict[str, Any] = {}
         try:
             envelope = json.loads(result.body.decode("utf-8"))
-            content = envelope["choices"][0]["message"]["content"]
-            if not isinstance(content, str) or not content.strip():
-                raise ValueError("empty content")
-            generated = GeneratedContent.model_validate(json.loads(content))
-        except (KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError) as exc:
-            raise ProviderOutputError("DeepSeek response was empty, malformed, or truncated") from exc
+            if not isinstance(envelope, dict):
+                envelope = {}
+        except (TypeError, ValueError, json.JSONDecodeError):
+            envelope = {}
         usage_data = envelope.get("usage") or {}
-        prompt_tokens = int(usage_data.get("prompt_tokens") or input_tokens)
-        completion_tokens = int(usage_data.get("completion_tokens") or _estimate_tokens(content))
-        total_tokens = int(usage_data.get("total_tokens") or prompt_tokens + completion_tokens)
+        try:
+            prompt_tokens = int(usage_data.get("prompt_tokens") or input_tokens)
+        except (TypeError, ValueError):
+            prompt_tokens = input_tokens
+        try:
+            completion_tokens = int(usage_data.get("completion_tokens") or MAX_OUTPUT_TOKENS)
+        except (TypeError, ValueError):
+            completion_tokens = MAX_OUTPUT_TOKENS
+        try:
+            total_tokens = int(usage_data.get("total_tokens") or prompt_tokens + completion_tokens)
+        except (TypeError, ValueError):
+            total_tokens = prompt_tokens + completion_tokens
         usage = ProviderUsage(
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
@@ -461,6 +518,8 @@ class DeepSeekClient:
             )
             / 1_000_000,
             request_attempts=self.state.request_attempts - attempts_before_request,
+            provider_role=self.provider_role,
+            model=self.model,
         )
         projected_input = self.state.input_tokens + usage.prompt_tokens
         projected_output = self.state.output_tokens + usage.completion_tokens
@@ -472,6 +531,18 @@ class DeepSeekClient:
         if projected_cost > self.budget.max_estimated_cost_usd:
             raise BudgetExceeded("provider response exceeded estimated-cost cap")
         self.state.record(usage, self.budget)
+        if self.usage_checkpoint is not None:
+            self.usage_checkpoint(self.state, usage)
+        try:
+            content = envelope["choices"][0]["message"]["content"]
+            if not isinstance(content, str) or not content.strip():
+                raise ValueError("empty content")
+            generated = GeneratedContent.model_validate(json.loads(content))
+        except (KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise ProviderOutputError(
+                "DeepSeek response was empty, malformed, or truncated",
+                usage=usage,
+            ) from exc
         return generated, usage
 
 
@@ -575,6 +646,7 @@ async def generate_worker(
 __all__ = [
     "BudgetCaps",
     "BudgetExceeded",
+    "BudgetState",
     "ContentIssue",
     "DeepSeekClient",
     "GenerationCache",

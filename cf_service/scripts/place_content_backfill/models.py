@@ -106,6 +106,8 @@ class Proposal(ImmutableModel):
     generated: GeneratedContent
     sparse_source: bool = False
     review_only: bool = True
+    provider_models: tuple[str, ...] = ()
+    repair_used: bool = False
     proposal_hash: str | None = None
 
 
@@ -163,4 +165,3 @@ class RunManifest(ImmutableModel):
     @property
     def province_count(self) -> int:
         return sum(APPROVED_PROVINCES[province_id] for province_id in self.province_ids)
-

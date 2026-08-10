@@ -20,6 +20,7 @@ from scripts.place_content_backfill.models import (
 from scripts.place_content_backfill.generator import (
     BudgetCaps,
     BudgetExceeded,
+    BudgetState,
     ContentIssue,
     DeepSeekClient,
     GenerationCache,
@@ -104,14 +105,140 @@ class PlaceContentGeneratorTest(unittest.IsolatedAsyncioTestCase):
         values.update(overrides)
         return BudgetCaps(**values)
 
-    def client(self, handler, **budget_overrides):
+    def client(
+        self,
+        handler,
+        *,
+        model="deepseek-chat-test",
+        provider_role="primary",
+        budget_state=None,
+        usage_checkpoint=None,
+        **budget_overrides,
+    ):
         return DeepSeekClient(
             api_key="unit-test-key",
-            model="deepseek-chat-test",
+            model=model,
             transport=httpx.MockTransport(handler),
             budget=self.budget(**budget_overrides),
             backoff_base=0,
+            provider_role=provider_role,
+            budget_state=budget_state,
+            usage_checkpoint=usage_checkpoint,
         )
+
+    async def test_primary_and_repair_clients_share_caps_but_use_role_prices(self):
+        state = BudgetState()
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={
+                    "choices": [{"message": {"content": json.dumps(provider_body())}}],
+                    "usage": {
+                        "prompt_tokens": 100,
+                        "completion_tokens": 120,
+                        "total_tokens": 220,
+                    },
+                },
+            )
+
+        async with (
+            self.client(
+                handler,
+                model="deepseek-v4-flash",
+                provider_role="primary",
+                budget_state=state,
+                max_requests=2,
+                max_repair_requests=1,
+                input_cost_per_million_usd=1.0,
+                output_cost_per_million_usd=2.0,
+            ) as primary,
+            self.client(
+                handler,
+                model="deepseek-v4-pro",
+                provider_role="repair",
+                budget_state=state,
+                max_requests=2,
+                max_repair_requests=1,
+                input_cost_per_million_usd=3.0,
+                output_cost_per_million_usd=6.0,
+            ) as repair,
+        ):
+            primary_usage = (await primary.complete("system", "user"))[1]
+            repair_usage = (await repair.complete("system", "user"))[1]
+
+        self.assertEqual(state.request_count, 2)
+        self.assertEqual(state.request_attempts, 2)
+        self.assertEqual(state.repair_request_attempts, 1)
+        self.assertAlmostEqual(state.estimated_cost_usd, 0.00136)
+        self.assertEqual(primary_usage.provider_role, "primary")
+        self.assertEqual(repair_usage.provider_role, "repair")
+        self.assertEqual(repair_usage.model, "deepseek-v4-pro")
+
+    async def test_repair_cap_refuses_before_second_repair_http_attempt(self):
+        calls = 0
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal calls
+            calls += 1
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": json.dumps(provider_body())}}]},
+            )
+
+        async with self.client(
+            handler,
+            provider_role="repair",
+            max_repair_requests=0,
+        ) as repair:
+            with self.assertRaises(BudgetExceeded):
+                await repair.complete("system", "user")
+        self.assertEqual(calls, 0)
+
+    async def test_malformed_provider_output_still_records_response_usage(self):
+        state = BudgetState()
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={
+                    "choices": [{"message": {"content": "not json"}}],
+                    "usage": {
+                        "prompt_tokens": 100,
+                        "completion_tokens": 40,
+                        "total_tokens": 140,
+                    },
+                },
+            )
+
+        async with self.client(handler, budget_state=state) as provider:
+            with self.assertRaises(ProviderOutputError):
+                await provider.complete("system", "user")
+        self.assertEqual(state.request_count, 1)
+        self.assertEqual(state.input_tokens, 100)
+        self.assertEqual(state.output_tokens, 40)
+
+    async def test_usage_checkpoint_receives_non_secret_role_and_model_metadata(self):
+        checkpoints = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": json.dumps(provider_body())}}]},
+            )
+
+        async with self.client(
+            handler,
+            model="deepseek-v4-pro",
+            provider_role="repair",
+            max_repair_requests=1,
+            usage_checkpoint=lambda state, usage: checkpoints.append(usage.as_dict()),
+        ) as provider:
+            await provider.complete("system", "user")
+        self.assertEqual(len(checkpoints), 1)
+        self.assertEqual(checkpoints[0]["provider_role"], "repair")
+        self.assertEqual(checkpoints[0]["model"], "deepseek-v4-pro")
+        self.assertNotIn("unit-test-key", json.dumps(checkpoints))
 
     def test_word_count_issues_name_only_invalid_text_fields(self):
         candidate = GeneratedContent.model_validate(

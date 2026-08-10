@@ -5,6 +5,8 @@ from scripts.place_content_backfill.constants import APPROVED_PROVINCES, EXPECTE
 from scripts.place_content_backfill.models import (
     BaselineRecord,
     GeneratedContent,
+    NameDecision,
+    Proposal,
     RunManifest,
     SourceFact,
 )
@@ -94,6 +96,32 @@ class PlaceContentModelsTest(unittest.TestCase):
         )
         self.assertIn("Hương", generated.en_short)
         self.assertEqual(baseline.model_dump(mode="json")["vi_name"], "Chùa Thiên Mụ")
+
+    def test_proposal_round_trip_preserves_provider_repair_provenance(self):
+        proposal = Proposal(
+            place_id="place-1",
+            province_id="b5f3ef5e-dc49-4482-88e3-a8048cb32639",
+            baseline_input_hash="hash-1",
+            name_decision=NameDecision(
+                place_id="place-1",
+                vi_name="Chùa Thiên Mụ",
+                en_name="Thien Mu Pagoda",
+                confidence=0.98,
+                rule_id="generic:pagoda",
+            ),
+            generated=GeneratedContent(
+                vi_short="Một điểm đến văn hóa bên sông Hương với không gian thanh tịnh.",
+                en_short="A cultural destination beside the Hương River with a tranquil setting.",
+                vi_long="Nội dung giới thiệu này chỉ sử dụng các dữ kiện đã được ghi nhận về địa điểm và không thêm suy đoán ngoài nguồn.",
+                en_long="This description uses only recorded facts about the place and does not add unsupported assumptions beyond the sources.",
+                fact_ids=("osm:node:1:name",),
+            ),
+            provider_models=("deepseek-v4-flash", "deepseek-v4-pro"),
+            repair_used=True,
+        )
+        restored = Proposal.model_validate(proposal.model_dump(mode="json"))
+        self.assertEqual(restored.provider_models, ("deepseek-v4-flash", "deepseek-v4-pro"))
+        self.assertTrue(restored.repair_used)
 
 
 if __name__ == "__main__":
