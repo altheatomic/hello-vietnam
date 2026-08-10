@@ -23,6 +23,7 @@ from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 load_dotenv()  # picks up .env in cwd if present
 
@@ -92,6 +93,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Added last so it wraps outermost (compresses after CORS headers are set).
+# Perf audit (2026-08-10): plan()'s response can carry many places × several
+# days of JSON — gzip typically cuts repetitive JSON payloads 60-80%,
+# directly reducing transfer time on mobile networks. minimum_size=1000
+# skips compressing tiny responses where the gzip overhead isn't worth it.
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.include_router(trip_router)
 app.include_router(events_router)
