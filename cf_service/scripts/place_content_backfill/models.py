@@ -126,6 +126,7 @@ class Proposal(StrictModel):
     content: GeneratedContent | None = None
     source_fact_ids: tuple[str, ...] = ()
     source_urls: tuple[str, ...] = ()
+    provider_metadata: dict[str, Any] | None = None
     validation: ValidationResult | None = None
     reviewer_decision: Literal["approve", "edit", "reject"] | None = None
     reviewer_notes: str | None = None

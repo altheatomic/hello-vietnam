@@ -227,6 +227,7 @@ async def _generate(
             content=result.content,
             source_fact_ids=result.content.used_fact_ids,
             source_urls=source_urls,
+            provider_metadata=result.metadata,
         )
         store.append("proposals", proposal)
         generated += 1
