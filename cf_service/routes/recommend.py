@@ -5,7 +5,7 @@ Personalized province recommendation endpoints.
 
 import asyncio
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 
 from db.supabase_client import get_supabase
 from services.ttl_cache import TtlCache
@@ -58,6 +58,7 @@ def _place_response(place: dict) -> dict:
 
 @router.get("/api/recommend/provinces")
 async def get_recommended_provinces(
+    response: Response,
     # id_user is required because the recommend edge function always sends
     # it (see backend/supabase/functions/recommend/recommend_handler.ts) —
     # kept on the route so that call keeps working, even though the
@@ -68,6 +69,13 @@ async def get_recommended_provinces(
 ):
     from services.recommend_service import recommend_provinces
     results = await asyncio.to_thread(recommend_provinces, supabase, limit)
+    # Province data barely changes intraday and the handler itself already
+    # holds a 600s in-process TtlCache (_PROVINCES_CACHE, recommend_service.py)
+    # — this header lets any HTTP-level cache (client, CDN) skip the round
+    # trip entirely instead of re-hitting this endpoint every time. 1h, not
+    # something longer, so an admin edit to province data still shows up
+    # same-day rather than being stuck behind a multi-day client cache.
+    response.headers["Cache-Control"] = "public, max-age=3600"
     return {"provinces": results}
 
 
