@@ -269,6 +269,12 @@ def _budget_state_from_proposals(store: ArtifactStore) -> BudgetState:
         state.input_tokens += int(usage.get("prompt_tokens") or 0)
         state.output_tokens += int(usage.get("completion_tokens") or 0)
         state.estimated_cost_usd += float(usage.get("estimated_cost_usd") or 0.0)
+    for row in store.iter_stream("generation-budget"):
+        state.request_count += int(row.get("request_count") or 0)
+        state.request_attempts += int(row.get("request_attempts") or 0)
+        state.input_tokens += int(row.get("input_tokens") or 0)
+        state.output_tokens += int(row.get("output_tokens") or 0)
+        state.estimated_cost_usd += float(row.get("estimated_cost_usd") or 0.0)
     return state
 
 

@@ -39,6 +39,7 @@ ARTIFACT_FILENAMES: dict[str, str] = {
     "baseline": "baseline.jsonl",
     "sources": "sources.jsonl",
     "proposals": "proposals.jsonl",
+    "generation-budget": "generation-budget.jsonl",
     "validations": "validations.jsonl",
     "approved": "approved.jsonl",
     "needs-review": "needs-review.csv",

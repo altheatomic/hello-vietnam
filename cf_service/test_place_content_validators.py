@@ -311,6 +311,17 @@ class PlaceContentValidatorsTest(unittest.TestCase):
                     "cache_hit": False,
                 },
             )
+            store.append_jsonl(
+                "generation-budget",
+                {
+                    "request_count": 0,
+                    "request_attempts": 2,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "estimated_cost_usd": 0.0,
+                    "reason": "reconciled-provider-failures",
+                },
+            )
             previous = Path.cwd()
             output = StringIO()
             try:
@@ -325,7 +336,7 @@ class PlaceContentValidatorsTest(unittest.TestCase):
             self.assertIn(f"run_id={run_id}", text)
             self.assertIn("baseline=1", text)
             self.assertIn("proposals=1", text)
-            self.assertIn("request_attempts=1", text)
+            self.assertIn("request_attempts=3", text)
 
 
 if __name__ == "__main__":

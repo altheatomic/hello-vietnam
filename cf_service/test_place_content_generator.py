@@ -622,6 +622,52 @@ class PlaceContentGenerateCliTest(unittest.TestCase):
 
         run_process.assert_not_called()
 
+    def test_generate_supervisor_counts_reconciled_attempts_before_workers(self):
+        self.prepare_full_pilot()
+        self.store.append_jsonl(
+            "generation-budget",
+            {
+                "request_count": 0,
+                "request_attempts": 5,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "estimated_cost_usd": 0.0,
+                "reason": "reconciled-provider-failures",
+            },
+        )
+        environment = self.provider_environment(
+            DEEPSEEK_MAX_REQUESTS="100",
+            DEEPSEEK_MAX_INPUT_TOKENS="250000",
+            DEEPSEEK_MAX_OUTPUT_TOKENS="140000",
+            DEEPSEEK_MAX_ESTIMATED_COST_USD="1.00",
+        )
+        previous = Path.cwd()
+        try:
+            os.chdir(self.root)
+            with (
+                patch.dict(os.environ, environment, clear=True),
+                patch("scripts.place_content_backfill.artifacts.subprocess.run") as run_process,
+            ):
+                try:
+                    with self.assertRaises(BudgetExceeded):
+                        main(
+                            [
+                                "generate",
+                                "--run-id",
+                                self.run_id,
+                                "--pilot",
+                                "--confirm-provider",
+                                "--worker-chunk-size",
+                                "25",
+                            ]
+                        )
+                except SystemExit as exc:
+                    self.fail(f"generate supervisor rejected budget test unexpectedly: {exc}")
+        finally:
+            os.chdir(previous)
+
+        run_process.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
