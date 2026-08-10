@@ -12,6 +12,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/recommend_repository.dart';
 
+String recommendedPlaceDescription(ProvinceTopPlace place, String fallback) {
+  final String detailed = place.detailedDescription?.trim() ?? '';
+  if (detailed.isNotEmpty) return detailed;
+  final String short = place.shortDescription?.trim() ?? '';
+  return short.isNotEmpty ? short : fallback;
+}
+
 class RecommendedPlaceDetailPage extends StatefulWidget {
   const RecommendedPlaceDetailPage({
     super.key,
@@ -108,10 +115,10 @@ class _RecommendedPlaceDetailPageState
               if (place.address?.trim().isNotEmpty == true) place.address!,
             ].join(' · ');
 
-            final String description =
-                place.shortDescription?.trim().isNotEmpty == true
-                ? place.shortDescription!.trim()
-                : fallbackDescription;
+            final String description = recommendedPlaceDescription(
+              place,
+              fallbackDescription,
+            );
             final List<String> metadata = _placeMetadata(context, place);
 
             return SharedItemDetailPage(

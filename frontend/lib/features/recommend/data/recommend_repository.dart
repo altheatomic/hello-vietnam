@@ -18,6 +18,7 @@ class ProvinceTopPlace {
     this.reviewCount,
     this.subcategoryName,
     this.shortDescription,
+    this.detailedDescription,
     this.estimatedDurationMinutes,
     this.minimumPrice,
     this.maximumPrice,
@@ -38,6 +39,7 @@ class ProvinceTopPlace {
   final int? reviewCount;
   final String? subcategoryName;
   final String? shortDescription;
+  final String? detailedDescription;
   final int? estimatedDurationMinutes;
   final num? minimumPrice;
   final num? maximumPrice;
@@ -81,8 +83,9 @@ class ProvinceTopPlace {
       reviewCount: (json['review_count'] as num?)?.toInt(),
       subcategoryName: json['subcategory_name'] as String?,
       shortDescription: json['short_description'] as String?,
-      estimatedDurationMinutes:
-          (json['estimated_duration_minutes'] as num?)?.toInt(),
+      detailedDescription: json['detailed_description'] as String?,
+      estimatedDurationMinutes: (json['estimated_duration_minutes'] as num?)
+          ?.toInt(),
       minimumPrice: json['minimum_price'] as num?,
       maximumPrice: json['maximum_price'] as num?,
       phone: json['phone'] as String?,

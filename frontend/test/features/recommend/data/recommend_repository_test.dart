@@ -60,4 +60,16 @@ void main() {
       'https://media.test/places/place-1/two.jpg',
     ]);
   });
+
+  test('maps nullable detailed description for a place', () {
+    final ProvinceTopPlace place = ProvinceTopPlace.fromJson(<String, dynamic>{
+      'id_place': 'p1',
+      'name': 'Huong River',
+      'short_description': 'Short copy',
+      'detailed_description': 'Long copy',
+    });
+
+    expect(place.shortDescription, 'Short copy');
+    expect(place.detailedDescription, 'Long copy');
+  });
 }

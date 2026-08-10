@@ -29,10 +29,10 @@ def _gallery_urls(gallery_raw):
     return urls
 
 
-def _place_response(place: dict) -> dict:
+def _place_response(place: dict, *, include_detailed_description: bool = False) -> dict:
     sub = place.get("place_subcategory") or {}
     gallery_urls = _gallery_urls(place.get("gallery"))
-    return {
+    response = {
         "id_place": str(place["id_place"]),
         "name": place.get("name"),
         "short_description": place.get("short_description"),
@@ -54,6 +54,11 @@ def _place_response(place: dict) -> dict:
         "cf_score": round(float(place.get("cf_score") or 0), 4),
         "final_score": round(float(place.get("final_score") or 0), 4),
     }
+    # Long copy is intentionally restricted to the individual detail endpoint
+    # so province/card payloads stay small and continue using short copy.
+    if include_detailed_description:
+        response["detailed_description"] = place.get("detailed_description")
+    return response
 
 
 @router.get("/api/recommend/provinces")
@@ -200,7 +205,7 @@ def _get_recommended_place_sync(supabase, id_place: str):
             "id_place,name,short_description,address,phone,website,"
             "cover_image,gallery,average_rating,review_count,"
             "estimated_duration_minutes,minimum_price,maximum_price,"
-            "timespan,timeclose,place_subcategory(name)"
+            "timespan,timeclose,detailed_description,place_subcategory(name)"
         )
         .eq("id_place", id_place)
         .limit(1)
@@ -209,6 +214,6 @@ def _get_recommended_place_sync(supabase, id_place: str):
     )
     if not rows:
         return {"place": None}
-    result = {"place": _place_response(rows[0])}
+    result = {"place": _place_response(rows[0], include_detailed_description=True)}
     _PLACE_DETAIL_CACHE.set(id_place, result)
     return result
