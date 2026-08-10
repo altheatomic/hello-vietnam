@@ -103,7 +103,16 @@ async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
     return result
 
 
-_NEARBY_SUBCATEGORIES = ["Y tế / Bệnh viện", "Nhà thuốc", "Bến xe / Sân bay / Ga tàu"]
+_NEARBY_SUBCATEGORIES = [
+    "Y tế / Bệnh viện",
+    "Nhà thuốc",
+    "Bến xe / Sân bay / Ga tàu",
+    "Ngân hàng / ATM",
+    "Trạm xăng",
+    "Cơ quan hành chính",
+    "Công an / Cảnh sát",
+    "Trường học / Đại học",
+]
 
 
 @router.get("/api/places/nearby")
