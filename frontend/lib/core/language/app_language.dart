@@ -1103,6 +1103,8 @@ class AppStrings {
     'm': ' phút',
     'Create Trip on Google Maps': 'Tạo chuyến đi trên Google Maps',
     'Back to trip planner': 'Quay lại Lịch trình',
+    'Create Trip Plan': 'Lên kế hoạch chuyến đi',
+    'Explore this province': 'Khám phá tỉnh này',
     'Destinations': 'Điểm đến',
     'No destinations available yet.': 'Hiện chưa có điểm đến.',
     'Generating your personalised itinerary…':
