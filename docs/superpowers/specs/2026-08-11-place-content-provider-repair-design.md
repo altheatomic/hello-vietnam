@@ -33,12 +33,14 @@ architectural weakness. This approach is rejected.
 ### 3. Flash primary with one bounded Pro repair
 
 Flash remains the economical primary model. A parseable response is checked by
-the existing deterministic rules. If it fails, Pro receives one repair request
-containing the candidate, structured validation issues, locked names, and the
-same untrusted evidence. Only fields named by the issues may be replaced; valid
-fields, fact IDs, and locked names remain unchanged. The merged result is
+the existing deterministic rules. If one or more text fields fail only their
+word-count limits, Pro receives one repair request containing the candidate,
+structured validation issues, locked names, and the same untrusted evidence.
+Only text fields named by those issues may be replaced; valid fields, fact IDs,
+and locked names remain unchanged. Other parseable validation failures are
+checkpointed for human review without a Pro request. The merged result is
 validated again. This is the selected approach because Pro usage is limited to
-exceptions and deterministic code remains the acceptance authority.
+word-count exceptions and deterministic code remains the acceptance authority.
 
 ## Runtime configuration and budget
 
@@ -84,9 +86,9 @@ For each place, serially:
 3. Collect structured validation issues instead of discarding the candidate at
    the first error.
 4. If there are no issues, checkpoint the proposal exactly as today.
-5. If the candidate is parseable and the repair allowance remains, call Pro
-   once. The repair prompt includes only data needed to correct the named
-   fields and treats all supplied evidence as untrusted data.
+5. If every issue is a text-field word-count issue and the repair allowance
+   remains, call Pro once. The repair prompt includes only data needed to
+   correct the named fields and treats all supplied evidence as untrusted data.
 6. Merge only named text fields from the repair response into the original.
    Preserve valid fields, locked names, fact IDs, and source provenance.
 7. Validate the merged result. A passing result becomes the proposal and
@@ -95,6 +97,11 @@ For each place, serially:
    `review_only` proposal with a sanitized repair warning. The normal `validate`
    command exports its deterministic errors to `needs-review.csv`; no invalid
    proposal can enter `approved.jsonl` without a validator-passing human edit.
+
+A parseable candidate with any non-word-count issue skips Pro and follows step
+8 directly. This keeps unknown fact IDs, unsupported claims, and protected-name
+problems under deterministic human review instead of asking a model to alter
+provenance.
 
 Malformed or empty primary output has no safe candidate to merge. Pro may make
 one full regeneration using the original grounded prompt. If that also cannot
