@@ -70,6 +70,7 @@ cf_service/__pycache__/
 cf_service/**/__pycache__/
 cf_service/.pytest_cache/
 cf_service/.mypy_cache/
+.artifacts/place-content/
 .claude/
 # Firebase configuration is environment-specific.
 frontend/android/app/google-services.json

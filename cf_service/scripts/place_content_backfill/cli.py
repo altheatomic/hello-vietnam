@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -16,9 +17,26 @@ def build_parser() -> argparse.ArgumentParser:
     audit = commands.add_parser("audit")
     audit.add_argument("--scope", default="approved-five")
 
-    for name in ("collect", "generate", "validate", "status"):
-        command = commands.add_parser(name)
-        command.add_argument("--run-id", required=True)
+    collect = commands.add_parser("collect")
+    collect.add_argument("--run-id", required=True)
+    collect.add_argument("--include-official-sites", action="store_true")
+
+    generate = commands.add_parser("generate")
+    generate.add_argument("--run-id", required=True)
+    generate.add_argument("--max-requests", type=int)
+    generate.add_argument("--max-input-tokens", type=int)
+    generate.add_argument("--max-output-tokens", type=int)
+    generate.add_argument("--max-estimated-cost-usd", type=float)
+
+    validate = commands.add_parser("validate")
+    validate.add_argument("--run-id", required=True)
+    validate.add_argument("--review-csv")
+
+    status = commands.add_parser("status")
+    status.add_argument("--run-id", required=True)
+
+    # Keep the command surface explicit; no positional SQL or arbitrary table
+    # names are accepted from the operator.
 
     apply = commands.add_parser("apply")
     apply.add_argument("--run-id", required=True)
@@ -29,6 +47,10 @@ def build_parser() -> argparse.ArgumentParser:
     rollback.add_argument("--run-id", required=True)
     rollback.add_argument("--confirm", action="store_true")
     rollback.add_argument("--pilot", action="store_true")
+    rollback.add_argument("--place-id", action="append")
+    rollback.add_argument("--province-id")
+    rollback.add_argument("--batch-id")
+    rollback.add_argument("--all", dest="all_entries", action="store_true")
     return parser
 
 
@@ -72,9 +94,246 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         )
         return 0
-    # Later tasks attach the remaining handlers. Keeping those commands
-    # side-effect free makes argument/safety tests independent of credentials.
-    return 0
+    root = Path(
+        os.environ.get(
+            "PLACE_CONTENT_ARTIFACT_ROOT",
+            str(Path.cwd() / ".artifacts" / "place-content"),
+        )
+    )
+    from .artifacts import ArtifactStore
+
+    store = ArtifactStore(root, args.run_id)
+    if args.command == "collect":
+        result = asyncio.run(_collect(store, include_official_sites=args.include_official_sites))
+        print(json.dumps(result, separators=(",", ":")))
+        return 0
+    if args.command == "generate":
+        result = asyncio.run(
+            _generate(
+                store,
+                max_requests=args.max_requests,
+                max_input_tokens=args.max_input_tokens,
+                max_output_tokens=args.max_output_tokens,
+                max_estimated_cost_usd=args.max_estimated_cost_usd,
+            )
+        )
+        print(json.dumps(result, separators=(",", ":")))
+        return 0
+    if args.command == "validate":
+        result = _validate(store, Path(args.review_csv) if args.review_csv else None)
+        print(json.dumps(result, separators=(",", ":")))
+        return 0
+    if args.command == "status":
+        print(json.dumps(_status(store), separators=(",", ":")))
+        return 0
+    if args.command == "apply":
+        result = asyncio.run(_apply(store, pilot=args.pilot))
+        print(json.dumps(result, separators=(",", ":")))
+        return 0
+    if args.command == "rollback":
+        result = asyncio.run(
+            _rollback(
+                store,
+                pilot=args.pilot,
+                place_ids=args.place_id,
+                province_id=args.province_id,
+                batch_id=args.batch_id,
+                all_entries=args.all_entries,
+            )
+        )
+        print(json.dumps(result, separators=(",", ":")))
+        return 0
+    return 2
+
+
+def _read_baseline(store):
+    from .models import BaselineRecord
+
+    return [BaselineRecord.model_validate(value) for value in store.read_all("baseline")]
+
+
+def _read_sources(store):
+    from .models import SourceSnapshot
+
+    return [SourceSnapshot.model_validate(value) for value in store.read_all("sources")]
+
+
+async def _collect(store, *, include_official_sites: bool) -> dict:
+    import httpx
+
+    from .sources import collect_source_snapshot
+
+    records = _read_baseline(store)
+    completed = store.completed_place_ids("sources")
+    async with httpx.AsyncClient() as client:
+        collected = 0
+        warnings = 0
+        for record in records:
+            if record.place_id in completed:
+                continue
+            snapshot = await collect_source_snapshot(
+                record,
+                client,
+                include_official_sites=include_official_sites,
+            )
+            store.append("sources", snapshot)
+            collected += 1
+            warnings += len(snapshot.warnings)
+    return {"run_id": store.run_id, "collected": collected, "warnings": warnings}
+
+
+async def _generate(
+    store,
+    *,
+    max_requests: int | None,
+    max_input_tokens: int | None,
+    max_output_tokens: int | None,
+    max_estimated_cost_usd: float | None,
+) -> dict:
+    from .generator import DeepSeekContentClient, GenerationBudget
+    from .models import Proposal
+    from .naming import normalize_names
+    from .repository import editable_hash
+
+    records = {record.place_id: record for record in _read_baseline(store)}
+    source_map = {source.place_id: source for source in _read_sources(store)}
+    completed = store.completed_place_ids("proposals")
+    budget = GenerationBudget.from_env(
+        max_requests=max_requests,
+        max_input_tokens=max_input_tokens,
+        max_output_tokens=max_output_tokens,
+        max_estimated_cost_usd=max_estimated_cost_usd,
+    )
+    client = DeepSeekContentClient(budget=budget)
+    generated = 0
+    for place_id, record in records.items():
+        if place_id in completed or place_id not in source_map:
+            continue
+        names = normalize_names(record, source_map[place_id])
+        result = await client.generate(record, names, source_map[place_id], editable_hash(record))
+        source_urls = tuple(
+            fact.source_url
+            for fact in source_map[place_id].facts
+            if fact.fact_id in result.content.used_fact_ids
+        )
+        proposal = Proposal(
+            place_id=place_id,
+            province_id=record.province_id,
+            baseline_hash=editable_hash(record),
+            current_name_vi=record.vi.name or record.name,
+            proposed_name_vi=names.vietnamese_name,
+            current_name_en=record.en.name,
+            proposed_name_en=names.english_name,
+            content=result.content,
+            source_fact_ids=result.content.used_fact_ids,
+            source_urls=source_urls,
+        )
+        store.append("proposals", proposal)
+        generated += 1
+    return {"run_id": store.run_id, "generated": generated, "requests": budget.requests_used}
+
+
+def _validate(store, review_csv: Path | None) -> dict:
+    from .models import Proposal
+    from .validators import import_review_csv, validate_proposal
+
+    records = {record.place_id: record for record in _read_baseline(store)}
+    sources = {source.place_id: source for source in _read_sources(store)}
+    proposals = [Proposal.model_validate(value) for value in store.read_all("proposals")]
+    if review_csv is not None:
+        proposals = import_review_csv(review_csv, proposals, baselines=records, sources=sources)
+    approved = []
+    needs_review = []
+    for proposal in proposals:
+        result = validate_proposal(proposal, records[proposal.place_id], sources[proposal.place_id])
+        updated = proposal.model_copy(
+            update={
+                "validation": result,
+                "reviewer_decision": "approve" if result.valid else proposal.reviewer_decision,
+            }
+        )
+        if result.valid:
+            approved.append(updated)
+        else:
+            needs_review.append(updated)
+    for proposal in approved:
+        store.append("approved", proposal)
+    store.write_review_csv(needs_review)
+    return {"run_id": store.run_id, "proposals": len(proposals), "approved": len(approved), "needs_review": len(needs_review)}
+
+
+def _status(store) -> dict:
+    manifest = store.read_manifest()
+    return {
+        "run_id": manifest.run_id,
+        "status": manifest.status,
+        "baseline": len(store.read_all("baseline")),
+        "sources": len(store.read_all("sources")),
+        "proposals": len(store.read_all("proposals")),
+        "approved": len(store.read_all("approved")),
+        "applied": len(store.read_all("applied")),
+        "rollback_events": len(store.read_all("rollback")),
+    }
+
+
+async def _apply(store, *, pilot: bool) -> dict:
+    import asyncpg
+
+    from .models import Proposal
+    from .repository import apply_approved_batch
+
+    approved = [Proposal.model_validate(value) for value in store.read_all("approved")]
+    if pilot:
+        approved = approved[:100]
+    if not approved:
+        raise ValueError("no approved proposals to apply")
+    records = {record.place_id: record for record in _read_baseline(store)}
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise ValueError("DATABASE_URL is required for apply")
+    conn = await asyncpg.connect(database_url)
+    batches = []
+    try:
+        for start in range(0, len(approved), 50):
+            result = await apply_approved_batch(
+                conn,
+                approved[start : start + 50],
+                records,
+                artifact_store=store,
+                confirm=True,
+            )
+            batches.append(result.batch_id)
+    finally:
+        await conn.close()
+    return {"run_id": store.run_id, "applied": len(approved), "batches": batches, "pilot": pilot}
+
+
+async def _rollback(store, *, pilot, place_ids, province_id, batch_id, all_entries):
+    import asyncpg
+
+    from .repository import rollback_applied_batch
+
+    # The rollback stream also records post-restore audit events.  Only the
+    # original entries carry a ``prior`` payload and are actionable.
+    entries = [entry for entry in store.read_all("rollback") if "prior" in entry]
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise ValueError("DATABASE_URL is required for rollback")
+    conn = await asyncpg.connect(database_url)
+    try:
+        restored = await rollback_applied_batch(
+            conn,
+            entries,
+            artifact_store=store,
+            confirm=True,
+            place_ids=place_ids,
+            province_id=province_id,
+            batch_id=batch_id,
+            all_entries=all_entries or pilot,
+        )
+    finally:
+        await conn.close()
+    return {"run_id": store.run_id, "restored": len(restored), "place_ids": list(restored)}
 
 
 if __name__ == "__main__":
