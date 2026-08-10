@@ -44,3 +44,10 @@ class TtlCache(Generic[K, V]):
             self._values.move_to_end(key)
             while len(self._values) > self._max_entries:
                 self._values.popitem(last=False)
+
+    def clear(self) -> None:
+        """Drop every cached entry. For explicit invalidation-on-write
+        (cache-aside pattern) — e.g. cf_retrain.py clearing the CF factor
+        caches once a retrain finishes, instead of waiting out the TTL."""
+        with self._lock:
+            self._values.clear()
