@@ -21,7 +21,7 @@ from .sources import DEFAULT_TIMEOUT, RetryExhausted, fetch_bytes
 
 
 DEEPSEEK_ENDPOINT = "https://api.deepseek.com/chat/completions"
-PROMPT_VERSION = "place_content_v1"
+PROMPT_VERSION = "place_content_v1_length_guard"
 MAX_OUTPUT_TOKENS = 1400
 MAX_PROVIDER_RESPONSE_BYTES = 2 * 1024 * 1024
 _NUMERIC_TOKEN_RE = re.compile(r"(?<![A-Za-z0-9])\d+(?:[.,]\d+)?(?![A-Za-z0-9])")

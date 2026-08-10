@@ -11,7 +11,9 @@ Output requirements:
   content and supplied fact IDs:
   {"vi_short":"...","en_short":"...","vi_long":"...","en_long":"...","fact_ids":["fact-id"],"warnings":[]}
 - Target 25-35 whitespace-delimited words for each short description and
-  100-130 whitespace-delimited words for each long description.
+  110-130 whitespace-delimited words for each long description.
+- Never return a long description with fewer than 100 whitespace-delimited
+  words.
 - Count each field before returning JSON and revise any field outside the
   required validator ranges.
 - Short descriptions contain 20–45 whitespace-delimited words.
