@@ -5,14 +5,16 @@ from collections import defaultdict
 import json
 import re
 from typing import Any, Iterable
+from urllib.parse import urlencode
 
 import httpx
 
 from ..models import BaselineRecord, SourceFact
-from . import fetch_bytes
+from . import RetryExhausted, fetch_bytes
 
 
 OSM_ENDPOINT = "https://overpass-api.de/api/interpreter"
+OSM_IDENTITY_ENDPOINT = "https://api.openstreetmap.org/api/0.6"
 MAX_OSM_RESPONSE_BYTES = 8 * 1024 * 1024
 _OSM_ID_RE = re.compile(r"^osm:(node|way|relation):([0-9]+)$")
 
@@ -52,27 +54,14 @@ def _fact_id(kind: str, numeric_id: int, tag_key: str) -> str:
     return f"osm:{kind}:{numeric_id}:{tag_key}"
 
 
-async def _collect_batch(
-    record: BaselineRecord,
-    client: httpx.AsyncClient,
-    kind: str,
-    ids: tuple[int, ...],
-    *,
-    endpoint: str,
-) -> tuple[list[SourceFact], list[str]]:
-    query = _overpass_query(kind, ids)
-    result = await fetch_bytes(
-        client,
-        "POST",
-        endpoint,
-        json_body={"data": query},
-        max_bytes=MAX_OSM_RESPONSE_BYTES,
-    )
-    payload = json.loads(result.body.decode("utf-8"))
+def _facts_from_elements(elements: Iterable[dict[str, Any]]) -> list[SourceFact]:
     facts: list[SourceFact] = []
-    for element in payload.get("elements", []):
-        element_kind = str(element.get("type") or kind)
-        numeric_id = int(element.get("id"))
+    for element in elements:
+        element_kind = str(element.get("type") or "")
+        try:
+            numeric_id = int(element.get("id"))
+        except (TypeError, ValueError):
+            continue
         tags = element.get("tags") or {}
         for tag_key, value in sorted(tags.items()):
             if value is None or not str(value).strip():
@@ -87,6 +76,65 @@ async def _collect_batch(
                     value=str(value),
                 )
             )
+    return facts
+
+
+async def _collect_identity_api_facts(
+    record: BaselineRecord,
+    client: httpx.AsyncClient,
+    kind: str,
+    ids: tuple[int, ...],
+) -> tuple[list[SourceFact], list[str]]:
+    facts: list[SourceFact] = []
+    warnings: list[str] = []
+    for numeric_id in ids:
+        url = f"{OSM_IDENTITY_ENDPOINT}/{kind}/{numeric_id}.json"
+        try:
+            result = await fetch_bytes(
+                client,
+                "GET",
+                url,
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": "hello-vietnam-place-content-backfill/1.0 (research; contact owner)",
+                },
+                max_bytes=MAX_OSM_RESPONSE_BYTES,
+            )
+            payload = json.loads(result.body.decode("utf-8"))
+        except (RetryExhausted, httpx.HTTPError, json.JSONDecodeError):
+            warnings.append(f"osm-identity-api-failed:{record.place_id}:{kind}:{numeric_id}")
+            continue
+        facts.extend(_facts_from_elements(payload.get("elements", [])))
+    if not facts:
+        warnings.append(f"osm-no-facts:{record.place_id}:{kind}")
+    return facts, warnings
+
+
+async def _collect_batch(
+    record: BaselineRecord,
+    client: httpx.AsyncClient,
+    kind: str,
+    ids: tuple[int, ...],
+    *,
+    endpoint: str,
+) -> tuple[list[SourceFact], list[str]]:
+    query = _overpass_query(kind, ids)
+    try:
+        result = await fetch_bytes(
+            client,
+            "POST",
+            endpoint,
+            content=urlencode({"data": query}),
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            },
+            max_bytes=MAX_OSM_RESPONSE_BYTES,
+        )
+    except (RetryExhausted, httpx.HTTPError):
+        return await _collect_identity_api_facts(record, client, kind, ids)
+    payload = json.loads(result.body.decode("utf-8"))
+    facts = _facts_from_elements(payload.get("elements", []))
     if not facts:
         return [], [f"osm-no-facts:{record.place_id}:{kind}"]
     return facts, []

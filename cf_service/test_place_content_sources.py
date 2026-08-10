@@ -4,6 +4,7 @@ import subprocess
 import sys
 import unittest
 from unittest.mock import Mock
+from urllib.parse import parse_qs
 
 import httpx
 
@@ -64,8 +65,13 @@ class PlaceContentSourcesTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_osm_mock_transport_collects_stable_fact_ids(self):
         async def handler(request: httpx.Request) -> httpx.Response:
-            body = json.loads(request.content.decode("utf-8"))
-            self.assertIn("node(id:1,2)", body["data"])
+            self.assertTrue(
+                request.headers["content-type"].startswith(
+                    "application/x-www-form-urlencoded"
+                )
+            )
+            body = parse_qs(request.content.decode("utf-8"))
+            self.assertIn("node(id:1,2)", body["data"][0])
             return httpx.Response(
                 200,
                 json={
@@ -89,6 +95,33 @@ class PlaceContentSourcesTest(unittest.IsolatedAsyncioTestCase):
             [fact.fact_id for fact in facts],
             ["osm:node:1:name", "osm:node:2:name:en"],
         )
+
+    async def test_osm_falls_back_to_identity_api_when_overpass_is_unavailable(self):
+        calls = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            calls.append(str(request.url))
+            if request.url.host == "overpass-api.de":
+                return httpx.Response(504)
+            self.assertEqual(
+                str(request.url),
+                "https://api.openstreetmap.org/api/0.6/node/1.json",
+            )
+            return httpx.Response(
+                200,
+                json={
+                    "elements": [
+                        {"type": "node", "id": 1, "tags": {"name": "Thiên Mụ"}},
+                    ]
+                },
+            )
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            facts, warnings = await collect_osm_facts(record(), client=client)
+
+        self.assertEqual([fact.fact_id for fact in facts], ["osm:node:1:name"])
+        self.assertFalse(warnings)
+        self.assertEqual(len(calls), 4)
 
     def test_wikimedia_links_require_explicit_identifiers(self):
         self.assertEqual(parse_wikimedia_link("Q12345"), ("wikidata", "Q12345"))
