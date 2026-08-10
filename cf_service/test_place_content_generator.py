@@ -113,6 +113,8 @@ class PlaceContentGeneratorTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(payload["temperature"], 0.2)
             self.assertEqual(payload["max_tokens"], 1400)
             self.assertEqual(payload["response_format"], {"type": "json_object"})
+            self.assertEqual(payload["thinking"], {"type": "disabled"})
+            self.assertIn('"vi_short"', payload["messages"][0]["content"])
             self.assertIn("Thiên Mụ Pagoda", payload["messages"][0]["content"])
             self.assertIn("osm:node:1:name", payload["messages"][1]["content"])
             return httpx.Response(

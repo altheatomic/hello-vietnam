@@ -310,6 +310,7 @@ class DeepSeekClient:
             ],
             "temperature": 0.2,
             "max_tokens": MAX_OUTPUT_TOKENS,
+            "thinking": {"type": "disabled"},
             "response_format": {"type": "json_object"},
         }
         result = await fetch_bytes(
