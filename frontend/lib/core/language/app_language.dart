@@ -331,7 +331,7 @@ class AppStrings {
   }
 
   static const Map<String, String> _viText = <String, String>{
-    'Have you completed this trip?': 'Bạn đã hoàn thành chuyến đi này chưa?',
+    'Completed this trip?': 'Bạn đã hoàn thành chuyến đi này chưa?',
     'Not yet': 'Chưa',
     'Mark as completed': 'Đánh dấu đã hoàn thành',
     'Update your start date?': 'Cập nhật lại ngày bắt đầu?',

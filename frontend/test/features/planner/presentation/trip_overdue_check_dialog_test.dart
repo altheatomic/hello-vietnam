@@ -46,7 +46,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Title + trip name present.
-      expect(find.text('Have you completed this trip?'), findsOneWidget);
+      expect(find.text('Completed this trip?'), findsOneWidget);
       expect(find.text('Da Lat Getaway'), findsOneWidget);
 
       // The removed line must not appear in any form.

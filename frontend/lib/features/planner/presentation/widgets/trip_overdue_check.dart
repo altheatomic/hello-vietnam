@@ -49,7 +49,7 @@ Future<void> checkOverdueTrip(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext dialogContext) => AlertDialog(
-      title: Text(strings.ui('Have you completed this trip?')),
+      title: Text(strings.ui('Completed this trip?')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
