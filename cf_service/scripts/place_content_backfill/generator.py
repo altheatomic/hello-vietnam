@@ -168,6 +168,7 @@ class GenerationResult:
     usage: ProviderUsage
     budget_state: BudgetState
     cache_hit: bool = False
+    provider_usages: tuple[ProviderUsage, ...] = ()
 
 
 class GenerationCache:
@@ -408,6 +409,36 @@ def _validate_generated_content(
     return generated.model_copy(update={"warnings": tuple(dict.fromkeys(warnings))})
 
 
+def _with_warning(generated: GeneratedContent, warning: str) -> GeneratedContent:
+    return generated.model_copy(
+        update={"warnings": tuple(dict.fromkeys((*generated.warnings, warning)))}
+    )
+
+
+def _repairable_issues(issues: tuple[ContentIssue, ...]) -> bool:
+    return bool(issues) and all(
+        issue.code == "word-count"
+        and issue.field_name in {"vi_short", "en_short", "vi_long", "en_long"}
+        for issue in issues
+    )
+
+
+def _aggregate_usage(usages: tuple[ProviderUsage, ...]) -> ProviderUsage:
+    if not usages:
+        return ProviderUsage(0, 0, 0, 0.0, request_attempts=0)
+    roles = tuple(dict.fromkeys(usage.provider_role for usage in usages))
+    models = tuple(dict.fromkeys(usage.model for usage in usages if usage.model))
+    return ProviderUsage(
+        prompt_tokens=sum(usage.prompt_tokens for usage in usages),
+        completion_tokens=sum(usage.completion_tokens for usage in usages),
+        total_tokens=sum(usage.total_tokens for usage in usages),
+        estimated_cost_usd=sum(usage.estimated_cost_usd for usage in usages),
+        request_attempts=sum(usage.request_attempts for usage in usages),
+        provider_role=roles[0] if len(roles) == 1 else "mixed",
+        model=models[0] if len(models) == 1 else "+".join(models),
+    )
+
+
 class DeepSeekClient:
     def __init__(
         self,
@@ -552,6 +583,7 @@ async def generate_proposal(
     sources: SourceSnapshot,
     name_decision: NameDecision,
     *,
+    repair_provider: DeepSeekClient | None = None,
     cache: GenerationCache | None = None,
 ) -> GenerationResult:
     if record.place_id != name_decision.place_id or record.place_id != sources.place_id:
@@ -569,6 +601,8 @@ async def generate_proposal(
             generated=generated,
             sparse_source=sources.sparse_source,
             review_only=sources.sparse_source or name_decision.review_only,
+            provider_models=(generated.model,) if generated.model else (),
+            repair_used=False,
             proposal_hash=proposal_hash,
         )
         return GenerationResult(
@@ -576,12 +610,88 @@ async def generate_proposal(
             usage=ProviderUsage(0, 0, 0, 0.0, request_attempts=0),
             budget_state=provider.state,
             cache_hit=True,
+            provider_usages=(),
         )
     system_prompt, user_prompt = render_prompt(record, sources, name_decision)
-    generated, usage = await provider.complete(system_prompt, user_prompt)
-    generated = _validate_generated_content(generated, sources)
+    usages: list[ProviderUsage] = []
+    repair_used = False
+    review_only = sources.sparse_source or name_decision.review_only
+
+    try:
+        generated, primary_usage = await provider.complete(system_prompt, user_prompt)
+        usages.append(primary_usage)
+    except ProviderOutputError as primary_error:
+        if primary_error.candidate is not None:
+            generated = primary_error.candidate
+            if primary_error.usage is not None:
+                usages.append(primary_error.usage)
+        else:
+            if (
+                repair_provider is None
+                or repair_provider.state.repair_request_attempts
+                >= repair_provider.budget.max_repair_requests
+            ):
+                raise
+            if primary_error.usage is not None:
+                usages.append(primary_error.usage)
+            generated, repair_usage = await repair_provider.complete(system_prompt, user_prompt)
+            usages.append(repair_usage)
+            repair_used = True
+            issues = generated_content_issues(generated, sources)
+            if issues:
+                generated = _with_warning(generated, "provider-repair-review-required")
+                review_only = True
+            else:
+                generated = _validate_generated_content(generated, sources)
+    else:
+        issues = generated_content_issues(generated, sources)
+        if not issues:
+            generated = _validate_generated_content(generated, sources)
+        elif (
+            _repairable_issues(issues)
+            and repair_provider is not None
+            and repair_provider.state.repair_request_attempts
+            < repair_provider.budget.max_repair_requests
+        ):
+            repair_system, repair_user = render_repair_prompt(
+                record,
+                sources,
+                name_decision,
+                generated,
+                issues,
+            )
+            try:
+                repaired, repair_usage = await repair_provider.complete(
+                    repair_system,
+                    repair_user,
+                )
+            except ProviderOutputError as repair_error:
+                if repair_error.usage is not None:
+                    usages.append(repair_error.usage)
+                generated = _with_warning(generated, "provider-repair-review-required")
+                review_only = True
+            else:
+                usages.append(repair_usage)
+                repair_used = True
+                generated = merge_repaired_fields(generated, repaired, issues)
+                remaining_issues = generated_content_issues(generated, sources)
+                if remaining_issues:
+                    generated = _with_warning(generated, "provider-repair-review-required")
+                    review_only = True
+                else:
+                    generated = _validate_generated_content(generated, sources)
+        else:
+            generated = _with_warning(generated, "provider-validation-review-required")
+            review_only = True
+
+    provider_models = tuple(
+        dict.fromkeys(usage.model for usage in usages if usage.model)
+    )
     generated = generated.model_copy(
-        update={"model": provider.model, "prompt_version": PROMPT_VERSION}
+        update={
+            "model": repair_provider.model if repair_used and repair_provider else provider.model,
+            "prompt_version": PROMPT_VERSION,
+        }
     )
     proposal_payload = {
         "place_id": record.place_id,
@@ -591,19 +701,22 @@ async def generate_proposal(
         "name_decision": name_decision.model_dump(mode="json"),
         "generated": generated.model_dump(mode="json"),
         "sparse_source": sources.sparse_source,
-        "review_only": sources.sparse_source or name_decision.review_only,
+        "review_only": review_only,
+        "provider_models": provider_models,
+        "repair_used": repair_used,
     }
     proposal_hash = hashlib.sha256(
         json.dumps(proposal_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
     proposal = Proposal(**proposal_payload, proposal_hash=proposal_hash)
-    if cache is not None:
+    if cache is not None and not review_only:
         cache.set(key, (generated, proposal_hash))
     return GenerationResult(
         proposal=proposal,
-        usage=usage,
+        usage=_aggregate_usage(tuple(usages)),
         budget_state=provider.state,
         cache_hit=False,
+        provider_usages=tuple(usages),
     )
 
 
@@ -612,6 +725,7 @@ async def generate_worker(
     artifact_store: ArtifactStore,
     provider: DeepSeekClient,
     *,
+    repair_provider: DeepSeekClient | None = None,
     max_places: int = 25,
     cache: GenerationCache | None = None,
 ) -> int:
@@ -628,6 +742,7 @@ async def generate_worker(
             record,
             sources,
             name_decision,
+            repair_provider=repair_provider,
             cache=cache,
         )
         artifact_store.append_jsonl(

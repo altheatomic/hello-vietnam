@@ -175,6 +175,23 @@ class PlaceContentValidatorsTest(unittest.TestCase):
             rows = list(store.iter_review_csv())
             self.assertEqual(rows, [])
 
+    def test_invalid_review_only_proposal_is_exported_and_never_approved(self):
+        invalid_proposal = proposal(
+            generated=proposal().generated.model_copy(update={"vi_short": words(50, "too-long")})
+        )
+        validation = validate_proposal(invalid_proposal, baseline(), source_snapshot())
+        self.assertFalse(validation.passed)
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ArtifactStore(Path(tmp), "20260810-120000-abcdef12")
+            counts = rebuild_review_artifacts(
+                store,
+                [(invalid_proposal, validation, baseline(), source_snapshot())],
+                decisions=(),
+            )
+            self.assertEqual(counts["approved"], 0)
+            self.assertEqual(counts["needs_review"], 1)
+            self.assertIn("20-45", next(store.iter_review_csv())["flags"])
+
     def test_validation_worker_writes_one_result_per_bounded_item(self):
         valid_proposal = proposal()
         with tempfile.TemporaryDirectory() as tmp:

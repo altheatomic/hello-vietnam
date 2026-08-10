@@ -28,6 +28,7 @@ from scripts.place_content_backfill.generator import (
     RetryExhausted,
     generated_content_issues,
     generate_proposal,
+    generate_worker,
     merge_repaired_fields,
     render_repair_prompt,
 )
@@ -239,6 +240,352 @@ class PlaceContentGeneratorTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(checkpoints[0]["provider_role"], "repair")
         self.assertEqual(checkpoints[0]["model"], "deepseek-v4-pro")
         self.assertNotIn("unit-test-key", json.dumps(checkpoints))
+
+    async def test_valid_primary_response_never_calls_repair_provider(self):
+        calls = {"primary": 0, "repair": 0}
+
+        async def primary_handler(request: httpx.Request) -> httpx.Response:
+            calls["primary"] += 1
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": json.dumps(provider_body())}}]},
+            )
+
+        async def repair_handler(request: httpx.Request) -> httpx.Response:
+            calls["repair"] += 1
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": json.dumps(provider_body())}}]},
+            )
+
+        state = BudgetState()
+        async with (
+            self.client(
+                primary_handler,
+                model="deepseek-v4-flash",
+                provider_role="primary",
+                budget_state=state,
+                max_requests=5,
+                max_repair_requests=1,
+            ) as primary,
+            self.client(
+                repair_handler,
+                model="deepseek-v4-pro",
+                provider_role="repair",
+                budget_state=state,
+                max_requests=5,
+                max_repair_requests=1,
+            ) as repair,
+        ):
+            result = await generate_proposal(
+                primary,
+                record(),
+                sources(),
+                names(),
+                repair_provider=repair,
+            )
+        self.assertEqual(calls, {"primary": 1, "repair": 0})
+        self.assertEqual(result.proposal.provider_models, ("deepseek-v4-flash",))
+        self.assertFalse(result.proposal.repair_used)
+
+    async def test_word_count_failure_calls_repair_once_and_merges_only_invalid_field(self):
+        calls = {"primary": 0, "repair": 0}
+
+        async def primary_handler(request: httpx.Request) -> httpx.Response:
+            calls["primary"] += 1
+            body = provider_body(extra={"vi_short": words(50, "old")})
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": json.dumps(body)}}]},
+            )
+
+        async def repair_handler(request: httpx.Request) -> httpx.Response:
+            calls["repair"] += 1
+            body = provider_body(
+                fact_ids=("unknown-fact",),
+                extra={"vi_short": words(30, "fixed"), "en_long": words(120, "changed")},
+            )
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": json.dumps(body)}}]},
+            )
+
+        state = BudgetState()
+        async with (
+            self.client(
+                primary_handler,
+                model="deepseek-v4-flash",
+                provider_role="primary",
+                budget_state=state,
+                max_requests=5,
+                max_repair_requests=1,
+            ) as primary,
+            self.client(
+                repair_handler,
+                model="deepseek-v4-pro",
+                provider_role="repair",
+                budget_state=state,
+                max_requests=5,
+                max_repair_requests=1,
+            ) as repair,
+        ):
+            result = await generate_proposal(
+                primary,
+                record(),
+                sources(),
+                names(),
+                repair_provider=repair,
+            )
+        self.assertEqual(calls, {"primary": 1, "repair": 1})
+        self.assertEqual(result.proposal.generated.vi_short, words(30, "fixed"))
+        self.assertEqual(result.proposal.generated.en_long, words(90, "enlong"))
+        self.assertEqual(result.proposal.generated.fact_ids, ("osm:node:1:name",))
+        self.assertEqual(result.proposal.provider_models, ("deepseek-v4-flash", "deepseek-v4-pro"))
+        self.assertTrue(result.proposal.repair_used)
+        self.assertFalse(result.proposal.review_only)
+
+    async def test_non_word_failure_becomes_review_only_without_repair_call(self):
+        calls = {"primary": 0, "repair": 0}
+
+        async def primary_handler(request: httpx.Request) -> httpx.Response:
+            calls["primary"] += 1
+            body = provider_body(fact_ids=("unknown-fact",))
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": json.dumps(body)}}]},
+            )
+
+        async def repair_handler(request: httpx.Request) -> httpx.Response:
+            calls["repair"] += 1
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": json.dumps(provider_body())}}]},
+            )
+
+        state = BudgetState()
+        async with (
+            self.client(
+                primary_handler,
+                model="deepseek-v4-flash",
+                provider_role="primary",
+                budget_state=state,
+                max_requests=5,
+                max_repair_requests=1,
+            ) as primary,
+            self.client(
+                repair_handler,
+                model="deepseek-v4-pro",
+                provider_role="repair",
+                budget_state=state,
+                max_requests=5,
+                max_repair_requests=1,
+            ) as repair,
+        ):
+            result = await generate_proposal(
+                primary,
+                record(),
+                sources(),
+                names(),
+                repair_provider=repair,
+            )
+        self.assertEqual(calls, {"primary": 1, "repair": 0})
+        self.assertTrue(result.proposal.review_only)
+        self.assertIn("provider-validation-review-required", result.proposal.generated.warnings)
+
+    async def test_still_invalid_repair_becomes_review_only_without_third_call(self):
+        calls = {"primary": 0, "repair": 0}
+
+        async def primary_handler(request: httpx.Request) -> httpx.Response:
+            calls["primary"] += 1
+            body = provider_body(extra={"vi_long": words(163, "too-long")})
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": json.dumps(body)}}]},
+            )
+
+        async def repair_handler(request: httpx.Request) -> httpx.Response:
+            calls["repair"] += 1
+            body = provider_body(extra={"vi_long": words(170, "still-too-long")})
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": json.dumps(body)}}]},
+            )
+
+        state = BudgetState()
+        async with (
+            self.client(
+                primary_handler,
+                model="deepseek-v4-flash",
+                provider_role="primary",
+                budget_state=state,
+                max_requests=5,
+                max_repair_requests=1,
+            ) as primary,
+            self.client(
+                repair_handler,
+                model="deepseek-v4-pro",
+                provider_role="repair",
+                budget_state=state,
+                max_requests=5,
+                max_repair_requests=1,
+            ) as repair,
+        ):
+            result = await generate_proposal(
+                primary,
+                record(),
+                sources(),
+                names(),
+                repair_provider=repair,
+            )
+        self.assertEqual(calls, {"primary": 1, "repair": 1})
+        self.assertTrue(result.proposal.review_only)
+        self.assertIn("provider-repair-review-required", result.proposal.generated.warnings)
+
+    async def test_malformed_primary_uses_one_full_repair_regeneration(self):
+        calls = {"primary": 0, "repair": 0}
+
+        async def primary_handler(request: httpx.Request) -> httpx.Response:
+            calls["primary"] += 1
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": ""}}]},
+            )
+
+        async def repair_handler(request: httpx.Request) -> httpx.Response:
+            calls["repair"] += 1
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": json.dumps(provider_body())}}]},
+            )
+
+        state = BudgetState()
+        async with (
+            self.client(
+                primary_handler,
+                model="deepseek-v4-flash",
+                provider_role="primary",
+                budget_state=state,
+                max_requests=5,
+                max_repair_requests=1,
+            ) as primary,
+            self.client(
+                repair_handler,
+                model="deepseek-v4-pro",
+                provider_role="repair",
+                budget_state=state,
+                max_requests=5,
+                max_repair_requests=1,
+            ) as repair,
+        ):
+            result = await generate_proposal(
+                primary,
+                record(),
+                sources(),
+                names(),
+                repair_provider=repair,
+            )
+        self.assertEqual(calls, {"primary": 1, "repair": 1})
+        self.assertEqual(result.proposal.provider_models, ("deepseek-v4-flash", "deepseek-v4-pro"))
+        self.assertTrue(result.proposal.repair_used)
+        self.assertFalse(result.proposal.review_only)
+
+    async def test_generate_worker_routes_each_item_through_optional_repair_provider(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ArtifactStore(Path(tmp), "20260810-120000-abcdef12")
+            primary_body = provider_body(extra={"vi_short": words(50, "old")})
+            repair_body = provider_body(extra={"vi_short": words(30, "fixed")})
+
+            async def primary_handler(request: httpx.Request) -> httpx.Response:
+                return httpx.Response(
+                    200,
+                    json={"choices": [{"message": {"content": json.dumps(primary_body)}}]},
+                )
+
+            async def repair_handler(request: httpx.Request) -> httpx.Response:
+                return httpx.Response(
+                    200,
+                    json={"choices": [{"message": {"content": json.dumps(repair_body)}}]},
+                )
+
+            state = BudgetState()
+            primary_budget = self.budget(max_requests=5, max_repair_requests=1)
+            repair_budget = self.budget(max_requests=5, max_repair_requests=1)
+            async with (
+                DeepSeekClient(
+                    api_key="unit-test-key",
+                    model="deepseek-v4-flash",
+                    provider_role="primary",
+                    budget=primary_budget,
+                    budget_state=state,
+                    transport=httpx.MockTransport(primary_handler),
+                    backoff_base=0,
+                ) as primary,
+                DeepSeekClient(
+                    api_key="unit-test-key",
+                    model="deepseek-v4-pro",
+                    provider_role="repair",
+                    budget=repair_budget,
+                    budget_state=state,
+                    transport=httpx.MockTransport(repair_handler),
+                    backoff_base=0,
+                ) as repair,
+            ):
+                count = await generate_worker(
+                    ((record(), sources(), names()),),
+                    store,
+                    primary,
+                    repair_provider=repair,
+                )
+            self.assertEqual(count, 1)
+            proposal = store.read_all("proposals")[0]["proposal"]
+            self.assertEqual(proposal["provider_models"], ["deepseek-v4-flash", "deepseek-v4-pro"])
+            self.assertTrue(proposal["repair_used"])
+
+    async def test_malformed_primary_and_repair_stop_after_two_calls(self):
+        calls = {"primary": 0, "repair": 0}
+
+        async def primary_handler(request: httpx.Request) -> httpx.Response:
+            calls["primary"] += 1
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": ""}}]},
+            )
+
+        async def repair_handler(request: httpx.Request) -> httpx.Response:
+            calls["repair"] += 1
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": "not-json"}}]},
+            )
+
+        state = BudgetState()
+        async with (
+            self.client(
+                primary_handler,
+                model="deepseek-v4-flash",
+                provider_role="primary",
+                budget_state=state,
+                max_requests=5,
+                max_repair_requests=1,
+            ) as primary,
+            self.client(
+                repair_handler,
+                model="deepseek-v4-pro",
+                provider_role="repair",
+                budget_state=state,
+                max_requests=5,
+                max_repair_requests=1,
+            ) as repair,
+        ):
+            with self.assertRaises(ProviderOutputError):
+                await generate_proposal(
+                    primary,
+                    record(),
+                    sources(),
+                    names(),
+                    repair_provider=repair,
+                )
+        self.assertEqual(calls, {"primary": 1, "repair": 1})
 
     def test_word_count_issues_name_only_invalid_text_fields(self):
         candidate = GeneratedContent.model_validate(
@@ -456,15 +803,16 @@ class PlaceContentGeneratorTest(unittest.IsolatedAsyncioTestCase):
                 await generate_proposal(provider, record(), sources(), names())
         self.assertEqual(calls, 0)
 
-    async def test_word_limits_and_unknown_fact_ids_are_rejected(self):
+    async def test_word_limits_and_unknown_fact_ids_become_review_only(self):
         async def short_handler(request: httpx.Request) -> httpx.Response:
             body = provider_body(fact_ids=("unknown-fact",))
             body["vi_short"] = words(19, "too-short")
             return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps(body)}}]})
 
         async with self.client(short_handler) as provider:
-            with self.assertRaises(ProviderOutputError):
-                await generate_proposal(provider, record(), sources(), names())
+            result = await generate_proposal(provider, record(), sources(), names())
+        self.assertTrue(result.proposal.review_only)
+        self.assertIn("provider-validation-review-required", result.proposal.generated.warnings)
 
 
 class PlaceContentGenerateCliTest(unittest.TestCase):
