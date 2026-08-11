@@ -10,6 +10,7 @@ Environment variables (put in .env or set externally):
                               e.g. postgresql://postgres:<password>@db.<project>.supabase.co:5432/postgres
   CF_RETRAIN_SHARED_SECRET  - optional shared secret used to authenticate
                               pg_cron calls to the retrain endpoint
+  SA_MAX_CONCURRENCY_PER_WORKER - positive integer; defaults to 1
 
 Run locally:
   uvicorn main:app --reload --port 8000
@@ -32,6 +33,7 @@ from db.connection import close_pool
 from routes.trip import router as trip_router
 from routes.events import router as events_router
 from routes.recommend import router as recommend_router
+from services.sa_concurrency import configure_sa_limiter_from_env
 
 EXECUTOR_MAX_WORKERS = 30
 
@@ -45,6 +47,9 @@ def _warn_if_cf_retrain_secret_missing() -> bool:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Each Uvicorn worker owns one limiter. Invalid configuration deliberately
+    # aborts startup instead of silently removing the CPU protection.
+    app.state.sa_limiter = configure_sa_limiter_from_env()
     executor = ThreadPoolExecutor(max_workers=EXECUTOR_MAX_WORKERS)
     loop = asyncio.get_running_loop()
     loop.set_default_executor(executor)

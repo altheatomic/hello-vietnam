@@ -19,6 +19,7 @@ from typing import List, Optional
 from db.connection import get_pool
 from db.supabase_client import get_supabase
 from services.trip_planner import NoTripCandidatesError, TripPlannerService
+from services.sa_concurrency import SaQueueTimeoutError
 from services.cf_retrain_schedule import (
     load_cf_retrain_schedule,
     next_run_time_utc,
@@ -126,6 +127,8 @@ async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
             status_code=422,
             detail={"error_code": "no_candidates", "message": str(exc)},
         ) from exc
+    except SaQueueTimeoutError as exc:
+        raise HTTPException(status_code=503, detail="planner busy, please retry") from exc
     # print(f"[DEBUG] response days count: {len(result.get('days', []))}")
     # print(f"[DEBUG] response: {result}")
     return result
