@@ -11,7 +11,17 @@ from ..models import SourceFact
 from .http import request_with_retry
 
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+# Public Overpass instances are used in a fixed order.  Keeping this list
+# allowlisted avoids turning the source adapter into an arbitrary URL proxy,
+# while still allowing a transient outage on the primary instance to recover.
+OVERPASS_URLS = (
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+)
+# Backwards-compatible alias for callers that only need the primary endpoint.
+OVERPASS_URL = OVERPASS_URLS[0]
+_OVERPASS_RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 ALLOWED_TAGS = (
     "name",
     "name:vi",
@@ -63,16 +73,30 @@ async def collect_osm_facts(
     facts: list[SourceFact] = []
     for batch in _chunks(tuple(osm_ids), 100):
         query = build_overpass_query(batch)
-        response = await request_with_retry(
-            client,
-            "POST",
-            OVERPASS_URL,
-            data={"data": query},
-            timeout=30,
-            headers={"User-Agent": "hello-vietnam-place-content/1.0"},
-        )
-        response.raise_for_status()
-        facts.extend(extract_osm_facts(response.json()))
+        last_error: Exception | None = None
+        for endpoint in OVERPASS_URLS:
+            try:
+                response = await request_with_retry(
+                    client,
+                    "POST",
+                    endpoint,
+                    data={"data": query},
+                    timeout=30,
+                    headers={"User-Agent": "hello-vietnam-place-content/1.0"},
+                )
+                response.raise_for_status()
+                facts.extend(extract_osm_facts(response.json()))
+                break
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code not in _OVERPASS_RETRYABLE_STATUS_CODES:
+                    raise
+                last_error = exc
+            except httpx.TransportError as exc:
+                last_error = exc
+        else:
+            if last_error is not None:
+                raise last_error
+            raise RuntimeError("no Overpass endpoints configured")
     return facts
 
 

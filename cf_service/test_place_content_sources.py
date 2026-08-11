@@ -1,5 +1,6 @@
 import asyncio
 import unittest
+from unittest.mock import patch
 
 import httpx
 
@@ -8,6 +9,7 @@ from scripts.place_content_backfill.models import BaselineRecord, TranslationBas
 from scripts.place_content_backfill.sources import collect_source_snapshots
 from scripts.place_content_backfill.sources.osm import parse_osm_id
 from scripts.place_content_backfill.sources.osm import collect_osm_facts
+from scripts.place_content_backfill.sources import osm as osm_source
 from scripts.place_content_backfill.sources.website import (
     extract_official_metadata,
     validate_official_url,
@@ -192,6 +194,36 @@ class PlaceContentSourcesTest(unittest.TestCase):
                 facts = await collect_osm_facts(client, ["osm:node:123"])
             self.assertEqual(calls, 2)
             self.assertEqual([fact.fact_id for fact in facts], ["osm.name"])
+
+        asyncio.run(run())
+
+    def test_osm_collection_falls_back_after_transport_failure(self):
+        async def run():
+            seen_urls = []
+
+            async def handler(request: httpx.Request) -> httpx.Response:
+                seen_urls.append(str(request.url))
+                if request.url.host == "primary.example":
+                    raise httpx.ConnectError("primary unavailable", request=request)
+                return httpx.Response(
+                    200,
+                    json={"elements": [{"type": "node", "id": 123, "tags": {"name": "Fallback"}}]},
+                )
+
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                with patch.object(
+                    osm_source,
+                    "OVERPASS_URLS",
+                    (
+                        "https://primary.example/api/interpreter",
+                        "https://fallback.example/api/interpreter",
+                    ),
+                ):
+                    facts = await collect_osm_facts(client, ["osm:node:123"])
+
+            self.assertEqual(seen_urls[:3], ["https://primary.example/api/interpreter"] * 3)
+            self.assertEqual(seen_urls[3:], ["https://fallback.example/api/interpreter"])
+            self.assertEqual([fact.value for fact in facts], ["Fallback"])
 
         asyncio.run(run())
 
