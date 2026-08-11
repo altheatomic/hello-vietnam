@@ -281,8 +281,9 @@ def _validate(store, review_csv: Path | None) -> dict:
             approved.append(updated)
         else:
             needs_review.append(updated)
-    for proposal in approved:
-        store.append("approved", proposal)
+    # Revalidation must be idempotent.  Replacing the stream avoids duplicate
+    # proposals when an operator validates the same run more than once.
+    store.replace_stream("approved", approved)
     store.write_review_csv(needs_review)
     return {"run_id": store.run_id, "proposals": len(proposals), "approved": len(approved), "needs_review": len(needs_review)}
 

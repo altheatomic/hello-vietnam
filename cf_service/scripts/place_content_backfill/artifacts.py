@@ -46,6 +46,26 @@ class ArtifactStore:
             handle.flush()
             os.fsync(handle.fileno())
 
+    def replace_stream(self, stream: str, values: list[BaseModel | dict[str, Any]]) -> None:
+        """Atomically replace a checkpoint stream during deterministic revalidation."""
+
+        filename = self._stream_filename(stream)
+        target = self.path / filename
+        temporary = self._temporary_path(target)
+        try:
+            with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+                for value in values:
+                    payload = model_to_jsonable(value)
+                    self._reject_secrets(payload)
+                    line = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+                    handle.write(line + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, target)
+        finally:
+            if temporary.exists():
+                temporary.unlink()
+
     def read_all(self, stream: str) -> list[dict[str, Any]]:
         target = self.path / self._stream_filename(stream)
         if not target.exists():

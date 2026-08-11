@@ -54,6 +54,13 @@ class PlaceContentArtifactsTest(unittest.TestCase):
             self.assertIn("reviewer_decision", text)
             self.assertIn("p1", text)
 
+    def test_replace_stream_is_idempotent_for_revalidation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = ArtifactStore(Path(directory), "run-1")
+            store.append("approved", {"place_id": "p1", "value": "old"})
+            store.replace_stream("approved", [{"place_id": "p2", "value": "new"}])
+            self.assertEqual(store.read_all("approved"), [{"place_id": "p2", "value": "new"}])
+
 
 if __name__ == "__main__":
     unittest.main()
