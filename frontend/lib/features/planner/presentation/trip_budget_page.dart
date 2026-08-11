@@ -100,6 +100,9 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
       targetLat: isBusinessTrip ? wizard?.targetLat : null,
       targetLng: isBusinessTrip ? wizard?.targetLng : null,
       includeLunchBreak: _includeLunchBreak,
+      // Carried forward from Step 4 (Interest) via TripWizardData — Interest
+      // page no longer builds the request itself, it just navigates here.
+      interestOptionIds: wizard?.interestOptionIds,
     );
     final int generation = ++_generation;
     setState(() {

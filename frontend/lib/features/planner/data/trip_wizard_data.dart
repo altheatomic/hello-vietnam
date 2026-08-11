@@ -9,6 +9,7 @@ class TripWizardData {
     this.targetLng,
     this.businessAddress,
     this.includeLunchBreak = true,
+    this.interestOptionIds,
   });
 
   final String? idProvince;
@@ -24,6 +25,11 @@ class TripWizardData {
   /// Defaults to true so requests that never touched this step (or state
   /// restored before this field existed) keep the original behaviour.
   final bool includeLunchBreak;
+  /// Step 4 (Interest) selections, carried forward so Step 5 (Budget/lunch
+  /// break page, which owns the actual "Generate" action) can still include
+  /// them in the final TripPlanRequest — Interest page itself only
+  /// navigates now, it no longer builds the request directly.
+  final List<String>? interestOptionIds;
 
   factory TripWizardData.fromJson(Map<String, dynamic> json) => TripWizardData(
         idProvince: json['idProvince'] as String?,
@@ -35,6 +41,9 @@ class TripWizardData {
         targetLng: (json['targetLng'] as num?)?.toDouble(),
         businessAddress: json['businessAddress'] as String?,
         includeLunchBreak: json['includeLunchBreak'] as bool? ?? true,
+        interestOptionIds: (json['interestOptionIds'] as List?)
+            ?.whereType<String>()
+            .toList(),
       );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -47,6 +56,7 @@ class TripWizardData {
         'targetLng': targetLng,
         'businessAddress': businessAddress,
         'includeLunchBreak': includeLunchBreak,
+        if (interestOptionIds != null) 'interestOptionIds': interestOptionIds,
       };
 
   TripWizardData copyWith({
@@ -59,6 +69,7 @@ class TripWizardData {
     double? targetLng,
     String? businessAddress,
     bool? includeLunchBreak,
+    List<String>? interestOptionIds,
   }) =>
       TripWizardData(
         idProvince:      idProvince      ?? this.idProvince,
@@ -70,5 +81,6 @@ class TripWizardData {
         targetLng:       targetLng       ?? this.targetLng,
         businessAddress: businessAddress ?? this.businessAddress,
         includeLunchBreak: includeLunchBreak ?? this.includeLunchBreak,
+        interestOptionIds: interestOptionIds ?? this.interestOptionIds,
       );
 }
