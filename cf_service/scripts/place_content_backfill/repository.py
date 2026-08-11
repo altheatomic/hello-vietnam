@@ -27,7 +27,7 @@ from .models import (
 PLACE_SELECT = (
     "id_place,id_province,id_place_subcategory,status,name,short_description,"
     "detailed_description,address,latitude,longitude,source,source_place_id,"
-    "wikidata,wikipedia,official_name,website,created_at,updated_at"
+    "website,created_at,updated_at"
 )
 TRANSLATION_SELECT = (
     "id,place_id,lang_code,name,description,detailed_description,created_at,updated_at"

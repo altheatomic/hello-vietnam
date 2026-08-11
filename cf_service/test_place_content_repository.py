@@ -6,6 +6,7 @@ from scripts.place_content_backfill.models import (
     TranslationBaseline,
 )
 from scripts.place_content_backfill.repository import (
+    PLACE_SELECT,
     editable_hash,
     fetch_baseline,
     verify_baseline_counts,
@@ -69,6 +70,14 @@ def _translation(place_id, lang_code, name):
 
 
 class PlaceContentRepositoryTest(unittest.TestCase):
+    def test_place_select_uses_columns_present_in_remote_place_table(self):
+        # The production schema has no identity columns for Wikidata/Wikipedia
+        # or an official name.  Those values belong to source evidence, not to
+        # the place row itself.  Keep the baseline query aligned with the
+        # deployed schema so PostgREST does not reject the whole audit.
+        unsupported = {"wikidata", "wikipedia", "official_name"}
+        self.assertTrue(unsupported.isdisjoint(set(PLACE_SELECT.split(","))))
+
     def test_fetches_all_pages_and_applies_allowlist_filters(self):
         province_id = APPROVED_PROVINCES[0]
         places = [
