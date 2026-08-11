@@ -73,28 +73,29 @@ class _CityDetailActionRowState extends State<_CityDetailActionRow> {
   // a spinner while both are disabled — 'trip' | 'explore' | null.
   String? _pendingAction;
 
-  Future<void> _onCreateTripPlan(BuildContext context) async {
+  // context.go() returns void, not a Future — there is nothing to await,
+  // so unlike _onExploreProvince below there is no real "in-flight" window
+  // to guard with a try/finally reset. Instead this locks _isNavigating
+  // permanently once tapped: go() replaces the entire route stack (needed
+  // to avoid the duplicate-Page-key bug from pushing into the not-yet-
+  // materialized trip-planner shell branch — see the class doc comment),
+  // so CityDetailPage is on its way out and this button will never need
+  // to be re-enabled. A double-tap after the first press is simply
+  // dropped by the guard at the top — the button stays visually disabled
+  // until the page itself is torn down.
+  void _onCreateTripPlan(BuildContext context) {
     if (_isNavigating) return;
     setState(() {
       _isNavigating = true;
       _pendingAction = 'trip';
     });
-    try {
-      await context.push(
-        AppRoutes.tripPlannerDuration,
-        extra: TripWizardData(
-          idProvince: widget.request.id,
-          provinceName: widget.request.name,
-        ).toJson(),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isNavigating = false;
-          _pendingAction = null;
-        });
-      }
-    }
+    context.go(
+      AppRoutes.tripPlannerDuration,
+      extra: TripWizardData(
+        idProvince: widget.request.id,
+        provinceName: widget.request.name,
+      ).toJson(),
+    );
   }
 
   Future<void> _onExploreProvince(BuildContext context) async {
