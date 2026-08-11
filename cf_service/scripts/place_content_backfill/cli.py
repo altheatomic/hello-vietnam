@@ -161,24 +161,21 @@ def _read_sources(store):
 async def _collect(store, *, include_official_sites: bool) -> dict:
     import httpx
 
-    from .sources import collect_source_snapshot
+    from .sources import collect_source_snapshots
 
     records = _read_baseline(store)
     completed = store.completed_place_ids("sources")
+    pending = [record for record in records if record.place_id not in completed]
     async with httpx.AsyncClient() as client:
-        collected = 0
-        warnings = 0
-        for record in records:
-            if record.place_id in completed:
-                continue
-            snapshot = await collect_source_snapshot(
-                record,
-                client,
-                include_official_sites=include_official_sites,
-            )
+        snapshots = await collect_source_snapshots(
+            pending,
+            client,
+            include_official_sites=include_official_sites,
+        )
+        collected = len(snapshots)
+        warnings = sum(len(snapshot.warnings) for snapshot in snapshots)
+        for snapshot in snapshots:
             store.append("sources", snapshot)
-            collected += 1
-            warnings += len(snapshot.warnings)
     return {"run_id": store.run_id, "collected": collected, "warnings": warnings}
 
 

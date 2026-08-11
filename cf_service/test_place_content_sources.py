@@ -3,7 +3,9 @@ import unittest
 
 import httpx
 
+from scripts.place_content_backfill.constants import APPROVED_PROVINCES
 from scripts.place_content_backfill.models import BaselineRecord, TranslationBaseline
+from scripts.place_content_backfill.sources import collect_source_snapshots
 from scripts.place_content_backfill.sources.osm import parse_osm_id
 from scripts.place_content_backfill.sources.osm import collect_osm_facts
 from scripts.place_content_backfill.sources.website import (
@@ -18,6 +20,59 @@ from scripts.place_content_backfill.sources.wikimedia import (
 
 
 class PlaceContentSourcesTest(unittest.TestCase):
+    def test_collect_source_snapshots_batches_osm_ids(self):
+        def record(place_id, source_place_id):
+            return BaselineRecord(
+                place_id=place_id,
+                province_id=APPROVED_PROVINCES[0],
+                name=f"Place {place_id}",
+                source="osm",
+                source_place_id=source_place_id,
+                vi=TranslationBaseline(
+                    id=f"{place_id}-vi",
+                    place_id=place_id,
+                    lang_code="vi",
+                    name=f"Place {place_id}",
+                ),
+                en=TranslationBaseline(
+                    id=f"{place_id}-en",
+                    place_id=place_id,
+                    lang_code="en",
+                    name=f"Place {place_id}",
+                ),
+            )
+
+        records = [
+            record("p1", "osm:node:1"),
+            record("p2", "osm:way:2"),
+            record("p3", "osm:relation:3"),
+        ]
+
+        async def run():
+            calls = 0
+
+            async def handler(request: httpx.Request) -> httpx.Response:
+                nonlocal calls
+                calls += 1
+                return httpx.Response(
+                    200,
+                    json={
+                        "elements": [
+                            {"type": "node", "id": 1, "tags": {"name": "One"}},
+                            {"type": "way", "id": 2, "tags": {"name": "Two"}},
+                            {"type": "relation", "id": 3, "tags": {"name": "Three"}},
+                        ]
+                    },
+                )
+
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                snapshots = await collect_source_snapshots(records, client)
+            self.assertEqual(calls, 1)
+            self.assertEqual([snapshot.place_id for snapshot in snapshots], ["p1", "p2", "p3"])
+            self.assertEqual([snapshot.facts[0].value for snapshot in snapshots], ["One", "Two", "Three"])
+
+        asyncio.run(run())
+
     def test_parse_osm_identity(self):
         self.assertEqual(parse_osm_id("osm:node:123"), ("node", 123))
         self.assertEqual(parse_osm_id("osm:way:456"), ("way", 456))

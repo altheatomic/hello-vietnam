@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
+import re
+from typing import Any, Iterable, Sequence
 
 import httpx
 
@@ -10,6 +11,11 @@ from ..models import BaselineRecord, SourceFact, SourceSnapshot
 from .osm import collect_osm_facts, parse_osm_id
 from .website import extract_official_metadata
 from .wikimedia import fetch_wikimedia_facts
+
+
+_OSM_SOURCE_URL = re.compile(
+    r"^https://www\.openstreetmap\.org/(node|way|relation)/([1-9][0-9]*)$"
+)
 
 
 async def collect_source_snapshot(
@@ -20,9 +26,88 @@ async def collect_source_snapshot(
 ) -> SourceSnapshot:
     """Collect corroborating facts without allowing source pages to write data."""
 
-    facts: list[SourceFact] = []
+    return await _collect_snapshot(
+        record,
+        client,
+        include_official_sites=include_official_sites,
+    )
+
+
+async def collect_source_snapshots(
+    records: Sequence[BaselineRecord],
+    client: httpx.AsyncClient,
+    *,
+    include_official_sites: bool = False,
+    osm_batch_size: int = 100,
+) -> list[SourceSnapshot]:
+    """Collect snapshots while batching OSM identities into bounded requests."""
+
+    if osm_batch_size < 1 or osm_batch_size > 100:
+        raise ValueError("osm_batch_size must be between 1 and 100")
+
+    record_identities: dict[str, str] = {}
+    identities: list[str] = []
+    seen: set[str] = set()
+    for record in records:
+        identity = record.source_place_id or record.freshness_source_external_id
+        if not identity:
+            continue
+        try:
+            parse_osm_id(identity)
+        except ValueError:
+            continue
+        record_identities[record.place_id] = identity
+        if identity not in seen:
+            seen.add(identity)
+            identities.append(identity)
+
+    facts_by_identity: dict[str, list[SourceFact]] = {identity: [] for identity in identities}
+    errors_by_identity: dict[str, str] = {}
+    for batch in _chunks(tuple(identities), osm_batch_size):
+        try:
+            facts = await collect_osm_facts(client, batch)
+        except (ValueError, httpx.HTTPError) as exc:
+            message = f"osm source unavailable: {type(exc).__name__}"
+            errors_by_identity.update({identity: message for identity in batch})
+            continue
+        for fact in facts:
+            identity = _identity_from_source_url(fact.source_url)
+            if identity in facts_by_identity:
+                facts_by_identity[identity].append(fact)
+
+    snapshots: list[SourceSnapshot] = []
+    for record in records:
+        identity = record_identities.get(record.place_id)
+        snapshots.append(
+            await _collect_snapshot(
+                record,
+                client,
+                include_official_sites=include_official_sites,
+                osm_facts=facts_by_identity.get(identity) if identity else None,
+                osm_error=errors_by_identity.get(identity) if identity else None,
+            )
+        )
+    return snapshots
+
+
+async def _collect_snapshot(
+    record: BaselineRecord,
+    client: httpx.AsyncClient,
+    *,
+    include_official_sites: bool,
+    osm_facts: list[SourceFact] | None = None,
+    osm_error: str | None = None,
+) -> SourceSnapshot:
+    """Collect one snapshot, optionally using facts from a shared OSM batch."""
+
+    facts: list[SourceFact] = list(osm_facts or [])
     warnings: list[str] = []
-    osm_identity = record.source_place_id or record.freshness_source_external_id
+    if osm_error:
+        warnings.append(osm_error)
+    elif osm_facts is None:
+        osm_identity = record.source_place_id or record.freshness_source_external_id
+    else:
+        osm_identity = None
     if osm_identity:
         try:
             parse_osm_id(osm_identity)
@@ -91,6 +176,18 @@ async def collect_source_snapshot(
     )
 
 
+def _identity_from_source_url(source_url: str) -> str | None:
+    match = _OSM_SOURCE_URL.fullmatch(source_url)
+    if not match:
+        return None
+    return f"osm:{match.group(1)}:{match.group(2)}"
+
+
+def _chunks(values: Sequence[str], size: int) -> Iterable[tuple[str, ...]]:
+    for start in range(0, len(values), size):
+        yield tuple(values[start : start + size])
+
+
 def _deduplicate_facts(facts: list[SourceFact]) -> list[SourceFact]:
     seen: set[tuple[str, str, str]] = set()
     result: list[SourceFact] = []
@@ -102,4 +199,4 @@ def _deduplicate_facts(facts: list[SourceFact]) -> list[SourceFact]:
     return result
 
 
-__all__ = ["collect_source_snapshot"]
+__all__ = ["collect_source_snapshot", "collect_source_snapshots"]
