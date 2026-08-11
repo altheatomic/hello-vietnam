@@ -73,6 +73,29 @@ class PlaceContentSourcesTest(unittest.TestCase):
 
         asyncio.run(run())
 
+    def test_collect_source_snapshots_records_batch_failure_as_warning(self):
+        record = BaselineRecord(
+            place_id="p1",
+            province_id=APPROVED_PROVINCES[0],
+            name="Place 1",
+            source="osm",
+            source_place_id="osm:node:1",
+            vi=TranslationBaseline(id="p1-vi", place_id="p1", lang_code="vi"),
+            en=TranslationBaseline(id="p1-en", place_id="p1", lang_code="en"),
+        )
+
+        async def run():
+            async def handler(request: httpx.Request) -> httpx.Response:
+                return httpx.Response(500, json={"error": "overloaded"})
+
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                snapshots = await collect_source_snapshots([record], client)
+            self.assertEqual(len(snapshots), 1)
+            self.assertEqual(snapshots[0].facts, ())
+            self.assertEqual(snapshots[0].warnings, ("osm source unavailable: HTTPStatusError",))
+
+        asyncio.run(run())
+
     def test_parse_osm_identity(self):
         self.assertEqual(parse_osm_id("osm:node:123"), ("node", 123))
         self.assertEqual(parse_osm_id("osm:way:456"), ("way", 456))

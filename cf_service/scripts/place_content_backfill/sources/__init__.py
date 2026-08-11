@@ -102,6 +102,7 @@ async def _collect_snapshot(
 
     facts: list[SourceFact] = list(osm_facts or [])
     warnings: list[str] = []
+    osm_identity: str | None = None
     if osm_error:
         warnings.append(osm_error)
     elif osm_facts is None:
