@@ -63,12 +63,20 @@ async def collect_source_snapshots(
 
     facts_by_identity: dict[str, list[SourceFact]] = {identity: [] for identity in identities}
     errors_by_identity: dict[str, str] = {}
+    osm_failure: str | None = None
     for batch in _chunks(tuple(identities), osm_batch_size):
+        if osm_failure is not None:
+            errors_by_identity.update({identity: osm_failure for identity in batch})
+            continue
         try:
             facts = await collect_osm_facts(client, batch)
         except (ValueError, httpx.HTTPError) as exc:
             message = f"osm source unavailable: {type(exc).__name__}"
             errors_by_identity.update({identity: message for identity in batch})
+            # A complete batch failure proves the endpoint set is unavailable
+            # for this run.  Do not multiply a long network timeout by every
+            # remaining batch; snapshots will use the baseline fallback.
+            osm_failure = message
             continue
         for fact in facts:
             identity = _identity_from_source_url(fact.source_url)

@@ -98,6 +98,41 @@ class PlaceContentSourcesTest(unittest.TestCase):
 
         asyncio.run(run())
 
+    def test_osm_batch_failure_opens_circuit_for_remaining_batches(self):
+        records = [
+            BaselineRecord(
+                place_id=f"p{index}",
+                province_id=APPROVED_PROVINCES[0],
+                name=f"Place {index}",
+                source="osm",
+                source_place_id=f"osm:node:{index}",
+                vi=TranslationBaseline(id=f"p{index}-vi", place_id=f"p{index}", lang_code="vi"),
+                en=TranslationBaseline(id=f"p{index}-en", place_id=f"p{index}", lang_code="en"),
+            )
+            for index in range(1, 102)
+        ]
+
+        async def run():
+            calls = 0
+
+            async def handler(request: httpx.Request) -> httpx.Response:
+                nonlocal calls
+                calls += 1
+                return httpx.Response(503)
+
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                with patch.object(
+                    osm_source,
+                    "OVERPASS_URLS",
+                    ("https://primary.example/api/interpreter",),
+                ):
+                    snapshots = await collect_source_snapshots(records, client)
+            self.assertEqual(calls, 3)
+            self.assertEqual(len(snapshots), 101)
+            self.assertTrue(all(snapshot.warnings == ("osm source unavailable: HTTPStatusError",) for snapshot in snapshots))
+
+        asyncio.run(run())
+
     def test_sparse_external_sources_include_baseline_description_evidence(self):
         record = BaselineRecord(
             place_id="p1",
