@@ -20,6 +20,17 @@ Deno.test("accepts the exact service role bearer token", () => {
   assert(authorizeServiceRole("Bearer service-role", "service-role"));
 });
 
+Deno.test("accepts a gateway-verified service role JWT after key rotation", () => {
+  const encode = (value: Record<string, string>): string =>
+    btoa(JSON.stringify(value)).replaceAll("+", "-").replaceAll("/", "_")
+      .replaceAll("=", "");
+  const token = `${encode({ alg: "HS256" })}.${encode({
+    role: "service_role",
+    iss: "supabase",
+  })}.signature`;
+  assert(authorizeServiceRole(`Bearer ${token}`, "different-key"));
+});
+
 Deno.test("parses a bounded prompt request", () => {
   assertEquals(parseProxyRequest({ prompt: "p", input_hash: "h" }), {
     prompt: "p",

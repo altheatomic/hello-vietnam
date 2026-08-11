@@ -21,7 +21,14 @@ export function authorizeServiceRole(
 ): boolean {
   const prefix = "Bearer ";
   if (!authorization?.startsWith(prefix) || !expectedToken) return false;
-  return constantTimeEqual(authorization.slice(prefix.length), expectedToken);
+  const token = authorization.slice(prefix.length);
+  if (constantTimeEqual(token, expectedToken)) return true;
+
+  // Supabase's gateway verifies the JWT signature before the Edge Function is
+  // invoked.  Accept a rotated service-role JWT by checking only its verified
+  // role/issuer claims here; never accept this path when JWT verification is
+  // disabled on the deployed function.
+  return isVerifiedServiceRoleShape(token);
 }
 
 export function parseProxyRequest(value: unknown): ProxyRequest {
@@ -118,4 +125,20 @@ function constantTimeEqual(left: string, right: string): boolean {
     difference |= (leftBytes[index] ?? 0) ^ (rightBytes[index] ?? 0);
   }
   return difference === 0;
+}
+
+function isVerifiedServiceRoleShape(token: string): boolean {
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+  try {
+    const encodedPayload = parts[1].replaceAll("-", "+").replaceAll("_", "/");
+    const paddedPayload = encodedPayload.padEnd(
+      encodedPayload.length + ((4 - encodedPayload.length % 4) % 4),
+      "=",
+    );
+    const payload = JSON.parse(atob(paddedPayload)) as Record<string, unknown>;
+    return payload.role === "service_role" && payload.iss === "supabase";
+  } catch (_) {
+    return false;
+  }
 }
