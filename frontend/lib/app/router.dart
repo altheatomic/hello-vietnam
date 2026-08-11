@@ -949,6 +949,29 @@ GoRouter buildRouter() {
             ],
           ),
           StatefulShellBranch(
+            // Perf/correctness audit (2026-08-11): unlike every other branch,
+            // this one has a nested child route (tripPlannerDuration) that
+            // gets context.push()'d directly from OUTSIDE the shell —
+            // CityDetailPage's "Create Trip Plan" button — before the user
+            // has ever switched to this tab. A lazily-loaded branch (the
+            // default) forces that single push() to both materialize this
+            // branch's Navigator + its TripPlannerPage parent AND add the
+            // child page in one additive step, which raced and produced a
+            // duplicate Page key (Navigator._debugCheckDuplicatedPageKeys())
+            // on the very first "Create Trip Plan" tap of a session — no
+            // double-tap required. preload: true builds this branch (incl.
+            // TripPlannerPage) once, up front, when the shell mounts — same
+            // precondition the normal Home-tab-first flow already had
+            // (context.go(AppRoutes.tripPlanner) materializes it before
+            // TripLocationPage's own push to duration), so a direct push
+            // into a nested route here is now always additive onto an
+            // already-consistent stack, regardless of entry point.
+            // TripPlannerPage.initState() only starts a local
+            // AnimationController (no network/DB calls), so the eager build
+            // this adds at startup is cheap. See router.dart's other
+            // branches (home/messages/profile) — none of them have a nested
+            // child route pushed from outside the shell, so none need this.
+            preload: true,
             routes: [
               GoRoute(
                 path: AppRoutes.tripPlanner,
