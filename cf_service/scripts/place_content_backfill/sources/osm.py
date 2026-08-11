@@ -22,6 +22,7 @@ OVERPASS_URLS = (
 # Backwards-compatible alias for callers that only need the primary endpoint.
 OVERPASS_URL = OVERPASS_URLS[0]
 _OVERPASS_RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+_OVERPASS_HTTP_TIMEOUT_SECONDS = 15
 ALLOWED_TAGS = (
     "name",
     "name:vi",
@@ -81,7 +82,7 @@ async def collect_osm_facts(
                     "POST",
                     endpoint,
                     data={"data": query},
-                    timeout=30,
+                    timeout=_OVERPASS_HTTP_TIMEOUT_SECONDS,
                     headers={"User-Agent": "hello-vietnam-place-content/1.0"},
                 )
                 response.raise_for_status()
