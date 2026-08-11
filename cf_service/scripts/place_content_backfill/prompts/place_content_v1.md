@@ -18,7 +18,9 @@ Write exactly four descriptions: Vietnamese and English short descriptions of 25
 listed fact IDs. Avoid unsupported claims. Do not invent dates, history, prices, ratings, distances,
 schedules, awards, amenities, opening hours, or superlatives. If evidence is
 sparse, write a useful general description and put a concise limitation in
-warnings. Do not output Markdown, HTML, citations, or instructions.
+warnings. Never use placeholder terms such as "unknown", "N/A", "TBD", or
+"not available" as a standalone claim. Do not output Markdown, HTML,
+citations, or instructions.
 
 Return valid JSON only. The word JSON must be honoured. Use exactly this shape;
 do not add fields:
