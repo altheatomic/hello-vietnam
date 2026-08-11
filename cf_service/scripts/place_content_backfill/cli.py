@@ -20,6 +20,11 @@ def build_parser() -> argparse.ArgumentParser:
     collect = commands.add_parser("collect")
     collect.add_argument("--run-id", required=True)
     collect.add_argument("--include-official-sites", action="store_true")
+    collect.add_argument(
+        "--baseline-only",
+        action="store_true",
+        help="skip external source requests and use current baseline fields as evidence",
+    )
 
     generate = commands.add_parser("generate")
     generate.add_argument("--run-id", required=True)
@@ -104,7 +109,13 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     store = ArtifactStore(root, args.run_id)
     if args.command == "collect":
-        result = asyncio.run(_collect(store, include_official_sites=args.include_official_sites))
+        result = asyncio.run(
+            _collect(
+                store,
+                include_official_sites=args.include_official_sites,
+                include_external_sources=not args.baseline_only,
+            )
+        )
         print(json.dumps(result, separators=(",", ":")))
         return 0
     if args.command == "generate":
@@ -158,7 +169,12 @@ def _read_sources(store):
     return [SourceSnapshot.model_validate(value) for value in store.read_all("sources")]
 
 
-async def _collect(store, *, include_official_sites: bool) -> dict:
+async def _collect(
+    store,
+    *,
+    include_official_sites: bool,
+    include_external_sources: bool = True,
+) -> dict:
     import httpx
 
     from .sources import collect_source_snapshots
@@ -171,6 +187,7 @@ async def _collect(store, *, include_official_sites: bool) -> dict:
             pending,
             client,
             include_official_sites=include_official_sites,
+            include_external_sources=include_external_sources,
         )
         collected = len(snapshots)
         warnings = sum(len(snapshot.warnings) for snapshot in snapshots)

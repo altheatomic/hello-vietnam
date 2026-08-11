@@ -176,6 +176,34 @@ class PlaceContentSourcesTest(unittest.TestCase):
 
         asyncio.run(run())
 
+    def test_baseline_only_collection_skips_external_requests(self):
+        record = BaselineRecord(
+            place_id="p1",
+            province_id=APPROVED_PROVINCES[0],
+            name="Place 1",
+            short_description="A short description from the current database.",
+            source="osm",
+            source_place_id="osm:node:1",
+            wikipedia="en:Place_1",
+            vi=TranslationBaseline(id="p1-vi", place_id="p1", lang_code="vi"),
+            en=TranslationBaseline(id="p1-en", place_id="p1", lang_code="en"),
+        )
+
+        async def run():
+            async def handler(request: httpx.Request) -> httpx.Response:
+                raise AssertionError("baseline-only collection must not call external sources")
+
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                snapshot = await collect_source_snapshot(
+                    record,
+                    client,
+                    include_external_sources=False,
+                )
+            self.assertEqual([fact.fact_id for fact in snapshot.facts], ["baseline.short_description"])
+            self.assertEqual(snapshot.warnings, ("external sources disabled; using baseline fields",))
+
+        asyncio.run(run())
+
     def test_parse_osm_identity(self):
         self.assertEqual(parse_osm_id("osm:node:123"), ("node", 123))
         self.assertEqual(parse_osm_id("osm:way:456"), ("way", 456))
