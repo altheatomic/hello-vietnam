@@ -1105,6 +1105,8 @@ class AppStrings {
     'Back to trip planner': 'Quay lại Lịch trình',
     'Create Trip Plan': 'Lên kế hoạch chuyến đi',
     'Explore this province': 'Khám phá tỉnh này',
+    "Couldn't load destinations. Please check your connection and try again.":
+        'Không thể tải danh sách điểm đến. Vui lòng kiểm tra kết nối và thử lại.',
     'Destinations': 'Điểm đến',
     'No destinations available yet.': 'Hiện chưa có điểm đến.',
     'Generating your personalised itinerary…':

@@ -4,8 +4,9 @@ Personalized province recommendation endpoints.
 """
 
 import asyncio
+import uuid
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from db.supabase_client import get_supabase
 from services.ttl_cache import TtlCache
@@ -86,6 +87,19 @@ async def get_province_detail(
     limit: int = 20,
     supabase=Depends(get_supabase),
 ):
+    # place.id_province is a `uuid` Postgres column — a non-UUID id_province
+    # (e.g. a Flutter-side mock/slug id like "hochiminh" leaking into a real
+    # request — see recommend_where_search_page.dart's mock fallback) would
+    # otherwise reach PostgREST and come back as an opaque 22P02 error from
+    # deep inside _get_province_detail_sync(). Fail fast with a clear 400
+    # instead, before touching the DB at all.
+    try:
+        uuid.UUID(id_province)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid province id: {id_province!r} is not a valid UUID.",
+        )
     return await asyncio.to_thread(
         _get_province_detail_sync, supabase, id_province, id_user, limit
     )
