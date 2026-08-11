@@ -8,6 +8,8 @@ Environment variables (put in .env or set externally):
   SUPABASE_SERVICE_ROLE_KEY — Supabase service role key (server-side only, never expose to frontend)
   DATABASE_URL              — asyncpg-compatible Supabase connection string (used only by CF retrain job)
                               e.g. postgresql://postgres:<password>@db.<project>.supabase.co:5432/postgres
+  CF_RETRAIN_SHARED_SECRET  - optional shared secret used to authenticate
+                              pg_cron calls to the retrain endpoint
 
 Run locally:
   uvicorn main:app --reload --port 8000
@@ -15,10 +17,10 @@ Run locally:
 
 import asyncio
 import json
+import os
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,23 +29,18 @@ from fastapi.middleware.gzip import GZipMiddleware
 load_dotenv()  # picks up .env in cwd if present
 
 from db.connection import close_pool
-from db.connection import get_pool
-from jobs.cf_retrain import run_cf_retrain
 from routes.trip import router as trip_router
 from routes.events import router as events_router
 from routes.recommend import router as recommend_router
-from services.cf_retrain_schedule import (
-    JOB_ID,
-    build_cf_retrain_trigger,
-    load_cf_retrain_schedule,
-)
 
 EXECUTOR_MAX_WORKERS = 30
 
-async def _run_scheduled_cf_retrain() -> None:
-    print(json.dumps({"event": "cf_retrain_scheduled_start", "triggered_by": "scheduled_daily"}))
-    result = await run_cf_retrain(triggered_by="scheduled_daily")
-    print(json.dumps({"event": "cf_retrain_scheduled_end", **result}))
+
+def _warn_if_cf_retrain_secret_missing() -> bool:
+    if os.environ.get("CF_RETRAIN_SHARED_SECRET"):
+        return False
+    print(json.dumps({"event": "cf_retrain_secret_missing_startup"}))
+    return True
 
 
 @asynccontextmanager
@@ -53,37 +50,10 @@ async def lifespan(app: FastAPI):
     loop.set_default_executor(executor)
     app.state.executor = executor
 
-    try:
-        schedule = await load_cf_retrain_schedule(await get_pool())
-    except Exception as exc:
-        print(json.dumps({
-            "event": "cf_retrain_schedule_load_failed",
-            "error": str(exc),
-        }))
-        executor.shutdown(wait=False)
-        await close_pool()
-        raise RuntimeError(
-            "Could not load the persisted CF retrain schedule; scheduler was not started."
-        ) from exc
-
-    scheduler = AsyncIOScheduler(timezone="UTC")
-    scheduler.add_job(
-        _run_scheduled_cf_retrain,
-        trigger=build_cf_retrain_trigger(schedule.hour_utc, schedule.minute_utc),
-        id=JOB_ID,
-        replace_existing=True,
-    )
-    scheduler.start()
-    app.state.scheduler = scheduler
-    print(json.dumps({
-        "event": "scheduler_started",
-        "job": JOB_ID,
-        "cron_utc": f"{schedule.hour_utc:02d}:{schedule.minute_utc:02d}",
-    }))
+    _warn_if_cf_retrain_secret_missing()
 
     yield
 
-    scheduler.shutdown()
     executor.shutdown(wait=True)
     await close_pool()
 

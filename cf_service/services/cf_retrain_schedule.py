@@ -1,15 +1,14 @@
-"""Persistence and live APScheduler updates for the daily CF retrain job."""
+"""Persistence and pg_cron updates for the daily CF retrain job."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
-from apscheduler.triggers.cron import CronTrigger
 
-
-JOB_ID = "daily_cf_retrain"
+JOB_NAME = "daily_cf_retrain"
 DEFAULT_HOUR_UTC = 19
 DEFAULT_MINUTE_UTC = 0
 
@@ -33,10 +32,6 @@ def schedule_from_row(row: Any) -> CfRetrainSchedule:
     )
 
 
-def build_cf_retrain_trigger(hour_utc: int, minute_utc: int) -> CronTrigger:
-    return CronTrigger(hour=hour_utc, minute=minute_utc, timezone="UTC")
-
-
 async def load_cf_retrain_schedule(pool: Any) -> CfRetrainSchedule:
     """Load the singleton row; only a genuinely empty table uses defaults."""
     async with pool.acquire() as conn:
@@ -50,34 +45,59 @@ async def load_cf_retrain_schedule(pool: Any) -> CfRetrainSchedule:
     return schedule_from_row(row)
 
 
-def next_run_time_utc(scheduler: Any) -> str | None:
-    job = scheduler.get_job(JOB_ID)
-    if job is None or job.next_run_time is None:
-        return None
-    return job.next_run_time.isoformat()
+def next_run_time_utc(
+    hour_utc: int,
+    minute_utc: int,
+    *,
+    now: datetime | None = None,
+) -> str:
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    current = current.astimezone(timezone.utc)
+    candidate = current.replace(
+        hour=hour_utc,
+        minute=minute_utc,
+        second=0,
+        microsecond=0,
+    )
+    if candidate <= current:
+        candidate += timedelta(days=1)
+    return candidate.isoformat()
 
 
 async def update_cf_retrain_schedule(
     pool: Any,
-    scheduler: Any,
     *,
     hour_utc: int,
     minute_utc: int,
     updated_by: UUID | None,
 ) -> CfRetrainSchedule:
-    """Reschedule in memory and persist, restoring the old trigger on DB error."""
-    job = scheduler.get_job(JOB_ID)
-    if job is None:
-        raise RuntimeError(f"Scheduler job {JOB_ID!r} is not registered.")
+    """Atomically alter the pg_cron job and persist the display config."""
+    cron_expression = f"{minute_utc} {hour_utc} * * *"
 
-    old_trigger = job.trigger
-    scheduler.reschedule_job(
-        JOB_ID,
-        trigger=build_cf_retrain_trigger(hour_utc, minute_utc),
-    )
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            job_id = await conn.fetchval(
+                """
+                SELECT jobid
+                FROM cron.job
+                WHERE jobname = $1
+                  AND username = current_user
+                ORDER BY jobid DESC
+                LIMIT 1
+                FOR UPDATE
+                """,
+                JOB_NAME,
+            )
+            if job_id is None:
+                raise RuntimeError(f"pg_cron job {JOB_NAME!r} is not registered.")
 
-    try:
-        async with pool.acquire() as conn:
+            await conn.execute(
+                "SELECT cron.alter_job(job_id := $1, schedule := $2)",
+                job_id,
+                cron_expression,
+            )
             row = await conn.fetchrow(
                 """
                 INSERT INTO public.cf_retrain_config (
@@ -95,16 +115,5 @@ async def update_cf_retrain_schedule(
                 minute_utc,
                 updated_by,
             )
-    except Exception as write_error:
-        try:
-            scheduler.reschedule_job(JOB_ID, trigger=old_trigger)
-        except Exception as rollback_error:
-            raise RuntimeError(
-                "Failed to persist CF retrain schedule and failed to restore "
-                f"the previous trigger: {rollback_error}"
-            ) from write_error
-        raise RuntimeError(
-            "Failed to persist CF retrain schedule; the previous trigger was restored."
-        ) from write_error
 
     return schedule_from_row(row)

@@ -9,8 +9,10 @@ Dependency injection:
 
 import asyncio
 import datetime
+import hmac
+import os
 from uuid import UUID
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, HTTPException
 from pydantic import BaseModel, model_validator
 from typing import List, Optional
 
@@ -88,6 +90,10 @@ class CfRetrainScheduleUpdate(BaseModel):
         if not 0 <= self.minute_utc <= 59:
             raise ValueError('minute_utc must be between 0 and 59')
         return self
+
+
+class CfRetrainTriggerRequest(BaseModel):
+    triggered_by: Optional[str] = None
 
 
 # ── Trip planning ─────────────────────────────────────────────────────────────
@@ -305,9 +311,30 @@ async def overdue_check(id_user: str, supabase=Depends(get_supabase)):
 
 # ── Admin: CF retrain ─────────────────────────────────────────────────────────
 
+def _retrain_trigger_source(
+    request: CfRetrainTriggerRequest | None,
+    internal_secret: str | None,
+) -> str:
+    expected_secret = os.environ.get("CF_RETRAIN_SHARED_SECRET")
+    if not expected_secret:
+        return "pg_cron" if request and request.triggered_by == "pg_cron" else "admin"
+    if internal_secret is None:
+        return "admin"
+    if not hmac.compare_digest(expected_secret, internal_secret):
+        raise HTTPException(status_code=401, detail="Invalid internal secret.")
+    return "pg_cron"
+
+
 @router.post("/admin/cf/retrain")
-async def trigger_cf_retrain(background_tasks: BackgroundTasks):
+async def trigger_cf_retrain(
+    background_tasks: BackgroundTasks,
+    request: CfRetrainTriggerRequest | None = Body(default=None),
+    x_internal_secret: str | None = Header(
+        default=None, alias="X-Internal-Secret"
+    ),
+):
     from jobs.cf_retrain import run_cf_retrain
+    triggered_by = _retrain_trigger_source(request, x_internal_secret)
     try:
         await get_pool()
     except Exception as exc:
@@ -315,7 +342,7 @@ async def trigger_cf_retrain(background_tasks: BackgroundTasks):
             status_code=503, detail=f"CF retrain database unavailable: {exc}"
         ) from exc
 
-    background_tasks.add_task(run_cf_retrain, triggered_by='admin')
+    background_tasks.add_task(run_cf_retrain, triggered_by=triggered_by)
     return {"status": "queued", "message": "CF re-train job started in background."}
 
 
@@ -345,12 +372,14 @@ async def get_retrain_logs():
     return [dict(r) for r in rows]
 
 
-def _schedule_response(schedule, scheduler, *, status: str | None = None):
+def _schedule_response(schedule, *, status: str | None = None):
     response = {
         "hour_utc": schedule.hour_utc,
         "minute_utc": schedule.minute_utc,
         "timezone": "UTC",
-        "next_run_at_utc": next_run_time_utc(scheduler),
+        "next_run_at_utc": next_run_time_utc(
+            schedule.hour_utc, schedule.minute_utc
+        ),
         "updated_at": schedule.updated_at,
         "updated_by": schedule.updated_by,
     }
@@ -360,28 +389,25 @@ def _schedule_response(schedule, scheduler, *, status: str | None = None):
 
 
 @router.get("/admin/cf/retrain-schedule")
-async def get_cf_retrain_schedule(request: Request):
+async def get_cf_retrain_schedule():
     try:
         schedule = await load_cf_retrain_schedule(await get_pool())
     except Exception as exc:
         raise HTTPException(
             status_code=503, detail=f"Could not load CF retrain schedule: {exc}"
         ) from exc
-    return _schedule_response(schedule, request.app.state.scheduler)
+    return _schedule_response(schedule)
 
 
 @router.put("/admin/cf/retrain-schedule")
-async def put_cf_retrain_schedule(req: CfRetrainScheduleUpdate, request: Request):
+async def put_cf_retrain_schedule(req: CfRetrainScheduleUpdate):
     try:
         schedule = await update_cf_retrain_schedule(
             await get_pool(),
-            request.app.state.scheduler,
             hour_utc=req.hour_utc,
             minute_utc=req.minute_utc,
             updated_by=req.updated_by,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-    return _schedule_response(
-        schedule, request.app.state.scheduler, status="updated"
-    )
+    return _schedule_response(schedule, status="updated")
