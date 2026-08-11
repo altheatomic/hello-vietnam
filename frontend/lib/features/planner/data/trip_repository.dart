@@ -37,6 +37,7 @@ class TripRepository {
           'saRuns': request.saRuns,
           'savePlan': request.savePlan,
           'startDate': request.startDate,
+          'includeLunchBreak': request.includeLunchBreak,
           if (request.interestOptionIds != null &&
               request.interestOptionIds!.isNotEmpty)
             'interestOptionIds': request.interestOptionIds,
