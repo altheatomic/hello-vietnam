@@ -204,7 +204,7 @@ async def _generate(
     max_output_tokens: int | None,
     max_estimated_cost_usd: float | None,
 ) -> dict:
-    from .generator import DeepSeekContentClient, GenerationBudget
+    from .generator import BudgetExceeded, DeepSeekContentClient, GenerationBudget
     from .models import Proposal
     from .naming import normalize_names
     from .repository import editable_hash
@@ -220,11 +220,16 @@ async def _generate(
     )
     client = DeepSeekContentClient(budget=budget)
     generated = 0
+    budget_exhausted = False
     for place_id, record in records.items():
         if place_id in completed or place_id not in source_map:
             continue
         names = normalize_names(record, source_map[place_id])
-        result = await client.generate(record, names, source_map[place_id], editable_hash(record))
+        try:
+            result = await client.generate(record, names, source_map[place_id], editable_hash(record))
+        except BudgetExceeded:
+            budget_exhausted = True
+            break
         source_urls = tuple(
             fact.source_url
             for fact in source_map[place_id].facts
@@ -245,7 +250,12 @@ async def _generate(
         )
         store.append("proposals", proposal)
         generated += 1
-    return {"run_id": store.run_id, "generated": generated, "requests": budget.requests_used}
+    return {
+        "run_id": store.run_id,
+        "generated": generated,
+        "requests": budget.requests_used,
+        "budget_exhausted": budget_exhausted,
+    }
 
 
 def _validate(store, review_csv: Path | None) -> dict:
