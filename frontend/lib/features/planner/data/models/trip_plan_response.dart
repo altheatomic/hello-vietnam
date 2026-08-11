@@ -35,6 +35,7 @@ class TripPlanResponse {
     this.endAt,
     this.accommodationRecommendation,
     required this.days,
+    this.includeLunchBreak = true,
   });
 
   final String? idPlan;
@@ -45,6 +46,12 @@ class TripPlanResponse {
   final AccommodationRecommendation? accommodationRecommendation;
   final List<TripPlanDay> days;
 
+  /// Plan-level (not per-day) choice from Step 5 of the wizard: whether this
+  /// trip's schedule reserves a lunch break. Defaults to true so plans saved
+  /// before this field existed (NULL in the DB) keep showing the lunch
+  /// discovery card exactly as before.
+  final bool includeLunchBreak;
+
   TripPlanResponse copyWith({
     AccommodationRecommendation? accommodationRecommendation,
   }) {
@@ -54,9 +61,10 @@ class TripPlanResponse {
       cityProvince: cityProvince,
       startAt: startAt,
       endAt: endAt,
-      accommodationRecommendation: accommodationRecommendation ??
-          this.accommodationRecommendation,
+      accommodationRecommendation:
+          accommodationRecommendation ?? this.accommodationRecommendation,
       days: days,
+      includeLunchBreak: includeLunchBreak,
     );
   }
 
@@ -73,10 +81,10 @@ class TripPlanResponse {
     // present either way.
     final DateTime? startAt =
         DateTime.tryParse(json['start_at'] as String? ?? '') ??
-            (days.isNotEmpty ? DateTime.tryParse(days.first.date) : null);
+        (days.isNotEmpty ? DateTime.tryParse(days.first.date) : null);
     final DateTime? endAt =
         DateTime.tryParse(json['end_at'] as String? ?? '') ??
-            (days.isNotEmpty ? DateTime.tryParse(days.last.date) : null);
+        (days.isNotEmpty ? DateTime.tryParse(days.last.date) : null);
 
     return TripPlanResponse(
       idPlan: json['id_plan'] as String?,
@@ -84,15 +92,15 @@ class TripPlanResponse {
       cityProvince: json['city_province'] as String?,
       startAt: startAt,
       endAt: endAt,
-      accommodationRecommendation:
-          json['accommodation_recommendation'] is Map
-              ? AccommodationRecommendation.fromJson(
-                  Map<String, dynamic>.from(
-                    json['accommodation_recommendation'] as Map,
-                  ),
-                )
-              : null,
+      accommodationRecommendation: json['accommodation_recommendation'] is Map
+          ? AccommodationRecommendation.fromJson(
+              Map<String, dynamic>.from(
+                json['accommodation_recommendation'] as Map,
+              ),
+            )
+          : null,
       days: days,
+      includeLunchBreak: json['include_lunch_break'] as bool? ?? true,
     );
   }
 }
@@ -114,13 +122,12 @@ class AccommodationRecommendation {
     final rawZones = json['zones'];
     final zones = rawZones is List
         ? rawZones
-            .whereType<Map>()
-            .map(
-              (zone) => AccommodationZone.fromJson(
-                Map<String, dynamic>.from(zone),
-              ),
-            )
-            .toList()
+              .whereType<Map>()
+              .map(
+                (zone) =>
+                    AccommodationZone.fromJson(Map<String, dynamic>.from(zone)),
+              )
+              .toList()
         : <AccommodationZone>[];
     final rawEvaluation = json['evaluation'];
     return AccommodationRecommendation(
@@ -162,7 +169,8 @@ class AccommodationZone {
       dayTo: (json['day_to'] as num?)?.toInt() ?? 0,
       latitude: latitude ?? 0.0,
       longitude: longitude ?? 0.0,
-      googleMapsQuery: json['google_maps_query'] as String? ??
+      googleMapsQuery:
+          json['google_maps_query'] as String? ??
           'hotels near ${latitude ?? 0.0},${longitude ?? 0.0}',
     );
   }
@@ -187,8 +195,7 @@ class AccommodationEvaluation {
     return AccommodationEvaluation(
       singleZoneCostKm:
           (json['single_zone_cost_km'] as num?)?.toDouble() ?? 0.0,
-      selectedCostKm:
-          (json['selected_cost_km'] as num?)?.toDouble() ?? 0.0,
+      selectedCostKm: (json['selected_cost_km'] as num?)?.toDouble() ?? 0.0,
       reductionRatio: (json['reduction_ratio'] as num?)?.toDouble() ?? 0.0,
       minZoneSeparationKm:
           (json['min_zone_separation_km'] as num?)?.toDouble() ?? 50.0,
@@ -212,8 +219,8 @@ class TripPlanDay {
   factory TripPlanDay.fromJson(Map<String, dynamic> json) {
     final rawPlaces = json['places'] as List<dynamic>? ?? <dynamic>[];
     return TripPlanDay(
-      day:    (json['day'] as num).toInt(),
-      date:   json['date'] as String? ?? '',
+      day: (json['day'] as num).toInt(),
+      date: json['date'] as String? ?? '',
       places: rawPlaces
           .whereType<Map<String, dynamic>>()
           .map(TripPlanPlace.fromJson)
@@ -265,6 +272,7 @@ class TripPlanPlace {
   final double? longitude;
   final int? estimatedTravelMinutes;
   final int? estimatedDurationMinutes;
+
   /// Goong Distance Matrix data for the edge FROM the previous stop TO this
   /// place. Null for the first place of each day (no predecessor) and for
   /// any edge Goong couldn't cover (see cf_service _attach_travel_data()).
@@ -277,11 +285,13 @@ class TripPlanPlace {
   final String? timespan;
   final String? timeclose;
   final String? coverImage;
+
   /// List of {url, type, source} objects from the DB gallery jsonb column.
   final List<Map<String, dynamic>> gallery;
   final double? tagMatch;
   final double? cfScore;
   final double? finalScore;
+
   /// Real tag_name list for this place (place_tag rows above the backend's
   /// confidence threshold, highest confidence first, capped) — NOT the same
   /// as tagMatch (a score) or a per-user match; this is the place's own
@@ -303,9 +313,7 @@ class TripPlanPlace {
   factory TripPlanPlace.fromJson(Map<String, dynamic> json) {
     final rawGallery = json['gallery'];
     final gallery = rawGallery is List
-        ? rawGallery
-            .whereType<Map<String, dynamic>>()
-            .toList()
+        ? rawGallery.whereType<Map<String, dynamic>>().toList()
         : <Map<String, dynamic>>[];
 
     final rawTags = json['tags'];
@@ -314,32 +322,37 @@ class TripPlanPlace {
         : <String>[];
 
     final TripPlanPlace place = TripPlanPlace(
-      type:                       json['type'] as String? ?? 'place',
-      order:                      (json['order'] as num?)?.toInt() ?? 0,
-      idPlace:                    json['id_place'] as String? ?? '',
-      name:                       json['name'] as String? ?? '',
-      slot:                       json['slot'] as String?,
-      startTime:                  json['start_time'] as String?,
-      endTime:                    json['end_time'] as String?,
-      warning:                    json['warning'] as String?,
-      latitude:                   (json['latitude'] as num?)?.toDouble(),
-      longitude:                  (json['longitude'] as num?)?.toDouble(),
-      estimatedTravelMinutes:     (json['estimated_travel_minutes'] as num?)?.toInt(),
-      estimatedDurationMinutes:   (json['estimated_duration_minutes'] as num?)?.toInt(),
-      travelTimeCarSeconds:       (json['travel_time_car_seconds'] as num?)?.toInt(),
-      travelTimeBikeSeconds:      (json['travel_time_bike_seconds'] as num?)?.toInt(),
-      travelDistanceCarMeters:    (json['travel_distance_car_meters'] as num?)?.toInt(),
-      travelDistanceBikeMeters:   (json['travel_distance_bike_meters'] as num?)?.toInt(),
-      minimumPrice:                json['minimum_price'] as num?,
-      maximumPrice:                json['maximum_price'] as num?,
-      timespan:                    json['timespan'] as String?,
-      timeclose:                   json['timeclose'] as String?,
-      coverImage:                 json['cover_image'] as String?,
-      gallery:                    gallery,
-      tagMatch:                   (json['tag_match'] as num?)?.toDouble(),
-      cfScore:                    (json['cf_score'] as num?)?.toDouble(),
-      finalScore:                 (json['final_score'] as num?)?.toDouble(),
-      tags:                       tags,
+      type: json['type'] as String? ?? 'place',
+      order: (json['order'] as num?)?.toInt() ?? 0,
+      idPlace: json['id_place'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      slot: json['slot'] as String?,
+      startTime: json['start_time'] as String?,
+      endTime: json['end_time'] as String?,
+      warning: json['warning'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      estimatedTravelMinutes: (json['estimated_travel_minutes'] as num?)
+          ?.toInt(),
+      estimatedDurationMinutes: (json['estimated_duration_minutes'] as num?)
+          ?.toInt(),
+      travelTimeCarSeconds: (json['travel_time_car_seconds'] as num?)?.toInt(),
+      travelTimeBikeSeconds: (json['travel_time_bike_seconds'] as num?)
+          ?.toInt(),
+      travelDistanceCarMeters: (json['travel_distance_car_meters'] as num?)
+          ?.toInt(),
+      travelDistanceBikeMeters: (json['travel_distance_bike_meters'] as num?)
+          ?.toInt(),
+      minimumPrice: json['minimum_price'] as num?,
+      maximumPrice: json['maximum_price'] as num?,
+      timespan: json['timespan'] as String?,
+      timeclose: json['timeclose'] as String?,
+      coverImage: json['cover_image'] as String?,
+      gallery: gallery,
+      tagMatch: (json['tag_match'] as num?)?.toDouble(),
+      cfScore: (json['cf_score'] as num?)?.toDouble(),
+      finalScore: (json['final_score'] as num?)?.toDouble(),
+      tags: tags,
     );
     debugPrint(
       '[TripPlanPlace.fromJson] coverImage=${place.coverImage} '
@@ -372,13 +385,13 @@ class SavedPlanStop {
 
   factory SavedPlanStop.fromJson(Map<String, dynamic> json) {
     return SavedPlanStop(
-      id:        json['id']         as String? ?? '',
-      slot:      json['slot']       as String? ?? '',
+      id: json['id'] as String? ?? '',
+      slot: json['slot'] as String? ?? '',
       timeLabel: json['time_label'] as String? ?? '',
       startTime: json['start_time'] as String?,
-      endTime:   json['end_time']   as String?,
-      title:     json['title']      as String? ?? '',
-      note:      json['note']       as String? ?? '',
+      endTime: json['end_time'] as String?,
+      title: json['title'] as String? ?? '',
+      note: json['note'] as String? ?? '',
     );
   }
 }
@@ -408,13 +421,13 @@ class SavedPlanItem {
   factory SavedPlanItem.fromJson(Map<String, dynamic> json) {
     final rawStops = json['stops'] as List<dynamic>? ?? <dynamic>[];
     return SavedPlanItem(
-      idPlan:       json['id_plan']       as String? ?? '',
-      customTitle:  json['custom_title']  as String?,
-      duration:     json['duration']      as String? ?? '',
-      startAt:      json['start_at']      as String? ?? '',
-      endAt:        json['end_at']        as String? ?? '',
+      idPlan: json['id_plan'] as String? ?? '',
+      customTitle: json['custom_title'] as String?,
+      duration: json['duration'] as String? ?? '',
+      startAt: json['start_at'] as String? ?? '',
+      endAt: json['end_at'] as String? ?? '',
       provinceName: json['province_name'] as String? ?? '',
-      createdAt:    json['created_at']    as String? ?? '',
+      createdAt: json['created_at'] as String? ?? '',
       stops: rawStops
           .whereType<Map<String, dynamic>>()
           .map(SavedPlanStop.fromJson)
@@ -445,13 +458,43 @@ class CfRetrainLog {
 
   factory CfRetrainLog.fromJson(Map<String, dynamic> json) {
     return CfRetrainLog(
-      idLog:       json['id_log']       as String? ?? '',
+      idLog: json['id_log'] as String? ?? '',
       triggeredBy: json['triggered_by'] as String? ?? '',
-      startedAt:   json['started_at']   as String? ?? '',
-      finishedAt:  json['finished_at']  as String?,
-      status:      json['status']       as String? ?? '',
+      startedAt: json['started_at'] as String? ?? '',
+      finishedAt: json['finished_at'] as String?,
+      status: json['status'] as String? ?? '',
       rowsWritten: (json['rows_written'] as num?)?.toInt(),
-      errorMsg:    json['error_msg']    as String?,
+      errorMsg: json['error_msg'] as String?,
+    );
+  }
+}
+
+/// Persisted UTC schedule for APScheduler's `daily_cf_retrain` job.
+class CfRetrainSchedule {
+  const CfRetrainSchedule({
+    required this.hourUtc,
+    required this.minuteUtc,
+    required this.timezone,
+    this.nextRunAtUtc,
+    this.updatedAt,
+    this.updatedBy,
+  });
+
+  final int hourUtc;
+  final int minuteUtc;
+  final String timezone;
+  final String? nextRunAtUtc;
+  final String? updatedAt;
+  final String? updatedBy;
+
+  factory CfRetrainSchedule.fromJson(Map<String, dynamic> json) {
+    return CfRetrainSchedule(
+      hourUtc: (json['hour_utc'] as num).toInt(),
+      minuteUtc: (json['minute_utc'] as num).toInt(),
+      timezone: json['timezone'] as String? ?? 'UTC',
+      nextRunAtUtc: json['next_run_at_utc'] as String?,
+      updatedAt: json['updated_at'] as String?,
+      updatedBy: json['updated_by'] as String?,
     );
   }
 }
@@ -475,10 +518,10 @@ class OverdueTripPlan {
 
   factory OverdueTripPlan.fromJson(Map<String, dynamic> json) {
     return OverdueTripPlan(
-      idPlan:       json['id_plan']       as String? ?? '',
-      customTitle:  json['custom_title']  as String?,
-      startAt:      json['start_at']      as String? ?? '',
-      endAt:        json['end_at']        as String? ?? '',
+      idPlan: json['id_plan'] as String? ?? '',
+      customTitle: json['custom_title'] as String?,
+      startAt: json['start_at'] as String? ?? '',
+      endAt: json['end_at'] as String? ?? '',
       provinceName: json['province_name'] as String? ?? '',
     );
   }
@@ -506,13 +549,13 @@ class NearbyPlace {
 
   factory NearbyPlace.fromJson(Map<String, dynamic> json) {
     return NearbyPlace(
-      idPlace:           json['id_place']           as String? ?? '',
-      name:              json['name']               as String? ?? '',
-      subcategoryName:   json['subcategory_name']   as String? ?? '',
-      latitude:          (json['latitude']          as num?)?.toDouble() ?? 0.0,
-      longitude:         (json['longitude']         as num?)?.toDouble() ?? 0.0,
-      distanceKm:        (json['distance_km']       as num?)?.toDouble() ?? 0.0,
-      estimatedMinutes:  (json['estimated_minutes'] as num?)?.toInt() ?? 0,
+      idPlace: json['id_place'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      subcategoryName: json['subcategory_name'] as String? ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 0.0,
+      estimatedMinutes: (json['estimated_minutes'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -542,11 +585,11 @@ class TripPlanSummary {
   factory TripPlanSummary.fromJson(Map<String, dynamic> json) {
     final String? rawProvince = json['city_province'] as String?;
     return TripPlanSummary(
-      idPlan:     json['id_plan']    as String? ?? '',
-      duration:   json['duration']   as String? ?? '',
-      startAt:    json['start_at']   as String? ?? '',
-      endAt:      json['end_at']     as String? ?? '',
-      createdAt:  json['created_at'] as String? ?? '',
+      idPlan: json['id_plan'] as String? ?? '',
+      duration: json['duration'] as String? ?? '',
+      startAt: json['start_at'] as String? ?? '',
+      endAt: json['end_at'] as String? ?? '',
+      createdAt: json['created_at'] as String? ?? '',
       idProvince: (rawProvince == null || rawProvince.trim().isEmpty)
           ? null
           : rawProvince,

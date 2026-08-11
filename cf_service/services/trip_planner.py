@@ -369,6 +369,7 @@ class TripPlannerService:
         interest_option_ids: list[str] | None = None,
         target_lat:          float | None     = None,
         target_lng:          float | None     = None,
+        include_lunch_break: bool             = True,
     ) -> dict:
         supabase = self.supabase
         end_date = start_at + datetime.timedelta(days=n_days - 1)
@@ -560,7 +561,8 @@ class TripPlannerService:
             start_point = _start_point_for_day(day_cluster, top_places)
             best_route, schedule_result = await asyncio.to_thread(
                 optimize_day_route,
-                start_point, day_places, sa_runs=sa_runs
+                start_point, day_places, sa_runs=sa_runs,
+                include_lunch=include_lunch_break,
             )
             stage_a_results.append({
                 "day_cluster": day_cluster,
@@ -609,6 +611,7 @@ class TripPlannerService:
                     schedule_result = build_day_schedule(
                         best_route, start_point=start_point,
                         travel_time_fn=goong_travel_time_fn,
+                        include_lunch=include_lunch_break,
                     )
                     _attach_travel_data(schedule_result["schedule"], car_lookup, bike_lookup)
 
@@ -656,7 +659,7 @@ class TripPlannerService:
         if save:
             saved_plan = await asyncio.to_thread(
                 save_plan, supabase, id_user, id_province, n_days, start_at,
-                days, interest_option_ids
+                days, interest_option_ids, include_lunch_break
             )
             id_plan = saved_plan["id_plan"]
             custom_title = saved_plan["custom_title"]
@@ -677,6 +680,7 @@ class TripPlannerService:
             "id_plan": id_plan,
             "custom_title": custom_title,
             "city_province": id_province,
+            "include_lunch_break": include_lunch_break,
             "days": days,
             "accommodation_recommendation": m2_result.get("accommodation_recommendation"),
             "debug": {

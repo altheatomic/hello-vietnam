@@ -35,8 +35,6 @@ void main() {
         },
       );
 
-      await tester.enterText(find.byType(TextField), '800000');
-      await tester.pump();
       await tester.tap(find.text('Generate'));
       await tester.tap(find.text('Generate'));
       await tester.pump();
@@ -151,8 +149,6 @@ void main() {
     final generation = Completer<TripPlanResponse>();
     await _pumpBudgetPage(tester, generateTrip: (request) => generation.future);
 
-    await tester.enterText(find.byType(TextField), '800000');
-    await tester.pump();
     await tester.tap(find.text('Generate'));
     await tester.pump();
     expect(find.byType(VietnamJourneyLoadingScreen), findsOneWidget);
@@ -206,8 +202,6 @@ void main() {
       generateTrip: (request) => generation.future,
     );
 
-    await tester.enterText(find.byType(TextField), '800000');
-    await tester.pump();
     await tester.tap(find.text('Generate'));
     await tester.pump();
     expect(find.byType(VietnamJourneyLoadingScreen), findsOneWidget);
@@ -237,8 +231,6 @@ void main() {
       generateTrip: (request) => generation.future,
     );
 
-    await tester.enterText(find.byType(TextField), '800000');
-    await tester.pump();
     await tester.tap(find.text('Generate'));
     await tester.pump();
     await tester.pumpWidget(const MaterialApp(home: SizedBox()));
@@ -259,8 +251,6 @@ void main() {
       generateTrip: (request) => generation.future,
     );
 
-    await tester.enterText(find.byType(TextField), '800000');
-    await tester.pump();
     await tester.tap(find.text('Generate'));
     await tester.pump();
 

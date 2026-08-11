@@ -65,9 +65,14 @@ class TripDayDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final TripPlannerDayData day =
         dayData ?? TripPlannerMockData.dayAt(dayIndex);
-    final TripPlannerActivityData? lunchAnchor = selectLunchAnchor(
-      day.activities,
-    );
+    // includeLunchBreak is the explicit plan-level signal for whether this
+    // trip reserved a lunch break at all — selectLunchAnchor() only picks
+    // an anchor place and has no way to distinguish "user opted out of
+    // lunch" from "lunch got dropped for some other reason", so it must
+    // not be relied on alone to decide whether to show the card.
+    final TripPlannerActivityData? lunchAnchor = day.includeLunchBreak
+        ? selectLunchAnchor(day.activities)
+        : null;
     final ThemeData theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
     final List<Color> pageColors = isDark

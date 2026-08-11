@@ -8,6 +8,7 @@ class TripWizardData {
     this.targetLat,
     this.targetLng,
     this.businessAddress,
+    this.includeLunchBreak = true,
   });
 
   final String? idProvince;
@@ -19,6 +20,10 @@ class TripWizardData {
   final double? targetLat;
   final double? targetLng;
   final String? businessAddress;
+  /// Step 5 choice: whether the itinerary should reserve a lunch break.
+  /// Defaults to true so requests that never touched this step (or state
+  /// restored before this field existed) keep the original behaviour.
+  final bool includeLunchBreak;
 
   factory TripWizardData.fromJson(Map<String, dynamic> json) => TripWizardData(
         idProvince: json['idProvince'] as String?,
@@ -29,6 +34,7 @@ class TripWizardData {
         targetLat: (json['targetLat'] as num?)?.toDouble(),
         targetLng: (json['targetLng'] as num?)?.toDouble(),
         businessAddress: json['businessAddress'] as String?,
+        includeLunchBreak: json['includeLunchBreak'] as bool? ?? true,
       );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -40,6 +46,7 @@ class TripWizardData {
         'targetLat': targetLat,
         'targetLng': targetLng,
         'businessAddress': businessAddress,
+        'includeLunchBreak': includeLunchBreak,
       };
 
   TripWizardData copyWith({
@@ -51,6 +58,7 @@ class TripWizardData {
     double? targetLat,
     double? targetLng,
     String? businessAddress,
+    bool? includeLunchBreak,
   }) =>
       TripWizardData(
         idProvince:      idProvince      ?? this.idProvince,
@@ -61,5 +69,6 @@ class TripWizardData {
         targetLat:       targetLat       ?? this.targetLat,
         targetLng:       targetLng       ?? this.targetLng,
         businessAddress: businessAddress ?? this.businessAddress,
+        includeLunchBreak: includeLunchBreak ?? this.includeLunchBreak,
       );
 }

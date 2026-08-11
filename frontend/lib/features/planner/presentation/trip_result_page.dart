@@ -583,6 +583,7 @@ List<TripPlannerDayData> _convertPlan(
       gradientColors: gradients[i % gradients.length],
       activities: activities,
       provinceName: provinceName,
+      includeLunchBreak: plan.includeLunchBreak,
     );
   }).toList();
 }

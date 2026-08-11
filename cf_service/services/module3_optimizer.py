@@ -216,9 +216,16 @@ def optimize_day_route(
     places: list,
     sa_runs: int = 2,
     seed_override: int | None = None,
+    include_lunch: bool = True,
 ) -> tuple[list, dict]:
     """
     Returns (best_route, schedule_result).
+
+    include_lunch: Step 5 wizard choice ("Có nghỉ trưa không?"), forwarded
+    unchanged to both route_cost_with_schedule() (SA cost fn) and the final
+    build_day_schedule() call below — same value to both, so the route SA
+    picked as "best" under this lunch policy is scheduled under the exact
+    same policy. See schedule_builder.py for what False actually does.
 
     schedule_result is the output of build_day_schedule() applied to
     best_route — it includes 'schedule', 'total_travel_minutes',
@@ -253,15 +260,18 @@ def optimize_day_route(
     from services.schedule_builder import build_day_schedule, route_cost_with_schedule, _travel_min
 
     if not places:
-        return [], build_day_schedule([], start)
+        return [], build_day_schedule([], start, include_lunch=include_lunch)
     if len(places) == 1:
-        return places, build_day_schedule(places, start)
+        return places, build_day_schedule(places, start, include_lunch=include_lunch)
 
     travel_time_lookup = _build_travel_time_lookup(start, places, _travel_min)
     haversine_travel_time_fn = _make_lookup_travel_time_fn(travel_time_lookup)
 
     def cost_fn(route: list) -> float:
-        return route_cost_with_schedule(route, start, travel_time_fn=haversine_travel_time_fn)
+        return route_cost_with_schedule(
+            route, start, travel_time_fn=haversine_travel_time_fn,
+            include_lunch=include_lunch,
+        )
 
     base_seed = seed_override if seed_override is not None else derive_seed(start, places)
     rng = random.Random(base_seed)
@@ -280,7 +290,9 @@ def optimize_day_route(
         if cost < best_cost:
             best_cost, best_route = cost, candidate
 
-    schedule_result = build_day_schedule(best_route, start_point=start)
+    schedule_result = build_day_schedule(
+        best_route, start_point=start, include_lunch=include_lunch,
+    )
     return best_route, schedule_result
 
 

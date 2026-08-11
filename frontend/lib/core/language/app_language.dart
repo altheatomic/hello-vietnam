@@ -749,6 +749,19 @@ class AppStrings {
     'e.g. District 1, Ho Chi Minh City': 'VD: Quận 1, TP. Hồ Chí Minh',
     'Choose your budget': 'Chọn ngân sách',
     'Pick one option below to continue': 'Chọn một mức để tiếp tục',
+    'Do you want a lunch break?': 'Bạn có muốn nghỉ trưa không?',
+    'We can reserve a 90-minute midday break and suggest nearby '
+        'restaurants, or skip it and keep exploring instead.':
+        'Chúng tôi có thể giữ 90 phút nghỉ trưa và gợi ý nhà hàng gần đó, '
+        'hoặc bỏ qua để tiếp tục khám phá.',
+    'Yes, reserve lunch time': 'Có, giữ thời gian nghỉ trưa',
+    'Keep a midday break and see restaurant suggestions nearby.':
+        'Giữ khoảng nghỉ trưa và xem gợi ý nhà hàng gần đó.',
+    'No, keep exploring': 'Không, tiếp tục khám phá',
+    'Skip the midday break so the day can fit more activities '
+        'or end earlier.':
+        'Bỏ qua nghỉ trưa để lịch trình có thêm hoạt động hoặc kết thúc '
+        'sớm hơn.',
     'Generate': 'Tạo lịch trình',
     'e.g. 800,000 VND per day': 'VD: 800.000 VND/ngày',
     'Choose your travel dates': 'Chọn ngày đi',

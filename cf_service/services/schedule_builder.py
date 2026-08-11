@@ -188,6 +188,7 @@ def _simulate_place_step(
     default_dur: int,
     buffer: int,
     travel_time_fn: Callable[[dict, dict], float] = _travel_min,
+    include_lunch: bool = True,
 ) -> dict:
     """
     Simulate one place visit without mutating anything.
@@ -235,6 +236,16 @@ def _simulate_place_step(
       lunch_cost        — minutes of clock consumed by lunch (for cost fn)
       lunch_deviation   — minutes the chosen break protrudes outside
                            [12:00, 13:30); 0 if no break this step
+
+    include_lunch: master on/off switch for the entire lunch-break
+    mechanism (Step 5 wizard choice, "Có nghỉ trưa không?"). When False,
+    lunch_needed below is forced False unconditionally — this is the ONLY
+    gate, checked once here, upstream of everywhere lunch_entry/lunch_cost/
+    lunch_deviation get set. Do NOT try to achieve "no lunch break" by
+    zeroing _LUNCH_DEVIATION_PENALTY_PER_MIN instead — that only removes
+    the SA cost incentive against a badly-timed break, it does NOT stop a
+    (now free) lunch_break entry from still being spliced into the
+    schedule whenever lunch_needed would otherwise be True.
     """
     sim_had_lunch   = had_lunch
     lunch_entry     = None
@@ -253,7 +264,7 @@ def _simulate_place_step(
     elapsed_option_b_start = current_elapsed + travel + step_buffer
 
     lunch_needed = False
-    if not sim_had_lunch:
+    if include_lunch and not sim_had_lunch:
         naive_arrival = _mins(option_b_start)
         naive_visit_start = max(naive_arrival, _mins(open_t)) if open_t else naive_arrival
         lunch_needed = (naive_visit_start + dur) > _mins(lunch_start)
@@ -331,6 +342,7 @@ def route_cost_with_schedule(
     lunch_dur:   int           = _LUNCH_DUR,
     day_end:     datetime.time = _DAY_END,
     travel_time_fn: Callable[[dict, dict], float] | None = None,
+    include_lunch: bool = True,
 ) -> float:
     """
     Evaluate a candidate route order for SA without mutating any place dict.
@@ -340,6 +352,11 @@ def route_cost_with_schedule(
          + violation_count       × 1000
          + dropped_count         × 1500
          + lunch_deviation_total × 3 (_LUNCH_DEVIATION_PENALTY_PER_MIN)
+
+    include_lunch: forwarded to _simulate_place_step() — see its docstring.
+    False means no lunch_break entry is ever considered for this route, so
+    the SA cost signal used to pick the best order is not skewed by a
+    penalty for a break that shouldn't exist in the first place.
 
     travel_time_fn: optional override, defaults to None which falls back to
     the Haversine-based _travel_min() — i.e. calling this the old way (no
@@ -369,6 +386,7 @@ def route_cost_with_schedule(
             idx, place, current, current_elapsed, had_lunch, prev,
             lunch_start, lunch_dur, default_dur, buffer,
             travel_time_fn=effective_travel_time_fn,
+            include_lunch=include_lunch,
         )
 
         # Drop check — compared on never-wrapping elapsed minutes, NOT on the
@@ -408,12 +426,20 @@ def build_day_schedule(
     lunch_duration_minutes:   int           = _LUNCH_DUR,
     day_end:                  datetime.time = _DAY_END,
     travel_time_fn:           Callable[[dict, dict], float] | None = None,
+    include_lunch:            bool = True,
 ) -> dict:
     """
     Build the final time schedule for one day.
 
     Side effects: writes estimated_travel_minutes / start_time / end_time /
     slot / warning / dropped / type into each place dict.
+
+    include_lunch: forwarded to _simulate_place_step() — see its docstring.
+    False means no lunch_break entry is ever spliced into the returned
+    'schedule', and lunch_deviation_minutes is always 0. Must be passed the
+    SAME value used for the route_cost_with_schedule() calls that picked
+    this route in the first place — a mismatch would let the SA hot path
+    optimise for one lunch policy while the final schedule renders another.
 
     travel_time_fn: optional override for the travel-time source, forwarded
     to _simulate_place_step(). Defaults to None, which falls back to the
@@ -460,6 +486,7 @@ def build_day_schedule(
             idx, place, current, current_elapsed, had_lunch, prev,
             lunch_start, lunch_duration_minutes, default_duration_minutes, buffer_minutes,
             travel_time_fn=effective_travel_time_fn,
+            include_lunch=include_lunch,
         )
 
         # ── Drop check ────────────────────────────────────────────────────────

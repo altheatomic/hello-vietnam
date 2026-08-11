@@ -112,6 +112,7 @@ async function planTrip(userId: string, p: JsonObject): Promise<Response> {
   if (Array.isArray(p.interestOptionIds)) {
     body.interest_option_ids = p.interestOptionIds;
   }
+  body.include_lunch_break = boolOrDefault(p.includeLunchBreak, true);
   return proxyPost("/api/trips/plan", body);
 }
 

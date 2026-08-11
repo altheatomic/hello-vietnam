@@ -32,6 +32,7 @@ class TripPlanRequest(BaseModel):
     interest_option_ids: Optional[List[str]] = None   # trip-level interest (UUIDs)
     target_lat:          Optional[float]     = None   # business-trip geocoord
     target_lng:          Optional[float]     = None
+    include_lunch_break: bool                = True   # Step 5 wizard choice
 
     @model_validator(mode='after')
     def check_location(self):
@@ -92,6 +93,7 @@ async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
             interest_option_ids=req.interest_option_ids,
             target_lat=req.target_lat,
             target_lng=req.target_lng,
+            include_lunch_break=req.include_lunch_break,
         )
     except NoTripCandidatesError as exc:
         raise HTTPException(
