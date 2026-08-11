@@ -259,8 +259,8 @@ def editable_hash(record: BaselineRecord | Mapping[str, Any]) -> str:
             "name": value.get("name"),
             "description": value.get("description"),
             "detailed_description": value.get("detailed_description"),
-            "created_at": value.get("created_at"),
-            "updated_at": value.get("updated_at"),
+            "created_at": _string_or_none(value.get("created_at")),
+            "updated_at": _string_or_none(value.get("updated_at")),
         }
 
     payload = {
@@ -268,8 +268,8 @@ def editable_hash(record: BaselineRecord | Mapping[str, Any]) -> str:
             "name": data.get("name"),
             "short_description": data.get("short_description"),
             "detailed_description": data.get("detailed_description"),
-            "created_at": data.get("created_at"),
-            "updated_at": data.get("updated_at"),
+            "created_at": _string_or_none(data.get("created_at")),
+            "updated_at": _string_or_none(data.get("updated_at")),
         },
         "vi": translation_payload(data.get("vi")),
         "en": translation_payload(data.get("en")),

@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 import unittest
 
 from scripts.place_content_backfill.constants import APPROVED_PROVINCES
@@ -10,6 +11,7 @@ from scripts.place_content_backfill.models import (
     ValidationResult,
 )
 from scripts.place_content_backfill.repository import (
+    _live_hash_payload,
     apply_approved_batch,
     editable_hash,
     rollback_applied_batch,
@@ -160,6 +162,34 @@ def _proposal(baseline, *, decision="approve"):
 
 
 class PlaceContentApplyTest(unittest.TestCase):
+    def test_live_datetime_hash_is_serializable(self):
+        baseline = _baseline()
+        place = {
+            "name": baseline.name,
+            "short_description": baseline.short_description,
+            "detailed_description": baseline.detailed_description,
+            "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2026, 1, 2, tzinfo=timezone.utc),
+        }
+        translations = {
+            "vi": {
+                "name": baseline.vi.name,
+                "description": baseline.vi.description,
+                "detailed_description": baseline.vi.detailed_description,
+                "created_at": datetime(2026, 1, 3, tzinfo=timezone.utc),
+                "updated_at": datetime(2026, 1, 4, tzinfo=timezone.utc),
+            },
+            "en": {
+                "name": baseline.en.name,
+                "description": baseline.en.description,
+                "detailed_description": baseline.en.detailed_description,
+                "created_at": datetime(2026, 1, 5, tzinfo=timezone.utc),
+                "updated_at": datetime(2026, 1, 6, tzinfo=timezone.utc),
+            },
+        }
+
+        self.assertIsInstance(editable_hash(_live_hash_payload(place, translations)), str)
+
     def test_successful_apply_writes_nine_value_rollback_payload(self):
         async def run():
             baseline = _baseline()
