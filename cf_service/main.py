@@ -19,7 +19,6 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,20 +27,18 @@ from fastapi.middleware.gzip import GZipMiddleware
 load_dotenv()  # picks up .env in cwd if present
 
 from db.connection import close_pool
+from db.connection import get_pool
 from jobs.cf_retrain import run_cf_retrain
 from routes.trip import router as trip_router
 from routes.events import router as events_router
 from routes.recommend import router as recommend_router
+from services.cf_retrain_schedule import (
+    JOB_ID,
+    build_cf_retrain_trigger,
+    load_cf_retrain_schedule,
+)
 
 EXECUTOR_MAX_WORKERS = 30
-
-# Daily CF retrain time. Server runs python:3.11-slim in Docker with no TZ
-# env var set, so the container clock is UTC — pinned explicitly below so
-# behaviour doesn't depend on the host machine's local clock (e.g. local dev
-# outside Docker). 19:00 UTC = 2:00 sáng Vietnam time (UTC+7).
-CF_RETRAIN_HOUR_UTC = 19
-CF_RETRAIN_MINUTE_UTC = 0
-
 
 async def _run_scheduled_cf_retrain() -> None:
     print(json.dumps({"event": "cf_retrain_scheduled_start", "triggered_by": "scheduled_daily"}))
@@ -56,21 +53,32 @@ async def lifespan(app: FastAPI):
     loop.set_default_executor(executor)
     app.state.executor = executor
 
+    try:
+        schedule = await load_cf_retrain_schedule(await get_pool())
+    except Exception as exc:
+        print(json.dumps({
+            "event": "cf_retrain_schedule_load_failed",
+            "error": str(exc),
+        }))
+        executor.shutdown(wait=False)
+        await close_pool()
+        raise RuntimeError(
+            "Could not load the persisted CF retrain schedule; scheduler was not started."
+        ) from exc
+
     scheduler = AsyncIOScheduler(timezone="UTC")
     scheduler.add_job(
         _run_scheduled_cf_retrain,
-        trigger=CronTrigger(
-            hour=CF_RETRAIN_HOUR_UTC, minute=CF_RETRAIN_MINUTE_UTC, timezone="UTC"
-        ),
-        id="daily_cf_retrain",
+        trigger=build_cf_retrain_trigger(schedule.hour_utc, schedule.minute_utc),
+        id=JOB_ID,
         replace_existing=True,
     )
     scheduler.start()
     app.state.scheduler = scheduler
     print(json.dumps({
         "event": "scheduler_started",
-        "job": "daily_cf_retrain",
-        "cron_utc": f"{CF_RETRAIN_HOUR_UTC:02d}:{CF_RETRAIN_MINUTE_UTC:02d}",
+        "job": JOB_ID,
+        "cron_utc": f"{schedule.hour_utc:02d}:{schedule.minute_utc:02d}",
     }))
 
     yield

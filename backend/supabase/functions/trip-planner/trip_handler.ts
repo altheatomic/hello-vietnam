@@ -13,6 +13,8 @@ import { isRawCloneAllowed } from "./trip_clone_authorization.ts";
 
 type JsonObject = Record<string, unknown>;
 
+class RequestInputError extends Error {}
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -80,6 +82,10 @@ export async function handleTripPlannerRequest(
         return triggerCfRetrain(userId);
       case "getCfRetrainLogs":
         return getCfRetrainLogs(userId);
+      case "getCfRetrainSchedule":
+        return getCfRetrainSchedule(userId);
+      case "updateCfRetrainSchedule":
+        return updateCfRetrainSchedule(userId, payload);
       default:
         return jsonResponse({ error: `Unsupported action: ${action}` }, 400);
     }
@@ -87,6 +93,8 @@ export async function handleTripPlannerRequest(
     console.error("[trip-planner] unhandled error", err);
     if (err instanceof AuthorizationError)
       return jsonResponse({ error: err.message }, err.statusCode);
+    if (err instanceof RequestInputError)
+      return jsonResponse({ error: err.message }, 400);
     return jsonResponse(
       { error: err instanceof Error ? err.message : "Unexpected error." },
       500,
@@ -239,12 +247,31 @@ async function getCfRetrainLogs(userId: string): Promise<Response> {
   return jsonResponse({ logs: data ?? [] });
 }
 
+async function getCfRetrainSchedule(userId: string): Promise<Response> {
+  const adminClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+  await requireRole(adminClient, userId, "admin");
+  return proxyGet("/admin/cf/retrain-schedule");
+}
+
+async function updateCfRetrainSchedule(
+  userId: string,
+  p: JsonObject,
+): Promise<Response> {
+  const adminClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+  await requireRole(adminClient, userId, "admin");
+  return proxyRequest("PUT", "/admin/cf/retrain-schedule", {
+    hour_utc: reqUtcInt(p.hourUtc, "hourUtc", 0, 23),
+    minute_utc: reqUtcInt(p.minuteUtc, "minuteUtc", 0, 59),
+    updated_by: userId,
+  });
+}
+
 async function proxyPost(path: string, body: unknown): Promise<Response> {
   return proxyRequest("POST", path, body);
 }
 
 async function proxyRequest(
-  method: "POST" | "PATCH",
+  method: "POST" | "PATCH" | "PUT",
   path: string,
   body: unknown,
 ): Promise<Response> {
@@ -352,6 +379,21 @@ function reqInt(v: unknown, name: string): number {
   const n = typeof v === "number" ? v : Number(v);
   if (!Number.isInteger(n) || n < 1)
     throw new Error(`${name} must be a positive integer`);
+  return n;
+}
+
+function reqUtcInt(
+  v: unknown,
+  name: string,
+  minimum: number,
+  maximum: number,
+): number {
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isInteger(n) || n < minimum || n > maximum) {
+    throw new RequestInputError(
+      `${name} must be an integer from ${minimum} to ${maximum}`,
+    );
+  }
   return n;
 }
 

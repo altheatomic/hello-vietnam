@@ -9,13 +9,19 @@ Dependency injection:
 
 import asyncio
 import datetime
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from uuid import UUID
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, model_validator
 from typing import List, Optional
 
 from db.connection import get_pool
 from db.supabase_client import get_supabase
 from services.trip_planner import NoTripCandidatesError, TripPlannerService
+from services.cf_retrain_schedule import (
+    load_cf_retrain_schedule,
+    next_run_time_utc,
+    update_cf_retrain_schedule,
+)
 
 router = APIRouter()
 
@@ -68,6 +74,20 @@ class TripLifecycleRequest(BaseModel):
 class RescheduleTripRequest(BaseModel):
     id_user:       str
     new_start_at:  str   # 'YYYY-MM-DD'
+
+
+class CfRetrainScheduleUpdate(BaseModel):
+    hour_utc: int
+    minute_utc: int
+    updated_by: UUID | None = None
+
+    @model_validator(mode='after')
+    def validate_utc_time(self):
+        if not 0 <= self.hour_utc <= 23:
+            raise ValueError('hour_utc must be between 0 and 23')
+        if not 0 <= self.minute_utc <= 59:
+            raise ValueError('minute_utc must be between 0 and 59')
+        return self
 
 
 # ── Trip planning ─────────────────────────────────────────────────────────────
@@ -323,3 +343,45 @@ async def get_retrain_logs():
         ) from exc
 
     return [dict(r) for r in rows]
+
+
+def _schedule_response(schedule, scheduler, *, status: str | None = None):
+    response = {
+        "hour_utc": schedule.hour_utc,
+        "minute_utc": schedule.minute_utc,
+        "timezone": "UTC",
+        "next_run_at_utc": next_run_time_utc(scheduler),
+        "updated_at": schedule.updated_at,
+        "updated_by": schedule.updated_by,
+    }
+    if status is not None:
+        response["status"] = status
+    return response
+
+
+@router.get("/admin/cf/retrain-schedule")
+async def get_cf_retrain_schedule(request: Request):
+    try:
+        schedule = await load_cf_retrain_schedule(await get_pool())
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503, detail=f"Could not load CF retrain schedule: {exc}"
+        ) from exc
+    return _schedule_response(schedule, request.app.state.scheduler)
+
+
+@router.put("/admin/cf/retrain-schedule")
+async def put_cf_retrain_schedule(req: CfRetrainScheduleUpdate, request: Request):
+    try:
+        schedule = await update_cf_retrain_schedule(
+            await get_pool(),
+            request.app.state.scheduler,
+            hour_utc=req.hour_utc,
+            minute_utc=req.minute_utc,
+            updated_by=req.updated_by,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return _schedule_response(
+        schedule, request.app.state.scheduler, status="updated"
+    )

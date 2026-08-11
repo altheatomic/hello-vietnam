@@ -221,6 +221,25 @@ class TripRepository {
         .toList();
   }
 
+  Future<CfRetrainSchedule> getCfRetrainSchedule() async {
+    final data = await _invoke(<String, Object?>{
+      'action': 'getCfRetrainSchedule',
+    });
+    return CfRetrainSchedule.fromJson(data);
+  }
+
+  Future<CfRetrainSchedule> updateCfRetrainSchedule({
+    required int hourUtc,
+    required int minuteUtc,
+  }) async {
+    final data = await _invoke(<String, Object?>{
+      'action': 'updateCfRetrainSchedule',
+      'hourUtc': hourUtc,
+      'minuteUtc': minuteUtc,
+    });
+    return CfRetrainSchedule.fromJson(data);
+  }
+
   Future<CreatedTripShare> createShareLink(
     String idPlan, {
     int expiryDays = 30,
