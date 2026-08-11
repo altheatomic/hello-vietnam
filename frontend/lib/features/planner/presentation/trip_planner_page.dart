@@ -251,8 +251,26 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                                         'Relax, explore, and enjoy\nyour vacation',
                                       ),
                                       icon: Icons.beach_access_rounded,
-                                      imageUrl:
-                                          'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
+                                      // Was Image.network() to a hardcoded
+                                      // Unsplash URL — made this card depend
+                                      // on network at build time, which
+                                      // preload: true (router.dart) now
+                                      // triggers as soon as the app starts
+                                      // instead of only when the user opens
+                                      // this tab. Same hue family as the old
+                                      // overlayGradient below, just opaque,
+                                      // so the card keeps its "beach" mood
+                                      // with zero network dependency — see
+                                      // _TripTypeCard's background Container.
+                                      baseGradient: const LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: <Color>[
+                                          Color(0xFF55C8FF),
+                                          Color(0xFF39C6FF),
+                                          Color(0xFF33D8C9),
+                                        ],
+                                      ),
                                       overlayGradient: const LinearGradient(
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
@@ -282,8 +300,19 @@ class _TripPlannerPageState extends State<TripPlannerPage>
                                         'Meetings, conferences, and\nnetworking',
                                       ),
                                       icon: Icons.work_outline_rounded,
-                                      imageUrl:
-                                          'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+                                      // Same rationale as the Leisure card
+                                      // above — opaque version of the old
+                                      // overlayGradient's hue family instead
+                                      // of a hardcoded Unsplash Image.network().
+                                      baseGradient: const LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: <Color>[
+                                          Color(0xFF899CFF),
+                                          Color(0xFFA685FF),
+                                          Color(0xFFB184FF),
+                                        ],
+                                      ),
                                       overlayGradient: const LinearGradient(
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
@@ -423,7 +452,7 @@ class _TripTypeCard extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.imageUrl,
+    required this.baseGradient,
     required this.overlayGradient,
     required this.compact,
     required this.tight,
@@ -433,7 +462,12 @@ class _TripTypeCard extends StatefulWidget {
   final String title;
   final String subtitle;
   final IconData icon;
-  final String imageUrl;
+  // Opaque hero background — replaces a former Image.network() to a
+  // hardcoded Unsplash URL (made this card depend on network at build
+  // time; broke once preload: true in router.dart made TripPlannerPage
+  // build eagerly at app startup instead of only when the user opens this
+  // tab — see trip_planner_page.dart's 2 call sites for the rationale).
+  final Gradient baseGradient;
   final Gradient overlayGradient;
   final bool compact;
   final bool tight;
@@ -488,29 +522,19 @@ class _TripTypeCardState extends State<_TripTypeCard> {
             child: Stack(
               children: <Widget>[
                 Positioned.fill(
-                  child: Image.network(
-                    widget.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder:
-                        (
-                          BuildContext context,
-                          Object error,
-                          StackTrace? stackTrace,
-                        ) {
-                          return Container(
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: <Color>[
-                                  Color(0xFF92D4FF),
-                                  Color(0xFF92D6FF),
-                                  Color(0xFF9CE7E6),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(gradient: widget.baseGradient),
+                    child: Center(
+                      // Large, low-opacity icon watermark — same "gradient +
+                      // centered icon" placeholder language already used
+                      // elsewhere in the app for image-less cards (see
+                      // trip_location_page.dart's _PlaceholderBackground).
+                      child: Icon(
+                        widget.icon,
+                        size: widget.tight ? 96 : 120,
+                        color: Colors.white.withValues(alpha: 0.22),
+                      ),
+                    ),
                   ),
                 ),
                 Positioned.fill(
