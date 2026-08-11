@@ -6,7 +6,7 @@ import httpx
 
 from scripts.place_content_backfill.constants import APPROVED_PROVINCES
 from scripts.place_content_backfill.models import BaselineRecord, TranslationBaseline
-from scripts.place_content_backfill.sources import collect_source_snapshots
+from scripts.place_content_backfill.sources import collect_source_snapshot, collect_source_snapshots
 from scripts.place_content_backfill.sources.osm import parse_osm_id
 from scripts.place_content_backfill.sources.osm import collect_osm_facts
 from scripts.place_content_backfill.sources import osm as osm_source
@@ -95,6 +95,49 @@ class PlaceContentSourcesTest(unittest.TestCase):
             self.assertEqual(len(snapshots), 1)
             self.assertEqual(snapshots[0].facts, ())
             self.assertEqual(snapshots[0].warnings, ("osm source unavailable: HTTPStatusError",))
+
+        asyncio.run(run())
+
+    def test_sparse_external_sources_include_baseline_description_evidence(self):
+        record = BaselineRecord(
+            place_id="p1",
+            province_id=APPROVED_PROVINCES[0],
+            name="Place 1",
+            short_description="A short description from the current database.",
+            source="manual",
+            vi=TranslationBaseline(
+                id="p1-vi",
+                place_id="p1",
+                lang_code="vi",
+                description="Mô tả tiếng Việt hiện có.",
+            ),
+            en=TranslationBaseline(
+                id="p1-en",
+                place_id="p1",
+                lang_code="en",
+                description="The existing English description.",
+            ),
+        )
+
+        async def run():
+            async def handler(request: httpx.Request) -> httpx.Response:
+                raise AssertionError("no external request should be needed")
+
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                snapshot = await collect_source_snapshot(record, client)
+            self.assertEqual(
+                [fact.fact_id for fact in snapshot.facts],
+                [
+                    "baseline.short_description",
+                    "baseline.description_vi",
+                    "baseline.description_en",
+                ],
+            )
+            self.assertEqual(
+                [fact.source_kind for fact in snapshot.facts],
+                ["baseline", "baseline", "baseline"],
+            )
+            self.assertIn("external sources unavailable; using baseline fields", snapshot.warnings)
 
         asyncio.run(run())
 

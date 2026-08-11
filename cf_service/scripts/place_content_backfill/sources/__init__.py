@@ -170,6 +170,16 @@ async def _collect_snapshot(
             except (ValueError, httpx.HTTPError) as exc:
                 warnings.append(f"official source unavailable: {type(exc).__name__}")
 
+    # The existing database copy is an explicitly labelled fallback when
+    # external sources are unavailable.  It gives the generator a bounded,
+    # reviewable seed (especially the short description) without pretending
+    # that it is a freshly verified external fact.
+    baseline_facts = _baseline_facts(record)
+    if baseline_facts:
+        if not facts:
+            warnings.append("external sources unavailable; using baseline fields")
+        facts.extend(baseline_facts)
+
     return SourceSnapshot(
         place_id=record.place_id,
         facts=tuple(_deduplicate_facts(facts)),
@@ -198,6 +208,35 @@ def _deduplicate_facts(facts: list[SourceFact]) -> list[SourceFact]:
             seen.add(key)
             result.append(fact)
     return result
+
+
+def _baseline_facts(record: BaselineRecord) -> list[SourceFact]:
+    source_url = f"supabase://place/{record.place_id}"
+    values = (
+        ("baseline.short_description", record.short_description),
+        ("baseline.description_vi", record.vi.description),
+        ("baseline.description_en", record.en.description),
+        ("baseline.address", record.address),
+        (
+            "baseline.category",
+            " / ".join(
+                value
+                for value in (record.subcategory_category, record.subcategory_name)
+                if value
+            )
+            or None,
+        ),
+    )
+    return [
+        SourceFact(
+            fact_id=fact_id,
+            value=str(value).strip(),
+            source_url=source_url,
+            source_kind="baseline",
+        )
+        for fact_id, value in values
+        if value is not None and str(value).strip()
+    ]
 
 
 __all__ = ["collect_source_snapshot", "collect_source_snapshots"]
