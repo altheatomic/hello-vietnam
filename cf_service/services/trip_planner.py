@@ -38,7 +38,9 @@ Trip-level interest (optional):
 import asyncio
 import datetime
 import json
+import os
 import time
+import uuid
 
 from db.place_repository import fetch_places_near_point, fetch_places_required_filter
 from db.queries_plan import save_plan
@@ -70,6 +72,7 @@ from services.module1_repository import (
 from services.goong_client import fetch_travel_matrix_both_vehicles
 from services.module2_algorithm import build_module2_result
 from services.module3_optimizer import optimize_day_route
+from services.sa_concurrency import get_sa_limiter
 # _travel_min (Haversine) is reused as the per-edge fallback for the rare
 # "structural" edges Goong data can't cover — see _build_goong_travel_time_fn()
 # below. Not exposing a public wrapper in schedule_builder.py for this, since
@@ -79,6 +82,68 @@ from services.schedule_builder import build_day_schedule, _travel_min
 
 class NoTripCandidatesError(Exception):
     """Raised when a saved trip contains no persistable place."""
+
+
+def _client_timeout_seconds(n_days: int) -> int:
+    """Mirror the mobile timeout policy: 60 + 20/day, capped at 180s."""
+    return min(max(60 + 20 * n_days, 60), 180)
+
+
+SA_COMPLETION_RESERVE_SECONDS = 30
+
+
+async def _run_sa_stage(
+    day_clusters: list[dict],
+    top_places: list[dict],
+    *,
+    n_days: int,
+    sa_runs: int,
+    include_lunch_break: bool,
+) -> list[dict]:
+    """Run ordered per-day SA with one shared queue budget for the request."""
+    limiter = get_sa_limiter()
+    request_id = uuid.uuid4().hex[:12]
+    queue_budget_seconds = max(
+        1.0, _client_timeout_seconds(n_days) - SA_COMPLETION_RESERVE_SECONDS
+    )
+    queue_deadline = asyncio.get_running_loop().time() + queue_budget_seconds
+    total_queue_wait_ms = 0.0
+    results = []
+
+    for day_cluster in day_clusters:
+        day_places = day_cluster["places"]
+        start_point = _start_point_for_day(day_cluster, top_places)
+        remaining_queue_budget = max(
+            0.0, queue_deadline - asyncio.get_running_loop().time()
+        )
+        sa_result = await limiter.run(
+            optimize_day_route,
+            start_point,
+            day_places,
+            sa_runs=sa_runs,
+            include_lunch=include_lunch_break,
+            queue_timeout_seconds=remaining_queue_budget,
+            request_id=request_id,
+        )
+        best_route, schedule_result = sa_result.value
+        total_queue_wait_ms += sa_result.queue_wait_ms
+        results.append({
+            "day_cluster": day_cluster,
+            "start_point": start_point,
+            "best_route": best_route,
+            "schedule_result": schedule_result,
+        })
+
+    print(json.dumps({
+        "event": "sa_queue_request_summary",
+        "request_id": request_id,
+        "sa_queue_wait_ms": round(total_queue_wait_ms, 1),
+        "sa_calls": len(day_clusters),
+        "active_sa_count": limiter.active_count,
+        "configured_k": limiter.max_concurrency,
+        "worker_pid": os.getpid(),
+    }, separators=(",", ":")))
+    return results
 
 
 def _fetch_initial_inputs(
@@ -555,21 +620,13 @@ class TripPlannerService:
         # save_plan()'s day numbering stays correct.
 
         # Stage A — SA, one day at a time.
-        stage_a_results = []
-        for day_cluster in day_clusters:
-            day_places = day_cluster["places"]
-            start_point = _start_point_for_day(day_cluster, top_places)
-            best_route, schedule_result = await asyncio.to_thread(
-                optimize_day_route,
-                start_point, day_places, sa_runs=sa_runs,
-                include_lunch=include_lunch_break,
-            )
-            stage_a_results.append({
-                "day_cluster": day_cluster,
-                "start_point": start_point,
-                "best_route": best_route,
-                "schedule_result": schedule_result,  # Haversine-based for now
-            })
+        stage_a_results = await _run_sa_stage(
+            day_clusters,
+            top_places,
+            n_days=n_days,
+            sa_runs=sa_runs,
+            include_lunch_break=include_lunch_break,
+        )
 
         # Stage B — Goong Distance Matrix (car+bike), every day concurrently.
         # Runs ONCE per day, after SA has already picked best_route — never
