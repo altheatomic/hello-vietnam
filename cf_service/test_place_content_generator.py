@@ -1,6 +1,8 @@
 import asyncio
 import json
+import os
 import unittest
+from unittest.mock import patch
 
 import httpx
 
@@ -73,6 +75,58 @@ def _response_content() -> str:
 
 
 class PlaceContentGeneratorTest(unittest.TestCase):
+    def test_proxy_mode_defaults_from_supabase_environment_without_local_key(self):
+        values = {
+            "SUPABASE_URL": "https://proxy.test",
+            "SUPABASE_SERVICE_ROLE_KEY": "service-role",
+            "DEEPSEEK_CONTENT_MODEL": "deepseek-v4-flash",
+        }
+        with patch.dict(os.environ, values, clear=False):
+            with patch.dict(os.environ, {"DEEPSEEK_API_KEY": ""}, clear=False):
+                client = DeepSeekContentClient()
+        self.assertEqual(
+            client.endpoint,
+            "https://proxy.test/functions/v1/place-content-generate",
+        )
+        self.assertEqual(client.auth_token, "service-role")
+        self.assertEqual(client.model, "deepseek-v4-flash")
+
+    def test_proxy_mode_uses_service_role_without_deepseek_key(self):
+        calls = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            calls.append((str(request.url), dict(request.headers), json.loads(request.content)))
+            return httpx.Response(
+                200,
+                json={
+                    "content": _response_content(),
+                    "model": "deepseek-v4-flash",
+                    "finish_reason": "stop",
+                    "input_tokens": 110,
+                    "output_tokens": 90,
+                },
+            )
+
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+                client = DeepSeekContentClient(
+                    endpoint="https://proxy.test/functions/v1/place-content-generate",
+                    auth_token="service-role",
+                    model="deepseek-v4-flash",
+                    http_client=http_client,
+                    sleep_fn=lambda _: None,
+                )
+                result = await client.generate(_record(), _decision(), _sources(), "baseline-hash")
+                self.assertEqual(result.model, "deepseek-v4-flash")
+                self.assertEqual(result.input_tokens, 110)
+                self.assertEqual(calls[0][0], "https://proxy.test/functions/v1/place-content-generate")
+                self.assertEqual(calls[0][1]["authorization"], "Bearer service-role")
+                self.assertIn("prompt", calls[0][2])
+                self.assertIn("input_hash", calls[0][2])
+                self.assertNotIn("model", calls[0][2])
+
+        asyncio.run(run())
+
     def test_rendered_prompt_locks_names_and_untrusted_facts(self):
         prompt = render_prompt(_record(), _decision(), _sources(), "baseline-hash")
         self.assertIn("Huong River", prompt)
