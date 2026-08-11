@@ -18,7 +18,7 @@ PROVINCE_EXPECTED_COUNTS = {
 }
 EXPECTED_TOTAL = sum(PROVINCE_EXPECTED_COUNTS.values())
 MAX_APPLY_BATCH_SIZE = 50
-PROMPT_VERSION = "place_content_v2"
+PROMPT_VERSION = "place_content_v3"
 ARTIFACT_STREAMS = (
     "baseline",
     "sources",

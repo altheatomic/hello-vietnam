@@ -134,6 +134,7 @@ class PlaceContentGeneratorTest(unittest.TestCase):
         self.assertIn("Return valid JSON", prompt)
         self.assertIn("25-35 words", prompt)
         self.assertIn("100-130 words", prompt)
+        self.assertIn("6-8 complete sentences", prompt)
         self.assertIn("unsupported", prompt.lower())
         self.assertIn("untrusted", prompt.lower())
         self.assertNotIn("DEEPSEEK_API_KEY", prompt)
