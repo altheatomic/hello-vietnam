@@ -525,6 +525,7 @@ class TripPlanSummary {
     required this.startAt,
     required this.endAt,
     required this.createdAt,
+    this.idProvince,
   });
 
   final String idPlan;
@@ -532,14 +533,23 @@ class TripPlanSummary {
   final String startAt;
   final String endAt;
   final String createdAt;
+  // db/queries_plan.py's list_plans() already returns city_province — was
+  // just never surfaced here. Used by TripRepository.findRecentMatchingPlan()
+  // to recover from a client-side timeout that raced ahead of a plan the
+  // backend actually finished creating (see trip_repository.dart).
+  final String? idProvince;
 
   factory TripPlanSummary.fromJson(Map<String, dynamic> json) {
+    final String? rawProvince = json['city_province'] as String?;
     return TripPlanSummary(
-      idPlan:    json['id_plan']    as String? ?? '',
-      duration:  json['duration']   as String? ?? '',
-      startAt:   json['start_at']   as String? ?? '',
-      endAt:     json['end_at']     as String? ?? '',
-      createdAt: json['created_at'] as String? ?? '',
+      idPlan:     json['id_plan']    as String? ?? '',
+      duration:   json['duration']   as String? ?? '',
+      startAt:    json['start_at']   as String? ?? '',
+      endAt:      json['end_at']     as String? ?? '',
+      createdAt:  json['created_at'] as String? ?? '',
+      idProvince: (rawProvince == null || rawProvince.trim().isEmpty)
+          ? null
+          : rawProvince,
     );
   }
 }

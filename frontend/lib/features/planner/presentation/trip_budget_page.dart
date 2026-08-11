@@ -159,6 +159,15 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
           'Not enough places found for your selection. Try selecting more '
           'interests (step 4) or fewer days (step 3).',
         );
+      } else if (e.errorCode == 'timeout') {
+        // The client gave up waiting, but Future.timeout() never cancelled
+        // the actual request — the backend may well have finished and
+        // saved the plan anyway (this is the exact race that produced
+        // duplicate trips before: user sees an error, taps Generate again,
+        // gets a second identical plan). Check for a plan matching this
+        // request created in just the last few minutes before showing any
+        // error — if found, treat it exactly like a normal success.
+        await _recoverFromTimeoutOrFail(generation, request);
       } else {
         _failGeneration(
           generation,
@@ -171,6 +180,37 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
         'Could not generate your trip. Please try again.',
       );
     }
+  }
+
+  /// Checks whether a plan matching [request] was actually created by the
+  /// backend despite the client timing out — see the errorCode == 'timeout'
+  /// branch in _generate(). Finding one is treated exactly like a normal
+  /// successful response (navigates to the result page); finding nothing
+  /// falls back to the same generic error a real failure would show.
+  Future<void> _recoverFromTimeoutOrFail(
+    int generation,
+    TripPlanRequest request,
+  ) async {
+    try {
+      final recent = await TripRepository().findRecentMatchingPlan(request);
+      if (!mounted || generation != _generation) return;
+      if (recent != null) {
+        final TripPlanResponse fullResponse = await TripRepository().getPlan(
+          recent.idPlan,
+        );
+        if (!mounted || generation != _generation) return;
+        setState(() => _pendingResponse = fullResponse);
+        return;
+      }
+    } catch (_) {
+      // Recovery check itself failed (e.g. listPlans/getPlan errored) —
+      // fall through to the generic error below rather than leaving the
+      // user stuck on the loading screen.
+    }
+    _failGeneration(
+      generation,
+      'Could not generate your trip. Please try again.',
+    );
   }
 
   void _failGeneration(int generation, String message) {
@@ -213,7 +253,10 @@ class _TripBudgetPageState extends State<TripBudgetPage> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text(context.l10n.ui(message)),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
   }
 

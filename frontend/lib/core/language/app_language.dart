@@ -1107,6 +1107,16 @@ class AppStrings {
     'Explore this province': 'Khám phá tỉnh này',
     "Couldn't load destinations. Please check your connection and try again.":
         'Không thể tải danh sách điểm đến. Vui lòng kiểm tra kết nối và thử lại.',
+    'Missing trip details. Please start from the beginning.':
+        'Thiếu thông tin chuyến đi. Vui lòng bắt đầu lại từ đầu.',
+    'Missing business location. Please go back and enter an address.':
+        'Thiếu địa điểm công tác. Vui lòng quay lại và nhập địa chỉ.',
+    'Not enough places found for your selection. Try selecting more '
+            'interests (step 4) or fewer days (step 3).':
+        'Không đủ địa điểm phù hợp với lựa chọn của bạn. Hãy thử chọn thêm '
+            'sở thích (bước 4) hoặc giảm số ngày (bước 3).',
+    'Could not generate your trip. Please try again.':
+        'Không thể tạo chuyến đi. Vui lòng thử lại.',
     'Destinations': 'Điểm đến',
     'No destinations available yet.': 'Hiện chưa có điểm đến.',
     'Generating your personalised itinerary…':
