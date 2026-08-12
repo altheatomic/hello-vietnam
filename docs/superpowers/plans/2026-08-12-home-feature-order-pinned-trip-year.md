@@ -596,7 +596,7 @@ Run:
 
 Expected: the Leisure pinning test and Business shared-layout test pass without layout exceptions. Existing Business location tests remain green.
 
-- [ ] Step 5: Commit the Trip Planner integration
+- [x] Step 5: Commit the Trip Planner integration
 
     git add frontend/lib/features/planner/presentation/trip_duration_page.dart frontend/lib/features/planner/presentation/widgets/planner_step_scaffold.dart frontend/test/features/planner/presentation/trip_duration_page_test.dart frontend/test/features/planner/presentation/business_location_page_test.dart
     git commit -m "feat: pin trip planner year navigation"
@@ -610,7 +610,7 @@ Expected: the Leisure pinning test and Business shared-layout test pass without 
 - Consumes: the three committed changes above.
 - Produces: fresh evidence that Home ordering, shared calendar behavior, and both Trip Planner modes work together.
 
-- [ ] Step 1: Format all changed Dart files
+- [x] Step 1: Format all changed Dart files
 
 Run:
 
@@ -618,7 +618,7 @@ Run:
 
 Expected: formatter exits successfully and reports no remaining formatting changes on a second run.
 
-- [ ] Step 2: Run focused regression tests
+- [x] Step 2: Run focused regression tests
 
 Run:
 
@@ -626,7 +626,7 @@ Run:
 
 Expected: all tests pass with zero layout exceptions.
 
-- [ ] Step 3: Run the related Home, calendar, and Planner test directories
+- [x] Step 3: Run the related Home, calendar, and Planner test directories
 
 Run:
 
@@ -634,7 +634,7 @@ Run:
 
 Expected: all related tests pass; no test may be skipped to hide a failure.
 
-- [ ] Step 4: Analyze the changed production files
+- [x] Step 4: Analyze the changed production files
 
 Run:
 
@@ -642,7 +642,7 @@ Run:
 
 Expected: No issues found!.
 
-- [ ] Step 5: Inspect the final diff and worktree
+- [x] Step 5: Inspect the final diff and worktree
 
 Run:
 
