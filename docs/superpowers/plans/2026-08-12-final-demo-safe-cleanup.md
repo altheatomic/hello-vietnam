@@ -465,7 +465,8 @@ foreach ($path in $dead) {
   if ((Get-Item -LiteralPath $path).Length -ne 0) { throw "Not empty: $path" }
   $leaf = Split-Path -Leaf $path
   $needle = "(?<![A-Za-z0-9_])$([regex]::Escape($leaf))(?![A-Za-z0-9_])"
-  $refs = @(rg -n --hidden -g '!**/.git/**' -g '!**/.dart_tool/**' -g '!**/build/**' -g '!**/README.md' -g '!**/guide.md' -g "!**/$leaf" $needle frontend)
+  $refs = @(rg --pcre2 -n --hidden -g '!**/.git/**' -g '!**/.dart_tool/**' -g '!**/build/**' -g '!**/README.md' -g '!**/guide.md' -g "!**/$leaf" $needle frontend)
+  if ($LASTEXITCODE -gt 1) { throw "Reference scan failed for $path" }
   if ($refs.Count) { throw "Referenced: $path`n$($refs -join "`n")" }
 }
 ```
