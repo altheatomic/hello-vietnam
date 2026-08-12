@@ -19,5 +19,5 @@ the content key and aggregates published reviews only.
 Run focused tests with:
 
 ```powershell
-& 'C:\Users\ASUS\AppData\Local\Microsoft\WinGet\Links\deno.exe' test --config backend/supabase/functions/reviews/deno.json backend/supabase/functions/reviews/reviews_handler_test.ts
+deno test --config backend/supabase/functions/reviews/deno.json backend/supabase/functions/reviews
 ```

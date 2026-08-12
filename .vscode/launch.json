@@ -12,7 +12,7 @@
         "--web-hostname",
         "localhost",
         "--web-port",
-        "3000"
+        "3001"
       ]
     },
     {
@@ -35,13 +35,6 @@
       "type": "dart",
       "cwd": "frontend",
       "program": "lib/main.dart"
-    },
-    {
-      "name": "Admin Mobile",
-      "request": "launch",
-      "type": "dart",
-      "cwd": "frontend",
-      "program": "lib/main_admin.dart"
     }
   ],
   "compounds": [

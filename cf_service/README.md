@@ -98,7 +98,7 @@ Recommended simple path for the project:
 4. Set it in Supabase:
 
 ```bat
-cd D:\Work\hello-vietnam\backend
+cd ..\backend
 npx supabase secrets set CF_SERVICE_URL="https://hello-vietnam-trip.onrender.com"
 npx supabase functions deploy trip-planner
 ```

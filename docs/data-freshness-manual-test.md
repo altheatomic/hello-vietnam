@@ -24,14 +24,14 @@ chứng kiểm thử.
 User app:
 
 ```powershell
-cd D:\Work\hello-vietnam\frontend
+cd frontend
 flutter run -d chrome --web-port=3000
 ```
 
 Admin app:
 
 ```powershell
-cd D:\Work\hello-vietnam\frontend
+cd frontend
 flutter run -d chrome --target=lib/main_admin.dart --web-port=3001
 ```
 
@@ -318,7 +318,7 @@ where content_type = 'place' and content_id = '<PLACE_STALE>';
 Chỉ chạy khi có credential staging và được phép gọi nguồn ngoài:
 
 ```powershell
-cd D:\Work\hello-vietnam\backend\crawldata
+cd backend\crawldata
 python crawl_seed_data_fixed_v3.py --mode activity --limit 5 --upsert
 python crawl_seed_data_fixed_v3.py --mode activity --limit 5 --upsert
 ```

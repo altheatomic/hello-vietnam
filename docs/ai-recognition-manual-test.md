@@ -13,7 +13,7 @@ nhãn khu vực trên màn hình hẹp. Không cần kiểm thử các bảng d�
 - Chạy app:
 
   ```powershell
-  cd D:\Work\hello-vietnam\frontend
+  cd frontend
   flutter run -d chrome --web-port=3000
   ```
 

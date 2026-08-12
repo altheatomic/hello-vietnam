@@ -24,7 +24,7 @@ nó là lớp kiểm tra nguồn và kiểm soát thay đổi sau khi dữ liệ
 Tạo môi trường riêng trong `backend/crawldata`:
 
 ```powershell
-cd D:\Work\hello-vietnam\backend\crawldata
+cd backend\crawldata
 py -3.11 -m venv .demo-venv
 .\.demo-venv\Scripts\python.exe -m pip install --upgrade pip
 .\.demo-venv\Scripts\python.exe -m pip install -r requirements-demo.txt
@@ -40,7 +40,7 @@ Từ thư mục gốc repo, có thể chạy preflight và crawler mà không gh
 đang tracked. Crawler helper ghi file vào thư mục tạm của Windows:
 
 ```powershell
-cd D:\Work\hello-vietnam
+cd .
 Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\data-freshness-demo.ps1 -Mode preflight -SupabaseUrl $env:SUPABASE_URL
 .\scripts\data-freshness-demo.ps1 -Mode crawler -Limit 5
@@ -119,7 +119,7 @@ output run này làm bằng chứng dự phòng.
 Chạy không có `--upsert` để kiểm tra nguồn và tạo output cục bộ:
 
 ```powershell
-cd D:\Work\hello-vietnam\backend\crawldata
+cd backend\crawldata
 .\.demo-venv\Scripts\python.exe crawl_seed_data_fixed_v3.py `
   --mode local_products `
   --limit 5
@@ -304,7 +304,7 @@ where content_type = 'place' and content_id = '<UUID_2>';
 ## 6. Mở admin web
 
 ```powershell
-cd D:\Work\hello-vietnam\frontend
+cd frontend
 flutter run -d chrome --target=lib/main_admin.dart --web-port=3001
 ```
 
