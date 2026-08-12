@@ -383,6 +383,8 @@ class TripPlannerDayData {
     required this.moreActivitiesLabel,
     required this.activities,
     required this.gradientColors,
+    this.provinceName = '',
+    this.includeLunchBreak = true,
   });
 
   final String dayLabel;
@@ -391,6 +393,15 @@ class TripPlannerDayData {
   final String moreActivitiesLabel;
   final List<TripPlannerActivityData> activities;
   final List<Color> gradientColors;
+  final String provinceName;
+  /// Plan-level Step 5 choice (TripPlanResponse.includeLunchBreak), carried
+  /// per-day only because this is the shape state.extra hands to
+  /// TripDayDetailPage — every day of one plan shares the same value.
+  /// Gates LunchDiscoveryCard: selectLunchAnchor() has no way to tell "no
+  /// lunch break requested" from "lunch break got dropped for some other
+  /// reason", so this explicit flag is required instead of inferring from
+  /// the activities list.
+  final bool includeLunchBreak;
 
   Map<String, dynamic> toJson() => {
         'dayLabel': dayLabel,
@@ -399,6 +410,8 @@ class TripPlannerDayData {
         'moreActivitiesLabel': moreActivitiesLabel,
         'activities': activities.map((a) => a.toJson()).toList(),
         'gradientColors': gradientColors.map((c) => c.toARGB32()).toList(),
+        'provinceName': provinceName,
+        'includeLunchBreak': includeLunchBreak,
       };
 
   factory TripPlannerDayData.fromJson(Map<String, dynamic> json) =>
@@ -413,6 +426,8 @@ class TripPlannerDayData {
         gradientColors: (json['gradientColors'] as List)
             .map((v) => Color(v as int))
             .toList(),
+        provinceName: json['provinceName'] as String? ?? '',
+        includeLunchBreak: json['includeLunchBreak'] as bool? ?? true,
       );
 }
 

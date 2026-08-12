@@ -38,7 +38,9 @@ Trip-level interest (optional):
 import asyncio
 import datetime
 import json
+import os
 import time
+import uuid
 
 from db.place_repository import fetch_places_near_point, fetch_places_required_filter
 from db.queries_plan import save_plan
@@ -70,6 +72,7 @@ from services.module1_repository import (
 from services.goong_client import fetch_travel_matrix_both_vehicles
 from services.module2_algorithm import build_module2_result
 from services.module3_optimizer import optimize_day_route
+from services.sa_concurrency import get_sa_limiter
 # _travel_min (Haversine) is reused as the per-edge fallback for the rare
 # "structural" edges Goong data can't cover — see _build_goong_travel_time_fn()
 # below. Not exposing a public wrapper in schedule_builder.py for this, since
@@ -79,6 +82,68 @@ from services.schedule_builder import build_day_schedule, _travel_min
 
 class NoTripCandidatesError(Exception):
     """Raised when a saved trip contains no persistable place."""
+
+
+def _client_timeout_seconds(n_days: int) -> int:
+    """Mirror the mobile timeout policy: 60 + 20/day, capped at 180s."""
+    return min(max(60 + 20 * n_days, 60), 180)
+
+
+SA_COMPLETION_RESERVE_SECONDS = 30
+
+
+async def _run_sa_stage(
+    day_clusters: list[dict],
+    top_places: list[dict],
+    *,
+    n_days: int,
+    sa_runs: int,
+    include_lunch_break: bool,
+) -> list[dict]:
+    """Run ordered per-day SA with one shared queue budget for the request."""
+    limiter = get_sa_limiter()
+    request_id = uuid.uuid4().hex[:12]
+    queue_budget_seconds = max(
+        1.0, _client_timeout_seconds(n_days) - SA_COMPLETION_RESERVE_SECONDS
+    )
+    queue_deadline = asyncio.get_running_loop().time() + queue_budget_seconds
+    total_queue_wait_ms = 0.0
+    results = []
+
+    for day_cluster in day_clusters:
+        day_places = day_cluster["places"]
+        start_point = _start_point_for_day(day_cluster, top_places)
+        remaining_queue_budget = max(
+            0.0, queue_deadline - asyncio.get_running_loop().time()
+        )
+        sa_result = await limiter.run(
+            optimize_day_route,
+            start_point,
+            day_places,
+            sa_runs=sa_runs,
+            include_lunch=include_lunch_break,
+            queue_timeout_seconds=remaining_queue_budget,
+            request_id=request_id,
+        )
+        best_route, schedule_result = sa_result.value
+        total_queue_wait_ms += sa_result.queue_wait_ms
+        results.append({
+            "day_cluster": day_cluster,
+            "start_point": start_point,
+            "best_route": best_route,
+            "schedule_result": schedule_result,
+        })
+
+    print(json.dumps({
+        "event": "sa_queue_request_summary",
+        "request_id": request_id,
+        "sa_queue_wait_ms": round(total_queue_wait_ms, 1),
+        "sa_calls": len(day_clusters),
+        "active_sa_count": limiter.active_count,
+        "configured_k": limiter.max_concurrency,
+        "worker_pid": os.getpid(),
+    }, separators=(",", ":")))
+    return results
 
 
 def _fetch_initial_inputs(
@@ -142,6 +207,39 @@ def _derive_start_point(places: list) -> dict:
     avg_lat = sum(float(p["latitude"])  for p in places) / len(places)
     avg_lon = sum(float(p["longitude"]) for p in places) / len(places)
     return {"latitude": avg_lat, "longitude": avg_lon}
+
+
+def _start_point_for_day(day_cluster: dict, fallback_places: list) -> dict:
+    """
+    Each day's start_point is now derived independently from that day's own
+    cluster centroid — NOT chained from the previous day's optimized last
+    stop (the old `start_point = best_route[-1]` carried across loop
+    iterations). This is what makes the days independent of each other and
+    safe to run concurrently (see the day loop in plan()).
+
+    day_cluster["centroid"] is a (lat, lon) tuple already computed by
+    Module 2 (module2_algorithm.py's compute_centroid()/build_initial_day_
+    clusters()) and kept in sync with the day's final `places` by
+    recompute_day_centroid() whenever greedy repair moves places between
+    days — so by the time plan() reaches Module 3, it always reflects the
+    places actually in this day_cluster.
+
+    Falls back to _derive_start_point() (this day's own places, then the
+    whole trip's top_places) only for the degenerate case of an empty day
+    cluster, where compute_centroid() returns None.
+
+    Trade-off accepted: day N no longer starts geographically near where
+    day N-1's route ended — a soft continuity nicety, not a hard schedule
+    rule enforced anywhere in schedule_builder.py — traded for running all
+    days' SA + Goong concurrently instead of sequentially.
+    """
+    centroid = day_cluster.get("centroid")
+    if centroid is not None:
+        return {"latitude": centroid[0], "longitude": centroid[1]}
+    day_places = day_cluster.get("places") or []
+    if day_places:
+        return _derive_start_point(day_places)
+    return _derive_start_point(fallback_places)
 
 
 # Same threshold used by test_module1_eval.py's ground-truth definition —
@@ -336,6 +434,7 @@ class TripPlannerService:
         interest_option_ids: list[str] | None = None,
         target_lat:          float | None     = None,
         target_lng:          float | None     = None,
+        include_lunch_break: bool             = True,
     ) -> dict:
         supabase = self.supabase
         end_date = start_at + datetime.timedelta(days=n_days - 1)
@@ -489,25 +588,73 @@ class TripPlannerService:
         _t_m3_0 = time.perf_counter()
 
         # ── [Module 3 – Route optimization] ───────────────────────────────────
-        start_point = _derive_start_point(top_places)
+        # Perf audit (2026-08-11, worktree A/B benchmark against af2a8d6):
+        # running SA (CPU-bound) and Goong (I/O-bound) for every day together
+        # under one asyncio.gather() measured ~117% SLOWER module3_sa_schedule
+        # time than the fully-sequential baseline, consistently across 3
+        # samples — not noise. Root cause: optimize_day_route() is pure-
+        # Python CPU work; asyncio.to_thread() does not give it real
+        # parallelism under the GIL, only thread-dispatch/context-switch
+        # overhead, which dominates for small per-day workloads (few
+        # candidates, low sa_runs). Goong has no such problem — httpx's
+        # AsyncClient actually releases control while waiting on the network,
+        # so *that* part benefits for real from running concurrently.
+        #
+        # Split into two stages instead of one combined per-day coroutine:
+        #   Stage A — SA, sequential (plain for-loop + await, no gather) —
+        #             each day still starts from its own cluster centroid
+        #             (see _start_point_for_day()), that decision is
+        #             unrelated to the SA-vs-Goong concurrency question and
+        #             is kept as-is.
+        #   Stage B — Goong Distance Matrix (car+bike) for every day's
+        #             best_route, ALL fired concurrently via asyncio.gather()
+        #             — now genuinely independent of SA timing since Stage A
+        #             has already finished for every day.
+        #   Stage C — per-day all-or-nothing Goong-vs-Haversine reconciliation
+        #             (unchanged logic) + formatting, sequential (cheap, no
+        #             benefit to parallelising further).
+        # asyncio.gather() in Stage B still preserves input order in its
+        # result list regardless of which day's Goong call finishes first,
+        # and Stage A/C are plain ordered for-loops — day_clusters[i] maps to
+        # stage_a_results[i]/goong_results[i]/days[i] throughout, so
+        # save_plan()'s day numbering stays correct.
+
+        # Stage A — SA, one day at a time.
+        stage_a_results = await _run_sa_stage(
+            day_clusters,
+            top_places,
+            n_days=n_days,
+            sa_runs=sa_runs,
+            include_lunch_break=include_lunch_break,
+        )
+
+        # Stage B — Goong Distance Matrix (car+bike), every day concurrently.
+        # Runs ONCE per day, after SA has already picked best_route — never
+        # inside the SA loop (which stays on Haversine, see
+        # schedule_builder.route_cost_with_schedule).
+        async def _fetch_goong_for_day(entry: dict):
+            best_route = entry["best_route"]
+            if len(best_route) < 2:
+                return None
+            return await fetch_travel_matrix_both_vehicles(best_route)
+
+        goong_results = await asyncio.gather(
+            *(_fetch_goong_for_day(entry) for entry in stage_a_results)
+        )
+
+        # Stage C — per-day all-or-nothing reconciliation + formatting.
         days = []
+        for entry, matrices in zip(stage_a_results, goong_results):
+            day_cluster    = entry["day_cluster"]
+            start_point    = entry["start_point"]
+            best_route     = entry["best_route"]
+            schedule_result = entry["schedule_result"]
 
-        for day_cluster in day_clusters:
-            day_places = day_cluster["places"]
-            best_route, schedule_result = await asyncio.to_thread(
-                optimize_day_route,
-                start_point, day_places, sa_runs=sa_runs
-            )
-
-            # ── [Travel data] Goong Distance Matrix, car + bike ─────────────────
-            # Runs ONCE per day, after SA has already picked best_route — never
-            # inside the SA loop (which stays on Haversine, see
-            # schedule_builder.route_cost_with_schedule). All-or-nothing per
-            # day: if any edge for either vehicle comes back non-OK, the day
-            # keeps the Haversine-based schedule_result from optimize_day_route
-            # untouched (never mixes Goong and Haversine within one day).
-            if len(best_route) >= 2:
-                matrices = await fetch_travel_matrix_both_vehicles(best_route)
+            # All-or-nothing per day: if any edge for either vehicle comes
+            # back non-OK, the day keeps the Haversine-based schedule_result
+            # from optimize_day_route untouched (never mixes Goong and
+            # Haversine within one day).
+            if matrices is not None:
                 goong_ok = all(e["status"] == "OK" for e in matrices["car"]) and \
                            all(e["status"] == "OK" for e in matrices["bike"])
                 if goong_ok:
@@ -521,18 +668,19 @@ class TripPlannerService:
                     schedule_result = build_day_schedule(
                         best_route, start_point=start_point,
                         travel_time_fn=goong_travel_time_fn,
+                        include_lunch=include_lunch_break,
                     )
                     _attach_travel_data(schedule_result["schedule"], car_lookup, bike_lookup)
 
             formatted   = []
             place_order = 1
-            for entry in schedule_result["schedule"]:
-                if entry.get("dropped"):
+            for schedule_entry in schedule_result["schedule"]:
+                if schedule_entry.get("dropped"):
                     continue          # silently excluded — didn't fit the day
-                if entry.get("type") == "lunch_break":
-                    formatted.append(_format_lunch_break(entry))
+                if schedule_entry.get("type") == "lunch_break":
+                    formatted.append(_format_lunch_break(schedule_entry))
                 else:
-                    formatted.append(_format_place(entry, order=place_order, id_tag_to_name=id_tag_to_name))
+                    formatted.append(_format_place(schedule_entry, order=place_order, id_tag_to_name=id_tag_to_name))
                     place_order += 1
 
             days.append({
@@ -540,9 +688,6 @@ class TripPlannerService:
                 "date":   day_cluster["date"],
                 "places": formatted,
             })
-
-            if best_route:
-                start_point = best_route[-1]
 
         timing_ms["module3_sa_schedule"] = round((time.perf_counter() - _t_m3_0) * 1000, 1)
         _t_save_0 = time.perf_counter()
@@ -571,7 +716,7 @@ class TripPlannerService:
         if save:
             saved_plan = await asyncio.to_thread(
                 save_plan, supabase, id_user, id_province, n_days, start_at,
-                days, interest_option_ids
+                days, interest_option_ids, include_lunch_break
             )
             id_plan = saved_plan["id_plan"]
             custom_title = saved_plan["custom_title"]
@@ -592,7 +737,9 @@ class TripPlannerService:
             "id_plan": id_plan,
             "custom_title": custom_title,
             "city_province": id_province,
+            "include_lunch_break": include_lunch_break,
             "days": days,
+            "accommodation_recommendation": m2_result.get("accommodation_recommendation"),
             "debug": {
                 "filter_report":      filter_report,
                 # % of candidate places (filtered_places) for which the CF

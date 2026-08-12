@@ -12,6 +12,10 @@ import uuid
 import datetime
 from typing import Any
 
+from services.accommodation_recommendation import (
+    build_accommodation_recommendation_from_itinerary_days,
+)
+
 
 def _to_pg_int(value: float | int | None) -> int | None:
     """
@@ -39,6 +43,7 @@ def save_plan(
     start_at: datetime.date,
     days: list,
     interest_option_codes: list[str] | None = None,
+    include_lunch_break: bool = True,
 ) -> dict:
     end_at = start_at + datetime.timedelta(days=n_days - 1)
     first_place = next(
@@ -62,6 +67,7 @@ def save_plan(
         "p_start_at": start_at.isoformat(),
         "p_end_at": end_at.isoformat(),
         "p_interest_option_codes": interest_option_codes or [],
+        "p_include_lunch_break": include_lunch_break,
     }).execute()
     rpc_rows = rpc_resp.data or []
     if not rpc_rows:
@@ -108,7 +114,7 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
     query = (
         supabase
         .table("plan")
-        .select("id_plan,custom_title,duration,start_at,end_at,city_province,created_at")
+        .select("id_plan,custom_title,duration,start_at,end_at,city_province,created_at,include_lunch_break")
         .eq("id_plan", id_plan)
     )
     if id_user:
@@ -205,6 +211,18 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
     )
     print(f"[getPlan] response_first_place={first_response_place}")
 
+    response_days = [
+        {
+            "day": d,
+            "date": (start_date_obj + datetime.timedelta(days=d - 1)).isoformat(),
+            "places": places,
+        }
+        for d, places in sorted(days_map.items())
+    ]
+    accommodation_recommendation = (
+        build_accommodation_recommendation_from_itinerary_days(response_days)
+    )
+
     return {
         "id_plan": str(plan_row["id_plan"]),
         "custom_title": plan_row.get("custom_title"),
@@ -212,14 +230,14 @@ def get_plan(supabase: Any, id_plan: str, id_user: str | None = None) -> dict:
         "end_at": str(plan_row["end_at"]),
         "city_province": str(plan_row.get("city_province") or ""),
         "created_at": str(plan_row["created_at"]),
-        "days": [
-            {
-                "day": d,
-                "date": (start_date_obj + datetime.timedelta(days=d - 1)).isoformat(),
-                "places": places,
-            }
-            for d, places in sorted(days_map.items())
-        ],
+        # Rows saved before this column existed have NULL here — coalesce to
+        # True to keep pre-existing plans showing exactly the behaviour they
+        # were generated with (lunch break + LunchDiscoveryCard).
+        "include_lunch_break": plan_row.get("include_lunch_break")
+        if plan_row.get("include_lunch_break") is not None
+        else True,
+        "days": response_days,
+        "accommodation_recommendation": accommodation_recommendation,
     }
 
 
@@ -393,7 +411,7 @@ def clone_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
     plan_resp = (
         supabase
         .table("plan")
-        .select("id_plan,id_user,duration,start_at,end_at,city_province")
+        .select("id_plan,id_user,duration,start_at,end_at,city_province,include_lunch_break")
         .eq("id_plan", id_plan)
         .limit(1)
         .execute()
@@ -428,6 +446,9 @@ def clone_plan(supabase: Any, id_plan: str, id_user: str) -> dict:
         "city_province": src.get("city_province"),
         "status":        "saved",
         "created_at":    datetime.datetime.utcnow().isoformat(),
+        "include_lunch_break": src.get("include_lunch_break")
+        if src.get("include_lunch_break") is not None
+        else True,
     }).execute()
 
     if src_components:

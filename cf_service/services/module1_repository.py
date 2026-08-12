@@ -29,6 +29,23 @@ from services.ttl_cache import TtlCache
 
 
 _ACTIVE_TAGS_CACHE = TtlCache[str, list[dict]](ttl_seconds=300, max_entries=1)
+# CF factor caches — cf_user_factors/cf_place_factors only change once/day
+# (see main.py's daily_cf_retrain cron). Primary invalidation is explicit:
+# cf_retrain.py calls clear_cf_factor_caches() at the end of a successful
+# run. The 12h TTL here is just a safety net (e.g. if a retrain silently
+# fails to call it), not the main invalidation mechanism.
+#
+# _USER_FACTORS_CACHE values are wrapped in a dict ({"factors": ...}) so a
+# genuinely-cached "user has no trained factors yet" (factors=None) is
+# still distinguishable from a real cache miss (TtlCache.get() also
+# returns None for a miss) — without the wrapper, untrained users would
+# silently never benefit from caching.
+_USER_FACTORS_CACHE = TtlCache[str, dict](ttl_seconds=43200, max_entries=5000)
+# Keyed per id_place (not per requested place_ids tuple) — place factors
+# are the same for every user/trip that touches that place, so this is
+# shared across users/provinces for a much higher hit rate than an
+# all-or-nothing tuple key would give.
+_PLACE_FACTORS_CACHE = TtlCache[str, list[float]](ttl_seconds=43200, max_entries=20000)
 _TRIP_OPTIONS_CACHE = TtlCache[tuple[str, ...], list[dict]](
     ttl_seconds=300, max_entries=128
 )
@@ -217,7 +234,14 @@ def fetch_user_factors(
     supabase: Any,
     id_user: str,
 ) -> list[float] | None:
-    """Fetch the raw WALS factor vector for one user, or None if untrained."""
+    """Fetch the raw WALS factor vector for one user, or None if untrained.
+
+    Cached — see _USER_FACTORS_CACHE above.
+    """
+    cached = _USER_FACTORS_CACHE.get(id_user)
+    if cached is not None:
+        return cached["factors"]
+
     response = (
         supabase
         .table("cf_user_factors")
@@ -227,37 +251,61 @@ def fetch_user_factors(
         .execute()
     )
     rows = response.data or []
-    if not rows:
-        return None
-    return [float(v) for v in rows[0]["factors"]]
+    factors = [float(v) for v in rows[0]["factors"]] if rows else None
+    _USER_FACTORS_CACHE.set(id_user, {"factors": factors})
+    return factors
 
 
 def fetch_place_factors(
     supabase: Any,
     place_ids: list[str],
 ) -> dict[str, list[float]]:
-    """Fetch raw WALS factor vectors for the given place IDs."""
+    """Fetch raw WALS factor vectors for the given place IDs.
+
+    Cached per id_place (see _PLACE_FACTORS_CACHE above) — only place_ids
+    that miss the cache are actually fetched from Supabase.
+    """
     if not place_ids:
         return {}
 
-    # Same chunking rationale as fetch_cf_scores_for_user: keep the PostgREST
-    # filter URL comfortably below reverse-proxy limits.
-    chunk_size = 100
     result: dict[str, list[float]] = {}
+    missing_ids: list[str] = []
+    for pid in place_ids:
+        cached = _PLACE_FACTORS_CACHE.get(pid)
+        if cached is not None:
+            result[pid] = cached
+        else:
+            missing_ids.append(pid)
 
-    for start in range(0, len(place_ids), chunk_size):
-        chunk = place_ids[start:start + chunk_size]
-        response = (
-            supabase
-            .table("cf_place_factors")
-            .select("id_place, factors")
-            .in_("id_place", chunk)
-            .execute()
-        )
-        for r in (response.data or []):
-            result[str(r["id_place"])] = [float(v) for v in r["factors"]]
+    if missing_ids:
+        # Same chunking rationale as fetch_cf_scores_for_user: keep the
+        # PostgREST filter URL comfortably below reverse-proxy limits.
+        chunk_size = 100
+        for start in range(0, len(missing_ids), chunk_size):
+            chunk = missing_ids[start:start + chunk_size]
+            response = (
+                supabase
+                .table("cf_place_factors")
+                .select("id_place, factors")
+                .in_("id_place", chunk)
+                .execute()
+            )
+            for r in (response.data or []):
+                pid = str(r["id_place"])
+                factors = [float(v) for v in r["factors"]]
+                result[pid] = factors
+                _PLACE_FACTORS_CACHE.set(pid, factors)
 
     return result
+
+
+def clear_cf_factor_caches() -> None:
+    """Explicit invalidation-on-write for the CF factor caches — call this
+    once a cf_retrain run finishes successfully (see jobs/cf_retrain.py),
+    so the next read after a retrain always gets the fresh factors instead
+    of waiting out the TTL safety net."""
+    _USER_FACTORS_CACHE.clear()
+    _PLACE_FACTORS_CACHE.clear()
 
 
 def compute_cf_scores_from_factors(

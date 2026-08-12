@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show WidgetsBinding;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -332,7 +333,19 @@ class TripStore extends ChangeNotifier {
       _lastStatus = null;
       _clearPersistence(); // fire-and-forget
     }
-    notifyListeners();
+    // Deferred: this resolves after an awaited network call, so it can land
+    // at an arbitrary point in a later frame — including mid-build of some
+    // other route (e.g. the user opens Notification right after tapping
+    // "Mark as completed"). TripStore is a singleton with ListenableBuilders
+    // mounted on multiple simultaneously-live routes (Home stays mounted
+    // under a pushed NotificationPage), so a synchronous notifyListeners()
+    // here risks "setState()/markNeedsBuild() called during build".
+    // addPostFrameCallback is safe here (unlike NotificationInboxController's
+    // _notify()) because TripStore has no plain-`test()` unit tests that
+    // run without a Flutter binding.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   // ── Timer ───────────────────────────────────────────────────────────────────

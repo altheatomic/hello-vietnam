@@ -27,10 +27,95 @@ class _AdminCfRetrainPageState extends State<AdminCfRetrainPage> {
   String? _retrainBanner;
   bool _retrainSuccess = false;
 
+  CfRetrainSchedule? _schedule;
+  TimeOfDay? _selectedUtc;
+  bool _scheduleLoading = true;
+  bool _scheduleSaving = false;
+  String? _scheduleMessage;
+  bool _scheduleSuccess = false;
+
   @override
   void initState() {
     super.initState();
     _fetchLogs();
+    _fetchSchedule();
+  }
+
+  Future<void> _fetchSchedule() async {
+    setState(() {
+      _scheduleLoading = true;
+      _scheduleMessage = null;
+    });
+    try {
+      final schedule = await _repository.getCfRetrainSchedule();
+      if (!mounted) return;
+      setState(() {
+        _schedule = schedule;
+        _selectedUtc = TimeOfDay(
+          hour: schedule.hourUtc,
+          minute: schedule.minuteUtc,
+        );
+        _scheduleLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _scheduleLoading = false;
+        _scheduleSuccess = false;
+        _scheduleMessage = e.toString();
+      });
+    }
+  }
+
+  Future<void> _pickScheduleTime() async {
+    final initial = _selectedUtc ?? const TimeOfDay(hour: 19, minute: 0);
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: initial,
+      helpText: 'SELECT DAILY RETRAIN TIME (UTC)',
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _selectedUtc = selected;
+      _scheduleMessage = null;
+    });
+  }
+
+  Future<void> _saveSchedule() async {
+    final selected = _selectedUtc;
+    if (selected == null) return;
+    setState(() {
+      _scheduleSaving = true;
+      _scheduleMessage = null;
+    });
+    try {
+      final schedule = await _repository.updateCfRetrainSchedule(
+        hourUtc: selected.hour,
+        minuteUtc: selected.minute,
+      );
+      if (!mounted) return;
+      setState(() {
+        _schedule = schedule;
+        _selectedUtc = TimeOfDay(
+          hour: schedule.hourUtc,
+          minute: schedule.minuteUtc,
+        );
+        _scheduleSaving = false;
+        _scheduleSuccess = true;
+        _scheduleMessage = 'Daily retrain schedule updated successfully.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _scheduleSaving = false;
+        _scheduleSuccess = false;
+        _scheduleMessage = e.toString();
+      });
+    }
   }
 
   Future<void> _fetchLogs() async {
@@ -101,6 +186,19 @@ class _AdminCfRetrainPageState extends State<AdminCfRetrainPage> {
           const SizedBox(height: 16),
         ],
 
+        _ScheduleCard(
+          schedule: _schedule,
+          selectedUtc: _selectedUtc,
+          loading: _scheduleLoading,
+          saving: _scheduleSaving,
+          message: _scheduleMessage,
+          success: _scheduleSuccess,
+          onPickTime: _pickScheduleTime,
+          onSave: _saveSchedule,
+          onRetry: _fetchSchedule,
+        ),
+        const SizedBox(height: 24),
+
         _LogsSection(
           logs: _logs,
           loading: _logsLoading,
@@ -113,6 +211,168 @@ class _AdminCfRetrainPageState extends State<AdminCfRetrainPage> {
 }
 
 // ── Retrain button ────────────────────────────────────────────────────────────
+
+class _ScheduleCard extends StatelessWidget {
+  const _ScheduleCard({
+    required this.schedule,
+    required this.selectedUtc,
+    required this.loading,
+    required this.saving,
+    required this.message,
+    required this.success,
+    required this.onPickTime,
+    required this.onSave,
+    required this.onRetry,
+  });
+
+  final CfRetrainSchedule? schedule;
+  final TimeOfDay? selectedUtc;
+  final bool loading;
+  final bool saving;
+  final String? message;
+  final bool success;
+  final VoidCallback onPickTime;
+  final VoidCallback onSave;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+        border: Border.all(color: AppColors.divider),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: loading
+          ? const Center(child: CircularProgressIndicator())
+          : schedule == null
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Daily Retrain Schedule'),
+                const SizedBox(height: 12),
+                _BannerMessage(
+                  message: message ?? 'Could not load the schedule.',
+                  success: false,
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Retry'),
+                ),
+              ],
+            )
+          : _content(context),
+    );
+  }
+
+  Widget _content(BuildContext context) {
+    final chosen =
+        selectedUtc ??
+        TimeOfDay(hour: schedule!.hourUtc, minute: schedule!.minuteUtc);
+    final vietnam = DateTime.utc(
+      2000,
+      1,
+      1,
+      chosen.hour,
+      chosen.minute,
+    ).add(const Duration(hours: 7));
+    final dayNote = vietnam.day == 1 ? '' : ' (next day)';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.schedule_rounded, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Text(
+              'Daily Retrain Schedule',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Choose the daily run time in UTC. Vietnam time is shown for reference.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 18),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            OutlinedButton.icon(
+              onPressed: saving ? null : onPickTime,
+              icon: const Icon(Icons.access_time_rounded),
+              label: Text('${_pad(chosen.hour)}:${_pad(chosen.minute)} UTC'),
+            ),
+            Text(
+              '${_pad(vietnam.hour)}:${_pad(vietnam.minute)} Vietnam (UTC+7)$dayNote',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            FilledButton.icon(
+              onPressed: saving ? null : onSave,
+              icon: saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.save_rounded, size: 18),
+              label: Text(saving ? 'Saving…' : 'Save schedule'),
+            ),
+          ],
+        ),
+        if (schedule!.nextRunAtUtc != null) ...[
+          const SizedBox(height: 14),
+          Text(
+            _formatNextRun(schedule!.nextRunAtUtc!),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          ),
+        ],
+        if (message != null) ...[
+          const SizedBox(height: 14),
+          _BannerMessage(message: message!, success: success),
+        ],
+      ],
+    );
+  }
+
+  String _formatNextRun(String iso) {
+    try {
+      final utc = DateTime.parse(iso).toUtc();
+      final vn = utc.add(const Duration(hours: 7));
+      return 'Next run: ${_dateTime(utc)} UTC · ${_dateTime(vn)} Vietnam';
+    } catch (_) {
+      return 'Next run: $iso';
+    }
+  }
+
+  String _dateTime(DateTime value) =>
+      '${value.year}-${_pad(value.month)}-${_pad(value.day)} '
+      '${_pad(value.hour)}:${_pad(value.minute)}';
+
+  String _pad(int value) => value.toString().padLeft(2, '0');
+}
 
 class _RetrainButton extends StatelessWidget {
   const _RetrainButton({required this.loading, required this.onPressed});
@@ -128,7 +388,10 @@ class _RetrainButton extends StatelessWidget {
           ? const SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             )
           : const Icon(Icons.model_training_rounded, size: 18),
       label: Text(loading ? 'Queueing…' : 'Run Retrain'),
@@ -175,7 +438,9 @@ class _BannerMessage extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: color),
             ),
           ),
         ],
@@ -228,7 +493,11 @@ class _LogsSection extends StatelessWidget {
 }
 
 class _LogsBody extends StatelessWidget {
-  const _LogsBody({required this.logs, required this.loading, required this.error});
+  const _LogsBody({
+    required this.logs,
+    required this.loading,
+    required this.error,
+  });
 
   final List<CfRetrainLog> logs;
   final bool loading;
@@ -329,16 +598,16 @@ class _LogRow extends StatelessWidget {
                     Text(
                       'Triggered by: ${log.triggeredBy}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     if (log.rowsWritten != null) ...[
                       const SizedBox(width: 16),
                       Text(
                         '${log.rowsWritten} rows written',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ],
@@ -354,9 +623,9 @@ class _LogRow extends StatelessWidget {
                   Text(
                     log.errorMsg!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFFD32F2F),
-                          fontFamily: 'monospace',
-                        ),
+                      color: const Color(0xFFD32F2F),
+                      fontFamily: 'monospace',
+                    ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),

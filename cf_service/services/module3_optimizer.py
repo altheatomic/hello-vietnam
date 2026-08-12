@@ -54,6 +54,68 @@ def greedy_route(start: dict, places: list) -> list:
     return route
 
 
+# ── Precomputed Haversine lookup for the SA cost_fn hot path ──────────────────
+#
+# route_cost_with_schedule() (schedule_builder.py) is called ~I_multiplier(12)
+# × n × ~87 temperature steps × sa_runs times per optimize_day_route() call,
+# and each call previously re-derived every travel leg's minutes from scratch
+# via _travel_min() -> _hav_km() (sin/cos/asin/sqrt). Precomputing every
+# pairwise leg ONCE per optimize_day_route() call (O(n²) upfront, trivial for
+# realistic day sizes) and serving the hot path from a dict lookup removes
+# that repeated trig cost without touching SA's logic (cooling schedule, move
+# types, cost formula) at all — only WHERE the minutes value comes from.
+
+def _build_travel_time_lookup(
+    start: dict, places: list, travel_min_fn
+) -> dict[tuple[int, int], float]:
+    """
+    Precompute travel_min_fn(a, b) for every ordered pair drawn from
+    {start} ∪ places — ONCE, before the sa_runs loop (see
+    optimize_day_route()), not once per _simulated_annealing() restart.
+
+    Keyed by (id(a), id(b)) — Python object IDENTITY, not id_place — since
+    `start` is a centroid dict with no id_place (see trip_planner.py's
+    _start_point_for_day()) while `places` entries do have one; identity
+    works uniformly for both and needs no sentinel/placeholder key. Safe
+    within the scope of a single optimize_day_route() call: every object in
+    `all_points` stays alive (referenced by the `places`/`start` locals the
+    caller holds for the whole call) for exactly as long as this lookup is
+    used, and SA's neighbour moves (_move_swap/_move_reverse_segment/
+    _move_insert) only ever reorder the route list — they never copy or
+    recreate the place dicts — so the very same objects (same id()) recur
+    across every candidate route this run evaluates.
+
+    Values are travel_min_fn(a, b) itself (typically _travel_min from
+    schedule_builder.py) — memoized, not reimplemented — so a lookup hit is
+    guaranteed to equal what calling travel_min_fn(a, b) directly would have
+    returned, no risk of the two computations drifting apart.
+    """
+    all_points = [start] + list(places)
+    lookup: dict[tuple[int, int], float] = {}
+    for a in all_points:
+        for b in all_points:
+            if a is b:
+                continue
+            lookup[(id(a), id(b))] = travel_min_fn(a, b)
+    return lookup
+
+
+def _make_lookup_travel_time_fn(lookup: dict[tuple[int, int], float]):
+    """
+    travel_time_fn for route_cost_with_schedule()'s SA hot path — O(1) dict
+    lookup instead of _travel_min()'s trig calls. Same shape/contract as
+    schedule_builder._travel_min() (a plain (prev, place) -> minutes
+    callable), so it's a drop-in — mirrors trip_planner.py's
+    _build_goong_travel_time_fn() pattern exactly (a lookup-backed
+    travel_time_fn injected into the schedule/cost function), just serving
+    precomputed Haversine values instead of Goong ones.
+    """
+    def travel_time_fn(prev: dict, place: dict) -> float:
+        return lookup[(id(prev), id(place))]
+
+    return travel_time_fn
+
+
 # ── SA neighbour moves ────────────────────────────────────────────────────────
 
 def _move_swap(route, rng: random.Random):
@@ -154,9 +216,16 @@ def optimize_day_route(
     places: list,
     sa_runs: int = 2,
     seed_override: int | None = None,
+    include_lunch: bool = True,
 ) -> tuple[list, dict]:
     """
     Returns (best_route, schedule_result).
+
+    include_lunch: Step 5 wizard choice ("Có nghỉ trưa không?"), forwarded
+    unchanged to both route_cost_with_schedule() (SA cost fn) and the final
+    build_day_schedule() call below — same value to both, so the route SA
+    picked as "best" under this lunch policy is scheduled under the exact
+    same policy. See schedule_builder.py for what False actually does.
 
     schedule_result is the output of build_day_schedule() applied to
     best_route — it includes 'schedule', 'total_travel_minutes',
@@ -178,16 +247,31 @@ def optimize_day_route(
     Import is deferred (inside function) to avoid circular dependency:
       schedule_builder → (no imports from module3)
       module3_optimizer → schedule_builder
+
+    Quick win #3 (perf audit, 2026-08-10): cost_fn draws its travel minutes
+    from a Haversine lookup precomputed ONCE here (_build_travel_time_lookup,
+    using schedule_builder's own _travel_min so the memoized values are
+    guaranteed identical to computing them inline), instead of route_cost_
+    with_schedule() re-deriving every leg via trig calls on every single
+    cost_fn invocation. Pure perf change — SA's cooling schedule, move types,
+    and cost formula are all untouched; only where the distance number comes
+    from changed.
     """
-    from services.schedule_builder import build_day_schedule, route_cost_with_schedule
+    from services.schedule_builder import build_day_schedule, route_cost_with_schedule, _travel_min
 
     if not places:
-        return [], build_day_schedule([], start)
+        return [], build_day_schedule([], start, include_lunch=include_lunch)
     if len(places) == 1:
-        return places, build_day_schedule(places, start)
+        return places, build_day_schedule(places, start, include_lunch=include_lunch)
+
+    travel_time_lookup = _build_travel_time_lookup(start, places, _travel_min)
+    haversine_travel_time_fn = _make_lookup_travel_time_fn(travel_time_lookup)
 
     def cost_fn(route: list) -> float:
-        return route_cost_with_schedule(route, start)
+        return route_cost_with_schedule(
+            route, start, travel_time_fn=haversine_travel_time_fn,
+            include_lunch=include_lunch,
+        )
 
     base_seed = seed_override if seed_override is not None else derive_seed(start, places)
     rng = random.Random(base_seed)
@@ -206,7 +290,9 @@ def optimize_day_route(
         if cost < best_cost:
             best_cost, best_route = cost, candidate
 
-    schedule_result = build_day_schedule(best_route, start_point=start)
+    schedule_result = build_day_schedule(
+        best_route, start_point=start, include_lunch=include_lunch,
+    )
     return best_route, schedule_result
 
 

@@ -4,8 +4,9 @@ Personalized province recommendation endpoints.
 """
 
 import asyncio
+import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from db.supabase_client import get_supabase
 from services.ttl_cache import TtlCache
@@ -66,6 +67,7 @@ def _place_detail_response(place: dict) -> dict:
 
 @router.get("/api/recommend/provinces")
 async def get_recommended_provinces(
+    response: Response,
     # id_user is required because the recommend edge function always sends
     # it (see backend/supabase/functions/recommend/recommend_handler.ts) —
     # kept on the route so that call keeps working, even though the
@@ -76,6 +78,13 @@ async def get_recommended_provinces(
 ):
     from services.recommend_service import recommend_provinces
     results = await asyncio.to_thread(recommend_provinces, supabase, limit)
+    # Province data barely changes intraday and the handler itself already
+    # holds a 600s in-process TtlCache (_PROVINCES_CACHE, recommend_service.py)
+    # — this header lets any HTTP-level cache (client, CDN) skip the round
+    # trip entirely instead of re-hitting this endpoint every time. 1h, not
+    # something longer, so an admin edit to province data still shows up
+    # same-day rather than being stuck behind a multi-day client cache.
+    response.headers["Cache-Control"] = "public, max-age=3600"
     return {"provinces": results}
 
 
@@ -86,6 +95,19 @@ async def get_province_detail(
     limit: int = 20,
     supabase=Depends(get_supabase),
 ):
+    # place.id_province is a `uuid` Postgres column — a non-UUID id_province
+    # (e.g. a Flutter-side mock/slug id like "hochiminh" leaking into a real
+    # request — see recommend_where_search_page.dart's mock fallback) would
+    # otherwise reach PostgREST and come back as an opaque 22P02 error from
+    # deep inside _get_province_detail_sync(). Fail fast with a clear 400
+    # instead, before touching the DB at all.
+    try:
+        uuid.UUID(id_province)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid province id: {id_province!r} is not a valid UUID.",
+        )
     return await asyncio.to_thread(
         _get_province_detail_sync, supabase, id_province, id_user, limit
     )

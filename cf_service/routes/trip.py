@@ -9,13 +9,22 @@ Dependency injection:
 
 import asyncio
 import datetime
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+import hmac
+import os
+from uuid import UUID
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, HTTPException
 from pydantic import BaseModel, model_validator
 from typing import List, Optional
 
 from db.connection import get_pool
 from db.supabase_client import get_supabase
 from services.trip_planner import NoTripCandidatesError, TripPlannerService
+from services.sa_concurrency import SaQueueTimeoutError
+from services.cf_retrain_schedule import (
+    load_cf_retrain_schedule,
+    next_run_time_utc,
+    update_cf_retrain_schedule,
+)
 
 router = APIRouter()
 
@@ -32,6 +41,7 @@ class TripPlanRequest(BaseModel):
     interest_option_ids: Optional[List[str]] = None   # trip-level interest (UUIDs)
     target_lat:          Optional[float]     = None   # business-trip geocoord
     target_lng:          Optional[float]     = None
+    include_lunch_break: bool                = True   # Step 5 wizard choice
 
     @model_validator(mode='after')
     def check_location(self):
@@ -69,6 +79,24 @@ class RescheduleTripRequest(BaseModel):
     new_start_at:  str   # 'YYYY-MM-DD'
 
 
+class CfRetrainScheduleUpdate(BaseModel):
+    hour_utc: int
+    minute_utc: int
+    updated_by: UUID | None = None
+
+    @model_validator(mode='after')
+    def validate_utc_time(self):
+        if not 0 <= self.hour_utc <= 23:
+            raise ValueError('hour_utc must be between 0 and 23')
+        if not 0 <= self.minute_utc <= 59:
+            raise ValueError('minute_utc must be between 0 and 59')
+        return self
+
+
+class CfRetrainTriggerRequest(BaseModel):
+    triggered_by: Optional[str] = None
+
+
 # ── Trip planning ─────────────────────────────────────────────────────────────
 
 @router.post("/api/trips/plan")
@@ -92,18 +120,30 @@ async def plan_trip(req: TripPlanRequest, supabase=Depends(get_supabase)):
             interest_option_ids=req.interest_option_ids,
             target_lat=req.target_lat,
             target_lng=req.target_lng,
+            include_lunch_break=req.include_lunch_break,
         )
     except NoTripCandidatesError as exc:
         raise HTTPException(
             status_code=422,
             detail={"error_code": "no_candidates", "message": str(exc)},
         ) from exc
+    except SaQueueTimeoutError as exc:
+        raise HTTPException(status_code=503, detail="planner busy, please retry") from exc
     # print(f"[DEBUG] response days count: {len(result.get('days', []))}")
     # print(f"[DEBUG] response: {result}")
     return result
 
 
-_NEARBY_SUBCATEGORIES = ["Y tế / Bệnh viện", "Nhà thuốc", "Bến xe / Sân bay / Ga tàu"]
+_NEARBY_SUBCATEGORIES = [
+    "Y tế / Bệnh viện",
+    "Nhà thuốc",
+    "Bến xe / Sân bay / Ga tàu",
+    "Ngân hàng / ATM",
+    "Trạm xăng",
+    "Cơ quan hành chính",
+    "Công an / Cảnh sát",
+    "Trường học / Đại học",
+]
 
 
 @router.get("/api/places/nearby")
@@ -274,9 +314,30 @@ async def overdue_check(id_user: str, supabase=Depends(get_supabase)):
 
 # ── Admin: CF retrain ─────────────────────────────────────────────────────────
 
+def _retrain_trigger_source(
+    request: CfRetrainTriggerRequest | None,
+    internal_secret: str | None,
+) -> str:
+    expected_secret = os.environ.get("CF_RETRAIN_SHARED_SECRET")
+    if not expected_secret:
+        return "pg_cron" if request and request.triggered_by == "pg_cron" else "admin"
+    if internal_secret is None:
+        return "admin"
+    if not hmac.compare_digest(expected_secret, internal_secret):
+        raise HTTPException(status_code=401, detail="Invalid internal secret.")
+    return "pg_cron"
+
+
 @router.post("/admin/cf/retrain")
-async def trigger_cf_retrain(background_tasks: BackgroundTasks):
+async def trigger_cf_retrain(
+    background_tasks: BackgroundTasks,
+    request: CfRetrainTriggerRequest | None = Body(default=None),
+    x_internal_secret: str | None = Header(
+        default=None, alias="X-Internal-Secret"
+    ),
+):
     from jobs.cf_retrain import run_cf_retrain
+    triggered_by = _retrain_trigger_source(request, x_internal_secret)
     try:
         await get_pool()
     except Exception as exc:
@@ -284,7 +345,7 @@ async def trigger_cf_retrain(background_tasks: BackgroundTasks):
             status_code=503, detail=f"CF retrain database unavailable: {exc}"
         ) from exc
 
-    background_tasks.add_task(run_cf_retrain, triggered_by='admin')
+    background_tasks.add_task(run_cf_retrain, triggered_by=triggered_by)
     return {"status": "queued", "message": "CF re-train job started in background."}
 
 
@@ -312,3 +373,44 @@ async def get_retrain_logs():
         ) from exc
 
     return [dict(r) for r in rows]
+
+
+def _schedule_response(schedule, *, status: str | None = None):
+    response = {
+        "hour_utc": schedule.hour_utc,
+        "minute_utc": schedule.minute_utc,
+        "timezone": "UTC",
+        "next_run_at_utc": next_run_time_utc(
+            schedule.hour_utc, schedule.minute_utc
+        ),
+        "updated_at": schedule.updated_at,
+        "updated_by": schedule.updated_by,
+    }
+    if status is not None:
+        response["status"] = status
+    return response
+
+
+@router.get("/admin/cf/retrain-schedule")
+async def get_cf_retrain_schedule():
+    try:
+        schedule = await load_cf_retrain_schedule(await get_pool())
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503, detail=f"Could not load CF retrain schedule: {exc}"
+        ) from exc
+    return _schedule_response(schedule)
+
+
+@router.put("/admin/cf/retrain-schedule")
+async def put_cf_retrain_schedule(req: CfRetrainScheduleUpdate):
+    try:
+        schedule = await update_cf_retrain_schedule(
+            await get_pool(),
+            hour_utc=req.hour_utc,
+            minute_utc=req.minute_utc,
+            updated_by=req.updated_by,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return _schedule_response(schedule, status="updated")
