@@ -28,7 +28,7 @@
 - Modify frontend/test/core/widgets/date_range_calendar_test.dart to cover the controlled-year API and preserved selection state.
 - Modify frontend/lib/features/planner/presentation/trip_duration_page.dart to own the visible year and compose the pinned header with the shared calendar.
 - Create frontend/test/features/planner/presentation/trip_duration_page_test.dart to verify pinned behavior for Leisure and Business.
-- Keep frontend/lib/features/planner/presentation/widgets/planner_step_scaffold.dart unchanged; its existing stickyBodyHeader and SliverPersistentHeader(pinned: true) are the integration boundary.
+- Modify frontend/lib/features/planner/presentation/widgets/planner_step_scaffold.dart so the sticky delegate's painted child exactly fills its declared extent.
 - Keep frontend/lib/features/recommend/presentation/when/recommend_when_calendar_page.dart and frontend/lib/features/planner/presentation/widgets/start_date_picker_sheet.dart on the default DateRangeCalendar API so their internal year controls remain unchanged.
 
 ### Task 1: Reorder the Home Quick Actions
@@ -41,7 +41,7 @@
 - Consumes: the existing FeatureItem constants and AppRoutes values.
 - Produces: homeFeatures with the same eight entries in the requested order for FeatureGrid.
 
-- [ ] Step 1: Write the failing order regression test
+- [x] Step 1: Write the failing order regression test
 
 Add this test to frontend/test/features/home/data/home_feature_data_test.dart:
 
@@ -74,7 +74,7 @@ Add this test to frontend/test/features/home/data/home_feature_data_test.dart:
       );
     });
 
-- [ ] Step 2: Run the focused test and verify it fails for the current order
+- [x] Step 2: Run the focused test and verify it fails for the current order
 
 Run:
 
@@ -82,7 +82,7 @@ Run:
 
 Expected: the test fails because the current list begins with Trip Planner, Forum, Translate, and Send Report.
 
-- [ ] Step 3: Reorder only the existing homeFeatures entries
+- [x] Step 3: Reorder only the existing homeFeatures entries
 
 Rewrite the list in frontend/lib/features/home/data/home_feature_data.dart to this order while keeping each entry's current icon and route:
 
@@ -129,7 +129,7 @@ Rewrite the list in frontend/lib/features/home/data/home_feature_data.dart to th
       ),
     ];
 
-- [ ] Step 4: Run the focused Home data tests
+- [x] Step 4: Run the focused Home data tests
 
 Run:
 
@@ -137,7 +137,7 @@ Run:
 
 Expected: all tests pass, including the existing Forum route and Recommend localization assertions.
 
-- [ ] Step 5: Commit the Home ordering change
+- [x] Step 5: Commit the Home ordering change
 
     git add frontend/lib/features/home/data/home_feature_data.dart frontend/test/features/home/data/home_feature_data_test.dart
     git commit -m "feat: reorder home quick actions"
@@ -152,7 +152,7 @@ Expected: all tests pass, including the existing Forum route and Recommend local
 - Consumes: existing DateRangeCalendar selection callbacks and optional firstDate, initialRange, and allowOneDayMode values.
 - Produces: DateRangeYearNavigation, DateRangeCalendar.visibleYear, and DateRangeCalendar.showYearNavigation for TripDurationPage; default construction remains behavior-compatible for all existing callers.
 
-- [ ] Step 1: Write failing controlled-year widget tests
+- [x] Step 1: Write failing controlled-year widget tests
 
 Add tests to frontend/test/core/widgets/date_range_calendar_test.dart. They use stable month keys that the implementation will add around each month card:
 
@@ -231,7 +231,7 @@ Add tests to frontend/test/core/widgets/date_range_calendar_test.dart. They use 
       expect(find.text('Jan 20  →  Jan 22'), findsOneWidget);
     });
 
-- [ ] Step 2: Run the new tests and verify the API is missing
+- [x] Step 2: Run the new tests and verify the API is missing
 
 Run:
 
@@ -240,7 +240,7 @@ Run:
 
 Expected: compilation/test failure because DateRangeCalendar does not yet accept visibleYear/showYearNavigation, DateRangeYearNavigation does not yet exist, and stable month keys are not yet present.
 
-- [ ] Step 3: Add the public year-navigation interface
+- [x] Step 3: Add the public year-navigation interface
 
 In frontend/lib/core/widgets/date_range_calendar.dart, add these fields to DateRangeCalendar:
 
@@ -328,7 +328,7 @@ Add a public widget before the private sub-widget section:
 
 This moves the current year-row visual unchanged into a reusable public widget. The private _NavCircleButton remains shared by the new widget.
 
-- [ ] Step 4: Make the calendar year optionally controlled
+- [x] Step 4: Make the calendar year optionally controlled
 
 Update _DateRangeCalendarState.initState so _year uses the external value when provided:
 
@@ -388,7 +388,7 @@ Give every month wrapper a stable year/month key while retaining _initialMonthKe
 
 Allow _RangeSummaryCard to accept super.key in its constructor. Do not alter any date-selection methods or the bounded/unbounded list physics.
 
-- [ ] Step 5: Run the calendar test suite
+- [x] Step 5: Run the calendar test suite
 
 Run:
 
@@ -397,7 +397,7 @@ Run:
 
 Expected: the new controlled-year tests and all existing localization, sliver, minimum-date, range, one-day, and mode-switch tests pass.
 
-- [ ] Step 6: Commit the shared-calendar API change
+- [x] Step 6: Commit the shared-calendar API change
 
     git add frontend/lib/core/widgets/date_range_calendar.dart frontend/test/core/widgets/date_range_calendar_test.dart
     git commit -m "feat: support externally controlled calendar year"
@@ -406,13 +406,14 @@ Expected: the new controlled-year tests and all existing localization, sliver, m
 
 **Files:**
 - Modify: frontend/lib/features/planner/presentation/trip_duration_page.dart:8-49
+- Modify: frontend/lib/features/planner/presentation/widgets/planner_step_scaffold.dart:268-290
 - Create: frontend/test/features/planner/presentation/trip_duration_page_test.dart
 
 **Interfaces:**
 - Consumes: DateRangeYearNavigation, DateRangeCalendar.visibleYear, DateRangeCalendar.showYearNavigation, and PlannerStepScaffold.stickyBodyHeader.
 - Produces: one pinned DateRangeYearNavigation plus one scrolling DateRangeCalendar for both Leisure and Business TripWizardData values.
 
-- [ ] Step 1: Write failing Trip Planner integration tests
+- [x] Step 1: Write failing Trip Planner integration tests
 
 Create frontend/test/features/planner/presentation/trip_duration_page_test.dart with this local-language setup pattern:
 
@@ -533,7 +534,7 @@ Create frontend/test/features/planner/presentation/trip_duration_page_test.dart 
       });
     }
 
-- [ ] Step 2: Run the new integration tests and verify they fail
+- [x] Step 2: Run the new integration tests and verify they fail
 
 Run:
 
@@ -541,7 +542,7 @@ Run:
 
 Expected: compilation failure because TripDurationPage does not yet render the keyed external year header or configure the calendar to hide its internal row; after the API task, the pinning assertions still fail until this integration is added.
 
-- [ ] Step 3: Add visible-year state and compose the sticky header
+- [x] Step 3: Add visible-year state and compose the sticky header
 
 In _TripDurationPageState, initialize and mutate the displayed year:
 
@@ -584,18 +585,20 @@ Update PlannerStepScaffold construction in build:
 
 The sticky header is inserted by the existing scaffold before the body sliver, so only the year row pins. The calendar remains a single unbounded SliverToBoxAdapter body; its summary and month list continue to scroll in their current order.
 
-- [ ] Step 4: Run the focused Trip Planner tests
+The scaffold delegate wraps its gradient and padding in a tight SizedBox using the declared extent. This keeps the sliver's layoutExtent and paintExtent equal when the sticky child has a smaller intrinsic height.
+
+- [x] Step 4: Run the focused Trip Planner tests
 
 Run:
 
-    cd frontend && dart format lib/features/planner/presentation/trip_duration_page.dart test/features/planner/presentation/trip_duration_page_test.dart
+    cd frontend && dart format lib/features/planner/presentation/trip_duration_page.dart lib/features/planner/presentation/widgets/planner_step_scaffold.dart test/features/planner/presentation/trip_duration_page_test.dart
     cd frontend && flutter test test/features/planner/presentation/trip_duration_page_test.dart test/features/planner/presentation/business_location_page_test.dart
 
 Expected: the Leisure pinning test and Business shared-layout test pass without layout exceptions. Existing Business location tests remain green.
 
 - [ ] Step 5: Commit the Trip Planner integration
 
-    git add frontend/lib/features/planner/presentation/trip_duration_page.dart frontend/test/features/planner/presentation/trip_duration_page_test.dart frontend/test/features/planner/presentation/business_location_page_test.dart
+    git add frontend/lib/features/planner/presentation/trip_duration_page.dart frontend/lib/features/planner/presentation/widgets/planner_step_scaffold.dart frontend/test/features/planner/presentation/trip_duration_page_test.dart frontend/test/features/planner/presentation/business_location_page_test.dart
     git commit -m "feat: pin trip planner year navigation"
 
 ### Task 4: Run Formatting, Analysis, and Regression Verification
@@ -611,7 +614,7 @@ Expected: the Leisure pinning test and Business shared-layout test pass without 
 
 Run:
 
-    cd frontend && dart format lib/features/home/data/home_feature_data.dart test/features/home/data/home_feature_data_test.dart lib/core/widgets/date_range_calendar.dart test/core/widgets/date_range_calendar_test.dart lib/features/planner/presentation/trip_duration_page.dart test/features/planner/presentation/trip_duration_page_test.dart test/features/planner/presentation/business_location_page_test.dart
+    cd frontend && dart format lib/features/home/data/home_feature_data.dart test/features/home/data/home_feature_data_test.dart lib/core/widgets/date_range_calendar.dart test/core/widgets/date_range_calendar_test.dart lib/features/planner/presentation/trip_duration_page.dart lib/features/planner/presentation/widgets/planner_step_scaffold.dart test/features/planner/presentation/trip_duration_page_test.dart test/features/planner/presentation/business_location_page_test.dart
 
 Expected: formatter exits successfully and reports no remaining formatting changes on a second run.
 
@@ -635,7 +638,7 @@ Expected: all related tests pass; no test may be skipped to hide a failure.
 
 Run:
 
-    cd frontend && flutter analyze lib/features/home/data/home_feature_data.dart lib/core/widgets/date_range_calendar.dart lib/features/planner/presentation/trip_duration_page.dart
+    cd frontend && flutter analyze lib/features/home/data/home_feature_data.dart lib/core/widgets/date_range_calendar.dart lib/features/planner/presentation/trip_duration_page.dart lib/features/planner/presentation/widgets/planner_step_scaffold.dart
 
 Expected: No issues found!.
 

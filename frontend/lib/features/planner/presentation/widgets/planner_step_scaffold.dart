@@ -271,15 +271,21 @@ class _StickyBodyHeaderDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: colors,
+    return SizedBox(
+      height: extent,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: colors,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: child,
         ),
       ),
-      child: Padding(padding: const EdgeInsets.only(bottom: 16), child: child),
     );
   }
 
