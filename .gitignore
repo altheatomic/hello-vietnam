@@ -53,6 +53,17 @@ windows/
 macos/
 linux/
 
+# Final branch: unsupported root/platform scaffolding and personal tooling
+/android/
+/ios/
+/frontend/ios/
+/.agents/
+/.claude/
+/.vscode/mcp.json
+/skills-lock.json
+**/supabase/.temp/
+backend/crawldata/.demo-venv/
+
 claude.md
 tree.txt
 plan.md 
