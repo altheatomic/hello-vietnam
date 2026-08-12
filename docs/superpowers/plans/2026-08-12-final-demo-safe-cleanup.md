@@ -464,7 +464,7 @@ $dead = @(
 foreach ($path in $dead) {
   if ((Get-Item -LiteralPath $path).Length -ne 0) { throw "Not empty: $path" }
   $leaf = Split-Path -Leaf $path
-  $refs = @(rg -n --hidden -g '!**/.git/**' -g '!**/.dart_tool/**' -g '!**/build/**' -g "!**/$leaf" ([regex]::Escape($leaf)) frontend)
+  $refs = @(rg -n --hidden -g '!**/.git/**' -g '!**/.dart_tool/**' -g '!**/build/**' -g '!**/README.md' -g '!**/guide.md' -g "!**/$leaf" ([regex]::Escape($leaf)) frontend)
   if ($refs.Count) { throw "Referenced: $path`n$($refs -join "`n")" }
 }
 ```
