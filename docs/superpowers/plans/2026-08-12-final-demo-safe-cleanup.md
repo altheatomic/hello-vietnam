@@ -402,8 +402,11 @@ Expected: install succeeds without changing `requirements.txt`.
 - [ ] **Step 4: Run compile and full test discovery**
 
 ```powershell
-& cf_service/.venv/Scripts/python.exe -m compileall -q cf_service
-& cf_service/.venv/Scripts/python.exe -m unittest discover -s cf_service -p 'test_*.py' -v
+Push-Location cf_service
+try {
+  & .venv/Scripts/python.exe -m compileall -q .
+  & .venv/Scripts/python.exe -m unittest discover -s . -p 'test_*.py' -v
+} finally { Pop-Location }
 ```
 
 Expected: 126 tests pass with no discovery import error.
@@ -876,8 +879,11 @@ Expected: same two infos, 476 tests pass, user/admin Web and Android debug build
 - [ ] **Step 2: Run full Python validation**
 
 ```powershell
-& cf_service/.venv/Scripts/python.exe -m compileall -q cf_service
-& cf_service/.venv/Scripts/python.exe -m unittest discover -s cf_service -p 'test_*.py' -v
+Push-Location cf_service
+try {
+  & .venv/Scripts/python.exe -m compileall -q .
+  & .venv/Scripts/python.exe -m unittest discover -s . -p 'test_*.py' -v
+} finally { Pop-Location }
 & backend/crawldata/.demo-venv/Scripts/python.exe -m unittest discover -s backend/crawldata -p 'test_*.py' -v
 & cf_service/.venv/Scripts/python.exe -m unittest discover -s evaluation/ai_quality/tests -p 'test_*.py' -v
 Set-ExecutionPolicy -Scope Process Bypass
