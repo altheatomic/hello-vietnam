@@ -8,6 +8,7 @@ class TripPlanRequest {
     this.interestOptionIds,
     this.targetLat,
     this.targetLng,
+    this.includeLunchBreak = true,
   });
 
   final String? idProvince;
@@ -18,6 +19,10 @@ class TripPlanRequest {
   final List<String>? interestOptionIds;
   final double? targetLat;
   final double? targetLng;
+  /// Step 5 choice: whether the schedule should reserve a lunch break.
+  /// Defaults to true — a request that doesn't set this keeps the original
+  /// behaviour (backend also defaults to true independently).
+  final bool includeLunchBreak;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         if (idProvince != null) 'id_province': idProvince,
@@ -29,5 +34,6 @@ class TripPlanRequest {
           'interest_option_ids': interestOptionIds,
         if (targetLat != null) 'target_lat': targetLat,
         if (targetLng != null) 'target_lng': targetLng,
+        'include_lunch_break': includeLunchBreak,
       };
 }

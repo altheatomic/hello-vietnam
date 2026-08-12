@@ -1,5 +1,15 @@
 import 'package:url_launcher/url_launcher.dart';
 
+bool hasValidMapCoordinates({required double lat, required double lng}) {
+  return lat.isFinite &&
+      lng.isFinite &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lng >= -180 &&
+      lng <= 180 &&
+      !(lat == 0 && lng == 0);
+}
+
 Uri buildGoogleMapsSearchQueryUri(String query) {
   final String normalized = query.trim();
   if (normalized.isEmpty) {
@@ -40,6 +50,119 @@ Uri buildGoogleMapsDirectionsToQueryUri({
 Future<bool> openGoogleMapsSearchQuery(String query) async {
   return launchUrl(
     buildGoogleMapsSearchQueryUri(query),
+    mode: LaunchMode.externalApplication,
+  );
+}
+
+Uri buildGoogleMapsNearbyRestaurantsUri({
+  required double lat,
+  required double lng,
+  String? placeName,
+  String? provinceName,
+}) {
+  if (!hasValidMapCoordinates(lat: lat, lng: lng)) {
+    throw ArgumentError.value(
+      '$lat,$lng',
+      'coordinates',
+      'Map coordinates must be valid and cannot be 0,0.',
+    );
+  }
+
+  final List<String> locationParts = <String>[
+    if (placeName?.trim().isNotEmpty == true) placeName!.trim(),
+    if (provinceName?.trim().isNotEmpty == true) provinceName!.trim(),
+    'Vietnam',
+  ];
+  return buildGoogleMapsSearchQueryUri(
+    'restaurants near ${locationParts.join(', ')}',
+  );
+}
+
+Uri buildGoogleMapsNearbyRestaurantsGeoUri({
+  required double lat,
+  required double lng,
+}) {
+  if (!hasValidMapCoordinates(lat: lat, lng: lng)) {
+    throw ArgumentError.value(
+      '$lat,$lng',
+      'coordinates',
+      'Map coordinates must be valid and cannot be 0,0.',
+    );
+  }
+  return Uri(
+    scheme: 'geo',
+    path: '$lat,$lng',
+    queryParameters: const <String, String>{'q': 'restaurants'},
+  );
+}
+
+Future<bool> openGoogleMapsNearbyRestaurants({
+  required double lat,
+  required double lng,
+  String? placeName,
+  String? provinceName,
+}) async {
+  final bool openedGeoUri = await launchUrl(
+    buildGoogleMapsNearbyRestaurantsGeoUri(lat: lat, lng: lng),
+    mode: LaunchMode.externalApplication,
+  );
+  if (openedGeoUri) return true;
+
+  return launchUrl(
+    buildGoogleMapsNearbyRestaurantsUri(
+      lat: lat,
+      lng: lng,
+      placeName: placeName,
+      provinceName: provinceName,
+    ),
+    mode: LaunchMode.externalApplication,
+  );
+}
+
+Uri buildGoogleMapsNearbyHotelsUri({
+  required double lat,
+  required double lng,
+}) {
+  if (!hasValidMapCoordinates(lat: lat, lng: lng)) {
+    throw ArgumentError.value(
+      '$lat,$lng',
+      'coordinates',
+      'Map coordinates must be valid and cannot be 0,0.',
+    );
+  }
+  return buildGoogleMapsSearchQueryUri('hotels near $lat,$lng');
+}
+
+Uri buildGoogleMapsNearbyHotelsGeoUri({
+  required double lat,
+  required double lng,
+}) {
+  if (!hasValidMapCoordinates(lat: lat, lng: lng)) {
+    throw ArgumentError.value(
+      '$lat,$lng',
+      'coordinates',
+      'Map coordinates must be valid and cannot be 0,0.',
+    );
+  }
+  return Uri(
+    scheme: 'geo',
+    path: '$lat,$lng',
+    queryParameters: const <String, String>{'q': 'hotels'},
+  );
+}
+
+Future<bool> openGoogleMapsNearbyHotels({
+  required double lat,
+  required double lng,
+}) async {
+  final bool openedGeoUri = await launchUrl(
+    buildGoogleMapsNearbyHotelsGeoUri(lat: lat, lng: lng),
+    mode: LaunchMode.externalApplication,
+  );
+  if (openedGeoUri) return true;
+
+  return launchUrl(
+    buildGoogleMapsNearbyHotelsUri(lat: lat, lng: lng),
     mode: LaunchMode.externalApplication,
   );
 }

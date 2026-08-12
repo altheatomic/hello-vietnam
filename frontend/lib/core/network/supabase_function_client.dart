@@ -118,8 +118,15 @@ class SupabaseFunctionClient {
         body: body,
       ).timeout(timeout ?? _defaultTimeout);
     } on TimeoutException {
+      // errorCode: 'timeout' lets callers (e.g. TripBudgetPage._generate())
+      // distinguish "the client gave up waiting" from any other failure —
+      // Future.timeout() does NOT cancel the underlying request, so the
+      // server may still finish successfully after this fires. Callers for
+      // slow-but-legitimate actions (trip generation) use this to check
+      // whether the work actually completed before showing an error.
       throw SupabaseFunctionException(
         'Request to $functionName timed out. Please try again.',
+        errorCode: 'timeout',
       );
     } on FunctionException catch (error) {
       // The functions_client SDK throws FunctionException itself for any

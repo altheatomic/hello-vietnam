@@ -16,6 +16,15 @@ class TripDurationPage extends StatefulWidget {
 
 class _TripDurationPageState extends State<TripDurationPage> {
   DateTimeRange? _selectedRange;
+  int _visibleYear = DateTime.now().year;
+
+  void _showPreviousYear() {
+    setState(() => _visibleYear--);
+  }
+
+  void _showNextYear() {
+    setState(() => _visibleYear++);
+  }
 
   void _onNext() {
     final range = _selectedRange!;
@@ -38,8 +47,17 @@ class _TripDurationPageState extends State<TripDurationPage> {
       onBack: () => context.pop(),
       nextEnabled: _selectedRange != null,
       onNext: _onNext,
+      stickyBodyHeader: DateRangeYearNavigation(
+        key: const Key('trip-duration-year-navigation'),
+        year: _visibleYear,
+        onPreviousYear: _showPreviousYear,
+        onNextYear: _showNextYear,
+      ),
+      stickyBodyHeaderExtent: 76,
       body: DateRangeCalendar(
         firstDate: DateTime.now(),
+        visibleYear: _visibleYear,
+        showYearNavigation: false,
         allowOneDayMode: true,
         onRangeChanged: (DateTimeRange? range) =>
             setState(() => _selectedRange = range),

@@ -60,4 +60,16 @@ void main() {
       'https://media.test/places/place-1/two.jpg',
     ]);
   });
+
+  test('maps nullable detailed description for individual place detail', () {
+    final ProvinceTopPlace place = ProvinceTopPlace.fromJson(<String, dynamic>{
+      'id_place': 'place-1',
+      'name': 'Detail place',
+      'short_description': 'Short copy',
+      'detailed_description': 'Long detail copy',
+    });
+
+    expect(place.shortDescription, 'Short copy');
+    expect(place.detailedDescription, 'Long detail copy');
+  });
 }

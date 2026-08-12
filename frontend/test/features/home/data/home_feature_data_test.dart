@@ -41,4 +41,33 @@ void main() {
       );
     },
   );
+
+  test('home quick actions use the requested row-major order', () {
+    expect(
+      homeFeatures.map((FeatureItem item) => item.title).toList(),
+      <String>[
+        'Recommend',
+        'Explore',
+        'Trip Planner',
+        'Forum',
+        'Translate',
+        'AI Search',
+        'Send\nReport',
+        'Popular\nApps',
+      ],
+    );
+    expect(
+      homeFeatures.map((FeatureItem item) => item.route).toList(),
+      <String>[
+        AppRoutes.recommendWhereSearch,
+        AppRoutes.explore,
+        AppRoutes.tripPlanner,
+        AppRoutes.messages,
+        AppRoutes.translate,
+        AppRoutes.aiSearch,
+        AppRoutes.feedback,
+        AppRoutes.popularApps,
+      ],
+    );
+  });
 }
