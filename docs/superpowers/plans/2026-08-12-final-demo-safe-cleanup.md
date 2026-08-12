@@ -190,7 +190,12 @@ $required = @('.vscode/launch.json', 'frontend/android', 'frontend/web')
 $missing = @($required | Where-Object { -not (Test-Path -LiteralPath $_) })
 if ($missing.Count) { throw "Missing: $($missing -join ', ')" }
 $forbidden = @('.agents', '.claude', '.vscode/mcp.json', 'android', 'ios', 'frontend/ios', 'skills-lock.json')
-$present = @($forbidden | Where-Object { Test-Path -LiteralPath $_ })
+$present = @($forbidden | Where-Object {
+  if (Test-Path -LiteralPath $_ -PathType Leaf) { $true }
+  elseif (Test-Path -LiteralPath $_ -PathType Container) {
+    @(Get-ChildItem -LiteralPath $_ -File -Force -Recurse).Count -gt 0
+  } else { $false }
+})
 if ($present.Count) { throw "Still present: $($present -join ', ')" }
 
 Push-Location frontend
@@ -954,7 +959,12 @@ git diff --exit-code check -- backend/supabase/migrations
 if ($LASTEXITCODE) { throw 'Migration content changed' }
 
 $forbidden = @('.agents','.claude','.vscode/mcp.json','android','ios','frontend/ios','supabase','ui-patches','codex_backup.patch','backend/crawldata.zip','backend/db','report-assets','frontend/images')
-$present = @($forbidden | Where-Object { Test-Path $_ })
+$present = @($forbidden | Where-Object {
+  if (Test-Path -LiteralPath $_ -PathType Leaf) { $true }
+  elseif (Test-Path -LiteralPath $_ -PathType Container) {
+    @(Get-ChildItem -LiteralPath $_ -File -Force -Recurse).Count -gt 0
+  } else { $false }
+})
 if ($present.Count) { throw "Forbidden paths: $($present -join ', ')" }
 
 [xml](Get-Content -Raw docs/architecture/system-architecture.svg) | Out-Null
