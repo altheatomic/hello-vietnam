@@ -102,7 +102,7 @@ class CfRetrainScheduleTests(unittest.IsolatedAsyncioTestCase):
             "2026-08-12T19:00:00+00:00",
         )
 
-    async def test_update_alters_pg_cron_and_persists_in_one_transaction(self):
+    async def test_update_uses_security_definer_function(self):
         updated_by = uuid4()
         row = {
             "hour_utc": 4,
@@ -120,20 +120,10 @@ class CfRetrainScheduleTests(unittest.IsolatedAsyncioTestCase):
         )
 
         self.assertEqual((result.hour_utc, result.minute_utc), (4, 45))
-        self.assertEqual(connection.calls[0][2], (JOB_NAME,))
-        self.assertIn("cron.alter_job", connection.calls[1][1])
-        self.assertEqual(connection.calls[1][2], (42, "45 4 * * *"))
-        self.assertEqual(connection.calls[2][2], (4, 45, updated_by))
-        self.assertIsNone(connection.tx.exited_with)
-
-    async def test_update_fails_clearly_when_cron_job_is_missing(self):
-        with self.assertRaisesRegex(RuntimeError, "is not registered"):
-            await update_cf_retrain_schedule(
-                _Pool(_Connection(job_id=None)),
-                hour_utc=4,
-                minute_utc=45,
-                updated_by=uuid4(),
-            )
+        self.assertEqual(len(connection.calls), 1)
+        self.assertEqual(connection.calls[0][0], "fetchrow")
+        self.assertIn("public.update_cf_retrain_schedule", connection.calls[0][1])
+        self.assertEqual(connection.calls[0][2], (4, 45, updated_by))
 
     async def test_database_failure_rolls_back_transaction(self):
         connection = _Connection(error=OSError("database unavailable"))
@@ -144,7 +134,7 @@ class CfRetrainScheduleTests(unittest.IsolatedAsyncioTestCase):
                 minute_utc=45,
                 updated_by=uuid4(),
             )
-        self.assertIs(connection.tx.exited_with, OSError)
+        self.assertEqual(len(connection.calls), 1)
 
     async def test_database_read_error_is_not_treated_as_empty(self):
         with self.assertRaisesRegex(OSError, "database unavailable"):

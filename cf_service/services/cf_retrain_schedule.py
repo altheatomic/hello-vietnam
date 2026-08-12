@@ -73,47 +73,20 @@ async def update_cf_retrain_schedule(
     minute_utc: int,
     updated_by: UUID | None,
 ) -> CfRetrainSchedule:
-    """Atomically alter the pg_cron job and persist the display config."""
-    cron_expression = f"{minute_utc} {hour_utc} * * *"
-
+    """Use the least-privilege database function to update cron and config."""
     async with pool.acquire() as conn:
-        async with conn.transaction():
-            job_id = await conn.fetchval(
-                """
-                SELECT jobid
-                FROM cron.job
-                WHERE jobname = $1
-                  AND username = current_user
-                ORDER BY jobid DESC
-                LIMIT 1
-                FOR UPDATE
-                """,
-                JOB_NAME,
+        row = await conn.fetchrow(
+            """
+            SELECT hour_utc, minute_utc, updated_at, updated_by
+            FROM public.update_cf_retrain_schedule(
+                $1::smallint,
+                $2::smallint,
+                $3::uuid
             )
-            if job_id is None:
-                raise RuntimeError(f"pg_cron job {JOB_NAME!r} is not registered.")
-
-            await conn.execute(
-                "SELECT cron.alter_job(job_id := $1, schedule := $2)",
-                job_id,
-                cron_expression,
-            )
-            row = await conn.fetchrow(
-                """
-                INSERT INTO public.cf_retrain_config (
-                    singleton_id, hour_utc, minute_utc, updated_at, updated_by
-                )
-                VALUES (1, $1, $2, NOW(), $3)
-                ON CONFLICT (singleton_id) DO UPDATE
-                SET hour_utc = EXCLUDED.hour_utc,
-                    minute_utc = EXCLUDED.minute_utc,
-                    updated_at = NOW(),
-                    updated_by = EXCLUDED.updated_by
-                RETURNING hour_utc, minute_utc, updated_at, updated_by
-                """,
-                hour_utc,
-                minute_utc,
-                updated_by,
-            )
+            """,
+            hour_utc,
+            minute_utc,
+            updated_by,
+        )
 
     return schedule_from_row(row)
