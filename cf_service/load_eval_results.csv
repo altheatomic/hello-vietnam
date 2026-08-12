@@ -1,4 +1,0 @@
-mode,concurrency_level,requests_sent,mean_ms,p95_ms,p99_ms,error_count
-direct,1,5,5092.3,7830.3,8446.8,0
-direct,5,25,17419.7,21445.5,21597.7,0
-direct,10,50,36778.7,45617.8,45697.2,0
