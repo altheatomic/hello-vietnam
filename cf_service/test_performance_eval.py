@@ -36,7 +36,7 @@ from services.trip_planner import TripPlannerService
 # ── Fixed test fixtures (real IDs, verified against the live DB) ─────────────
 
 USER_ID = "dd16ba71-c26b-44dd-a3f4-61973f268822"          # control.blank (no history)
-PROVINCE_HCM = "230e26ed-0118-4f62-96b5-ac0eb3ca1c1b"      # Hồ Chí Minh — 463 eligible places (large)
+PROVINCE_HCM = "094014a7-b8f6-481a-bbce-5ed6cdd457c5"      # Hồ Chí Minh — 463 eligible places (large)
 PROVINCE_SMALL = "15bd02b9-5895-4570-97c2-3fe929648345"    # Bạc Liêu — 18 eligible places (small)
 INTEREST_CULTURE_HISTORY = "24e0f953-f3aa-4b69-9e91-2b3724c086d3"
 

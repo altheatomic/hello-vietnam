@@ -84,8 +84,8 @@ class ProvinceTopPlace {
       subcategoryName: json['subcategory_name'] as String?,
       shortDescription: json['short_description'] as String?,
       detailedDescription: json['detailed_description'] as String?,
-      estimatedDurationMinutes: (json['estimated_duration_minutes'] as num?)
-          ?.toInt(),
+      estimatedDurationMinutes:
+          (json['estimated_duration_minutes'] as num?)?.toInt(),
       minimumPrice: json['minimum_price'] as num?,
       maximumPrice: json['maximum_price'] as num?,
       phone: json['phone'] as String?,

@@ -16,11 +16,17 @@ class DateRangeCalendar extends StatefulWidget {
     super.key,
     this.initialRange,
     this.firstDate,
+    this.visibleYear,
+    this.showYearNavigation = true,
+    this.allowOneDayMode = false,
     required this.onRangeChanged,
   });
 
   final DateTimeRange? initialRange;
   final DateTime? firstDate;
+  final int? visibleYear;
+  final bool showYearNavigation;
+  final bool allowOneDayMode;
   final void Function(DateTimeRange?) onRangeChanged;
 
   @override
@@ -32,6 +38,7 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
   late final DateTime _initialVisibleDate;
   DateTime? _start;
   DateTime? _end;
+  bool _isOneDayMode = false;
   final GlobalKey _initialMonthKey = GlobalKey();
   bool _didScheduleInitialReveal = false;
 
@@ -69,7 +76,15 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
     _initialVisibleDate = _dateOnly(
       widget.firstDate ?? _start ?? DateTime.now(),
     );
-    _year = _initialVisibleDate.year;
+    _year = widget.visibleYear ?? _initialVisibleDate.year;
+  }
+
+  @override
+  void didUpdateWidget(covariant DateRangeCalendar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.visibleYear != null && widget.visibleYear != _year) {
+      _year = widget.visibleYear!;
+    }
   }
 
   bool get _hasRange => _start != null && _end != null;
@@ -80,37 +95,74 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
   DateTime _dateOnly(DateTime value) =>
       DateTime(value.year, value.month, value.day);
 
+  void _handleOneDayTap(DateTime day) {
+    if (_start != null &&
+        _end != null &&
+        _isSameDate(day, _start!) &&
+        _isSameDate(day, _end!)) {
+      _start = null;
+      _end = null;
+    } else {
+      _start = day;
+      _end = day;
+    }
+  }
+
+  void _handleRangeTap(DateTime day) {
+    if (_start == null) {
+      _start = day;
+      _end = null;
+    } else if (_end == null) {
+      if (_isSameDate(day, _start!)) {
+        _start = null;
+      } else if (day.isBefore(_start!)) {
+        _end = _start;
+        _start = day;
+      } else {
+        _end = day;
+      }
+    } else {
+      final bool tappedStart = _isSameDate(day, _start!);
+      final bool tappedEnd = _isSameDate(day, _end!);
+      if (tappedStart && tappedEnd) {
+        _start = null;
+        _end = null;
+      } else if (tappedStart) {
+        _start = _end;
+        _end = null;
+      } else if (tappedEnd) {
+        _end = null;
+      } else {
+        _start = day;
+        _end = null;
+      }
+    }
+  }
+
+  void _setOneDayMode(bool enabled) {
+    if (_isOneDayMode == enabled) return;
+    setState(() {
+      _isOneDayMode = enabled;
+      if (enabled) {
+        _start = null;
+        _end = null;
+      } else if (_start != null &&
+          _end != null &&
+          _isSameDate(_start!, _end!)) {
+        _end = null;
+      }
+    });
+    widget.onRangeChanged(null);
+  }
+
   void _onDayTap(DateTime day) {
     final DateTime? firstDate = widget.firstDate;
     if (firstDate != null && day.isBefore(_dateOnly(firstDate))) return;
     setState(() {
-      if (_start == null) {
-        _start = day;
-        _end = null;
-      } else if (_end == null) {
-        if (_isSameDate(day, _start!)) {
-          _start = null;
-        } else if (day.isBefore(_start!)) {
-          _end = _start;
-          _start = day;
-        } else {
-          _end = day;
-        }
+      if (_isOneDayMode) {
+        _handleOneDayTap(day);
       } else {
-        final bool tappedStart = _isSameDate(day, _start!);
-        final bool tappedEnd = _isSameDate(day, _end!);
-        if (tappedStart && tappedEnd) {
-          _start = null;
-          _end = null;
-        } else if (tappedStart) {
-          _start = _end;
-          _end = null;
-        } else if (tappedEnd) {
-          _end = null;
-        } else {
-          _start = day;
-          _end = null;
-        }
+        _handleRangeTap(day);
       }
     });
     widget.onRangeChanged(
@@ -160,8 +212,6 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool hasBoundedHeight = constraints.hasBoundedHeight;
@@ -176,24 +226,27 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
             final int month = index + 1;
             return Padding(
               padding: const EdgeInsets.only(bottom: 18),
-              child: _MonthCard(
-                key:
-                    _year == _initialVisibleDate.year &&
-                        month == _initialVisibleDate.month
-                    ? _initialMonthKey
-                    : null,
-                year: _year,
-                month: month,
-                monthName: context.l10n.ui(_monthNames[index]),
-                weekdayLabels: _weekdayLabels
-                    .map(context.l10n.ui)
-                    .toList(growable: false),
-                hasCompletedRange: _hasRange,
-                firstDate: widget.firstDate,
-                onDayTap: _onDayTap,
-                isStart: _isStart,
-                isEnd: _isEnd,
-                isInRange: _isInRange,
+              child: KeyedSubtree(
+                key: ValueKey<String>('calendar-month-$_year-$month'),
+                child: _MonthCard(
+                  key:
+                      _year == _initialVisibleDate.year &&
+                          month == _initialVisibleDate.month
+                      ? _initialMonthKey
+                      : null,
+                  year: _year,
+                  month: month,
+                  monthName: context.l10n.ui(_monthNames[index]),
+                  weekdayLabels: _weekdayLabels
+                      .map(context.l10n.ui)
+                      .toList(growable: false),
+                  hasCompletedRange: _hasRange,
+                  firstDate: widget.firstDate,
+                  onDayTap: _onDayTap,
+                  isStart: _isStart,
+                  isEnd: _isEnd,
+                  isInRange: _isInRange,
+                ),
               ),
             );
           }),
@@ -204,66 +257,34 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
         return Column(
           mainAxisSize: hasBoundedHeight ? MainAxisSize.max : MainAxisSize.min,
           children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  _NavCircleButton(
-                    icon: Icons.chevron_left_rounded,
-                    onTap: () => setState(() => _year--),
-                  ),
-                  const SizedBox(width: 14),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.surface.withValues(alpha: 0.94)
-                          : Colors.white.withValues(alpha: 0.96),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : Colors.transparent,
-                      ),
-                      boxShadow: <BoxShadow>[
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      '$_year',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  _NavCircleButton(
-                    icon: Icons.chevron_right_rounded,
-                    onTap: () => setState(() => _year++),
-                  ),
-                ],
+            if (widget.showYearNavigation)
+              DateRangeYearNavigation(
+                year: _year,
+                onPreviousYear: () => setState(() => _year--),
+                onNextYear: () => setState(() => _year++),
               ),
-            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
               child: _RangeSummaryCard(
+                key: const Key('calendar-range-summary'),
                 summary: context.l10n.ui(_summaryText),
                 duration: context.l10n.ui(_durationText),
                 isComplete: _hasRange,
               ),
             ),
+            if (widget.allowOneDayMode) ...<Widget>[
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _OneDayTripChip(
+                    selected: _isOneDayMode,
+                    onTap: () => _setOneDayMode(!_isOneDayMode),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             if (hasBoundedHeight) Expanded(child: monthList) else monthList,
           ],
@@ -273,7 +294,140 @@ class _DateRangeCalendarState extends State<DateRangeCalendar> {
   }
 }
 
+class DateRangeYearNavigation extends StatelessWidget {
+  const DateRangeYearNavigation({
+    super.key,
+    required this.year,
+    required this.onPreviousYear,
+    required this.onNextYear,
+  });
+
+  final int year;
+  final VoidCallback onPreviousYear;
+  final VoidCallback onNextYear;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          _NavCircleButton(
+            icon: Icons.chevron_left_rounded,
+            onTap: onPreviousYear,
+          ),
+          const SizedBox(width: 14),
+          Container(
+            key: const Key('date-range-visible-year'),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.surface.withValues(alpha: 0.94)
+                  : Colors.white.withValues(alpha: 0.96),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.transparent,
+              ),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Text(
+              '$year',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          _NavCircleButton(
+            icon: Icons.chevron_right_rounded,
+            onTap: onNextYear,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Private sub-widgets ───────────────────────────────────────────────────────
+
+class _OneDayTripChip extends StatelessWidget {
+  const _OneDayTripChip({required this.selected, required this.onTap});
+
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const Key('one-day-trip-toggle'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? (isDark
+                      ? theme.colorScheme.primary.withValues(alpha: 0.16)
+                      : const Color(0xFFEEF9FF))
+                : theme.colorScheme.surface.withValues(alpha: 0.88),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF22B7F1)
+                  : (isDark
+                        ? theme.colorScheme.outline
+                        : const Color(0xFFD8EAF3)),
+              width: selected ? 1.8 : 1.2,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (selected) ...<Widget>[
+                const Icon(
+                  Icons.check_rounded,
+                  size: 18,
+                  color: Color(0xFF22B7F1),
+                ),
+                const SizedBox(width: 7),
+              ],
+              Text(
+                context.l10n.ui('1-Day Trip'),
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: selected
+                      ? const Color(0xFF1FAFE6)
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _NavCircleButton extends StatelessWidget {
   const _NavCircleButton({required this.icon, required this.onTap});
@@ -313,6 +467,7 @@ class _NavCircleButton extends StatelessWidget {
 
 class _RangeSummaryCard extends StatelessWidget {
   const _RangeSummaryCard({
+    super.key,
     required this.summary,
     required this.duration,
     required this.isComplete,

@@ -61,15 +61,15 @@ void main() {
     ]);
   });
 
-  test('maps nullable detailed description for a place', () {
+  test('maps nullable detailed description for individual place detail', () {
     final ProvinceTopPlace place = ProvinceTopPlace.fromJson(<String, dynamic>{
-      'id_place': 'p1',
-      'name': 'Huong River',
+      'id_place': 'place-1',
+      'name': 'Detail place',
       'short_description': 'Short copy',
-      'detailed_description': 'Long copy',
+      'detailed_description': 'Long detail copy',
     });
 
     expect(place.shortDescription, 'Short copy');
-    expect(place.detailedDescription, 'Long copy');
+    expect(place.detailedDescription, 'Long detail copy');
   });
 }

@@ -37,8 +37,11 @@ Future<void> checkOverdueTrip(
   if (overdue.isEmpty || !context.mounted) return;
 
   final OverdueTripPlan trip = overdue.first;
-  final AppStrings strings = AppStrings.of(AppLanguageController.instance.language);
-  final String tripTitle = (trip.customTitle == null || trip.customTitle!.isEmpty)
+  final AppStrings strings = AppStrings.of(
+    AppLanguageController.instance.language,
+  );
+  final String tripTitle =
+      (trip.customTitle == null || trip.customTitle!.isEmpty)
       ? strings.ui('Your Vietnam Adventure')
       : trip.customTitle!;
 
@@ -46,7 +49,7 @@ Future<void> checkOverdueTrip(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext dialogContext) => AlertDialog(
-      title: Text(strings.ui('Still on this trip?')),
+      title: Text(strings.ui('Completed this trip?')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,9 +62,8 @@ Future<void> checkOverdueTrip(
           SizedBox(
             width: double.infinity,
             child: TextButton(
-              onPressed: () => Navigator.of(
-                dialogContext,
-              ).pop(_OverdueDialogAction.notYet),
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(_OverdueDialogAction.notYet),
               child: Text(strings.ui('Not yet')),
             ),
           ),

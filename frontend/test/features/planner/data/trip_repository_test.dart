@@ -54,6 +54,10 @@ void main() {
       calls.single['body'],
       containsPair('idProvince', 'province-1'),
     );
+    expect(
+      calls.single['body'],
+      containsPair('includeLunchBreak', true),
+    );
   });
 
   test('listSavedPlans reads saved plans through trip-planner function', () async {
@@ -105,6 +109,7 @@ void main() {
         nDays: 3,
         startDate: '2026-07-20',
         savePlan: false,
+        includeLunchBreak: false,
         targetLat: 10.7769,
         targetLng: 106.7009,
       ),
@@ -118,6 +123,7 @@ void main() {
         containsPair('nDays', 3),
         containsPair('startDate', '2026-07-20'),
         containsPair('savePlan', false),
+        containsPair('includeLunchBreak', false),
         containsPair('targetLat', 10.7769),
         containsPair('targetLng', 106.7009),
       ),

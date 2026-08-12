@@ -1,266 +1,440 @@
 import asyncio
 from datetime import datetime, timezone
+import tempfile
 import unittest
+from pathlib import Path
 
+from scripts.place_content_backfill.artifacts import ArtifactStore
 from scripts.place_content_backfill.constants import APPROVED_PROVINCES
 from scripts.place_content_backfill.models import (
     BaselineRecord,
     GeneratedContent,
+    NameDecision,
     Proposal,
-    TranslationBaseline,
-    ValidationResult,
+    ReviewDecision,
+    RunManifest,
+    SourceFact,
+    SourceSnapshot,
 )
 from scripts.place_content_backfill.repository import (
-    _live_hash_payload,
+    ApplyConflict,
+    ApplyIntegrityError,
+    ApplyItem,
+    RollbackConflict,
     apply_approved_batch,
     editable_hash,
+    recover_post_commit_artifacts,
     rollback_applied_batch,
+    validate_apply_selection,
 )
 
 
-def _words(prefix: str, count: int) -> str:
+PROVINCE_ID = next(iter(APPROVED_PROVINCES))
+
+
+def words(count: int, prefix: str) -> str:
     return " ".join(f"{prefix}{index}" for index in range(count))
 
 
-class _Artifact:
-    def __init__(self):
-        self.values = []
+def baseline() -> BaselineRecord:
+    record = BaselineRecord(
+        place_id="place-1",
+        province_id=PROVINCE_ID,
+        status="active",
+        vi_name="Chùa Thiên Mụ",
+        vi_short_description="Mô tả ngắn",
+        input_hash="baseline-hash",
+        en_name="Thiên Mụ Pagoda",
+        en_short_description="Short description",
+        subcategory_name="Chùa",
+        subcategory_category="culture",
+        updated_at="2026-08-10T00:00:00+00:00",
+        translation_updated_at_vi="2026-08-10T00:00:00+00:00",
+        translation_updated_at_en="2026-08-10T00:00:00+00:00",
+    )
+    return record.model_copy(update={"input_hash": editable_hash(record)})
 
-    def append(self, stream, value):
-        self.values.append((stream, value))
+
+def source_snapshot() -> SourceSnapshot:
+    return SourceSnapshot(
+        place_id="place-1",
+        baseline_input_hash=baseline().input_hash,
+        facts=(
+            SourceFact(
+                fact_id="fact-1",
+                source_type="osm",
+                source_url="https://www.openstreetmap.org/node/1",
+                claim="A verified pagoda in Hồ Chí Minh",
+                confidence=0.95,
+            ),
+        ),
+    )
 
 
-class _Transaction:
-    def __init__(self, owner):
-        self.owner = owner
+def proposal() -> Proposal:
+    baseline_hash = baseline().input_hash
+    return Proposal(
+        place_id="place-1",
+        province_id=PROVINCE_ID,
+        baseline_input_hash=baseline_hash,
+        name_decision=NameDecision(
+            place_id="place-1",
+            vi_name="Chùa Thiên Mụ",
+            en_name="Thiên Mụ Pagoda",
+            confidence=0.98,
+            rule_id="generic:pagoda",
+            protected_tokens=("Thiên", "Mụ"),
+        ),
+        generated=GeneratedContent(
+            vi_short=words(20, "vi"),
+            en_short=words(20, "en"),
+            vi_long=words(90, "vilong"),
+            en_long=words(90, "enlong"),
+            fact_ids=("fact-1",),
+        ),
+    )
+
+
+def apply_item() -> ApplyItem:
+    return ApplyItem(
+        proposal=proposal(),
+        baseline=baseline(),
+        source_snapshot=source_snapshot(),
+        review_decision=ReviewDecision(place_id="place-1", decision="approve"),
+    )
+
+
+def live_place() -> dict:
+    return {
+        "id_place": "place-1",
+        "id_province": PROVINCE_ID,
+        "name": "Chùa Thiên Mụ",
+        "short_description": "Mô tả ngắn",
+        "detailed_description": None,
+        "updated_at": "2026-08-10T00:00:00+00:00",
+    }
+
+
+def live_translations() -> list[dict]:
+    return [
+        {
+            "id": "place-1-vi",
+            "place_id": "place-1",
+            "lang_code": "vi",
+            "name": "Chùa Thiên Mụ",
+            "description": "Mô tả ngắn",
+            "detailed_description": None,
+            "updated_at": "2026-08-10T00:00:00+00:00",
+        },
+        {
+            "id": "place-1-en",
+            "place_id": "place-1",
+            "lang_code": "en",
+            "name": "Thiên Mụ Pagoda",
+            "description": "Short description",
+            "detailed_description": None,
+            "updated_at": "2026-08-10T00:00:00+00:00",
+        },
+    ]
+
+
+class FakeTransaction:
+    def __init__(self, connection):
+        self.connection = connection
 
     async def __aenter__(self):
-        self.owner.transaction_started = True
+        self.connection.transaction_count += 1
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
-        self.owner.rolled_back = exc is not None
-        self.owner.committed = exc is None
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        if exc_type is None:
+            self.connection.commits += 1
+        else:
+            self.connection.rollbacks += 1
         return False
 
 
-class _Connection:
-    def __init__(self, baseline, *, missing_translation=False, changed=False, fail_update=False):
-        self.baseline = baseline
-        self.place = {
-            "id_place": baseline.place_id,
-            "id_province": baseline.province_id,
-            "name": baseline.name,
-            "short_description": baseline.short_description,
-            "detailed_description": baseline.detailed_description,
-            "created_at": baseline.created_at,
-            "updated_at": baseline.updated_at,
-        }
-        if changed:
-            self.place["name"] = "Changed by admin"
-        self.translations = [
-            {
-                "id": baseline.vi.id,
-                "place_id": baseline.place_id,
-                "lang_code": "vi",
-                "name": baseline.vi.name,
-                "description": baseline.vi.description,
-                "detailed_description": baseline.vi.detailed_description,
-                "created_at": baseline.vi.created_at,
-                "updated_at": baseline.vi.updated_at,
-            },
-            {
-                "id": baseline.en.id,
-                "place_id": baseline.place_id,
-                "lang_code": "en",
-                "name": baseline.en.name,
-                "description": baseline.en.description,
-                "detailed_description": baseline.en.detailed_description,
-                "created_at": baseline.en.created_at,
-                "updated_at": baseline.en.updated_at,
-            },
-        ]
-        if missing_translation:
-            self.translations.pop()
-        self.fail_update = fail_update
-        self.transaction_started = False
-        self.committed = False
-        self.rolled_back = False
-        self.execute_count = 0
+class FakeConnection:
+    def __init__(self, *, translations=None):
+        self.place = live_place()
+        self.translations = translations if translations is not None else live_translations()
+        self.transaction_count = 0
+        self.commits = 0
+        self.rollbacks = 0
+        self.update_calls = []
+        self.fail_on_update = False
+        self.return_zero_on_update = False
+        self.next_timestamp = "2026-08-10T01:00:00+00:00"
 
     def transaction(self):
-        return _Transaction(self)
-
-    async def fetchrow(self, query, *args):
-        if "FROM public.place" in query:
-            return dict(self.place)
-        raise AssertionError(f"unexpected fetchrow: {query}")
+        return FakeTransaction(self)
 
     async def fetch(self, query, *args):
         if "FROM public.place_translation" in query:
-            return [dict(value) for value in self.translations]
-        raise AssertionError(f"unexpected fetch: {query}")
+            return [dict(row) for row in self.translations]
+        if "FROM public.place" in query:
+            return [dict(self.place)]
+        raise AssertionError(f"unexpected fetch query: {query}")
 
-    async def execute(self, query, *args):
-        self.execute_count += 1
-        if self.fail_update and self.execute_count == 3:
-            raise RuntimeError("simulated final update failure")
-        normalized = " ".join(query.split())
-        if normalized.startswith("UPDATE public.place SET"):
-            self.place.update({"name": args[0], "short_description": args[1], "detailed_description": args[2]})
-        elif normalized.startswith("UPDATE public.place_translation SET"):
-            name, description, detailed_description, place_id, lang_code = args
+    async def fetchrow(self, query, *args):
+        self.update_calls.append((query, args))
+        if self.fail_on_update:
+            raise RuntimeError("synthetic mid-batch failure")
+        if self.return_zero_on_update:
+            return None
+        if "UPDATE public.place_translation" in query:
+            place_id, name, description, detailed, lang_code = args
             for row in self.translations:
                 if row["place_id"] == place_id and row["lang_code"] == lang_code:
-                    row.update({"name": name, "description": description, "detailed_description": detailed_description})
-                    break
-        else:
-            raise AssertionError(f"unexpected execute: {query}")
-        return "UPDATE 1"
-
-
-def _baseline() -> BaselineRecord:
-    return BaselineRecord(
-        place_id="place-1",
-        province_id=APPROVED_PROVINCES[0],
-        name="Sông Hương",
-        short_description="Old place short",
-        detailed_description="Old place detail",
-        created_at="created",
-        updated_at="updated",
-        vi=TranslationBaseline(
-            id="vi-1", place_id="place-1", lang_code="vi", name="Sông Hương",
-            description="Old vi short", detailed_description="Old vi detail", created_at="v-created", updated_at="v-updated",
-        ),
-        en=TranslationBaseline(
-            id="en-1", place_id="place-1", lang_code="en", name="Huong River",
-            description="Old en short", detailed_description="Old en detail", created_at="e-created", updated_at="e-updated",
-        ),
-    )
-
-
-def _proposal(baseline, *, decision="approve"):
-    content = GeneratedContent(
-        short_description_vi=_words("vi", 20),
-        detailed_description_vi=_words("vdetail", 90),
-        short_description_en=_words("en", 20),
-        detailed_description_en=_words("edetail", 90),
-        confidence=0.95,
-    )
-    return Proposal(
-        place_id=baseline.place_id,
-        province_id=baseline.province_id,
-        baseline_hash=editable_hash(baseline),
-        current_name_vi=baseline.vi.name,
-        proposed_name_vi=baseline.vi.name,
-        current_name_en=baseline.en.name,
-        proposed_name_en=baseline.en.name,
-        content=content,
-        reviewer_decision=decision,
-        validation=ValidationResult(valid=True),
-    )
+                    row.update(name=name, description=description, detailed_description=detailed, updated_at=self.next_timestamp)
+                    return dict(row)
+            return None
+        if "UPDATE public.place" in query:
+            place_id, name, short_description, detailed_description = args
+            if self.place["id_place"] != place_id:
+                return None
+            self.place.update(
+                name=name,
+                short_description=short_description,
+                detailed_description=detailed_description,
+                updated_at=self.next_timestamp,
+            )
+            return dict(self.place)
+        raise AssertionError(f"unexpected fetchrow query: {query}")
 
 
 class PlaceContentApplyTest(unittest.TestCase):
-    def test_live_datetime_hash_is_serializable(self):
-        baseline = _baseline()
-        place = {
-            "name": baseline.name,
-            "short_description": baseline.short_description,
-            "detailed_description": baseline.detailed_description,
-            "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
-            "updated_at": datetime(2026, 1, 2, tzinfo=timezone.utc),
-        }
-        translations = {
-            "vi": {
-                "name": baseline.vi.name,
-                "description": baseline.vi.description,
-                "detailed_description": baseline.vi.detailed_description,
-                "created_at": datetime(2026, 1, 3, tzinfo=timezone.utc),
-                "updated_at": datetime(2026, 1, 4, tzinfo=timezone.utc),
-            },
-            "en": {
-                "name": baseline.en.name,
-                "description": baseline.en.description,
-                "detailed_description": baseline.en.detailed_description,
-                "created_at": datetime(2026, 1, 5, tzinfo=timezone.utc),
-                "updated_at": datetime(2026, 1, 6, tzinfo=timezone.utc),
-            },
+    def test_editable_hash_accepts_database_datetime_values(self):
+        record = {
+            "place_name": "Chùa Thiên Mụ",
+            "place_short_description": "Mô tả ngắn",
+            "vi_name": "Chùa Thiên Mụ",
+            "vi_description": "Mô tả ngắn",
+            "en_name": "Thiên Mụ Pagoda",
+            "en_description": "Short description",
+            "updated_at": datetime(2026, 8, 12, tzinfo=timezone.utc),
+            "translation_updated_at_vi": datetime(2026, 8, 12, tzinfo=timezone.utc),
+            "translation_updated_at_en": datetime(2026, 8, 12, tzinfo=timezone.utc),
         }
 
-        self.assertIsInstance(editable_hash(_live_hash_payload(place, translations)), str)
+        self.assertIsInstance(editable_hash(record), str)
 
-    def test_successful_apply_writes_nine_value_rollback_payload(self):
-        async def run():
-            baseline = _baseline()
-            conn = _Connection(baseline)
-            artifact = _Artifact()
-            result = await apply_approved_batch(
-                conn,
-                [_proposal(baseline)],
-                {baseline.place_id: baseline},
-                artifact_store=artifact,
-                confirm=True,
+    def manifest(self, *, place_ids=("place-1",)):
+        return RunManifest(
+            run_id="20260810-120000-abcdef12",
+            province_ids=(PROVINCE_ID,),
+            place_ids=place_ids,
+            expected_total=APPROVED_PROVINCES[PROVINCE_ID],
+        )
+
+    def test_cli_confirmation_gate_exits_before_connection_creation(self):
+        from scripts.place_content_backfill.cli import main
+
+        with self.assertRaises(SystemExit) as raised:
+            main(["apply", "--run-id", "20260810-120000-abcdef12", "--all"])
+        self.assertEqual(raised.exception.code, 2)
+
+    def test_apply_success_writes_recovery_and_applied_artifacts(self):
+        async def scenario():
+            connection = FakeConnection()
+            with tempfile.TemporaryDirectory() as tmp:
+                store = ArtifactStore(Path(tmp), "20260810-120000-abcdef12")
+                result = await apply_approved_batch(
+                    connection,
+                    (apply_item(),),
+                    store,
+                    manifest=self.manifest(),
+                    batch_id="batch-1",
+                    approved_place_ids={"place-1"},
+                )
+                self.assertEqual(result["applied"], 1)
+                self.assertEqual(connection.commits, 1)
+                self.assertEqual(len(list(store.iter_stream("rollback"))), 1)
+                self.assertEqual(len(list(store.iter_stream("applied"))), 1)
+                self.assertEqual(len(connection.update_calls), 3)
+
+        asyncio.run(scenario())
+
+    def test_apply_refuses_baseline_conflict_before_update(self):
+        async def scenario():
+            connection = FakeConnection()
+            connection.place["short_description"] = "changed by admin"
+            with tempfile.TemporaryDirectory() as tmp:
+                with self.assertRaises(ApplyConflict):
+                    await apply_approved_batch(
+                        connection,
+                        (apply_item(),),
+                        ArtifactStore(Path(tmp), "20260810-120000-abcdef12"),
+                        manifest=self.manifest(),
+                        batch_id="batch-1",
+                        approved_place_ids={"place-1"},
+                    )
+            self.assertEqual(connection.update_calls, [])
+            self.assertEqual(connection.rollbacks, 1)
+
+        asyncio.run(scenario())
+
+    def test_apply_refuses_missing_or_duplicate_translation(self):
+        for translations in (live_translations()[:1], live_translations() + [dict(live_translations()[0], id="duplicate")]):
+            async def scenario(translations=translations):
+                connection = FakeConnection(translations=translations)
+                with tempfile.TemporaryDirectory() as tmp:
+                    with self.assertRaises(ApplyIntegrityError):
+                        await apply_approved_batch(
+                            connection,
+                            (apply_item(),),
+                            ArtifactStore(Path(tmp), "20260810-120000-abcdef12"),
+                            manifest=self.manifest(),
+                            batch_id="batch-1",
+                            approved_place_ids={"place-1"},
+                        )
+                self.assertEqual(connection.update_calls, [])
+            asyncio.run(scenario())
+
+    def test_apply_mid_batch_exception_rolls_back_and_leaves_no_applied_record(self):
+        async def scenario():
+            connection = FakeConnection()
+            connection.fail_on_update = True
+            with tempfile.TemporaryDirectory() as tmp:
+                store = ArtifactStore(Path(tmp), "20260810-120000-abcdef12")
+                with self.assertRaises(RuntimeError):
+                    await apply_approved_batch(
+                        connection,
+                        (apply_item(),),
+                        store,
+                        manifest=self.manifest(),
+                        batch_id="batch-1",
+                        approved_place_ids={"place-1"},
+                    )
+                self.assertEqual(list(store.iter_stream("applied")), [])
+                self.assertEqual(len(list(store.iter_stream("rollback"))), 1)
+                self.assertEqual(connection.rollbacks, 1)
+
+        asyncio.run(scenario())
+
+    def test_apply_zero_row_update_rolls_back(self):
+        async def scenario():
+            connection = FakeConnection()
+            connection.return_zero_on_update = True
+            with tempfile.TemporaryDirectory() as tmp:
+                store = ArtifactStore(Path(tmp), "20260810-120000-abcdef12")
+                with self.assertRaises(ApplyIntegrityError):
+                    await apply_approved_batch(
+                        connection,
+                        (apply_item(),),
+                        store,
+                        manifest=self.manifest(),
+                        batch_id="batch-1",
+                        approved_place_ids={"place-1"},
+                    )
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertEqual(list(store.iter_stream("applied")), [])
+
+        asyncio.run(scenario())
+
+    def test_recovery_reconciles_commit_when_applied_marker_append_fails(self):
+        class FailingAppliedStore(ArtifactStore):
+            def __init__(self, root, run_id):
+                super().__init__(root, run_id)
+                self.failed = False
+
+            def append_jsonl(self, stream, record):
+                if stream == "applied" and not self.failed:
+                    self.failed = True
+                    raise OSError("synthetic post-commit artifact failure")
+                return super().append_jsonl(stream, record)
+
+        async def scenario():
+            connection = FakeConnection()
+            with tempfile.TemporaryDirectory() as tmp:
+                store = FailingAppliedStore(Path(tmp), "20260810-120000-abcdef12")
+                with self.assertRaises(OSError):
+                    await apply_approved_batch(
+                        connection,
+                        (apply_item(),),
+                        store,
+                        manifest=self.manifest(),
+                        batch_id="batch-1",
+                        approved_place_ids={"place-1"},
+                    )
+                self.assertEqual(connection.commits, 1)
+                recovery = await recover_post_commit_artifacts(
+                    connection,
+                    store,
+                    batch_id="batch-1",
+                )
+                self.assertEqual(recovery, {"recovered": 1, "unresolved": 0})
+                self.assertEqual(len(list(store.iter_stream("applied"))), 1)
+
+        asyncio.run(scenario())
+
+    def test_apply_rejects_batch_of_51_before_transaction(self):
+        async def scenario():
+            connection = FakeConnection()
+            with tempfile.TemporaryDirectory() as tmp:
+                with self.assertRaises(ApplyIntegrityError):
+                    await apply_approved_batch(
+                        connection,
+                        (apply_item() for _ in range(51)),
+                        ArtifactStore(Path(tmp), "20260810-120000-abcdef12"),
+                        manifest=self.manifest(),
+                        batch_id="batch-1",
+                        approved_place_ids={"place-1"},
+                    )
+            self.assertEqual(connection.transaction_count, 0)
+
+        asyncio.run(scenario())
+
+    def test_rollback_refuses_later_admin_edit(self):
+        async def scenario():
+            connection = FakeConnection()
+            with tempfile.TemporaryDirectory() as tmp:
+                store = ArtifactStore(Path(tmp), "20260810-120000-abcdef12")
+                await apply_approved_batch(
+                    connection,
+                    (apply_item(),),
+                    store,
+                    manifest=self.manifest(),
+                    batch_id="batch-1",
+                    approved_place_ids={"place-1"},
+                )
+                connection.place["short_description"] = "later admin edit"
+                with self.assertRaises(RollbackConflict):
+                    await rollback_applied_batch(
+                        connection,
+                        store,
+                        manifest=self.manifest(),
+                        selector={"batch_id": "batch-1"},
+                    )
+
+        asyncio.run(scenario())
+
+    def test_selection_rejects_unresolved_rejected_outside_scope_and_unknown_selector(self):
+        item = apply_item()
+        with self.assertRaises(ApplyIntegrityError):
+            validate_apply_selection(self.manifest(), (item,), approved_place_ids=set())
+        rejected = ApplyItem(
+            proposal=item.proposal,
+            baseline=item.baseline,
+            source_snapshot=item.source_snapshot,
+            review_decision=ReviewDecision(place_id="place-1", decision="reject"),
+        )
+        with self.assertRaises(ApplyIntegrityError):
+            validate_apply_selection(self.manifest(), (rejected,), approved_place_ids={"place-1"})
+        outside = item.baseline.model_copy(update={"province_id": "outside"})
+        with self.assertRaises(ApplyIntegrityError):
+            validate_apply_selection(
+                self.manifest(),
+                (ApplyItem(item.proposal, outside, item.source_snapshot, item.review_decision),),
+                approved_place_ids={"place-1"},
             )
-            self.assertEqual(result.applied_place_ids, ("place-1",))
-            self.assertTrue(conn.committed)
-            rollback = [value for stream, value in artifact.values if stream == "rollback"][0]
-            self.assertEqual(set(rollback["prior"]["place"]), {"name", "short_description", "detailed_description"})
-            self.assertEqual(set(rollback["prior"]["vi"]), {"name", "description", "detailed_description"})
-            self.assertEqual(set(rollback["prior"]["en"]), {"name", "description", "detailed_description"})
-
-        asyncio.run(run())
-
-    def test_safety_guards_happen_before_transaction(self):
-        async def run():
-            baseline = _baseline()
-            conn = _Connection(baseline)
-            with self.assertRaises(ValueError):
-                await apply_approved_batch(conn, [_proposal(baseline)], {baseline.place_id: baseline}, confirm=False)
-            self.assertFalse(conn.transaction_started)
-            unapproved = _proposal(baseline, decision="reject")
-            with self.assertRaises(ValueError):
-                await apply_approved_batch(conn, [unapproved], {baseline.place_id: baseline}, confirm=True)
-            self.assertFalse(conn.transaction_started)
-
-        asyncio.run(run())
-
-    def test_hash_conflict_missing_translation_and_update_failure_roll_back(self):
-        async def run():
-            baseline = _baseline()
-            for conn in (_Connection(baseline, changed=True), _Connection(baseline, missing_translation=True), _Connection(baseline, fail_update=True)):
-                artifact = _Artifact()
-                with self.assertRaises(Exception):
-                    await apply_approved_batch(conn, [_proposal(baseline)], {baseline.place_id: baseline}, artifact_store=artifact, confirm=True)
-                self.assertTrue(conn.rolled_back)
-                self.assertFalse(any(stream == "applied" for stream, _ in artifact.values))
-
-        asyncio.run(run())
-
-    def test_batch_size_and_rollback_preserve_later_edits(self):
-        async def run():
-            baseline = _baseline()
-            conn = _Connection(baseline)
-            artifact = _Artifact()
-            applied = await apply_approved_batch(conn, [_proposal(baseline)], {baseline.place_id: baseline}, artifact_store=artifact, confirm=True)
-            entry = [value for stream, value in artifact.values if stream == "rollback"][0]
-            restored = await rollback_applied_batch(conn, [entry], artifact_store=artifact, confirm=True, all_entries=True)
-            self.assertEqual(restored, ("place-1",))
-
-            # A second apply followed by a later edit must be refused.
-            conn = _Connection(baseline)
-            artifact = _Artifact()
-            await apply_approved_batch(conn, [_proposal(baseline)], {baseline.place_id: baseline}, artifact_store=artifact, confirm=True)
-            entry = [value for stream, value in artifact.values if stream == "rollback"][0]
-            conn.place["name"] = "Edited after apply"
-            with self.assertRaises(ValueError):
-                await rollback_applied_batch(conn, [entry], artifact_store=artifact, confirm=True, all_entries=True)
-
-            too_many = [_proposal(baseline) for _ in range(51)]
-            with self.assertRaises(ValueError):
-                await apply_approved_batch(_Connection(baseline), too_many, {baseline.place_id: baseline}, confirm=True)
-
-        asyncio.run(run())
+        with self.assertRaises(ValueError):
+            validate_apply_selection(
+                self.manifest(),
+                (item,),
+                approved_place_ids={"place-1"},
+                selector={"unknown": "value"},
+            )
 
 
 if __name__ == "__main__":

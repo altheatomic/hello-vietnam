@@ -1,65 +1,74 @@
+import csv
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from scripts.place_content_backfill.artifacts import ArtifactStore
-from scripts.place_content_backfill.models import Proposal, RunManifest
-from scripts.place_content_backfill.constants import APPROVED_PROVINCES
+from scripts.place_content_backfill.artifacts import (
+    ArtifactStore,
+    SecretArtifactError,
+)
 
 
 class PlaceContentArtifactsTest(unittest.TestCase):
-    def _manifest(self):
-        return RunManifest.new(list(APPROVED_PROVINCES))
-
-    def test_jsonl_append_read_and_resume(self):
-        with tempfile.TemporaryDirectory() as directory:
-            store = ArtifactStore(Path(directory), "run-1")
-            store.append("baseline", {"place_id": "p1", "name": "Địa điểm"})
-            store.append("baseline", {"place_id": "p2", "name": "Place 2"})
-            self.assertEqual(store.read_all("baseline")[0]["name"], "Địa điểm")
-            self.assertEqual(store.completed_place_ids("baseline"), {"p1", "p2"})
-
-    def test_manifest_replacement_is_valid_json(self):
-        with tempfile.TemporaryDirectory() as directory:
-            store = ArtifactStore(Path(directory), "run-1")
-            store.write_manifest(self._manifest())
-            first = json.loads((store.path / "manifest.json").read_text(encoding="utf-8"))
-            store.write_manifest(self._manifest().model_copy(update={"status": "collecting"}))
-            second = json.loads((store.path / "manifest.json").read_text(encoding="utf-8"))
-            self.assertNotEqual(first["status"], second["status"])
-
-    def test_secret_shaped_payload_is_rejected_recursively(self):
-        with tempfile.TemporaryDirectory() as directory:
-            store = ArtifactStore(Path(directory), "run-1")
-            with self.assertRaises(ValueError):
-                store.append("sources", {"nested": {"DEEPSEEK_API_KEY": "secret"}})
-            with self.assertRaises(ValueError):
-                store.append("sources", {"url": "postgresql://user:password@example"})
-
-    def test_review_csv_has_operator_columns(self):
-        with tempfile.TemporaryDirectory() as directory:
-            store = ArtifactStore(Path(directory), "run-1")
-            proposal = Proposal(
-                place_id="p1",
-                province_id=APPROVED_PROVINCES[0],
-                baseline_hash="hash",
-                current_name_vi="Tên cũ",
-                proposed_name_vi="Tên mới",
-                current_name_en="Old name",
-                proposed_name_en="New name",
+    def test_utf8_jsonl_append_iteration_and_resume(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ArtifactStore(Path(tmp), "20260810-120000-abcdef12")
+            store.append_jsonl(
+                "baseline",
+                {"place_id": "place-1", "input_hash": "hash-1", "name": "Sông Hương"},
             )
-            path = store.write_review_csv([proposal])
-            text = path.read_text(encoding="utf-8")
-            self.assertIn("reviewer_decision", text)
-            self.assertIn("p1", text)
+            store.append_jsonl(
+                "baseline",
+                {"place_id": "place-2", "input_hash": "hash-2", "name": "Chùa Thiên Mụ"},
+            )
+            self.assertEqual(
+                [row["name"] for row in store.iter_stream("baseline")],
+                ["Sông Hương", "Chùa Thiên Mụ"],
+            )
+            self.assertEqual(
+                store.completed_place_ids("baseline", input_hash="hash-1"),
+                {"place-1"},
+            )
 
-    def test_replace_stream_is_idempotent_for_revalidation(self):
-        with tempfile.TemporaryDirectory() as directory:
-            store = ArtifactStore(Path(directory), "run-1")
-            store.append("approved", {"place_id": "p1", "value": "old"})
-            store.replace_stream("approved", [{"place_id": "p2", "value": "new"}])
-            self.assertEqual(store.read_all("approved"), [{"place_id": "p2", "value": "new"}])
+    def test_manifest_replacement_is_atomic_and_fsynced(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ArtifactStore(Path(tmp), "20260810-120000-abcdef12")
+            with patch("scripts.place_content_backfill.artifacts.os.replace", wraps=os.replace) as replace:
+                with patch("scripts.place_content_backfill.artifacts.os.fsync", wraps=os.fsync) as fsync:
+                    store.write_manifest({"run_id": "20260810-120000-abcdef12", "count": 2})
+            self.assertTrue(replace.called)
+            expected_fsyncs = 1 if os.name == "nt" else 2
+            self.assertGreaterEqual(fsync.call_count, expected_fsyncs)
+            manifest = json.loads(store.path("manifest").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["count"], 2)
+
+    def test_review_csv_round_trip_is_streaming(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ArtifactStore(Path(tmp), "20260810-120000-abcdef12")
+            rows = (
+                {"place_id": "place-1", "current_name": "Sông Hương", "reviewer_decision": "approve"},
+                {"place_id": "place-2", "current_name": "Chùa Thiên Mụ", "reviewer_decision": "edit"},
+            )
+            store.export_review_csv(
+                rows,
+                fieldnames=("current_name", "place_id", "reviewer_decision"),
+            )
+            imported = list(store.iter_review_csv())
+            self.assertEqual(imported[0]["current_name"], "Sông Hương")
+            self.assertEqual(imported[1]["reviewer_decision"], "edit")
+            with store.path("needs-review").open(encoding="utf-8", newline="") as handle:
+                self.assertEqual(next(csv.reader(handle)), ["current_name", "place_id", "reviewer_decision"])
+
+    def test_recursive_secret_shaped_keys_and_values_are_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = ArtifactStore(Path(tmp), "20260810-120000-abcdef12")
+            with self.assertRaises(SecretArtifactError):
+                store.append_jsonl("sources", {"headers": {"Authorization": "Bearer secret"}})
+            with self.assertRaises(SecretArtifactError):
+                store.append_jsonl("sources", {"value": "SUPABASE_SERVICE_ROLE_KEY=not-placeholder"})
 
 
 if __name__ == "__main__":

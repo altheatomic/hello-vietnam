@@ -1,83 +1,177 @@
-"""Deterministic validation and human-review reconciliation for proposals."""
-
 from __future__ import annotations
 
 import csv
+from collections import defaultdict
 import re
-import unicodedata
-from difflib import SequenceMatcher
+import sqlite3
+import tempfile
 from pathlib import Path
-from typing import Iterable, Mapping, Sequence
+from typing import Any, Callable, Iterable, Mapping
 
+from .artifacts import ArtifactStore, _reject_secrets
+from .constants import PROVINCE_NAMES
 from .models import (
     BaselineRecord,
-    GeneratedContent,
     Proposal,
-    SourceFact,
+    ReviewDecision,
     SourceSnapshot,
     ValidationResult,
 )
 
 
-_WORD = re.compile(r"[^\W_]+(?:['’/-][^\W_]+)*", re.UNICODE)
-_NUMBER = re.compile(r"(?<![A-Za-z])\d+(?:[.,]\d+)?(?![A-Za-z])")
-_MARKUP = re.compile(r"(?:<[^>]+>|```|\[[^\]]+\]\([^)]*\)|(?:^|\s)[*_#>`])")
-_PLACEHOLDERS = re.compile(
-    r"\b(?:hihi|lorem ipsum|placeholder|tbd|todo|test(?:ing)?|demo|sample text|n/?a|unknown)\b",
+MIN_SHORT_WORDS = 20
+MAX_SHORT_WORDS = 45
+MIN_LONG_WORDS = 90
+MAX_LONG_WORDS = 160
+DUPLICATE_NGRAM_SIZE = 5
+DUPLICATE_THRESHOLD = 0.92
+
+_PLACEHOLDER_RE = re.compile(r"\b(?:lorem ipsum|placeholder|tbd|todo|n/?a)\b", re.IGNORECASE)
+_MARKUP_RE = re.compile(r"(?:<[^>]+>|```?|\[[^\]]+\]\([^\)]+\))")
+_INSTRUCTION_RE = re.compile(
+    r"(?:ignore previous instructions|system message|as an ai|developer message|"
+    r"follow these instructions|do not reveal)",
     re.IGNORECASE,
 )
-_INSTRUCTION = re.compile(
-    r"\b(?:ignore previous|system message|developer message|assistant:|user:|return json|output only|prompt injection)\b",
-    re.IGNORECASE,
-)
-_FORBIDDEN_LITERAL = re.compile(
-    r"\b(?:perfume river|forbidden(?: river| church| pagoda)?|interior surface)\b",
-    re.IGNORECASE,
-)
-_EN_GENERIC = frozenset(
-    {
-        "river",
-        "pagoda",
-        "market",
-        "mountain",
-        "church",
-        "parish",
-        "museum",
-        "airport",
-        "station",
-        "bus",
-        "beach",
-        "park",
-        "temple",
-        "bridge",
-        "lake",
+_NUMERIC_RE = re.compile(r"(?<![A-Za-z0-9])\d+(?:[.,]\d+)?(?![A-Za-z0-9])")
+_TOKEN_RE = re.compile(r"[\wÀ-ỹ]+", re.UNICODE)
+_FORBIDDEN_LITERAL_TRANSLATIONS = {
+    "Perfume River",
+    "Fragrant River",
+    "Incense River",
+}
+_CATEGORY_CONFLICTS = {
+    "chùa": ("airport", "airfield", "bus station"),
+    "pagoda": ("airport", "airfield", "bus station"),
+    "sân bay": ("pagoda", "museum", "temple"),
+    "airport": ("pagoda", "museum", "temple"),
+}
+
+
+def _normalized(text: str) -> str:
+    return " ".join(text.casefold().split())
+
+
+def _all_copy(proposal: Proposal) -> str:
+    generated = proposal.generated
+    return " ".join(
+        (
+            proposal.name_decision.en_name,
+            generated.vi_short,
+            generated.en_short,
+            generated.vi_long,
+            generated.en_long,
+        )
+    )
+
+
+def _five_grams(text: str) -> set[str]:
+    normalized = _normalized(text)
+    if not normalized:
+        return set()
+    if len(normalized) < DUPLICATE_NGRAM_SIZE:
+        return {normalized}
+    return {
+        normalized[index:index + DUPLICATE_NGRAM_SIZE]
+        for index in range(len(normalized) - DUPLICATE_NGRAM_SIZE + 1)
     }
-)
-_VI_GENERIC = frozenset(
-    {
-        "sông",
-        "chùa",
-        "chợ",
-        "núi",
-        "nhà",
-        "thờ",
-        "họ",
-        "đạo",
-        "bảo",
-        "tàng",
-        "sân",
-        "bay",
-        "ga",
-        "bến",
-        "xe",
-        "đền",
-        "cầu",
-        "hồ",
-        "bãi",
-        "công",
-        "viên",
-    }
-)
+
+
+def _source_text(sources: SourceSnapshot) -> str:
+    return " ".join(
+        f"{fact.claim} {fact.value or ''}" for fact in sources.facts
+    )
+
+
+def _validation_errors(
+    proposal: Proposal,
+    baseline: BaselineRecord,
+    sources: SourceSnapshot,
+) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = [
+        *sources.warnings,
+        *proposal.name_decision.warnings,
+        *proposal.generated.warnings,
+    ]
+    if proposal.place_id != baseline.place_id:
+        errors.append("place ID disagreement")
+    if proposal.province_id != baseline.province_id:
+        errors.append("province ID disagreement")
+    if proposal.baseline_input_hash != baseline.input_hash:
+        errors.append("baseline input hash disagreement")
+    if sources.place_id != baseline.place_id:
+        errors.append("source snapshot place ID disagreement")
+    if sources.baseline_input_hash != baseline.input_hash:
+        errors.append("source snapshot baseline hash disagreement")
+    decision = proposal.name_decision
+    if decision.place_id != baseline.place_id or decision.vi_name != baseline.vi_name:
+        errors.append("locked Vietnamese name disagreement")
+    if decision.confidence < 0.85:
+        warnings.append("naming confidence below 0.85")
+    if decision.review_only:
+        warnings.append("naming decision requires review")
+    if proposal.sparse_source or sources.sparse_source:
+        warnings.append("sparse source requires review")
+    if proposal.review_only:
+        warnings.append("proposal is review-only")
+    proposed_name = decision.en_name
+    name_tokens = {_normalized(token) for token in _TOKEN_RE.findall(proposed_name)}
+    for protected in decision.protected_tokens:
+        if _normalized(protected) not in name_tokens:
+            errors.append(f"protected token loss: {protected}")
+    baseline_tokens = _TOKEN_RE.findall(baseline.vi_name)
+    for token in baseline_tokens:
+        if token.isdigit() or (len(token) >= 2 and token.isupper()):
+            if _normalized(token) not in name_tokens:
+                errors.append(f"changed digit/acronym/brand token: {token}")
+    if decision.rule_id == "preserve-proper-name" and decision.en_name != baseline.vi_name:
+        errors.append("brand/proper name was changed")
+
+    for field_name, minimum, maximum in (
+        ("vi_short", MIN_SHORT_WORDS, MAX_SHORT_WORDS),
+        ("en_short", MIN_SHORT_WORDS, MAX_SHORT_WORDS),
+        ("vi_long", MIN_LONG_WORDS, MAX_LONG_WORDS),
+        ("en_long", MIN_LONG_WORDS, MAX_LONG_WORDS),
+    ):
+        value = getattr(proposal.generated, field_name)
+        if not value or not value.strip():
+            errors.append(f"{field_name} is empty")
+            continue
+        count = len(value.split())
+        if count < minimum or count > maximum:
+            errors.append(f"{field_name} word count outside {minimum}-{maximum}")
+        if _PLACEHOLDER_RE.search(value):
+            errors.append(f"{field_name} contains a placeholder")
+        if _MARKUP_RE.search(value):
+            errors.append(f"{field_name} contains Markdown or HTML")
+        if _INSTRUCTION_RE.search(value):
+            errors.append(f"{field_name} contains an instruction fragment")
+
+    copy_text = _all_copy(proposal)
+    for forbidden in _FORBIDDEN_LITERAL_TRANSLATIONS:
+        if forbidden.casefold() in copy_text.casefold():
+            errors.append(f"forbidden literal translation: {forbidden}")
+    evidence = _source_text(sources)
+    unsupported_numbers = set(_NUMERIC_RE.findall(copy_text)) - set(_NUMERIC_RE.findall(evidence))
+    if unsupported_numbers:
+        errors.append("unreferenced numeric claim")
+    known_fact_ids = {fact.fact_id for fact in sources.facts}
+    if not set(proposal.generated.fact_ids).issubset(known_fact_ids):
+        errors.append("generated fact ID is not in source snapshot")
+
+    copy_lower = copy_text.casefold()
+    for province_id, province_name in PROVINCE_NAMES.items():
+        if province_id != baseline.province_id and province_name.casefold() in copy_lower:
+            errors.append("province disagreement")
+    category_text = " ".join(
+        value for value in (baseline.subcategory_name, baseline.subcategory_category) if value
+    ).casefold()
+    for marker, conflicts in _CATEGORY_CONFLICTS.items():
+        if marker in category_text and any(conflict in copy_lower for conflict in conflicts):
+            errors.append("category/name disagreement")
+            break
+    return list(dict.fromkeys(errors)), list(dict.fromkeys(warnings))
 
 
 def validate_proposal(
@@ -85,343 +179,310 @@ def validate_proposal(
     baseline: BaselineRecord,
     sources: SourceSnapshot,
 ) -> ValidationResult:
-    """Validate a proposal without an LLM judge or database side effect."""
-
-    errors: list[str] = []
-    warnings: list[str] = list(sources.warnings)
-    flags: list[str] = []
-    if proposal.place_id != baseline.place_id or sources.place_id != baseline.place_id:
-        errors.append("place identity mismatch")
-        return ValidationResult(valid=False, errors=tuple(errors), warnings=tuple(warnings), flags=("identity",))
-    content = proposal.content
-    if content is None:
-        errors.append("missing generated content")
-        return ValidationResult(valid=False, errors=tuple(errors), warnings=tuple(warnings), flags=("missing_content",))
-
-    _validate_names(proposal, baseline, errors, flags)
-    _validate_content_shape(content, errors, flags)
-    _validate_facts(proposal, content, sources, errors, flags)
-    _validate_claims(content, sources, errors, flags)
-    _validate_category_and_province(content, baseline, sources, errors, flags)
-    if content.confidence < 0.85:
-        errors.append("confidence below auto-apply threshold 0.85")
-        flags.append("low_confidence")
+    errors, warnings = _validation_errors(proposal, baseline, sources)
     return ValidationResult(
-        valid=not errors,
-        errors=tuple(_unique(errors)),
-        warnings=tuple(_unique(warnings)),
-        flags=tuple(_unique(flags)),
+        place_id=proposal.place_id,
+        proposal_hash=proposal.proposal_hash,
+        passed=not errors,
+        errors=tuple(errors),
+        warnings=tuple(warnings),
+        review_only=bool(warnings) or proposal.review_only,
     )
 
 
-def find_near_duplicates(proposals: Sequence[Proposal]) -> dict[str, list[str]]:
-    """Find deterministic near-duplicate generated descriptions.
+def validate_worker(
+    items: Iterable[tuple[Proposal, BaselineRecord, SourceSnapshot]],
+    artifact_store: ArtifactStore,
+    *,
+    max_places: int = 100,
+) -> int:
+    """Validate one bounded worker chunk and fsync each result immediately."""
 
-    Similarity is a character 5-gram Jaccard score, with a sequence-ratio
-    fallback for very short text.  Punctuation and address-only suffixes are
-    ignored so an operator cannot bypass review with formatting changes.
-    """
+    if max_places <= 0:
+        raise ValueError("max_places must be positive")
+    count = 0
+    for proposal, baseline, sources in items:
+        count += 1
+        if count > max_places:
+            raise ValueError(f"validate worker received more than {max_places} proposals")
+        result = validate_proposal(proposal, baseline, sources)
+        artifact_store.append_jsonl("validations", result.model_dump(mode="json"))
+    return count
 
-    duplicates: dict[str, set[str]] = {}
-    for index, left in enumerate(proposals):
-        for right in proposals[index + 1 :]:
-            if left.place_id == right.place_id:
-                continue
-            if _proposal_similarity(left, right) >= 0.92:
-                duplicates.setdefault(left.place_id, set()).add(right.place_id)
-                duplicates.setdefault(right.place_id, set()).add(left.place_id)
-    return {place_id: sorted(values) for place_id, values in sorted(duplicates.items())}
+
+def find_near_duplicates(
+    texts: Mapping[str, str],
+    *,
+    threshold: float = DUPLICATE_THRESHOLD,
+    chunk_size: int = 200,
+    sqlite_path: str | Path | None = None,
+) -> dict[str, tuple[str, ...]]:
+    """Find similar text via a temporary SQLite gram index, never a matrix."""
+
+    return find_near_duplicates_stream(
+        texts.items(),
+        threshold=threshold,
+        chunk_size=chunk_size,
+        sqlite_path=sqlite_path,
+    )
+
+
+def find_near_duplicates_stream(
+    texts: Iterable[tuple[str, str]],
+    *,
+    threshold: float = DUPLICATE_THRESHOLD,
+    chunk_size: int = 200,
+    sqlite_path: str | Path | None = None,
+) -> dict[str, tuple[str, ...]]:
+    """Index a text iterator in bounded chunks and compare through SQLite."""
+
+    if not 0 < threshold <= 1:
+        raise ValueError("threshold must be in (0, 1]")
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be positive")
+    temporary_directory: tempfile.TemporaryDirectory[str] | None = None
+    if sqlite_path is None:
+        temporary_directory = tempfile.TemporaryDirectory(prefix="place-content-duplicates-")
+        database_path = Path(temporary_directory.name) / "signatures.sqlite3"
+    else:
+        database_path = Path(sqlite_path)
+        database_path.parent.mkdir(parents=True, exist_ok=True)
+    result: dict[str, set[str]] = defaultdict(set)
+    try:
+        connection = sqlite3.connect(database_path)
+        try:
+            connection.execute("create table grams(place_id text not null, gram text not null, primary key(place_id, gram))")
+            connection.execute("create index grams_by_gram on grams(gram)")
+            connection.execute("create table gram_counts(place_id text primary key, count integer not null)")
+            chunk: list[tuple[str, str]] = []
+
+            def write_chunk(values: list[tuple[str, str]]) -> None:
+                rows = []
+                counts = []
+                for place_id, text in values:
+                    grams = _five_grams(text)
+                    rows.extend((place_id, gram) for gram in grams)
+                    counts.append((place_id, len(grams)))
+                connection.executemany("insert into grams(place_id, gram) values (?, ?)", rows)
+                connection.executemany("insert into gram_counts(place_id, count) values (?, ?)", counts)
+                connection.commit()
+
+            for place_id, text in texts:
+                chunk.append((str(place_id), text))
+                if len(chunk) == chunk_size:
+                    write_chunk(chunk)
+                    chunk.clear()
+            if chunk:
+                write_chunk(chunk)
+
+            for (place_id,) in connection.execute("select place_id from gram_counts order by place_id"):
+                grams = [row[0] for row in connection.execute("select gram from grams where place_id = ?", (place_id,))]
+                if not grams:
+                    continue
+                common_by_candidate: dict[str, int] = defaultdict(int)
+                for start in range(0, len(grams), chunk_size):
+                    placeholders = ",".join("?" for _ in grams[start:start + chunk_size])
+                    query = (
+                        "select place_id, count(*) from grams "
+                        f"where gram in ({placeholders}) and place_id <> ? group by place_id"
+                    )
+                    params = [*grams[start:start + chunk_size], place_id]
+                    for candidate, common in connection.execute(query, params):
+                        common_by_candidate[candidate] += int(common)
+                own_count = len(grams)
+                for candidate, common in common_by_candidate.items():
+                    other_count = connection.execute(
+                        "select count from gram_counts where place_id = ?", (candidate,)
+                    ).fetchone()[0]
+                    union = own_count + other_count - common
+                    similarity = common / union if union else 0.0
+                    if similarity >= threshold:
+                        result[place_id].add(candidate)
+                        result[candidate].add(place_id)
+        finally:
+            connection.close()
+    finally:
+        if temporary_directory is not None:
+            temporary_directory.cleanup()
+    return {place_id: tuple(sorted(values)) for place_id, values in result.items()}
+
+
+class ReviewImportError(ValueError):
+    pass
+
+
+def validate_edited_fields(
+    proposal: Proposal,
+    baseline: BaselineRecord,
+    sources: SourceSnapshot,
+    edited_fields: Mapping[str, str],
+) -> bool:
+    """Apply reviewer edits to an immutable proposal and rerun all validators."""
+
+    generated_updates: dict[str, str] = {}
+    name_updates: dict[str, str] = {}
+    field_map = {
+        "proposed_vi_name": (name_updates, "vi_name"),
+        "proposed_en_name": (name_updates, "en_name"),
+        "proposed_vi_description": (generated_updates, "vi_short"),
+        "proposed_en_description": (generated_updates, "en_short"),
+        "proposed_vi_detailed_description": (generated_updates, "vi_long"),
+        "proposed_en_detailed_description": (generated_updates, "en_long"),
+    }
+    for field_name, value in edited_fields.items():
+        target = field_map.get(field_name)
+        if target is None:
+            return False
+        if not isinstance(value, str) or not value.strip():
+            return False
+        destination, destination_name = target
+        destination[destination_name] = value
+    edited_proposal = proposal.model_copy(
+        update={
+            "name_decision": proposal.name_decision.model_copy(update=name_updates),
+            "generated": proposal.generated.model_copy(update=generated_updates),
+        }
+    )
+    return validate_proposal(edited_proposal, baseline, sources).passed
 
 
 def import_review_csv(
-    path: Path,
-    proposals: Sequence[Proposal],
+    store: ArtifactStore,
+    csv_path: str | Path,
     *,
-    baselines: Mapping[str, BaselineRecord] | None = None,
-    sources: Mapping[str, SourceSnapshot] | None = None,
-) -> list[Proposal]:
-    """Apply operator decisions from the exported CSV.
+    validate_edit: Callable[[str, Mapping[str, str]], bool] | None = None,
+) -> int:
+    """Append one validated human decision at a time."""
 
-    ``edit`` rows must be revalidated with the matching immutable baseline and
-    source snapshot.  Unknown decisions, duplicate IDs, or unknown places fail
-    closed before returning any updated proposals.
-    """
-
-    by_id = {proposal.place_id: proposal for proposal in proposals}
-    if len(by_id) != len(proposals):
-        raise ValueError("proposal list contains duplicate place IDs")
-    updated = dict(by_id)
-    seen: set[str] = set()
-    with Path(path).open("r", encoding="utf-8", newline="") as handle:
+    count = 0
+    with Path(csv_path).open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
-        if not reader.fieldnames or "place_id" not in reader.fieldnames:
-            raise ValueError("review CSV must include place_id")
         for row in reader:
+            _reject_secrets(row)
             place_id = str(row.get("place_id") or "").strip()
             decision = str(row.get("reviewer_decision") or "").strip().lower()
-            if not place_id or place_id not in by_id:
-                raise ValueError("review CSV contains unknown place_id")
-            if place_id in seen:
-                raise ValueError("review CSV contains duplicate place_id")
-            if decision not in {"approve", "edit", "reject"}:
-                raise ValueError("reviewer_decision must be approve, edit, or reject")
-            seen.add(place_id)
-            proposal = by_id[place_id]
-            changes = {
-                "reviewer_decision": decision,
-                "reviewer_notes": (row.get("reviewer_notes") or "").strip() or None,
+            if not place_id or decision not in {"approve", "edit", "reject"}:
+                raise ReviewImportError("each review row needs a place_id and approve/edit/reject decision")
+            edited_fields = {
+                key: value
+                for key, value in row.items()
+                if key.startswith("proposed_") and value not in (None, "")
             }
+            unknown_edit_fields = set(edited_fields).difference(
+                {
+                    "proposed_vi_name",
+                    "proposed_en_name",
+                    "proposed_vi_description",
+                    "proposed_en_description",
+                    "proposed_vi_detailed_description",
+                    "proposed_en_detailed_description",
+                }
+            )
+            if unknown_edit_fields:
+                raise ReviewImportError(
+                    "edited fields are not part of the place content contract: "
+                    + ", ".join(sorted(unknown_edit_fields))
+                )
             if decision == "edit":
-                if baselines is None or sources is None or place_id not in baselines or place_id not in sources:
-                    raise ValueError("edited rows require baseline and source snapshots for revalidation")
-                content = proposal.content
-                if content is None:
-                    raise ValueError("edited row has no generated content")
-                required = (
-                    "short_description_vi",
-                    "detailed_description_vi",
-                    "short_description_en",
-                    "detailed_description_en",
-                )
-                if any(not str(row.get(field) or "").strip() for field in required):
-                    raise ValueError("edited row must contain all four descriptions")
-                edited_content = content.model_copy(
-                    update={field: str(row[field]).strip() for field in required}
-                )
-                changes.update(
-                    {
-                        "proposed_name_vi": str(row.get("proposed_name_vi") or proposal.proposed_name_vi or "").strip(),
-                        "proposed_name_en": str(row.get("proposed_name_en") or proposal.proposed_name_en or "").strip(),
-                        "content": edited_content,
-                    }
-                )
-            candidate = proposal.model_copy(update=changes)
-            if baselines is not None and sources is not None and place_id in baselines and place_id in sources:
-                result = validate_proposal(candidate, baselines[place_id], sources[place_id])
-                if not result.valid:
-                    raise ValueError(f"review decision for {place_id} fails validation: {'; '.join(result.errors)}")
-                candidate = candidate.model_copy(update={"validation": result})
-            updated[place_id] = candidate
-    return [updated[proposal.place_id] for proposal in proposals]
+                if validate_edit is None or not validate_edit(place_id, edited_fields):
+                    raise ReviewImportError(f"edited fields failed deterministic validation for {place_id}")
+            review = ReviewDecision(
+                place_id=place_id,
+                decision=decision,
+                notes=str(row.get("reviewer_notes") or ""),
+                edited_fields=edited_fields,
+            )
+            store.append_jsonl("review-decisions", review.model_dump(mode="json"))
+            count += 1
+    return count
 
 
-def _validate_names(proposal: Proposal, baseline: BaselineRecord, errors: list[str], flags: list[str]) -> None:
-    proposed_vi = (proposal.proposed_name_vi or baseline.vi.name or baseline.name or "").strip()
-    proposed_en = (proposal.proposed_name_en or baseline.en.name or "").strip()
-    if not proposed_vi:
-        errors.append("missing Vietnamese name")
-        flags.append("name")
-    elif _fold(proposed_vi) != _fold(baseline.name or baseline.vi.name or ""):
-        errors.append("Vietnamese source name changed")
-        flags.append("name")
-    if not proposed_en:
-        errors.append("missing English name")
-        flags.append("name")
-    if _FORBIDDEN_LITERAL.search(proposed_vi + " " + proposed_en):
-        errors.append("forbidden literal translation in name")
-        flags.append("name")
-    if proposed_en and not _name_identity_overlap(baseline.name or baseline.vi.name or "", proposed_en):
-        errors.append("English name disagrees with protected place identity")
-        flags.append("name")
-    if _protected_fragments(baseline.name or "") - _protected_fragments(proposed_vi):
-        errors.append("protected Vietnamese digits/acronyms changed")
-        flags.append("name")
-    if _protected_fragments(baseline.en.name or "") - _protected_fragments(proposed_en):
-        errors.append("protected English digits/acronyms changed")
-        flags.append("name")
-
-
-def _validate_content_shape(content: GeneratedContent, errors: list[str], flags: list[str]) -> None:
-    for field, low, high in (
-        ("short_description_vi", 20, 45),
-        ("short_description_en", 20, 45),
-        ("detailed_description_vi", 90, 160),
-        ("detailed_description_en", 90, 160),
-    ):
-        value = getattr(content, field).strip()
-        count = len(_WORD.findall(value))
-        if not value or not low <= count <= high:
-            errors.append(f"{field} must contain {low}-{high} words (got {count})")
-            flags.append("word_count")
-        if _MARKUP.search(value):
-            errors.append(f"{field} contains Markdown or HTML")
-            flags.append("markup")
-        if _PLACEHOLDERS.search(value):
-            errors.append(f"{field} contains placeholder text")
-            flags.append("placeholder")
-        if _INSTRUCTION.search(value):
-            errors.append(f"{field} contains model/instruction text")
-            flags.append("instruction")
-        if _FORBIDDEN_LITERAL.search(value):
-            errors.append(f"{field} contains forbidden literal translation")
-            flags.append("literal_translation")
-
-
-def _validate_facts(
+def _review_row(
     proposal: Proposal,
-    content: GeneratedContent,
-    sources: SourceSnapshot,
-    errors: list[str],
-    flags: list[str],
-) -> None:
-    known = {fact.fact_id for fact in sources.facts}
-    used = set(content.used_fact_ids)
-    if not used.issubset(known):
-        errors.append("used_fact_ids contains an unknown source fact")
-        flags.append("grounding")
-    if not set(proposal.source_fact_ids).issubset(known):
-        errors.append("proposal source_fact_ids contains an unknown source fact")
-        flags.append("grounding")
-    urls = {fact.source_url for fact in sources.facts if fact.fact_id in used}
-    if proposal.source_urls and not set(proposal.source_urls).issubset(urls):
-        errors.append("proposal source_urls are not backed by used facts")
-        flags.append("grounding")
-
-
-def _validate_claims(
-    content: GeneratedContent,
-    sources: SourceSnapshot,
-    errors: list[str],
-    flags: list[str],
-) -> None:
-    used = set(content.used_fact_ids)
-    allowed_numbers = {
-        _number_key(number)
-        for fact in sources.facts
-        if fact.fact_id in used
-        for number in _NUMBER.findall(fact.value)
-    }
-    for field in (
-        "short_description_vi",
-        "detailed_description_vi",
-        "short_description_en",
-        "detailed_description_en",
-    ):
-        for number in _NUMBER.findall(getattr(content, field)):
-            if _number_key(number) not in allowed_numbers:
-                errors.append(f"numeric claim in {field} is not grounded in a used fact")
-                flags.append("numeric_claim")
-
-
-def _validate_category_and_province(
-    content: GeneratedContent,
+    validation: ValidationResult,
     baseline: BaselineRecord,
-    sources: SourceSnapshot,
-    errors: list[str],
-    flags: list[str],
-) -> None:
-    text = " ".join(
-        getattr(content, field)
-        for field in (
-            "short_description_vi",
-            "detailed_description_vi",
-            "short_description_en",
-            "detailed_description_en",
-        )
-    )
-    category = " ".join(
-        value or "" for value in (baseline.subcategory_category, baseline.subcategory_name)
-    ).casefold()
-    # Only reject an explicit, source-backed category contradiction; generic
-    # travel prose is otherwise allowed to mention neighbouring features.
-    if any(term in category for term in ("restaurant", "food", "cafe")) and re.search(
-        r"\b(?:museum|pagoda|church|river|lake|mountain)\b", text, re.IGNORECASE
-    ) and not re.search(r"\b(?:restaurant|food|cafe|ẩm thực|quán)\b", text, re.IGNORECASE):
-        errors.append("description category disagrees with baseline category")
-        flags.append("category")
-    province_facts = [
-        fact.value for fact in sources.facts if "province" in fact.fact_id.casefold()
-    ]
-    if province_facts and not any(_fold(value) in _fold(text) for value in province_facts):
-        # A source may intentionally omit the province in copy; only flag an
-        # explicit different province token when one is present.
-        others = [value for value in province_facts if _fold(value) not in _fold(text)]
-        if others and any(_fold(value) in _fold(text) for value in others):
-            errors.append("description province disagrees with source")
-            flags.append("province")
-
-
-def _proposal_similarity(left: Proposal, right: Proposal) -> float:
-    left_text = _similarity_text(left)
-    right_text = _similarity_text(right)
-    if left_text == right_text:
-        return 1.0
-    left_grams = _grams(left_text)
-    right_grams = _grams(right_text)
-    if left_grams and right_grams:
-        return len(left_grams & right_grams) / len(left_grams | right_grams)
-    return SequenceMatcher(a=left_text, b=right_text).ratio()
-
-
-def _similarity_text(proposal: Proposal) -> str:
-    if proposal.content is None:
-        return ""
-    values = (
-        proposal.content.short_description_vi,
-        proposal.content.detailed_description_vi,
-        proposal.content.short_description_en,
-        proposal.content.detailed_description_en,
-    )
-    text = " ".join(values).casefold()
-    # Address-only additions should not make two generated descriptions look
-    # distinct.  The pattern is intentionally conservative.
-    text = re.sub(r"\b(?:address|địa chỉ)\s*[:\-]?[^.!?]*[.!?]?", " ", text)
-    text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
-    return " ".join(text.split())
-
-
-def _grams(text: str, size: int = 5) -> set[str]:
-    if len(text) < size:
-        return set()
-    return {text[index : index + size] for index in range(len(text) - size + 1)}
-
-
-def _name_identity_overlap(vietnamese: str, english: str) -> bool:
-    vi_tokens = {_fold_token(token) for token in _tokens(vietnamese)} - {
-        _fold_token(token) for token in _VI_GENERIC
+    sources: SourceSnapshot | None = None,
+) -> dict[str, Any]:
+    generated = proposal.generated
+    return {
+        "place_id": proposal.place_id,
+        "province_id": proposal.province_id,
+        "current_vi_name": baseline.vi_name,
+        "proposed_vi_name": proposal.name_decision.vi_name,
+        "current_en_name": baseline.en_name or "",
+        "proposed_en_name": proposal.name_decision.en_name,
+        "current_vi_description": baseline.vi_short_description or "",
+        "proposed_vi_description": generated.vi_short,
+        "current_en_description": baseline.en_short_description or "",
+        "proposed_en_description": generated.en_short,
+        "current_vi_detailed_description": baseline.vi_detailed_description or "",
+        "proposed_vi_detailed_description": generated.vi_long,
+        "current_en_detailed_description": baseline.en_detailed_description or "",
+        "proposed_en_detailed_description": generated.en_long,
+        "flags": "; ".join((*validation.errors, *validation.warnings)),
+        "source_urls": "; ".join(
+            fact.source_url for fact in (sources.facts if sources is not None else ())
+        ),
+        "reviewer_decision": "",
+        "reviewer_notes": "",
     }
-    en_tokens = {_fold_token(token) for token in _tokens(english)} - {
-        _fold_token(token) for token in _EN_GENERIC
-    }
-    if not vi_tokens or not en_tokens:
-        return False
-    return bool(vi_tokens & en_tokens)
 
 
-def _protected_fragments(value: str) -> set[str]:
-    numbers = {_number_key(number) for number in _NUMBER.findall(value)}
-    acronyms = {
-        token.casefold()
-        for token in re.findall(r"\b[A-ZÀ-Ỹ]{2,}\b", value)
-    }
-    return numbers | acronyms
+def rebuild_review_artifacts(
+    store: ArtifactStore,
+    items: Iterable[
+        tuple[Proposal, ValidationResult, BaselineRecord]
+        | tuple[Proposal, ValidationResult, BaselineRecord, SourceSnapshot]
+    ],
+    *,
+    decisions: Iterable[ReviewDecision],
+) -> dict[str, int]:
+    """Rebuild derived review outputs from immutable proposals and decisions."""
+
+    decision_by_place = {decision.place_id: decision for decision in decisions}
+    counts = {"approved": 0, "needs_review": 0, "rejected": 0}
+    def derived_rows() -> Iterable[tuple[dict[str, Any] | None, dict[str, Any] | None]]:
+        for item in items:
+            proposal, validation, baseline = item[:3]
+            sources = item[3] if len(item) == 4 else None
+            decision = decision_by_place.get(proposal.place_id)
+            if decision is not None and decision.decision == "reject":
+                counts["rejected"] += 1
+                yield None, _review_row(
+                    proposal,
+                    validation,
+                    baseline,
+                    sources,
+                ) | {"flags": "rejected by reviewer"}
+                continue
+            if decision is not None and decision.decision == "approve" and validation.passed:
+                counts["approved"] += 1
+                yield proposal.model_dump(mode="json"), None
+                continue
+            if decision is not None and decision.decision == "edit":
+                # Edits are revalidated by the caller before this derived merge.
+                # Keeping them in review when that proof is absent is the safe default.
+                counts["needs_review"] += 1
+                yield None, _review_row(
+                    proposal,
+                    validation,
+                    baseline,
+                    sources,
+                ) | {"flags": "edited fields require revalidation"}
+                continue
+            counts["needs_review"] += 1
+            yield None, _review_row(proposal, validation, baseline, sources)
+
+    store.replace_derived_outputs(derived_rows())
+    return counts
 
 
-def _tokens(value: str) -> tuple[str, ...]:
-    return tuple(_WORD.findall(value))
-
-
-def _fold(value: str) -> str:
-    return " ".join(unicodedata.normalize("NFC", value).casefold().split())
-
-
-def _fold_token(value: str) -> str:
-    normalized = unicodedata.normalize("NFKD", value)
-    return "".join(char for char in normalized if not unicodedata.combining(char)).casefold()
-
-
-def _number_key(value: str) -> str:
-    return value.replace(",", ".").rstrip("0").rstrip(".") or "0"
-
-
-def _unique(values: Iterable[str]) -> list[str]:
-    result: list[str] = []
-    seen: set[str] = set()
-    for value in values:
-        if value not in seen:
-            seen.add(value)
-            result.append(value)
-    return result
-
-
-__all__ = ["find_near_duplicates", "import_review_csv", "validate_proposal"]
+__all__ = [
+    "find_near_duplicates",
+    "find_near_duplicates_stream",
+    "import_review_csv",
+    "rebuild_review_artifacts",
+    "validate_edited_fields",
+    "validate_proposal",
+    "validate_worker",
+]

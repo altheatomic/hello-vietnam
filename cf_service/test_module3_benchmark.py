@@ -42,7 +42,7 @@ from db.place_repository import fetch_places_required_filter
 from services.module3_optimizer import greedy_route, haversine_km, optimize_day_route
 from services.schedule_builder import route_cost_with_schedule
 
-PROVINCE_HCM = "230e26ed-0118-4f62-96b5-ac0eb3ca1c1b"  # Ho Chi Minh — large candidate pool
+PROVINCE_HCM = "094014a7-b8f6-481a-bbce-5ed6cdd457c5"  # Ho Chi Minh — large candidate pool (province table, post-merger)
 N_VALUES = [4, 6, 8, 10, 12]
 DRAWS_PER_N = 10
 SA_REPEATS_PER_DRAW = 10
@@ -106,10 +106,19 @@ def run_one_draw(pool: list[dict], n: int, draw_id: int) -> dict:
     baseline_travel_min = _travel_minutes_only(baseline_route, start)
 
     # ── SA: full optimize_day_route(), repeated for mean/std (SA is random) ──
+    # optimize_day_route() now derives a deterministic seed from (start,
+    # places) by default (see module3_optimizer.derive_seed), so repeating
+    # the call with the SAME subset/start would return the SAME route every
+    # time — collapsing this benchmark's variance measurement to stdev=0.
+    # seed_override forces a distinct explicit seed per repeat instead, so
+    # each repeat still explores a genuinely different SA restart, same as
+    # before this determinism change.
     sa_costs = []
     sa_travel_mins = []
-    for _ in range(SA_REPEATS_PER_DRAW):
-        best_route, _schedule_result = optimize_day_route(start, subset)
+    for repeat_index in range(SA_REPEATS_PER_DRAW):
+        best_route, _schedule_result = optimize_day_route(
+            start, subset, seed_override=draw_id * 1000 + repeat_index
+        )
         sa_costs.append(route_cost_with_schedule(best_route, start))
         sa_travel_mins.append(_travel_minutes_only(best_route, start))
 

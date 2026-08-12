@@ -12,22 +12,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/recommend_repository.dart';
 
-String recommendedPlaceDescription(ProvinceTopPlace place, String fallback) {
-  final String detailed = place.detailedDescription?.trim() ?? '';
-  if (detailed.isNotEmpty) return detailed;
-  final String short = place.shortDescription?.trim() ?? '';
-  return short.isNotEmpty ? short : fallback;
-}
-
 class RecommendedPlaceDetailPage extends StatefulWidget {
   const RecommendedPlaceDetailPage({
     super.key,
     this.idProvince,
     required this.idPlace,
+    this.repository,
   });
 
   final String? idProvince;
   final String idPlace;
+  final RecommendRepository? repository;
 
   @override
   State<RecommendedPlaceDetailPage> createState() =>
@@ -63,16 +58,10 @@ class _RecommendedPlaceDetailPageState
   }
 
   Future<ProvinceTopPlace> _load() async {
-    final String? idProvince = widget.idProvince?.trim();
-    if (idProvince == null || idProvince.isEmpty) {
-      return RecommendRepository().getPlaceById(widget.idPlace);
-    }
-    final ProvinceDetail detail = await RecommendRepository()
-        .getTopPlacesForProvince(idProvince);
-    for (final ProvinceTopPlace place in detail.topPlaces) {
-      if (place.idPlace == widget.idPlace) return place;
-    }
-    return RecommendRepository().getPlaceById(widget.idPlace);
+    return loadRecommendedPlaceDetail(
+      widget.repository ?? RecommendRepository(),
+      widget.idPlace,
+    );
   }
 
   @override
@@ -117,7 +106,7 @@ class _RecommendedPlaceDetailPageState
 
             final String description = recommendedPlaceDescription(
               place,
-              fallbackDescription,
+              fallbackDescription: fallbackDescription,
             );
             final List<String> metadata = _placeMetadata(context, place);
 
@@ -149,6 +138,31 @@ class _RecommendedPlaceDetailPageState
           },
     );
   }
+}
+
+Future<ProvinceTopPlace> loadRecommendedPlaceDetail(
+  RecommendRepository repository,
+  String idPlace,
+) {
+  return repository.getPlaceById(idPlace);
+}
+
+String recommendedPlaceDescription(
+  ProvinceTopPlace place, {
+  String? fallbackDescription,
+}) {
+  final String? detailed = place.detailedDescription?.trim();
+  if (detailed != null && detailed.isNotEmpty) return detailed;
+  final String? short = place.shortDescription?.trim();
+  if (short != null && short.isNotEmpty) return short;
+  if (fallbackDescription != null && fallbackDescription.trim().isNotEmpty) {
+    return fallbackDescription.trim();
+  }
+  return <String>[
+    if (place.subcategoryName?.trim().isNotEmpty == true)
+      place.subcategoryName!.trim(),
+    if (place.address?.trim().isNotEmpty == true) place.address!.trim(),
+  ].join(' · ');
 }
 
 List<String> _placeMetadata(BuildContext context, ProvinceTopPlace place) {

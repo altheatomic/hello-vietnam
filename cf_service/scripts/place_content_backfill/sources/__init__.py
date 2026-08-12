@@ -1,258 +1,254 @@
-"""Grounded source adapters used by the place content pipeline."""
-
 from __future__ import annotations
 
-import re
-from typing import Any, Iterable, Sequence
+import asyncio
+from dataclasses import dataclass
+import hashlib
+import json
+from typing import Any, Callable, Iterable
 
 import httpx
 
+from ..artifacts import ArtifactStore
+from ..constants import DEFAULT_HTTP_CONCURRENCY
 from ..models import BaselineRecord, SourceFact, SourceSnapshot
-from .osm import collect_osm_facts, parse_osm_id
-from .website import extract_official_metadata
-from .wikimedia import fetch_wikimedia_facts
 
 
-_OSM_SOURCE_URL = re.compile(
-    r"^https://www\.openstreetmap\.org/(node|way|relation)/([1-9][0-9]*)$"
-)
+IDENTIFYING_USER_AGENT = "hello-vietnam-place-content-backfill/1.0 (research; contact owner)"
+DEFAULT_TIMEOUT = httpx.Timeout(connect=5.0, read=20.0, write=10.0, pool=5.0)
+MAX_RETRIES = 3
+
+
+@dataclass(frozen=True)
+class FetchResult:
+    status_code: int
+    headers: dict[str, str]
+    body: bytes
+    url: str
+
+
+class ResponseLimitExceeded(ValueError):
+    """Raised before a response body can exceed its configured cap."""
+
+
+class RetryExhausted(RuntimeError):
+    """Raised after all bounded HTTP attempts fail."""
+
+
+def request_cache_key(
+    method: str,
+    url: str,
+    *,
+    params: Any = None,
+    body: Any = None,
+    baseline_input_hash: str,
+) -> str:
+    payload = {
+        "method": method.upper(),
+        "url": url,
+        "params": params,
+        "body": body,
+        "baseline_input_hash": baseline_input_hash,
+    }
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _retry_delay(response: httpx.Response | None, attempt: int, base: float) -> float:
+    if response is not None:
+        retry_after = response.headers.get("Retry-After")
+        if retry_after:
+            try:
+                return max(0.0, min(float(retry_after), 30.0))
+            except ValueError:
+                pass
+    return min(base * (2**attempt), 30.0)
+
+
+async def fetch_bytes(
+    client: httpx.AsyncClient,
+    method: str,
+    url: str,
+    *,
+    params: Any = None,
+    json_body: Any = None,
+    content: bytes | str | None = None,
+    headers: dict[str, str] | None = None,
+    max_bytes: int,
+    retries: int = MAX_RETRIES,
+    backoff_base: float = 0.25,
+    sleep=asyncio.sleep,
+    before_attempt: Callable[[], None] | None = None,
+) -> FetchResult:
+    """Fetch with bounded retries and streamed body accounting."""
+
+    request_headers = {"User-Agent": IDENTIFYING_USER_AGENT}
+    request_headers.update(headers or {})
+    last_error: Exception | None = None
+    for attempt in range(retries):
+        if before_attempt is not None:
+            before_attempt()
+        response: httpx.Response | None = None
+        try:
+            async with client.stream(
+                method,
+                url,
+                params=params,
+                json=json_body,
+                content=content,
+                headers=request_headers,
+                follow_redirects=False,
+            ) as response:
+                if response.status_code == 429 or response.status_code >= 500:
+                    if attempt + 1 < retries:
+                        await sleep(_retry_delay(response, attempt, backoff_base))
+                        continue
+                    raise RetryExhausted(
+                        f"HTTP {response.status_code} after {retries} attempts for {method} {url}"
+                    )
+                if response.status_code >= 400:
+                    raise httpx.HTTPStatusError(
+                        f"HTTP {response.status_code} for {method} {url}",
+                        request=response.request,
+                        response=response,
+                    )
+                content_length = response.headers.get("Content-Length")
+                if content_length and content_length.isdigit() and int(content_length) > max_bytes:
+                    raise ResponseLimitExceeded(f"response exceeds {max_bytes} bytes")
+                chunks: list[bytes] = []
+                received = 0
+                async for chunk in response.aiter_bytes():
+                    received += len(chunk)
+                    if received > max_bytes:
+                        raise ResponseLimitExceeded(f"response exceeds {max_bytes} bytes")
+                    chunks.append(chunk)
+                return FetchResult(
+                    status_code=response.status_code,
+                    headers=dict(response.headers),
+                    body=b"".join(chunks),
+                    url=str(response.url),
+                )
+        except ResponseLimitExceeded:
+            raise
+        except RetryExhausted:
+            raise
+        except (httpx.HTTPError, OSError) as exc:
+            last_error = exc
+            if attempt + 1 >= retries:
+                break
+            await sleep(_retry_delay(response, attempt, backoff_base))
+    raise RetryExhausted(f"request failed after {retries} attempts for {method} {url}") from last_error
 
 
 async def collect_source_snapshot(
     record: BaselineRecord,
-    client: httpx.AsyncClient,
     *,
-    include_official_sites: bool = False,
-    include_external_sources: bool = True,
+    client: httpx.AsyncClient | None = None,
+    wikimedia_links: Iterable[str] = (),
+    official_site_enabled: bool = False,
+    concurrency: int = DEFAULT_HTTP_CONCURRENCY,
 ) -> SourceSnapshot:
-    """Collect corroborating facts without allowing source pages to write data."""
+    """Collect bounded identity-safe evidence for one baseline record."""
 
-    return await _collect_snapshot(
-        record,
-        client,
-        include_official_sites=include_official_sites,
-        include_external_sources=include_external_sources,
-    )
-
-
-async def collect_source_snapshots(
-    records: Sequence[BaselineRecord],
-    client: httpx.AsyncClient,
-    *,
-    include_official_sites: bool = False,
-    include_external_sources: bool = True,
-    osm_batch_size: int = 100,
-) -> list[SourceSnapshot]:
-    """Collect snapshots while batching OSM identities into bounded requests."""
-
-    if osm_batch_size < 1 or osm_batch_size > 100:
-        raise ValueError("osm_batch_size must be between 1 and 100")
-
-    record_identities: dict[str, str] = {}
-    identities: list[str] = []
-    if include_external_sources:
-        seen: set[str] = set()
-        for record in records:
-            identity = record.source_place_id or record.freshness_source_external_id
-            if not identity:
-                continue
-            try:
-                parse_osm_id(identity)
-            except ValueError:
-                continue
-            record_identities[record.place_id] = identity
-            if identity not in seen:
-                seen.add(identity)
-                identities.append(identity)
-
-    facts_by_identity: dict[str, list[SourceFact]] = {identity: [] for identity in identities}
-    errors_by_identity: dict[str, str] = {}
-    osm_failure: str | None = None
-    if include_external_sources:
-        for batch in _chunks(tuple(identities), osm_batch_size):
-            if osm_failure is not None:
-                errors_by_identity.update({identity: osm_failure for identity in batch})
-                continue
-            try:
-                facts = await collect_osm_facts(client, batch)
-            except (ValueError, httpx.HTTPError) as exc:
-                message = f"osm source unavailable: {type(exc).__name__}"
-                errors_by_identity.update({identity: message for identity in batch})
-                # A complete batch failure proves the endpoint set is unavailable
-                # for this run.  Do not multiply a long network timeout by every
-                # remaining batch; snapshots will use the baseline fallback.
-                osm_failure = message
-                continue
-            for fact in facts:
-                identity = _identity_from_source_url(fact.source_url)
-                if identity in facts_by_identity:
-                    facts_by_identity[identity].append(fact)
-
-    snapshots: list[SourceSnapshot] = []
-    for record in records:
-        identity = record_identities.get(record.place_id)
-        snapshots.append(
-            await _collect_snapshot(
-                record,
-                client,
-                include_official_sites=include_official_sites,
-                include_external_sources=include_external_sources,
-                osm_facts=facts_by_identity.get(identity) if identity else None,
-                osm_error=errors_by_identity.get(identity) if identity else None,
-            )
-        )
-    return snapshots
-
-
-async def _collect_snapshot(
-    record: BaselineRecord,
-    client: httpx.AsyncClient,
-    *,
-    include_official_sites: bool,
-    include_external_sources: bool = True,
-    osm_facts: list[SourceFact] | None = None,
-    osm_error: str | None = None,
-) -> SourceSnapshot:
-    """Collect one snapshot, optionally using facts from a shared OSM batch."""
-
-    facts: list[SourceFact] = list(osm_facts or [])
+    own_client = client is None
+    if own_client:
+        client = httpx.AsyncClient(timeout=DEFAULT_TIMEOUT, headers={"User-Agent": IDENTIFYING_USER_AGENT})
+    facts: list[SourceFact] = []
     warnings: list[str] = []
-    if include_external_sources:
-        osm_identity: str | None = None
-        if osm_error:
-            warnings.append(osm_error)
-        elif osm_facts is None:
-            osm_identity = record.source_place_id or record.freshness_source_external_id
-        if osm_identity:
-            try:
-                parse_osm_id(osm_identity)
-                facts.extend(await collect_osm_facts(client, [osm_identity]))
-            except (ValueError, httpx.HTTPError) as exc:
-                warnings.append(f"osm source unavailable: {type(exc).__name__}")
-
-        try:
-            facts.extend(
-                await fetch_wikimedia_facts(
-                    client,
-                    record,
-                )
-            )
-        except (ValueError, httpx.HTTPError) as exc:
-            warnings.append(f"wikimedia source unavailable: {type(exc).__name__}")
-
-        if include_official_sites:
-            official_url = record.website or record.freshness_source_url
-            if official_url:
-                try:
-                    metadata = await extract_official_metadata(official_url, client)
-                    if metadata.title:
-                        facts.append(
-                            SourceFact(
-                                fact_id="official.title",
-                                value=metadata.title,
-                                source_url=metadata.final_url,
-                                source_kind="official_site",
-                            )
-                        )
-                    if metadata.description:
-                        facts.append(
-                            SourceFact(
-                                fact_id="official.meta_description",
-                                value=metadata.description,
-                                source_url=metadata.final_url,
-                                source_kind="official_site",
-                            )
-                        )
-                    if metadata.name:
-                        facts.append(
-                            SourceFact(
-                                fact_id="official.name",
-                                value=metadata.name,
-                                source_url=metadata.final_url,
-                                source_kind="official_site",
-                            )
-                        )
-                    if metadata.address:
-                        facts.append(
-                            SourceFact(
-                                fact_id="official.address",
-                                value=metadata.address,
-                                source_url=metadata.final_url,
-                                source_kind="official_site",
-                            )
-                        )
-                except (ValueError, httpx.HTTPError) as exc:
-                    warnings.append(f"official source unavailable: {type(exc).__name__}")
-
-    # The existing database copy is an explicitly labelled fallback when
-    # external sources are unavailable.  It gives the generator a bounded,
-    # reviewable seed (especially the short description) without pretending
-    # that it is a freshly verified external fact.
-    baseline_facts = _baseline_facts(record)
-    if baseline_facts:
-        if not include_external_sources:
-            warnings.append("external sources disabled; using baseline fields")
-        elif not facts:
-            warnings.append("external sources unavailable; using baseline fields")
-        facts.extend(baseline_facts)
-
-    return SourceSnapshot(
-        place_id=record.place_id,
-        facts=tuple(_deduplicate_facts(facts)),
-        warnings=tuple(warnings),
-    )
-
-
-def _identity_from_source_url(source_url: str) -> str | None:
-    match = _OSM_SOURCE_URL.fullmatch(source_url)
-    if not match:
-        return None
-    return f"osm:{match.group(1)}:{match.group(2)}"
-
-
-def _chunks(values: Sequence[str], size: int) -> Iterable[tuple[str, ...]]:
-    for start in range(0, len(values), size):
-        yield tuple(values[start : start + size])
-
-
-def _deduplicate_facts(facts: list[SourceFact]) -> list[SourceFact]:
-    seen: set[tuple[str, str, str]] = set()
-    result: list[SourceFact] = []
-    for fact in facts:
-        key = (fact.fact_id, fact.value, fact.source_url)
-        if key not in seen:
-            seen.add(key)
-            result.append(fact)
-    return result
-
-
-def _baseline_facts(record: BaselineRecord) -> list[SourceFact]:
-    source_url = f"supabase://place/{record.place_id}"
-    values = (
-        ("baseline.short_description", record.short_description),
-        ("baseline.description_vi", record.vi.description),
-        ("baseline.description_en", record.en.description),
-        ("baseline.address", record.address),
-        (
-            "baseline.category",
-            " / ".join(
-                value
-                for value in (record.subcategory_category, record.subcategory_name)
-                if value
-            )
-            or None,
-        ),
-    )
-    return [
-        SourceFact(
-            fact_id=fact_id,
-            value=str(value).strip(),
-            source_url=source_url,
-            source_kind="baseline",
+    try:
+        osm_facts, osm_warnings = await collect_osm_facts(
+            record,
+            client=client,
+            concurrency=concurrency,
         )
-        for fact_id, value in values
-        if value is not None and str(value).strip()
-    ]
+        facts.extend(osm_facts)
+        warnings.extend(osm_warnings)
+        wiki_facts, wiki_warnings = await collect_wikimedia_facts(
+            record,
+            links=tuple(wikimedia_links),
+            client=client,
+        )
+        facts.extend(wiki_facts)
+        warnings.extend(wiki_warnings)
+        site_facts, site_warnings = await collect_official_site(
+            record,
+            client=client,
+            enabled=official_site_enabled,
+        )
+        facts.extend(site_facts)
+        warnings.extend(site_warnings)
+        return SourceSnapshot(
+            place_id=record.place_id,
+            baseline_input_hash=record.input_hash,
+            facts=tuple(facts),
+            warnings=tuple(warnings),
+            sparse_source=not bool(facts),
+        )
+    finally:
+        if own_client and client is not None:
+            await client.aclose()
 
 
-__all__ = ["collect_source_snapshot", "collect_source_snapshots"]
+async def collect_worker(
+    records: Iterable[BaselineRecord],
+    artifact_store: ArtifactStore,
+    *,
+    client: httpx.AsyncClient | None = None,
+    max_places: int = 50,
+    concurrency: int = DEFAULT_HTTP_CONCURRENCY,
+) -> int:
+    """Process one bounded chunk and fsync each source snapshot immediately."""
+
+    if max_places <= 0 or concurrency <= 0:
+        raise ValueError("worker limits must be positive")
+    queue: asyncio.Queue[BaselineRecord | None] = asyncio.Queue(maxsize=min(6, concurrency * 2))
+    own_client = client is None
+    active_client = client
+    processed = 0
+
+    async def producer() -> None:
+        count = 0
+        for item in records:
+            count += 1
+            if count > max_places:
+                raise ValueError(f"collect worker received more than {max_places} places")
+            await queue.put(item)
+        await queue.put(None)
+
+    async def consumer() -> int:
+        count = 0
+        while True:
+            item = await queue.get()
+            try:
+                if item is None:
+                    return count
+                snapshot = await collect_source_snapshot(
+                    item,
+                    client=active_client,
+                    concurrency=concurrency,
+                )
+                artifact_store.append_jsonl("sources", snapshot.model_dump(mode="json"))
+                count += 1
+            finally:
+                queue.task_done()
+
+    try:
+        if own_client:
+            active_client = httpx.AsyncClient(
+                timeout=DEFAULT_TIMEOUT,
+                headers={"User-Agent": IDENTIFYING_USER_AGENT},
+            )
+        producer_task = asyncio.create_task(producer())
+        consumer_task = asyncio.create_task(consumer())
+        await producer_task
+        processed = await consumer_task
+        return processed
+    finally:
+        if own_client and active_client is not None:
+            await active_client.aclose()
+
+
+# Import source modules after the shared HTTP primitives exist; the modules
+# import fetch_bytes from this package.
+from .osm import collect_osm_facts  # noqa: E402
+from .website import collect_official_site  # noqa: E402
+from .wikimedia import collect_wikimedia_facts  # noqa: E402

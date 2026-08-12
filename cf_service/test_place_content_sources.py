@@ -1,337 +1,235 @@
 import asyncio
+import json
+import subprocess
+import sys
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock
+from urllib.parse import parse_qs
 
 import httpx
 
-from scripts.place_content_backfill.constants import APPROVED_PROVINCES
-from scripts.place_content_backfill.models import BaselineRecord, TranslationBaseline
-from scripts.place_content_backfill.sources import collect_source_snapshot, collect_source_snapshots
-from scripts.place_content_backfill.sources.osm import parse_osm_id
-from scripts.place_content_backfill.sources.osm import collect_osm_facts
-from scripts.place_content_backfill.sources import osm as osm_source
+from scripts.place_content_backfill.models import BaselineRecord
+from scripts.place_content_backfill.sources.osm import (
+    build_osm_batches,
+    collect_osm_facts,
+    parse_osm_identity,
+)
 from scripts.place_content_backfill.sources.website import (
-    extract_official_metadata,
-    validate_official_url,
+    ResponseLimitExceeded,
+    collect_official_site,
+    official_site_fact_id,
+    validate_public_http_url,
 )
 from scripts.place_content_backfill.sources.wikimedia import (
-    is_wikidata_id,
-    parse_wikipedia_tag,
-    article_identity_matches,
+    collect_wikimedia_facts,
+    parse_wikimedia_link,
+    validate_wikimedia_evidence,
 )
 
 
-class PlaceContentSourcesTest(unittest.TestCase):
-    def test_collect_source_snapshots_batches_osm_ids(self):
-        def record(place_id, source_place_id):
-            return BaselineRecord(
-                place_id=place_id,
-                province_id=APPROVED_PROVINCES[0],
-                name=f"Place {place_id}",
-                source="osm",
-                source_place_id=source_place_id,
-                vi=TranslationBaseline(
-                    id=f"{place_id}-vi",
-                    place_id=place_id,
-                    lang_code="vi",
-                    name=f"Place {place_id}",
-                ),
-                en=TranslationBaseline(
-                    id=f"{place_id}-en",
-                    place_id=place_id,
-                    lang_code="en",
-                    name=f"Place {place_id}",
-                ),
-            )
+def record(**overrides):
+    values = {
+        "place_id": "place-1",
+        "province_id": "b5f3ef5e-dc49-4482-88e3-a8048cb32639",
+        "status": "active",
+        "vi_name": "Chùa Thiên Mụ",
+        "vi_short_description": "Mô tả ngắn",
+        "input_hash": "baseline-hash",
+        "source": "osm",
+        "source_place_id": "osm:node:1",
+        "latitude": 16.4536,
+        "longitude": 107.5447,
+        "subcategory_name": "Chùa",
+        "subcategory_category": "culture",
+        "website": "https://example.org/place",
+    }
+    values.update(overrides)
+    return BaselineRecord(**values)
 
-        records = [
-            record("p1", "osm:node:1"),
-            record("p2", "osm:way:2"),
-            record("p3", "osm:relation:3"),
-        ]
 
-        async def run():
-            calls = 0
-
-            async def handler(request: httpx.Request) -> httpx.Response:
-                nonlocal calls
-                calls += 1
-                return httpx.Response(
-                    200,
-                    json={
-                        "elements": [
-                            {"type": "node", "id": 1, "tags": {"name": "One"}},
-                            {"type": "way", "id": 2, "tags": {"name": "Two"}},
-                            {"type": "relation", "id": 3, "tags": {"name": "Three"}},
-                        ]
-                    },
-                )
-
-            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-                snapshots = await collect_source_snapshots(records, client)
-            self.assertEqual(calls, 1)
-            self.assertEqual([snapshot.place_id for snapshot in snapshots], ["p1", "p2", "p3"])
-            self.assertEqual([snapshot.facts[0].value for snapshot in snapshots], ["One", "Two", "Three"])
-
-        asyncio.run(run())
-
-    def test_collect_source_snapshots_records_batch_failure_as_warning(self):
-        record = BaselineRecord(
-            place_id="p1",
-            province_id=APPROVED_PROVINCES[0],
-            name="Place 1",
-            source="osm",
-            source_place_id="osm:node:1",
-            vi=TranslationBaseline(id="p1-vi", place_id="p1", lang_code="vi"),
-            en=TranslationBaseline(id="p1-en", place_id="p1", lang_code="en"),
-        )
-
-        async def run():
-            async def handler(request: httpx.Request) -> httpx.Response:
-                return httpx.Response(500, json={"error": "overloaded"})
-
-            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-                snapshots = await collect_source_snapshots([record], client)
-            self.assertEqual(len(snapshots), 1)
-            self.assertEqual(snapshots[0].facts, ())
-            self.assertEqual(snapshots[0].warnings, ("osm source unavailable: HTTPStatusError",))
-
-        asyncio.run(run())
-
-    def test_osm_batch_failure_opens_circuit_for_remaining_batches(self):
-        records = [
-            BaselineRecord(
-                place_id=f"p{index}",
-                province_id=APPROVED_PROVINCES[0],
-                name=f"Place {index}",
-                source="osm",
-                source_place_id=f"osm:node:{index}",
-                vi=TranslationBaseline(id=f"p{index}-vi", place_id=f"p{index}", lang_code="vi"),
-                en=TranslationBaseline(id=f"p{index}-en", place_id=f"p{index}", lang_code="en"),
-            )
-            for index in range(1, 102)
-        ]
-
-        async def run():
-            calls = 0
-
-            async def handler(request: httpx.Request) -> httpx.Response:
-                nonlocal calls
-                calls += 1
-                return httpx.Response(503)
-
-            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-                with patch.object(
-                    osm_source,
-                    "OVERPASS_URLS",
-                    ("https://primary.example/api/interpreter",),
-                ):
-                    snapshots = await collect_source_snapshots(records, client)
-            self.assertEqual(calls, 3)
-            self.assertEqual(len(snapshots), 101)
-            self.assertTrue(all(snapshot.warnings == ("osm source unavailable: HTTPStatusError",) for snapshot in snapshots))
-
-        asyncio.run(run())
-
-    def test_sparse_external_sources_include_baseline_description_evidence(self):
-        record = BaselineRecord(
-            place_id="p1",
-            province_id=APPROVED_PROVINCES[0],
-            name="Place 1",
-            short_description="A short description from the current database.",
-            source="manual",
-            vi=TranslationBaseline(
-                id="p1-vi",
-                place_id="p1",
-                lang_code="vi",
-                description="Mô tả tiếng Việt hiện có.",
-            ),
-            en=TranslationBaseline(
-                id="p1-en",
-                place_id="p1",
-                lang_code="en",
-                description="The existing English description.",
-            ),
-        )
-
-        async def run():
-            async def handler(request: httpx.Request) -> httpx.Response:
-                raise AssertionError("no external request should be needed")
-
-            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-                snapshot = await collect_source_snapshot(record, client)
-            self.assertEqual(
-                [fact.fact_id for fact in snapshot.facts],
-                [
-                    "baseline.short_description",
-                    "baseline.description_vi",
-                    "baseline.description_en",
-                ],
-            )
-            self.assertEqual(
-                [fact.source_kind for fact in snapshot.facts],
-                ["baseline", "baseline", "baseline"],
-            )
-            self.assertIn("external sources unavailable; using baseline fields", snapshot.warnings)
-
-        asyncio.run(run())
-
-    def test_baseline_only_collection_skips_external_requests(self):
-        record = BaselineRecord(
-            place_id="p1",
-            province_id=APPROVED_PROVINCES[0],
-            name="Place 1",
-            short_description="A short description from the current database.",
-            source="osm",
-            source_place_id="osm:node:1",
-            wikipedia="en:Place_1",
-            vi=TranslationBaseline(id="p1-vi", place_id="p1", lang_code="vi"),
-            en=TranslationBaseline(id="p1-en", place_id="p1", lang_code="en"),
-        )
-
-        async def run():
-            async def handler(request: httpx.Request) -> httpx.Response:
-                raise AssertionError("baseline-only collection must not call external sources")
-
-            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-                snapshot = await collect_source_snapshot(
-                    record,
-                    client,
-                    include_external_sources=False,
-                )
-            self.assertEqual([fact.fact_id for fact in snapshot.facts], ["baseline.short_description"])
-            self.assertEqual(snapshot.warnings, ("external sources disabled; using baseline fields",))
-
-        asyncio.run(run())
-
-    def test_parse_osm_identity(self):
-        self.assertEqual(parse_osm_id("osm:node:123"), ("node", 123))
-        self.assertEqual(parse_osm_id("osm:way:456"), ("way", 456))
-        self.assertEqual(parse_osm_id("osm:relation:789"), ("relation", 789))
+class PlaceContentSourcesTest(unittest.IsolatedAsyncioTestCase):
+    def test_osm_identity_accepts_only_supported_kinds(self):
+        self.assertEqual(parse_osm_identity("osm:node:123"), ("node", 123))
+        self.assertEqual(parse_osm_identity("osm:way:456"), ("way", 456))
+        self.assertEqual(parse_osm_identity("osm:relation:789"), ("relation", 789))
         with self.assertRaises(ValueError):
-            parse_osm_id("osm:node:not-a-number")
+            parse_osm_identity("osm:area:123")
+        with self.assertRaises(ValueError):
+            parse_osm_identity("123")
 
-    def test_wikimedia_identity_requires_explicit_shape(self):
-        self.assertTrue(is_wikidata_id("Q123"))
-        self.assertFalse(is_wikidata_id("123"))
-        self.assertEqual(parse_wikipedia_tag("vi:Sông_Hương"), ("vi", "Sông_Hương"))
-        self.assertIsNone(parse_wikipedia_tag("Sông Hương"))
-        self.assertTrue(
-            article_identity_matches(
-                {"name": "Sông Hương", "province_id": "p", "category": "river", "latitude": 16.47, "longitude": 107.58},
-                {"title": "Sông Hương", "province_id": "p", "category": "river", "latitude": 16.4701, "longitude": 107.5801},
+    def test_osm_batches_by_kind_and_caps_each_batch_at_100(self):
+        identities = [f"osm:node:{i}" for i in range(201)] + [f"osm:way:{i}" for i in range(3)]
+        batches = list(build_osm_batches(identities, max_ids=100))
+        self.assertEqual([len(batch[1]) for batch in batches], [100, 100, 1, 3])
+        self.assertEqual([batch[0] for batch in batches], ["node", "node", "node", "way"])
+
+    async def test_osm_mock_transport_collects_stable_fact_ids(self):
+        async def handler(request: httpx.Request) -> httpx.Response:
+            self.assertTrue(
+                request.headers["content-type"].startswith(
+                    "application/x-www-form-urlencoded"
+                )
             )
-        )
-        self.assertFalse(
-            article_identity_matches(
-                {"name": "Sông Hương", "province_id": "p", "category": "river", "latitude": 16.47, "longitude": 107.58},
-                {"title": "Sông Hương", "province_id": "other", "category": "river", "latitude": 16.4701, "longitude": 107.5801},
+            body = parse_qs(request.content.decode("utf-8"))
+            self.assertIn("node(id:1,2)", body["data"][0])
+            return httpx.Response(
+                200,
+                json={
+                    "elements": [
+                        {"type": "node", "id": 1, "lat": 16.4, "lon": 107.5, "tags": {"name": "Thiên Mụ"}},
+                        {"type": "node", "id": 2, "lat": 16.5, "lon": 107.6, "tags": {"name:en": "Thien Mu"}},
+                    ]
+                },
             )
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            facts, warnings = await collect_osm_facts(
+                record(),
+                client=client,
+                source_ids=("osm:node:1", "osm:node:2"),
+                max_ids=100,
+            )
+        self.assertFalse(warnings)
+        self.assertEqual(
+            [fact.fact_id for fact in facts],
+            ["osm:node:1:name", "osm:node:2:name:en"],
         )
 
-    def test_official_url_rejects_ssrf_targets(self):
-        for url in (
-            "file:///etc/passwd",
-            "http://localhost/admin",
-            "http://127.0.0.1/admin",
-            "http://10.0.0.1/metadata",
-            "http://[::1]/admin",
+    async def test_osm_falls_back_to_identity_api_when_overpass_is_unavailable(self):
+        calls = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            calls.append(str(request.url))
+            if request.url.host == "overpass-api.de":
+                return httpx.Response(504)
+            self.assertEqual(
+                str(request.url),
+                "https://api.openstreetmap.org/api/0.6/node/1.json",
+            )
+            return httpx.Response(
+                200,
+                json={
+                    "elements": [
+                        {"type": "node", "id": 1, "tags": {"name": "Thiên Mụ"}},
+                    ]
+                },
+            )
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            facts, warnings = await collect_osm_facts(record(), client=client)
+
+        self.assertEqual([fact.fact_id for fact in facts], ["osm:node:1:name"])
+        self.assertFalse(warnings)
+        self.assertEqual(len(calls), 4)
+
+    def test_wikimedia_links_require_explicit_identifiers(self):
+        self.assertEqual(parse_wikimedia_link("Q12345"), ("wikidata", "Q12345"))
+        self.assertEqual(parse_wikimedia_link("vi:Chùa_Thiên_Mụ"), ("wikipedia", "vi:Chùa_Thiên_Mụ"))
+        self.assertIsNone(parse_wikimedia_link("Chùa Thiên Mụ"))
+        self.assertIsNone(parse_wikimedia_link("https://example.org/not-wikimedia"))
+
+    def test_wikimedia_corroboration_rejects_province_type_and_coordinate_conflicts(self):
+        base = record()
+        accepted, warnings = validate_wikimedia_evidence(
+            base,
+            {"province_id": base.province_id, "type": "pagoda", "latitude": 16.4537, "longitude": 107.5448},
+        )
+        self.assertTrue(accepted)
+        self.assertFalse(warnings)
+        for evidence in (
+            {"province_id": "094014a7-b8f6-481a-bbce-5ed6cdd457c5"},
+            {"type": "airport"},
+            {"latitude": 21.0, "longitude": 105.0},
         ):
+            accepted, warnings = validate_wikimedia_evidence(base, evidence)
+            self.assertFalse(accepted)
+            self.assertTrue(warnings)
+
+    async def test_wikimedia_mock_transport_accepts_explicit_page_link(self):
+        async def handler(request: httpx.Request) -> httpx.Response:
+            self.assertIn("vi.wikipedia.org", str(request.url))
+            return httpx.Response(
+                200,
+                json={
+                    "title": "Chùa Thiên Mụ",
+                    "province_id": "b5f3ef5e-dc49-4482-88e3-a8048cb32639",
+                    "type": "pagoda",
+                    "latitude": 16.4536,
+                    "longitude": 107.5447,
+                    "extract": "A corroborating description.",
+                },
+            )
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            facts, warnings = await collect_wikimedia_facts(
+                record(),
+                links=("vi:Chùa_Thiên_Mụ",),
+                client=client,
+            )
+        self.assertEqual(len(facts), 1)
+        self.assertEqual(facts[0].source_type, "wikimedia")
+        self.assertFalse(warnings)
+
+    def test_official_site_url_validation_rejects_private_destinations(self):
+        public_resolver = lambda host: ["93.184.216.34"]
+        private_resolver = lambda host: ["192.168.1.10"]
+        self.assertEqual(
+            validate_public_http_url("https://example.org", resolve_host=public_resolver),
+            "https://example.org",
+        )
+        for url in ("file:///tmp/a", "ftp://example.org", "http://localhost", "http://127.0.0.1"):
             with self.assertRaises(ValueError):
-                validate_official_url(url)
-        self.assertEqual(validate_official_url("https://example.com/about"), "https://example.com/about")
+                validate_public_http_url(url, resolve_host=public_resolver)
+        with self.assertRaises(ValueError):
+            validate_public_http_url("https://example.org", resolve_host=private_resolver)
 
-    def test_official_metadata_rejects_non_html_and_oversized_bodies(self):
-        async def run():
-            async def handler(request: httpx.Request) -> httpx.Response:
-                if request.url.path == "/json":
-                    return httpx.Response(200, headers={"content-type": "application/json"}, json={"ok": True})
-                return httpx.Response(200, headers={"content-type": "text/html"}, content=b"x" * (1024 * 1024 + 1))
+    async def test_official_site_rejects_redirects_non_html_and_body_over_cap(self):
+        async def redirect_handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(302, headers={"Location": "http://127.0.0.1/private"})
 
-            client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
-            try:
-                with self.assertRaises(ValueError):
-                    await extract_official_metadata("https://example.com/json", client)
-                with self.assertRaises(ValueError):
-                    await extract_official_metadata("https://example.com/large", client)
-            finally:
-                await client.aclose()
-
-        asyncio.run(run())
-
-    def test_official_metadata_extracts_safe_html_fields(self):
-        async def run():
-            body = b"""
-            <html><head><title>Huong River</title>
-            <meta name='description' content='A river in Hue.'>
-            <script type='application/ld+json'>{\"@type\":\"Place\",\"name\":\"Huong River\",\"address\":\"Hue\"}</script>
-            </head><body></body></html>
-            """
-
-            async def handler(request: httpx.Request) -> httpx.Response:
-                return httpx.Response(200, headers={"content-type": "text/html; charset=utf-8"}, content=body)
-
-            client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
-            try:
-                result = await extract_official_metadata("https://example.com/about", client)
-            finally:
-                await client.aclose()
-            self.assertEqual(result.title, "Huong River")
-            self.assertEqual(result.description, "A river in Hue.")
-            self.assertEqual(result.name, "Huong River")
-
-        asyncio.run(run())
-
-    def test_source_requests_retry_rate_limit_without_duplicate_data(self):
-        async def run():
-            calls = 0
-
-            async def handler(request: httpx.Request) -> httpx.Response:
-                nonlocal calls
-                calls += 1
-                if calls == 1:
-                    return httpx.Response(429, headers={"retry-after": "0"})
-                return httpx.Response(
-                    200,
-                    json={"elements": [{"type": "node", "id": 123, "tags": {"name": "Sông Hương"}}]},
+        async with httpx.AsyncClient(transport=httpx.MockTransport(redirect_handler)) as client:
+            with self.assertRaises(ValueError):
+                await collect_official_site(
+                    record(),
+                    client=client,
+                    enabled=True,
+                    resolve_host=lambda host: ["93.184.216.34"] if host == "example.org" else ["127.0.0.1"],
                 )
 
-            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-                facts = await collect_osm_facts(client, ["osm:node:123"])
-            self.assertEqual(calls, 2)
-            self.assertEqual([fact.fact_id for fact in facts], ["osm.name"])
+        async def non_html_handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, headers={"Content-Type": "application/json"}, content=b"{}")
 
-        asyncio.run(run())
-
-    def test_osm_collection_falls_back_after_transport_failure(self):
-        async def run():
-            seen_urls = []
-
-            async def handler(request: httpx.Request) -> httpx.Response:
-                seen_urls.append(str(request.url))
-                if request.url.host == "primary.example":
-                    raise httpx.ConnectError("primary unavailable", request=request)
-                return httpx.Response(
-                    200,
-                    json={"elements": [{"type": "node", "id": 123, "tags": {"name": "Fallback"}}]},
+        async with httpx.AsyncClient(transport=httpx.MockTransport(non_html_handler)) as client:
+            with self.assertRaises(ValueError):
+                await collect_official_site(
+                    record(), client=client, enabled=True, resolve_host=lambda host: ["93.184.216.34"]
                 )
 
-            async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-                with patch.object(
-                    osm_source,
-                    "OVERPASS_URLS",
-                    (
-                        "https://primary.example/api/interpreter",
-                        "https://fallback.example/api/interpreter",
-                    ),
-                ):
-                    facts = await collect_osm_facts(client, ["osm:node:123"])
+        async def too_large_handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, headers={"Content-Type": "text/html"}, content=b"x" * (1024 * 1024 + 1))
 
-            self.assertEqual(seen_urls[:3], ["https://primary.example/api/interpreter"] * 3)
-            self.assertEqual(seen_urls[3:], ["https://fallback.example/api/interpreter"])
-            self.assertEqual([fact.value for fact in facts], ["Fallback"])
+        async with httpx.AsyncClient(transport=httpx.MockTransport(too_large_handler)) as client:
+            with self.assertRaises(ResponseLimitExceeded):
+                await collect_official_site(
+                    record(), client=client, enabled=True, resolve_host=lambda host: ["93.184.216.34"]
+                )
 
-        asyncio.run(run())
+    async def test_official_site_is_default_off(self):
+        handler = Mock(side_effect=AssertionError("network must not be called when disabled"))
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            facts, warnings = await collect_official_site(record(), client=client)
+        self.assertFalse(facts)
+        self.assertIn("disabled", " ".join(warnings))
+
+    def test_official_site_fact_id_is_stable_across_worker_processes(self):
+        source = (
+            "from scripts.place_content_backfill.sources.website import official_site_fact_id;"
+            "print(official_site_fact_id('https://example.org', 'baseline-hash'))"
+        )
+        first = subprocess.check_output([sys.executable, "-c", source], text=True).strip()
+        second = subprocess.check_output([sys.executable, "-c", source], text=True).strip()
+        self.assertEqual(first, second)
 
 
 if __name__ == "__main__":

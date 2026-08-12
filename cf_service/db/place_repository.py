@@ -13,6 +13,7 @@ Optional filters (rating, budget) are applied in services/filters.py.
 
 from typing import Any
 
+from db.supabase_client import fetch_all_rows
 from services.module3_optimizer import haversine_km
 from services.ttl_cache import TtlCache
 
@@ -87,21 +88,30 @@ def fetch_nearby_amenities(
     limit_per_category: int = 3,
     radius_km: float = 15.0,
 ) -> list[dict]:
-    response = (
-        supabase
-        .table("place_localized_en")
-        .select(
-            "id_place,name,latitude,longitude,"
-            "place_subcategory!inner(name)"
+    from math import cos, radians
+
+    lat_delta = radius_km / 111.0
+    lng_delta = radius_km / (111.0 * cos(radians(lat)))
+
+    rows = fetch_all_rows(
+        lambda start, end: (
+            supabase
+            .table("place_localized_en")
+            .select(
+                "id_place,name,latitude,longitude,"
+                "place_subcategory!inner(name)"
+            )
+            .in_("place_subcategory.name", subcategory_names)
+            .eq("status", "active")
+            .gte("latitude", lat - lat_delta)
+            .lte("latitude", lat + lat_delta)
+            .gte("longitude", lng - lng_delta)
+            .lte("longitude", lng + lng_delta)
+            .filter("latitude", "not.is", "null")
+            .filter("longitude", "not.is", "null")
+            .range(start, end)
         )
-        .in_("place_subcategory.name", subcategory_names)
-        .eq("status", "active")
-        .filter("latitude", "not.is", "null")
-        .filter("longitude", "not.is", "null")
-        .limit(500)
-        .execute()
     )
-    rows = response.data or []
 
     # Compute distance, filter by radius, then group by subcategory.
     # limit_per_category is applied AFTER the radius filter.

@@ -4,8 +4,9 @@ Personalized province recommendation endpoints.
 """
 
 import asyncio
+import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from db.supabase_client import get_supabase
 from services.ttl_cache import TtlCache
@@ -29,10 +30,10 @@ def _gallery_urls(gallery_raw):
     return urls
 
 
-def _place_response(place: dict, *, include_detailed_description: bool = False) -> dict:
+def _place_response(place: dict) -> dict:
     sub = place.get("place_subcategory") or {}
     gallery_urls = _gallery_urls(place.get("gallery"))
-    response = {
+    return {
         "id_place": str(place["id_place"]),
         "name": place.get("name"),
         "short_description": place.get("short_description"),
@@ -54,15 +55,19 @@ def _place_response(place: dict, *, include_detailed_description: bool = False) 
         "cf_score": round(float(place.get("cf_score") or 0), 4),
         "final_score": round(float(place.get("final_score") or 0), 4),
     }
-    # Long copy is intentionally restricted to the individual detail endpoint
-    # so province/card payloads stay small and continue using short copy.
-    if include_detailed_description:
-        response["detailed_description"] = place.get("detailed_description")
+
+
+def _place_detail_response(place: dict) -> dict:
+    """Return the detail-only shape; list/card payloads stay short-form."""
+
+    response = _place_response(place)
+    response["detailed_description"] = place.get("detailed_description")
     return response
 
 
 @router.get("/api/recommend/provinces")
 async def get_recommended_provinces(
+    response: Response,
     # id_user is required because the recommend edge function always sends
     # it (see backend/supabase/functions/recommend/recommend_handler.ts) —
     # kept on the route so that call keeps working, even though the
@@ -73,6 +78,13 @@ async def get_recommended_provinces(
 ):
     from services.recommend_service import recommend_provinces
     results = await asyncio.to_thread(recommend_provinces, supabase, limit)
+    # Province data barely changes intraday and the handler itself already
+    # holds a 600s in-process TtlCache (_PROVINCES_CACHE, recommend_service.py)
+    # — this header lets any HTTP-level cache (client, CDN) skip the round
+    # trip entirely instead of re-hitting this endpoint every time. 1h, not
+    # something longer, so an admin edit to province data still shows up
+    # same-day rather than being stuck behind a multi-day client cache.
+    response.headers["Cache-Control"] = "public, max-age=3600"
     return {"provinces": results}
 
 
@@ -83,6 +95,19 @@ async def get_province_detail(
     limit: int = 20,
     supabase=Depends(get_supabase),
 ):
+    # place.id_province is a `uuid` Postgres column — a non-UUID id_province
+    # (e.g. a Flutter-side mock/slug id like "hochiminh" leaking into a real
+    # request — see recommend_where_search_page.dart's mock fallback) would
+    # otherwise reach PostgREST and come back as an opaque 22P02 error from
+    # deep inside _get_province_detail_sync(). Fail fast with a clear 400
+    # instead, before touching the DB at all.
+    try:
+        uuid.UUID(id_province)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid province id: {id_province!r} is not a valid UUID.",
+        )
     return await asyncio.to_thread(
         _get_province_detail_sync, supabase, id_province, id_user, limit
     )
@@ -203,9 +228,10 @@ def _get_recommended_place_sync(supabase, id_place: str):
         supabase.table("place_localized_en")
         .select(
             "id_place,name,short_description,address,phone,website,"
+            "detailed_description,"
             "cover_image,gallery,average_rating,review_count,"
             "estimated_duration_minutes,minimum_price,maximum_price,"
-            "timespan,timeclose,detailed_description,place_subcategory(name)"
+            "timespan,timeclose,place_subcategory(name)"
         )
         .eq("id_place", id_place)
         .limit(1)
@@ -214,6 +240,6 @@ def _get_recommended_place_sync(supabase, id_place: str):
     )
     if not rows:
         return {"place": None}
-    result = {"place": _place_response(rows[0], include_detailed_description=True)}
+    result = {"place": _place_detail_response(rows[0])}
     _PLACE_DETAIL_CACHE.set(id_place, result)
     return result

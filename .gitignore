@@ -59,6 +59,7 @@ plan.md
 spec.md
 .merge-worktree/
 .worktrees/
+.artifacts/place-content/
 backend/node_modules/
 backend/supabase/.temp/
 backend/crawldata/.env

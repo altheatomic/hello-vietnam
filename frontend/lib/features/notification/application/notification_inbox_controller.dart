@@ -26,6 +26,25 @@ class NotificationInboxController extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   int get unreadCount => _unreadCount;
 
+  /// Defers [notifyListeners] out of the current synchronous call stack.
+  ///
+  /// This controller is a singleton with `ListenableBuilder`s mounted on
+  /// multiple simultaneously-live routes (e.g. Home's bell-icon badge stays
+  /// mounted underneath a pushed NotificationPage). Calling
+  /// [notifyListeners] synchronously — e.g. from `initState()` — can land
+  /// inside another route's build phase and trigger
+  /// "setState()/markNeedsBuild() called during build". `Future.microtask`
+  /// (rather than `WidgetsBinding.instance.addPostFrameCallback`) is used
+  /// here specifically because this controller is unit-tested with plain
+  /// `test()` blocks that never initialize a Flutter binding or pump a
+  /// frame — a microtask still escapes the current build-phase call stack
+  /// without depending on Flutter's binding/frame scheduling.
+  void _notify() {
+    Future.microtask(() {
+      if (hasListeners) notifyListeners();
+    });
+  }
+
   Future<void> loadInitial() => _replaceAll();
 
   Future<void> refresh() => _replaceAll();
@@ -34,7 +53,7 @@ class NotificationInboxController extends ChangeNotifier {
     final int generation = ++_requestGeneration;
     _isInitialLoading = _items.isEmpty;
     _errorMessage = null;
-    notifyListeners();
+    _notify();
     try {
       final List<Object> result = await Future.wait<Object>(<Future<Object>>[
         _repository.fetchPage(),
@@ -54,7 +73,7 @@ class NotificationInboxController extends ChangeNotifier {
     } finally {
       if (generation == _requestGeneration) {
         _isInitialLoading = false;
-        notifyListeners();
+        _notify();
       }
     }
   }
@@ -65,7 +84,7 @@ class NotificationInboxController extends ChangeNotifier {
     final int generation = _requestGeneration;
     _isLoadingMore = true;
     _errorMessage = null;
-    notifyListeners();
+    _notify();
     try {
       final NotificationPageResult page = await _repository.fetchPage(
         cursor: cursor,
@@ -81,7 +100,7 @@ class NotificationInboxController extends ChangeNotifier {
     } finally {
       if (generation == _requestGeneration) {
         _isLoadingMore = false;
-        notifyListeners();
+        _notify();
       }
     }
   }
@@ -92,13 +111,13 @@ class NotificationInboxController extends ChangeNotifier {
     final AppNotification previous = _items[index];
     _items[index] = previous.copyWith(isRead: true);
     _unreadCount = (_unreadCount - 1).clamp(0, 1 << 31);
-    notifyListeners();
+    _notify();
     try {
       await _repository.markRead(id);
     } catch (_) {
       _items[index] = previous;
       _unreadCount += 1;
-      notifyListeners();
+      _notify();
       rethrow;
     }
   }
@@ -110,7 +129,7 @@ class NotificationInboxController extends ChangeNotifier {
       _items[index] = _items[index].copyWith(isRead: true);
     }
     _unreadCount = 0;
-    notifyListeners();
+    _notify();
     try {
       await _repository.markAllRead();
     } catch (_) {
@@ -118,14 +137,14 @@ class NotificationInboxController extends ChangeNotifier {
         ..clear()
         ..addAll(previous);
       _unreadCount = previousCount;
-      notifyListeners();
+      _notify();
       rethrow;
     }
   }
 
   void notifyPushReceived() {
     _unreadCount += 1;
-    notifyListeners();
+    _notify();
   }
 
   void reset() {
@@ -136,7 +155,7 @@ class NotificationInboxController extends ChangeNotifier {
     _unreadCount = 0;
     _isInitialLoading = false;
     _isLoadingMore = false;
-    notifyListeners();
+    _notify();
   }
 
   List<AppNotification> _dedupe(List<AppNotification> values) {

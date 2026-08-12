@@ -1,7 +1,9 @@
 alter table public.place_translation
   add column if not exists detailed_description text;
+
 comment on column public.place_translation.detailed_description is
   'Localized long-form place description; description remains short-form.';
+
 create or replace view public.place_localized_en
 with (security_invoker = true)
 as

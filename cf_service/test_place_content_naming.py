@@ -1,94 +1,103 @@
 import unittest
 
-from scripts.place_content_backfill.constants import APPROVED_PROVINCES
-from scripts.place_content_backfill.models import (
-    BaselineRecord,
-    SourceFact,
-    SourceSnapshot,
-    TranslationBaseline,
-)
+from scripts.place_content_backfill.models import BaselineRecord, SourceFact, SourceSnapshot
 from scripts.place_content_backfill.naming import normalize_names
 
 
-def _record(name: str, *, category: str | None = None, subcategory: str | None = None) -> BaselineRecord:
-    return BaselineRecord(
+CASES = [
+    ("Sông Hương", "Hương River"),
+    ("Chùa Thiên Mụ", "Thiên Mụ Pagoda"),
+    ("Chợ Bến Thành", "Bến Thành Market"),
+    ("Núi Bà Đen", "Bà Đen Mountain"),
+    ("Bánh Mì Phượng", "Bánh Mì Phượng"),
+    ("Nhà Thờ Họ Đạo Cái Cấm", "Cái Cấm Parish Church"),
+]
+
+
+def record(name: str, **overrides) -> BaselineRecord:
+    values = {
+        "place_id": "place-1",
+        "province_id": "b5f3ef5e-dc49-4482-88e3-a8048cb32639",
+        "status": "active",
+        "vi_name": name,
+        "vi_short_description": "Mô tả",
+        "input_hash": "hash",
+        "subcategory_name": "Culture",
+        "subcategory_category": "culture",
+    }
+    values.update(overrides)
+    return BaselineRecord(**values)
+
+
+def snapshot(*facts: SourceFact) -> SourceSnapshot:
+    return SourceSnapshot(
         place_id="place-1",
-        province_id=APPROVED_PROVINCES[0],
-        name=name,
-        subcategory_category=category,
-        subcategory_name=subcategory,
-        vi=TranslationBaseline(id="vi-1", place_id="place-1", lang_code="vi", name=name),
-        en=TranslationBaseline(id="en-1", place_id="place-1", lang_code="en", name=None),
+        baseline_input_hash="hash",
+        facts=facts,
     )
 
 
-def _sources(*facts: SourceFact) -> SourceSnapshot:
-    return SourceSnapshot(place_id="place-1", facts=tuple(facts))
-
-
 class PlaceContentNamingTest(unittest.TestCase):
-    def test_approved_regression_cases(self):
-        cases = (
-            ("Sông Hương", "Hương River"),
-            ("Chùa Thiên Mụ", "Thiên Mụ Pagoda"),
-            ("Chợ Bến Thành", "Bến Thành Market"),
-            ("Núi Bà Đen", "Bà Đen Mountain"),
-            ("Bánh Mì Phượng", "Bánh Mì Phượng"),
-            ("Nhà Thờ Họ Đạo Cái Cấm", "Cái Cấm Parish Church"),
+    def test_approved_regressions_preserve_proper_name_tokens(self):
+        for vietnamese_name, expected_english_name in CASES:
+            with self.subTest(vietnamese_name=vietnamese_name):
+                decision = normalize_names(record(vietnamese_name), snapshot())
+                self.assertEqual(decision.en_name, expected_english_name)
+                self.assertGreaterEqual(decision.confidence, 0.85)
+                self.assertFalse(decision.review_only)
+
+    def test_longest_first_mapping_wins(self):
+        decision = normalize_names(record("Nhà Thờ Giáo Xứ Cái Cấm"), snapshot())
+        self.assertEqual(decision.en_name, "Cái Cấm Parish Church")
+        self.assertNotIn("Parish Church Parish Church", decision.en_name)
+
+    def test_prefix_match_is_case_insensitive_but_slices_original_unicode(self):
+        decision = normalize_names(record("sÔNG Hương"), snapshot())
+        self.assertEqual(decision.en_name, "Hương River")
+
+    def test_brand_like_name_stays_unchanged_without_geographic_evidence(self):
+        decision = normalize_names(
+            record("Sông Xanh", subcategory_name="Nhà hàng", subcategory_category="food"),
+            snapshot(),
         )
-        for vietnamese, english in cases:
-            with self.subTest(vietnamese=vietnamese):
-                decision = normalize_names(_record(vietnamese), _sources())
-                self.assertEqual(decision.vietnamese_name, vietnamese)
-                self.assertEqual(decision.english_name, english)
+        self.assertEqual(decision.en_name, "Sông Xanh")
+        self.assertTrue(decision.review_only)
 
-    def test_literal_translation_and_protected_tokens_are_rejected(self):
-        river = normalize_names(_record("Sông Hương"), _sources())
-        church = normalize_names(_record("Nhà Thờ Họ Đạo Cái Cấm"), _sources())
-        personal = normalize_names(_record("Bề Bề Nội"), _sources())
-        self.assertNotEqual(river.english_name, "Perfume River")
-        self.assertNotIn("Forbidden", church.english_name)
-        self.assertNotIn("Interior Surface", personal.english_name)
-
-    def test_source_priority_rejects_bad_osm_english_and_accepts_verified_official_name(self):
-        facts = _sources(
-            SourceFact(fact_id="osm.name_vi", value="Sông Hương", source_url="https://www.openstreetmap.org/way/1", source_kind="osm"),
-            SourceFact(fact_id="osm.name_en", value="Perfume River", source_url="https://www.openstreetmap.org/way/1", source_kind="osm"),
-            SourceFact(fact_id="official.name", value="Huong River", source_url="https://example.com", source_kind="official_site"),
+    def test_geographic_brand_like_name_requires_corroborated_osm_type(self):
+        evidence = SourceFact(
+            fact_id="osm:node:1:natural",
+            source_type="osm",
+            source_url="https://www.openstreetmap.org/node/1",
+            claim="natural=water",
+            confidence=0.95,
+            value="water",
         )
-        decision = normalize_names(_record("Sông Hương"), facts)
-        self.assertEqual(decision.vietnamese_name, "Sông Hương")
-        self.assertEqual(decision.english_name, "Huong River")
-        self.assertIn("Perfume River", decision.rejected_alternatives)
-
-    def test_longest_generic_match_and_context(self):
-        church = normalize_names(_record("Nhà Thờ Giáo Xứ Tân Định"), _sources())
-        museum = normalize_names(_record("Bảo Tàng Lịch Sử"), _sources())
-        restaurant = normalize_names(_record("Sông Tiền", category="Food", subcategory="Restaurant"), _sources())
-        river = normalize_names(_record("Sông Tiền", category="Nature", subcategory="River"), _sources())
-        self.assertEqual(church.english_name, "Tân Định Parish Church")
-        self.assertEqual(museum.english_name, "Lịch Sử Museum")
-        self.assertEqual(restaurant.english_name, "Sông Tiền")
-        self.assertEqual(river.english_name, "Tiền River")
-
-    def test_unmatched_tokens_digits_acronyms_and_brands_survive(self):
-        decision = normalize_names(_record("Bánh Mì Phượng 24/7"), _sources())
-        self.assertEqual(decision.english_name, "Bánh Mì Phượng 24/7")
-        branded = normalize_names(_record("VinFast", category="Transport"), _sources())
-        self.assertEqual(branded.english_name, "VinFast")
-
-    def test_name_vi_source_wins_when_identity_matches(self):
-        sources = _sources(
-            SourceFact(
-                fact_id="osm.name_vi",
-                value="Địa danh chính thức",
-                source_url="https://www.openstreetmap.org/node/123",
-                source_kind="osm",
-            ),
+        decision = normalize_names(
+            record("Sông Xanh", subcategory_name="Nhà hàng", subcategory_category="food"),
+            snapshot(evidence),
         )
-        decision = normalize_names(_record("Tên cũ"), sources)
-        self.assertEqual(decision.vietnamese_name, "Tên cũ")
-        self.assertIn("name:vi identity mismatch", decision.warnings)
+        self.assertEqual(decision.en_name, "Xanh River")
+        self.assertFalse(decision.review_only)
+
+    def test_unknown_generic_prefix_is_review_only(self):
+        decision = normalize_names(record("Khu Du Lịch Bà Nà"), snapshot())
+        self.assertEqual(decision.en_name, "Khu Du Lịch Bà Nà")
+        self.assertTrue(decision.review_only)
+        self.assertLess(decision.confidence, 0.85)
+
+    def test_ambiguous_official_override_is_review_only(self):
+        evidence = SourceFact(
+            fact_id="official:1:name",
+            source_type="official_site",
+            source_url="https://example.org",
+            claim="Official English name: Ba Na Hills",
+            confidence=0.99,
+            value="Ba Na Hills",
+        )
+        decision = normalize_names(record("Núi Bà Nà"), snapshot(evidence))
+        self.assertEqual(decision.en_name, "Bà Nà Mountain")
+        self.assertTrue(decision.review_only)
+        self.assertIn("official", " ".join(decision.warnings).lower())
 
 
 if __name__ == "__main__":

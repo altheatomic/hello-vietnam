@@ -304,19 +304,6 @@ class _DestinationCard extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      if (item.area.isNotEmpty) ...<Widget>[
-                        const SizedBox(height: 2),
-                        Text(
-                          removeVietnameseDiacritics(item.area),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),

@@ -331,8 +331,7 @@ class AppStrings {
   }
 
   static const Map<String, String> _viText = <String, String>{
-    'Still on this trip?': 'Bạn vẫn đang trong chuyến đi?',
-    'Have you completed your trip to': 'Bạn đã hoàn thành chuyến đi đến',
+    'Completed this trip?': 'Bạn đã hoàn thành chuyến đi này chưa?',
     'Not yet': 'Chưa',
     'Mark as completed': 'Đánh dấu đã hoàn thành',
     'Update your start date?': 'Cập nhật lại ngày bắt đầu?',
@@ -345,6 +344,11 @@ class AppStrings {
     'Could not end trip. Please try again.':
         'Không thể kết thúc chuyến đi. Vui lòng thử lại.',
     'Trip marked as completed.': 'Đã đánh dấu chuyến đi hoàn thành.',
+    'Ongoing trip': 'Chuyến đi đang diễn ra',
+    'You have an ongoing trip. End it to start this one?':
+        'Bạn đang có một chuyến đi khác. Kết thúc chuyến đó để bắt đầu chuyến này?',
+    'Keep current trip': 'Giữ chuyến đi hiện tại',
+    'End & start this one': 'Kết thúc & bắt đầu chuyến này',
     'Could not update start date. Please try again.':
         'Không thể cập nhật ngày bắt đầu. Vui lòng thử lại.',
     'Select new start date': 'Chọn ngày bắt đầu mới',
@@ -745,6 +749,19 @@ class AppStrings {
     'e.g. District 1, Ho Chi Minh City': 'VD: Quận 1, TP. Hồ Chí Minh',
     'Choose your budget': 'Chọn ngân sách',
     'Pick one option below to continue': 'Chọn một mức để tiếp tục',
+    'Do you want a lunch break?': 'Bạn có muốn nghỉ trưa không?',
+    'We can reserve a 90-minute midday break and suggest nearby '
+        'restaurants, or skip it and keep exploring instead.':
+        'Chúng tôi có thể giữ 90 phút nghỉ trưa và gợi ý nhà hàng gần đó, '
+        'hoặc bỏ qua để tiếp tục khám phá.',
+    'Yes, reserve lunch time': 'Có, giữ thời gian nghỉ trưa',
+    'Keep a midday break and see restaurant suggestions nearby.':
+        'Giữ khoảng nghỉ trưa và xem gợi ý nhà hàng gần đó.',
+    'No, keep exploring': 'Không, tiếp tục khám phá',
+    'Skip the midday break so the day can fit more activities '
+        'or end earlier.':
+        'Bỏ qua nghỉ trưa để lịch trình có thêm hoạt động hoặc kết thúc '
+        'sớm hơn.',
     'Generate': 'Tạo lịch trình',
     'e.g. 800,000 VND per day': 'VD: 800.000 VND/ngày',
     'Choose your travel dates': 'Chọn ngày đi',
@@ -1099,6 +1116,20 @@ class AppStrings {
     'm': ' phút',
     'Create Trip on Google Maps': 'Tạo chuyến đi trên Google Maps',
     'Back to trip planner': 'Quay lại Lịch trình',
+    'Create Trip Plan': 'Lên kế hoạch chuyến đi',
+    'Explore this province': 'Khám phá tỉnh này',
+    "Couldn't load destinations. Please check your connection and try again.":
+        'Không thể tải danh sách điểm đến. Vui lòng kiểm tra kết nối và thử lại.',
+    'Missing trip details. Please start from the beginning.':
+        'Thiếu thông tin chuyến đi. Vui lòng bắt đầu lại từ đầu.',
+    'Missing business location. Please go back and enter an address.':
+        'Thiếu địa điểm công tác. Vui lòng quay lại và nhập địa chỉ.',
+    'Not enough places found for your selection. Try selecting more '
+            'interests (step 4) or fewer days (step 3).':
+        'Không đủ địa điểm phù hợp với lựa chọn của bạn. Hãy thử chọn thêm '
+            'sở thích (bước 4) hoặc giảm số ngày (bước 3).',
+    'Could not generate your trip. Please try again.':
+        'Không thể tạo chuyến đi. Vui lòng thử lại.',
     'Destinations': 'Điểm đến',
     'No destinations available yet.': 'Hiện chưa có điểm đến.',
     'Generating your personalised itinerary…':

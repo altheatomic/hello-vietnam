@@ -19,6 +19,7 @@ import datetime
 from db.connection import get_pool
 from ml.matrix_a   import build_matrix_A
 from ml.wals_model import train_wals, compute_cf_scores
+from services.module1_repository import clear_cf_factor_caches
 
 
 async def _load_events_from_db(conn) -> dict:
@@ -145,6 +146,12 @@ async def run_cf_retrain(triggered_by: str = 'cron') -> dict:
             await _save_cf_scores(conn, scores)
             await _save_user_factors(conn, user_ids, U)
             await _save_place_factors(conn, place_ids, V)
+
+            # New factors are now live in cf_user_factors/cf_place_factors —
+            # drop the in-process caches so the next read (trip_planner.py /
+            # routes/recommend.py) sees them immediately instead of serving
+            # stale factors until the TTL safety net expires.
+            clear_cf_factor_caches()
 
             users_trained  = len(user_ids)
             places_trained = len(place_ids)

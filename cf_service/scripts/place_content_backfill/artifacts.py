@@ -1,193 +1,273 @@
-"""Crash-safe, secret-free JSONL checkpoint artifacts."""
-
 from __future__ import annotations
 
 import csv
 import json
 import os
-import re
-import tempfile
 from pathlib import Path
-from typing import Any
+import re
+import subprocess
+import tempfile
+from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
-from pydantic import BaseModel
-
-from .constants import ARTIFACT_STREAMS, SECRET_KEY_MARKERS
-from .models import Proposal, RunManifest, model_to_jsonable
+from .constants import ARTIFACT_FILENAMES, REVIEW_CSV_FIELDS
 
 
-_POSTGRES_URL = re.compile(r"\b(?:postgres(?:ql)?|postgresql\+\w+)://", re.I)
-_BEARER = re.compile(r"\bbearer\s+[A-Za-z0-9._~+/=-]+", re.I)
+class SecretArtifactError(ValueError):
+    """Raised before a secret-shaped key or value can enter an artifact."""
+
+
+class WorkerFailure(RuntimeError):
+    """Raised when a bounded worker exits unsuccessfully."""
+
+
+_SECRET_KEY_RE = re.compile(
+    r"(?:api[_-]?key|authorization|service[_-]?role|database[_-]?url|"
+    r"password|secret|private[_-]?key|access[_-]?token)",
+    re.IGNORECASE,
+)
+_SECRET_VALUE_RE = re.compile(
+    r"(?:DEEPSEEK_API_KEY|SUPABASE_SERVICE_ROLE_KEY|DATABASE_URL)\s*=|"
+    r"^Bearer\s+\S+|postgres(?:ql)?://[^\s:]+:[^\s@]+@",
+    re.IGNORECASE,
+)
+
+
+def _reject_secrets(value: Any, path: str = "artifact") -> None:
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            key_text = str(key)
+            if _SECRET_KEY_RE.search(key_text):
+                raise SecretArtifactError(f"secret-shaped key refused at {path}.{key_text}")
+            _reject_secrets(child, f"{path}.{key_text}")
+        return
+    if isinstance(value, (list, tuple, set)):
+        for index, child in enumerate(value):
+            _reject_secrets(child, f"{path}[{index}]")
+        return
+    if isinstance(value, str) and _SECRET_VALUE_RE.search(value.strip()):
+        raise SecretArtifactError(f"secret-shaped value refused at {path}")
+
+
+def _json_dump(value: Any) -> str:
+    _reject_secrets(value)
+    try:
+        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"artifact value is not JSON serializable: {exc}") from exc
+
+
+def _fsync_directory(directory: Path) -> None:
+    flags = os.O_RDONLY
+    if hasattr(os, "O_DIRECTORY"):
+        flags |= os.O_DIRECTORY
+    try:
+        descriptor = os.open(str(directory), flags)
+    except OSError:
+        # Windows does not allow opening a directory as a file descriptor.
+        # The manifest itself was already fsynced before os.replace.
+        return
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 class ArtifactStore:
-    def __init__(self, root: Path, run_id: str) -> None:
+    """Streaming, append-only artifact storage for one backfill run."""
+
+    def __init__(self, root: str | Path, run_id: str) -> None:
         self.root = Path(root)
-        self.run_id = run_id
-        self.path = self.root / run_id
-        self.path.mkdir(parents=True, exist_ok=True)
+        self.run_dir = self.root / run_id
+        self.run_dir.mkdir(parents=True, exist_ok=True)
 
-    def write_manifest(self, manifest: RunManifest) -> None:
-        self._reject_secrets(manifest.model_dump(mode="json"))
-        self._atomic_write_json(self.path / "manifest.json", manifest.model_dump(mode="json"))
+    def path(self, stream: str) -> Path:
+        try:
+            filename = ARTIFACT_FILENAMES[stream]
+        except KeyError as exc:
+            raise ValueError(f"unknown artifact stream: {stream}") from exc
+        return self.run_dir / filename
 
-    def read_manifest(self) -> RunManifest:
-        with (self.path / "manifest.json").open("r", encoding="utf-8") as handle:
-            return RunManifest.model_validate(json.load(handle))
-
-    def append(self, stream: str, value: BaseModel | dict[str, Any]) -> None:
-        filename = self._stream_filename(stream)
-        payload = model_to_jsonable(value)
-        self._reject_secrets(payload)
-        line = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-        target = self.path / filename
-        with target.open("a", encoding="utf-8", newline="\n") as handle:
-            handle.write(line + "\n")
+    def append_jsonl(self, stream: str, record: Mapping[str, Any]) -> None:
+        if not ARTIFACT_FILENAMES[stream].endswith(".jsonl"):
+            raise ValueError(f"stream is not JSONL: {stream}")
+        line = _json_dump(dict(record)) + "\n"
+        destination = self.path(stream)
+        with destination.open("a", encoding="utf-8", newline="") as handle:
+            handle.write(line)
             handle.flush()
             os.fsync(handle.fileno())
 
-    def replace_stream(self, stream: str, values: list[BaseModel | dict[str, Any]]) -> None:
-        """Atomically replace a checkpoint stream during deterministic revalidation."""
-
-        filename = self._stream_filename(stream)
-        target = self.path / filename
-        temporary = self._temporary_path(target)
-        try:
-            with temporary.open("w", encoding="utf-8", newline="\n") as handle:
-                for value in values:
-                    payload = model_to_jsonable(value)
-                    self._reject_secrets(payload)
-                    line = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-                    handle.write(line + "\n")
-                handle.flush()
-                os.fsync(handle.fileno())
-            os.replace(temporary, target)
-        finally:
-            if temporary.exists():
-                temporary.unlink()
-
-    def read_all(self, stream: str) -> list[dict[str, Any]]:
-        target = self.path / self._stream_filename(stream)
-        if not target.exists():
-            return []
-        values: list[dict[str, Any]] = []
-        with target.open("r", encoding="utf-8") as handle:
+    def iter_stream(self, stream: str) -> Iterator[dict[str, Any]]:
+        if not ARTIFACT_FILENAMES[stream].endswith(".jsonl"):
+            raise ValueError(f"stream is not JSONL: {stream}")
+        destination = self.path(stream)
+        if not destination.exists():
+            return
+        with destination.open("r", encoding="utf-8") as handle:
             for line_number, line in enumerate(handle, start=1):
                 if not line.strip():
                     continue
                 try:
-                    value = json.loads(line)
+                    record = json.loads(line)
                 except json.JSONDecodeError as exc:
-                    raise ValueError(f"invalid {stream}.jsonl line {line_number}") from exc
-                if not isinstance(value, dict):
-                    raise ValueError(f"{stream}.jsonl line {line_number} is not an object")
-                values.append(value)
-        return values
+                    raise ValueError(f"invalid JSONL at {destination}:{line_number}") from exc
+                if not isinstance(record, dict):
+                    raise ValueError(f"JSONL record is not an object at {destination}:{line_number}")
+                yield record
 
-    def completed_place_ids(self, stream: str) -> set[str]:
-        result: set[str] = set()
-        for value in self.read_all(stream):
-            place_id = value.get("place_id") or value.get("id_place")
-            if place_id:
-                result.add(str(place_id))
-        return result
+    def read_all(self, stream: str) -> list[dict[str, Any]]:
+        """Test convenience only; production commands must use iter_stream."""
 
-    def write_review_csv(self, proposals: list[Proposal]) -> Path:
-        target = self.path / "needs-review.csv"
-        fieldnames = [
-            "place_id",
-            "province_id",
-            "current_name_vi",
-            "proposed_name_vi",
-            "current_name_en",
-            "proposed_name_en",
-            "short_description_vi",
-            "detailed_description_vi",
-            "short_description_en",
-            "detailed_description_en",
-            "validation_flags",
-            "source_urls",
-            "reviewer_decision",
-            "reviewer_notes",
-        ]
-        temporary = self._temporary_path(target)
+        return list(self.iter_stream(stream))
+
+    def completed_place_ids(self, stream: str, input_hash: str | None = None) -> set[str]:
+        completed: set[str] = set()
+        for record in self.iter_stream(stream):
+            place_id = record.get("place_id")
+            if not place_id:
+                continue
+            if input_hash is None or record.get("input_hash", record.get("baseline_input_hash")) == input_hash:
+                completed.add(str(place_id))
+        return completed
+
+    def write_manifest(self, manifest: Mapping[str, Any] | Any) -> None:
+        payload = manifest.model_dump(mode="json") if hasattr(manifest, "model_dump") else dict(manifest)
+        encoded = _json_dump(payload) + "\n"
+        self.run_dir.mkdir(parents=True, exist_ok=True)
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=".manifest-", suffix=".tmp", dir=self.run_dir
+        )
+        temporary_path = Path(temporary_name)
         try:
-            with temporary.open("w", encoding="utf-8", newline="") as handle:
-                writer = csv.DictWriter(handle, fieldnames=fieldnames)
-                writer.writeheader()
-                for proposal in proposals:
-                    content = proposal.content
-                    validation = proposal.validation
-                    writer.writerow(
-                        {
-                            "place_id": proposal.place_id,
-                            "province_id": proposal.province_id,
-                            "current_name_vi": proposal.current_name_vi or "",
-                            "proposed_name_vi": proposal.proposed_name_vi or "",
-                            "current_name_en": proposal.current_name_en or "",
-                            "proposed_name_en": proposal.proposed_name_en or "",
-                            "short_description_vi": content.short_description_vi if content else "",
-                            "detailed_description_vi": content.detailed_description_vi if content else "",
-                            "short_description_en": content.short_description_en if content else "",
-                            "detailed_description_en": content.detailed_description_en if content else "",
-                            "validation_flags": ";".join(validation.flags if validation else ()),
-                            "source_urls": ";".join(proposal.source_urls),
-                            "reviewer_decision": proposal.reviewer_decision or "",
-                            "reviewer_notes": proposal.reviewer_notes or "",
-                        }
-                    )
+            with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as handle:
+                handle.write(encoded)
                 handle.flush()
                 os.fsync(handle.fileno())
-            os.replace(temporary, target)
+            os.replace(temporary_path, self.path("manifest"))
+            _fsync_directory(self.run_dir)
         finally:
-            if temporary.exists():
-                temporary.unlink()
-        return target
+            temporary_path.unlink(missing_ok=True)
 
-    def _stream_filename(self, stream: str) -> str:
-        if stream not in ARTIFACT_STREAMS:
-            raise ValueError(f"unknown artifact stream: {stream}")
-        return f"{stream}.jsonl"
+    def export_review_csv(
+        self,
+        rows: Iterable[Mapping[str, Any]],
+        fieldnames: Sequence[str] = REVIEW_CSV_FIELDS,
+    ) -> None:
+        destination = self.path("needs-review")
+        fields = tuple(fieldnames)
+        with destination.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
+            writer.writeheader()
+            for row in rows:
+                _reject_secrets(row)
+                writer.writerow({field: row.get(field, "") for field in fields})
+            handle.flush()
+            os.fsync(handle.fileno())
 
-    def _atomic_write_json(self, target: Path, payload: Any) -> None:
-        temporary = self._temporary_path(target)
+    def replace_derived_outputs(
+        self,
+        rows: Iterable[tuple[Mapping[str, Any] | None, Mapping[str, Any] | None]],
+        fieldnames: Sequence[str] = REVIEW_CSV_FIELDS,
+    ) -> None:
+        """Atomically rebuild approved JSONL and review CSV in one stream.
+
+        Each input tuple contains an optional approved record and an optional
+        review row.  The iterator is consumed once, so validation can rebuild
+        both derived artifacts without retaining all proposals or CSV rows.
+        """
+
+        approved_descriptor, approved_name = tempfile.mkstemp(
+            prefix=".approved-", suffix=".tmp", dir=self.run_dir
+        )
+        review_descriptor, review_name = tempfile.mkstemp(
+            prefix=".needs-review-", suffix=".tmp", dir=self.run_dir
+        )
+        approved_path = Path(approved_name)
+        review_path = Path(review_name)
         try:
-            with temporary.open("w", encoding="utf-8", newline="\n") as handle:
-                json.dump(payload, handle, ensure_ascii=False, sort_keys=True, indent=2)
-                handle.write("\n")
-                handle.flush()
-                os.fsync(handle.fileno())
-            os.replace(temporary, target)
-        finally:
-            if temporary.exists():
-                temporary.unlink()
-
-    def _temporary_path(self, target: Path) -> Path:
-        descriptor, name = tempfile.mkstemp(prefix=f".{target.name}.", dir=self.path)
-        os.close(descriptor)
-        return Path(name)
-
-    @classmethod
-    def _reject_secrets(cls, value: Any, path: str = "root") -> None:
-        if isinstance(value, dict):
-            for key, nested in value.items():
-                normalized = re.sub(r"[^a-z0-9]", "", str(key).lower())
-                if any(marker.replace("_", "") in normalized for marker in SECRET_KEY_MARKERS):
-                    raise ValueError(f"secret-shaped artifact field: {path}.{key}")
-                cls._reject_secrets(nested, f"{path}.{key}")
-            return
-        if isinstance(value, (list, tuple)):
-            for index, nested in enumerate(value):
-                cls._reject_secrets(nested, f"{path}[{index}]")
-            return
-        if isinstance(value, str):
-            if _POSTGRES_URL.search(value) or _BEARER.search(value):
-                raise ValueError(f"secret-shaped artifact value: {path}")
-            for environment_name in (
-                "DEEPSEEK_API_KEY",
-                "SUPABASE_SERVICE_ROLE_KEY",
-                "DATABASE_URL",
+            with (
+                os.fdopen(approved_descriptor, "w", encoding="utf-8", newline="") as approved_handle,
+                os.fdopen(review_descriptor, "w", encoding="utf-8", newline="") as review_handle,
             ):
-                secret = os.environ.get(environment_name)
-                if secret and len(secret) > 8 and secret in value:
-                    raise ValueError(f"environment secret found in artifact: {path}")
+                writer = csv.DictWriter(
+                    review_handle,
+                    fieldnames=tuple(fieldnames),
+                    extrasaction="ignore",
+                )
+                writer.writeheader()
+                for approved_record, review_row in rows:
+                    if approved_record is not None:
+                        approved_handle.write(_json_dump(dict(approved_record)) + "\n")
+                    if review_row is not None:
+                        _reject_secrets(review_row)
+                        writer.writerow({
+                            field: review_row.get(field, "")
+                            for field in fieldnames
+                        })
+                approved_handle.flush()
+                os.fsync(approved_handle.fileno())
+                review_handle.flush()
+                os.fsync(review_handle.fileno())
+            os.replace(approved_path, self.path("approved"))
+            os.replace(review_path, self.path("needs-review"))
+            _fsync_directory(self.run_dir)
+        finally:
+            approved_path.unlink(missing_ok=True)
+            review_path.unlink(missing_ok=True)
+
+    def iter_review_csv(self) -> Iterator[dict[str, str]]:
+        destination = self.path("needs-review")
+        if not destination.exists():
+            return
+        with destination.open("r", encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            for row in reader:
+                _reject_secrets(row)
+                yield dict(row)
+
+
+class ChunkSupervisor:
+    """Run bounded workers serially and retain only status metadata."""
+
+    def __init__(self, artifact_store: ArtifactStore) -> None:
+        self.artifact_store = artifact_store
+
+    def run_serial(
+        self,
+        place_ids: Iterable[str],
+        chunk_size: int,
+        command_builder: Callable[[tuple[str, ...], Path], Sequence[str]],
+        completed_ids: Iterable[str] = (),
+    ) -> int:
+        if chunk_size <= 0:
+            raise ValueError("chunk_size must be positive")
+        completed = set(completed_ids)
+        pending_chunk: list[str] = []
+        worker_index = 0
+        launched = 0
+
+        def launch(chunk: tuple[str, ...], index: int) -> None:
+            nonlocal launched
+            status_path = self.artifact_store.run_dir / f"worker-{index:05d}.status.json"
+            command = list(command_builder(chunk, status_path))
+            if not command:
+                raise ValueError("worker command must not be empty")
+            result = subprocess.run(command, check=False, stdout=None, stderr=None)
+            if result.returncode != 0:
+                raise WorkerFailure(
+                    f"worker {index} exited with status {result.returncode}; "
+                    "prior checkpoints remain resumable"
+                )
+            launched += 1
+
+        for place_id in place_ids:
+            if str(place_id) in completed:
+                continue
+            pending_chunk.append(str(place_id))
+            if len(pending_chunk) == chunk_size:
+                launch(tuple(pending_chunk), worker_index)
+                worker_index += 1
+                pending_chunk.clear()
+        if pending_chunk:
+            launch(tuple(pending_chunk), worker_index)
+        return launched

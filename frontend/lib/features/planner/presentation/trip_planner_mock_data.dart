@@ -383,6 +383,8 @@ class TripPlannerDayData {
     required this.moreActivitiesLabel,
     required this.activities,
     required this.gradientColors,
+    this.provinceName = '',
+    this.includeLunchBreak = true,
   });
 
   final String dayLabel;
@@ -391,6 +393,15 @@ class TripPlannerDayData {
   final String moreActivitiesLabel;
   final List<TripPlannerActivityData> activities;
   final List<Color> gradientColors;
+  final String provinceName;
+  /// Plan-level Step 5 choice (TripPlanResponse.includeLunchBreak), carried
+  /// per-day only because this is the shape state.extra hands to
+  /// TripDayDetailPage — every day of one plan shares the same value.
+  /// Gates LunchDiscoveryCard: selectLunchAnchor() has no way to tell "no
+  /// lunch break requested" from "lunch break got dropped for some other
+  /// reason", so this explicit flag is required instead of inferring from
+  /// the activities list.
+  final bool includeLunchBreak;
 
   Map<String, dynamic> toJson() => {
         'dayLabel': dayLabel,
@@ -399,6 +410,8 @@ class TripPlannerDayData {
         'moreActivitiesLabel': moreActivitiesLabel,
         'activities': activities.map((a) => a.toJson()).toList(),
         'gradientColors': gradientColors.map((c) => c.toARGB32()).toList(),
+        'provinceName': provinceName,
+        'includeLunchBreak': includeLunchBreak,
       };
 
   factory TripPlannerDayData.fromJson(Map<String, dynamic> json) =>
@@ -413,6 +426,8 @@ class TripPlannerDayData {
         gradientColors: (json['gradientColors'] as List)
             .map((v) => Color(v as int))
             .toList(),
+        provinceName: json['provinceName'] as String? ?? '',
+        includeLunchBreak: json['includeLunchBreak'] as bool? ?? true,
       );
 }
 
@@ -422,6 +437,7 @@ class TripPlannerActivityData {
     required this.time,
     required this.slot,
     required this.tag,
+    this.tags = const <String>[],
     required this.description,
     required this.distanceLabel,
     required this.tips,
@@ -445,7 +461,16 @@ class TripPlannerActivityData {
   final String title;
   final String time;
   final String slot;
+  /// Sentinel discriminator — 'lunch_break' for synthetic lunch entries,
+  /// otherwise unused for display (see [tags] for the place's real category
+  /// chips). Kept as-is: still load-bearing for the `a.tag != 'lunch_break'`
+  /// filters in trip_day_detail_page.dart and trip_result_page.dart.
   final String tag;
+  /// The place's own real tag_name list (place_tag rows above the backend's
+  /// confidence threshold — see cf_service _extract_place_tag_names()), NOT
+  /// a per-user match. Always a list, empty if the place has no qualifying
+  /// tag. This is what the category chip row should render from.
+  final List<String> tags;
   final String description;
   final String distanceLabel;
   final List<String> tips;
@@ -472,6 +497,7 @@ class TripPlannerActivityData {
         'time': time,
         'slot': slot,
         'tag': tag,
+        'tags': tags,
         'description': description,
         'distanceLabel': distanceLabel,
         'tips': tips,
@@ -498,6 +524,9 @@ class TripPlannerActivityData {
         time: json['time'] as String,
         slot: json['slot'] as String,
         tag: json['tag'] as String,
+        tags: json['tags'] is List
+            ? List<String>.from(json['tags'] as List)
+            : const <String>[],
         description: json['description'] as String,
         distanceLabel: json['distanceLabel'] as String,
         tips: List<String>.from(json['tips'] as List),

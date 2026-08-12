@@ -1,146 +1,119 @@
-"""Identity-first Wikidata/Wikipedia enrichment."""
-
 from __future__ import annotations
 
+import json
+import math
 import re
-from typing import Any
-from urllib.parse import unquote
+from typing import Any, Iterable
+from urllib.parse import quote
 
 import httpx
 
 from ..models import BaselineRecord, SourceFact
-from .http import request_with_retry
+from . import fetch_bytes
 
 
-_QID = re.compile(r"^Q[1-9][0-9]*$")
-_WIKIPEDIA = re.compile(r"^([a-z]{2,12}):(.+)$")
+MAX_WIKIMEDIA_RESPONSE_BYTES = 2 * 1024 * 1024
+_QID_RE = re.compile(r"^Q[0-9]+$")
+_PAGE_LINK_RE = re.compile(r"^([a-z]{2,3}):(.+)$", re.IGNORECASE)
 
 
-def is_wikidata_id(value: str | None) -> bool:
-    return bool(value and _QID.fullmatch(str(value).strip()))
+def parse_wikimedia_link(value: str) -> tuple[str, str] | None:
+    text = value.strip()
+    if _QID_RE.fullmatch(text):
+        return "wikidata", text
+    match = _PAGE_LINK_RE.fullmatch(text)
+    if match and match.group(2).strip() and "://" not in text:
+        return "wikipedia", f"{match.group(1).lower()}:{match.group(2)}"
+    return None
 
 
-def parse_wikipedia_tag(value: str | None) -> tuple[str, str] | None:
-    if not value:
-        return None
-    match = _WIKIPEDIA.fullmatch(str(value).strip())
-    if not match:
-        return None
-    return match.group(1), unquote(match.group(2))
+def _expected_type(record: BaselineRecord) -> str | None:
+    category = " ".join(
+        value for value in (record.subcategory_name, record.subcategory_category) if value
+    ).lower()
+    mapping = {
+        "chùa": "pagoda",
+        "pagoda": "pagoda",
+        "sân bay": "airport",
+        "airport": "airport",
+        "bảo tàng": "museum",
+        "museum": "museum",
+        "chợ": "market",
+        "market": "market",
+    }
+    for marker, expected in mapping.items():
+        if marker in category:
+            return expected
+    return None
 
 
-def article_identity_matches(
-    record: dict[str, Any],
-    article: dict[str, Any],
-    *,
-    coordinate_tolerance: float = 0.03,
-) -> bool:
-    """Require name plus at least two independent identity corroborations."""
-
-    if _normalize(record.get("name")) != _normalize(article.get("title")):
-        return False
-    corroborations = 0
-    if record.get("province_id") and article.get("province_id"):
-        if str(record["province_id"]) != str(article["province_id"]):
-            return False
-        corroborations += 1
-    if record.get("category") and article.get("category"):
-        if _normalize(record["category"]) != _normalize(article["category"]):
-            return False
-        corroborations += 1
-    try:
-        if record.get("latitude") is not None and article.get("latitude") is not None:
-            if abs(float(record["latitude"]) - float(article["latitude"])) > coordinate_tolerance:
-                return False
-            if abs(float(record["longitude"]) - float(article["longitude"])) > coordinate_tolerance:
-                return False
-            corroborations += 1
-    except (TypeError, ValueError, KeyError):
-        return False
-    return corroborations >= 2
-
-
-async def fetch_wikimedia_facts(
-    client: httpx.AsyncClient,
+def validate_wikimedia_evidence(
     record: BaselineRecord,
-) -> list[SourceFact]:
+    evidence: dict[str, Any],
+    *,
+    coordinate_tolerance_degrees: float = 0.5,
+) -> tuple[bool, list[str]]:
+    warnings: list[str] = []
+    evidence_province = evidence.get("province_id")
+    if evidence_province and str(evidence_province) != record.province_id:
+        warnings.append("wikimedia-province-conflict")
+    expected_type = _expected_type(record)
+    actual_type = str(evidence.get("type") or "").lower()
+    if expected_type and actual_type and expected_type not in actual_type:
+        warnings.append("wikimedia-type-conflict")
+    try:
+        latitude = float(evidence["latitude"])
+        longitude = float(evidence["longitude"])
+        if record.latitude is not None and record.longitude is not None:
+            if math.hypot(latitude - record.latitude, longitude - record.longitude) > coordinate_tolerance_degrees:
+                warnings.append("wikimedia-coordinate-conflict")
+    except (KeyError, TypeError, ValueError):
+        pass
+    return not warnings, warnings
+
+
+def _request_url(link_kind: str, identifier: str) -> str:
+    if link_kind == "wikidata":
+        return f"https://www.wikidata.org/wiki/Special:EntityData/{identifier}.json"
+    language, page_title = identifier.split(":", 1)
+    return f"https://{language}.wikipedia.org/api/rest_v1/page/summary/{quote(page_title, safe='')}"
+
+
+async def collect_wikimedia_facts(
+    record: BaselineRecord,
+    *,
+    links: Iterable[str],
+    client: httpx.AsyncClient,
+) -> tuple[list[SourceFact], list[str]]:
     facts: list[SourceFact] = []
-    qid = record.wikidata
-    if is_wikidata_id(qid):
-        response = await request_with_retry(
-            client,
-            "GET",
-            "https://www.wikidata.org/w/api.php",
-            params={
-                "action": "wbgetentities",
-                "ids": qid,
-                "format": "json",
-                "props": "labels|descriptions|claims",
-            },
-            timeout=20,
-            headers={"User-Agent": "hello-vietnam-place-content/1.0"},
+    warnings: list[str] = []
+    for link in links:
+        parsed = parse_wikimedia_link(link)
+        if parsed is None:
+            warnings.append(f"wikimedia-link-not-explicit:{record.place_id}")
+            continue
+        link_kind, identifier = parsed
+        url = _request_url(link_kind, identifier)
+        result = await fetch_bytes(client, "GET", url, max_bytes=MAX_WIKIMEDIA_RESPONSE_BYTES)
+        payload = json.loads(result.body.decode("utf-8"))
+        if link_kind == "wikidata" and "entities" in payload:
+            payload = payload.get("entities", {}).get(identifier, {})
+        accepted, evidence_warnings = validate_wikimedia_evidence(record, payload)
+        if not accepted:
+            warnings.extend(f"{warning}:{record.place_id}" for warning in evidence_warnings)
+            continue
+        extract = str(payload.get("extract") or payload.get("description") or "").strip()
+        if not extract:
+            warnings.append(f"wikimedia-empty-extract:{record.place_id}")
+            continue
+        facts.append(
+            SourceFact(
+                fact_id=f"wikimedia:{identifier}:extract",
+                source_type="wikimedia",
+                source_url=url,
+                claim=extract,
+                confidence=0.85,
+                value=extract,
+            )
         )
-        response.raise_for_status()
-        entity = (response.json().get("entities") or {}).get(qid) or {}
-        labels = entity.get("labels") or {}
-        descriptions = entity.get("descriptions") or {}
-        for lang, field_name in (("vi", "label_vi"), ("en", "label_en")):
-            value = (labels.get(lang) or {}).get("value")
-            if value:
-                facts.append(
-                    SourceFact(
-                        fact_id=f"wikidata.{field_name}",
-                        value=str(value),
-                        source_url=f"https://www.wikidata.org/wiki/{qid}",
-                        source_kind="wikidata",
-                    )
-                )
-        for lang, field_name in (("vi", "description_vi"), ("en", "description_en")):
-            value = (descriptions.get(lang) or {}).get("value")
-            if value:
-                facts.append(
-                    SourceFact(
-                        fact_id=f"wikidata.{field_name}",
-                        value=str(value),
-                        source_url=f"https://www.wikidata.org/wiki/{qid}",
-                        source_kind="wikidata",
-                    )
-                )
-
-    wikipedia = parse_wikipedia_tag(record.wikipedia)
-    if wikipedia:
-        lang, title = wikipedia
-        response = await request_with_retry(
-            client,
-            "GET",
-            f"https://{lang}.wikipedia.org/w/api.php",
-            params={
-                "action": "query",
-                "prop": "extracts",
-                "exintro": 1,
-                "explaintext": 1,
-                "titles": title,
-                "format": "json",
-            },
-            timeout=20,
-            headers={"User-Agent": "hello-vietnam-place-content/1.0"},
-        )
-        response.raise_for_status()
-        pages = ((response.json().get("query") or {}).get("pages") or {}).values()
-        for page in pages:
-            extract = str(page.get("extract") or "").strip()
-            if extract:
-                # Keep only a bounded evidence excerpt; never copy whole pages.
-                facts.append(
-                    SourceFact(
-                        fact_id="wikipedia.extract",
-                        value=extract[:600],
-                        source_url=f"https://{lang}.wikipedia.org/wiki/{title.replace(' ', '_')}",
-                        source_kind="wikipedia",
-                    )
-                )
-    return facts
-
-
-def _normalize(value: Any) -> str:
-    return " ".join(str(value or "").casefold().split())
+    return facts, warnings

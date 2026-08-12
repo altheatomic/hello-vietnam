@@ -6,14 +6,18 @@ import 'package:hellovietnam/app/router.dart';
 import 'package:hellovietnam/core/language/app_language.dart';
 import 'package:hellovietnam/core/network/supabase_function_client.dart';
 import 'package:hellovietnam/features/forum/data/forum_store.dart';
+import 'package:hellovietnam/features/planner/data/accommodation_recommendation_calculator.dart';
 import 'package:hellovietnam/features/planner/data/models/trip_plan_response.dart';
 import 'package:hellovietnam/features/planner/data/trip_repository.dart';
 import 'package:hellovietnam/features/planner/data/trip_store.dart';
 import 'package:hellovietnam/features/planner/data/trip_wizard_data.dart';
 import 'package:hellovietnam/features/planner/presentation/trip_planner_mock_data.dart';
+import 'package:hellovietnam/features/planner/presentation/widgets/accommodation_recommendation_card.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/start_date_picker_sheet.dart';
 import 'package:hellovietnam/features/planner/presentation/widgets/trip_share_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+enum _OngoingTripConflictAction { keep, endAndStart }
 
 class TripResultPage extends StatefulWidget {
   const TripResultPage({
@@ -80,6 +84,78 @@ class _TripResultPageState extends State<TripResultPage> {
 
   Future<void> _handleStartTrip(List<TripPlannerDayData> days) async {
     final String? idPlan = widget.plan.idPlan;
+
+    // If another trip is already active, confirm ending it before starting
+    // this one — starting the SAME active trip again (idPlan matches) falls
+    // through unchanged, exactly as before this check was added.
+    if (TripStore.instance.hasActiveTrip &&
+        TripStore.instance.activeTrip!.idPlan != idPlan) {
+      final ActiveTrip ongoingTrip = TripStore.instance.activeTrip!;
+      final _OngoingTripConflictAction? action =
+          await showDialog<_OngoingTripConflictAction>(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext dialogContext) => AlertDialog(
+              title: Text(context.l10n.ui('Ongoing trip')),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    ongoingTrip.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    context.l10n.ui(
+                      'You have an ongoing trip. End it to start this one?',
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(
+                        dialogContext,
+                      ).pop(_OngoingTripConflictAction.keep),
+                      child: Text(context.l10n.ui('Keep current trip')),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(
+                        dialogContext,
+                      ).pop(_OngoingTripConflictAction.endAndStart),
+                      child: Text(context.l10n.ui('End & start this one')),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+
+      if (action != _OngoingTripConflictAction.endAndStart) {
+        return; // keep, or dialog dismissed — old trip stays untouched
+      }
+
+      try {
+        await TripStore.instance.endTripByPlan(ongoingTrip.idPlan!);
+      } catch (e) {
+        if (mounted) {
+          _showSnackBar(
+            context.l10n.ui('Could not end trip. Please try again.'),
+          );
+        }
+        return;
+      }
+      if (!mounted) return;
+    }
+
     final DateTime? startAt = widget.plan.startAt;
 
     if (idPlan != null && startAt != null) {
@@ -225,9 +301,15 @@ class _TripResultPageState extends State<TripResultPage> {
 
   @override
   Widget build(BuildContext context) {
+    final AccommodationRecommendation? localAccommodationRecommendation =
+        calculateAccommodationRecommendation(widget.plan.days);
+    final AccommodationRecommendation? accommodationRecommendation =
+        localAccommodationRecommendation ??
+            widget.plan.accommodationRecommendation;
     final days = _convertPlan(
       widget.plan,
       idProvince: widget.plan.cityProvince ?? widget.wizard?.idProvince ?? '',
+      provinceName: widget.wizard?.provinceName ?? 'Vietnam',
     );
     final ThemeData theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
@@ -383,6 +465,13 @@ class _TripResultPageState extends State<TripResultPage> {
                       ],
                     ),
                     const SizedBox(height: 34),
+                    if (accommodationRecommendation != null &&
+                        accommodationRecommendation.zones.isNotEmpty) ...<Widget>[
+                      AccommodationRecommendationCard(
+                        recommendation: accommodationRecommendation,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     Text(
                       context.l10n.ui('Your Itinerary'),
                       style: TextStyle(
@@ -420,6 +509,7 @@ class _TripResultPageState extends State<TripResultPage> {
 List<TripPlannerDayData> _convertPlan(
   TripPlanResponse plan, {
   required String idProvince,
+  required String provinceName,
 }) {
   const gradients = <List<Color>>[
     <Color>[Color(0xFFE9F0FD), Color(0xFFE7FAFD), Color(0xFFD6F7F6)],
@@ -452,7 +542,12 @@ List<TripPlannerDayData> _convertPlan(
         title: p.name.isEmpty ? 'Place ${p.order}' : p.name,
         time: p.startTime ?? _slotToTime(p.slot),
         slot: _capitalizeSlot(p.slot),
-        tag: 'culture',
+        // 'tag' is now only a sentinel ('lunch_break' vs anything else, see
+        // the a.tag != 'lunch_break' filters elsewhere) — real category
+        // chips come from 'tags' below, sourced from the place's actual
+        // place_tag rows, not a hard-coded value.
+        tag: 'place',
+        tags: p.tags,
         description: '',
         distanceLabel: p.estimatedTravelMinutes != null
             ? '~${p.estimatedTravelMinutes} min travel'
@@ -487,6 +582,8 @@ List<TripPlannerDayData> _convertPlan(
       moreActivitiesLabel: count > shown ? '+ ${count - shown} more' : '',
       gradientColors: gradients[i % gradients.length],
       activities: activities,
+      provinceName: provinceName,
+      includeLunchBreak: plan.includeLunchBreak,
     );
   }).toList();
 }

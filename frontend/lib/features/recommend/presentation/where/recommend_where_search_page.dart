@@ -31,6 +31,13 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
   List<RecommendDestination> _allDestinations = <RecommendDestination>[];
   List<RecommendDestination> _results = <RecommendDestination>[];
   bool _isLoading = true;
+  // True whenever _allDestinations is currently mockRecommendDestinations
+  // (getPersonalizedProvinces() failed) rather than real data from the DB.
+  // mock ids are dev placeholder slugs (e.g. 'hochiminh', not a UUID) — see
+  // recommend_mock_data.dart — so anything sourced from this list must never
+  // be allowed to reach CityDetailPage/the API as if it were a real
+  // id_province (see _openDestination()'s guard below).
+  bool _isMockFallback = false;
 
   @override
   void initState() {
@@ -41,14 +48,18 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
 
   Future<void> _loadDestinations() async {
     List<RecommendDestination> destinations;
+    bool isMockFallback = false;
     try {
       destinations = await RecommendRepository().getPersonalizedProvinces();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('RecommendWhereSearchPage: getPersonalizedProvinces failed: $e');
       destinations = mockRecommendDestinations;
+      isMockFallback = true;
     }
     if (!mounted) return;
     setState(() {
       _allDestinations = destinations;
+      _isMockFallback = isMockFallback;
       _results = _filter(widget.initialQuery);
       _isLoading = false;
     });
@@ -76,6 +87,28 @@ class _RecommendWhereSearchPageState extends State<RecommendWhereSearchPage> {
 
   void _openDestination(String destination) {
     if (destination.trim().isEmpty) return;
+
+    // _allDestinations is currently mockRecommendDestinations (dev
+    // placeholder ids, not real UUIDs) because the real fetch failed — see
+    // _loadDestinations(). Navigating from here would build a
+    // CityDetailRequest with a fake id (e.g. 'hochiminh') that CityDetailPage
+    // then sends straight to the province API as if it were a real
+    // id_province, producing an opaque Postgres "invalid input syntax for
+    // type uuid" error deep in a different screen. Block it here instead,
+    // where the actual cause is known.
+    if (_isMockFallback) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.l10n.ui(
+              "Couldn't load destinations. Please check your connection and try again.",
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
     final String normalizedDestination = removeVietnameseDiacritics(
       destination.trim(),
     ).toLowerCase();
