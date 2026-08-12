@@ -2,9 +2,9 @@
   "assessment_date": "2026-07-29",
   "status": "automatic_pilot_complete_human_rating_pending",
   "source_runs": {
-    "ai_search_food": "../pilot-20260729/raw.jsonl",
-    "ai_chat_translation_tts": "../final-20260729/raw.jsonl",
-    "quota_evidence": "../ai-search-final-20260729/raw.jsonl"
+    "ai_search_food": "source-runs/ai-search-pilot.jsonl",
+    "ai_chat_translation_tts": "source-runs/ai-services-final.jsonl",
+    "quota_evidence": "source-runs/ai-search-quota.jsonl"
   },
   "ai_search": {
     "scope": "food_only",

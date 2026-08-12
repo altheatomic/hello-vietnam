@@ -159,11 +159,11 @@ Báo cáo trung bình, độ lệch chuẩn và mức đồng thuận; không th
 
 ## Dữ liệu kiểm chứng
 
-- AI Search lượt sạch: `../pilot-20260729/raw.jsonl` (báo cáo này chỉ dùng 12
-  case `search-food-*`).
-- Chat/Dịch/TTS lượt cuối: `../final-20260729/raw.jsonl`.
-- Bằng chứng quota 429: `../ai-search-final-20260729/raw.jsonl`.
-- Tóm tắt máy đọc: `summary.json`.
+- AI Search lượt sạch: `source-runs/ai-search-pilot.jsonl` (báo cáo này chỉ
+  dùng 12 case `search-food-*`).
+- Chat/Dịch/TTS lượt cuối: `source-runs/ai-services-final.jsonl`.
+- Bằng chứng quota 429: `source-runs/ai-search-quota.jsonl`.
+- Tóm tắt máy đọc: `assessment-summary.json`.
 
 Đánh giá này là **pilot tự động**, chưa phải kết luận cuối cùng của khảo sát
 người dùng.

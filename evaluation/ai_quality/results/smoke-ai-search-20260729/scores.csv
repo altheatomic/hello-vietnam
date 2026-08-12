@@ -1,3 +1,0 @@
-﻿actual_db_id,case_id,confidence,db_match_correct,detected_name,end_to_end_correct,error,expected_db_id,expected_type,feature,human_name_judgment,human_pending,human_summary_usefulness,latency_ms,name_correct,name_similarity,predicted_type,schema_valid,status_code,success,type_correct
-aca8f703-8635-4df4-900c-ace4f4605e91,search-food-01,0.95,False,Bánh ú,False,,2965b48d-a399-47f6-b16b-1332c4f0ec06,food,ai_search,,True,,11749.147,False,0.4,food,True,200,True,True
-1d36de99-7a98-4a36-8ef1-a6ff59cd857f,search-food-02,0.98,True,Bánh Bao,True,,1d36de99-7a98-4a36-8ef1-a6ff59cd857f,food,ai_search,,True,,6037.046,True,1.0,food,True,200,True,True

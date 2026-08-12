@@ -1,9 +1,0 @@
-﻿feature,case_id,model_output,human_name_judgment,human_summary_usefulness,human_factuality,human_relevance,human_groundedness,human_adequacy,human_fluency,human_mos,human_intelligibility,notes
-ai_search,search-food-01,EvaluationHttpError,,,,,,,,,,
-ai_search,search-food-02,EvaluationHttpError,,,,,,,,,,
-ai_chat,chat-01,Tôi sẽ giúp bạn lập lịch trình 3 ngày ở Đà Nẵng.,,,,,,,,,,
-ai_chat,chat-02,I am allergic to seafood.,,,,,,,,,,
-translation,translation-01,Vé vào bảo tàng giá bao nhiêu?,,,,,,,,,,
-translation,translation-02,Tôi bị dị ứng với hải sản.,,,,,,,,,,
-tts,tts-01,https://vbee.vn/s/75bb4ac8-6702-45fa-bf86-fa874b6b71c7/b89b756e-c2bd-40f6-a8db-ffddeeb68007,,,,,,,,,,
-tts,tts-02,https://vbee.vn/s/79f0b32e-be99-431d-aeef-888136da4494/d8da8240-fbc9-458c-a39d-da8e8031579f,,,,,,,,,,
