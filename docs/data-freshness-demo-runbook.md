@@ -89,7 +89,7 @@ from cron.job
 where jobname = 'data-freshness-daily';
 ```
 
-Cron đúng phải có schedule `15 2 * * *` (02:15 UTC). Nếu Vault secret thiếu,
+Cron đúng phải có schedule `15 19 * * *` (19:15 UTC, tức 02:15 giờ Việt Nam). Nếu Vault secret thiếu,
 cron sẽ bỏ qua request một cách an toàn.
 
 > **Quan trọng khi dùng project khác:** migration hiện tại tạo cron với URL
@@ -103,7 +103,7 @@ cron sẽ bỏ qua request một cách an toàn.
 Với project `ziouozppetvvdrzgojcx` đã liên kết trong workspace, kiểm tra ngày
 2026-08-07 cho thấy migration `20260803000100`, `20260806100000` và
 `20260807000100` đã áp dụng; cron `data-freshness-daily` đang active với lịch
-`15 2 * * *`; Vault và Edge Function secret có cùng digest; checker đang
+`15 19 * * *`; Vault và Edge Function secret có cùng digest; checker đang
 `ACTIVE`, `verify_jwt = false`, còn admin API `verify_jwt = true`; database có
 1 tài khoản admin.
 
@@ -313,16 +313,16 @@ Mở `http://localhost:3001/admin/data-freshness` bằng tài khoản admin.
 Trình tự trình bày nên là:
 
 1. Overview cards.
-2. `Dữ liệu stale`: mở row stale và bấm `Kiểm tra lại`.
-3. `Lịch sử chạy`: cho thấy `runId`/status của checker.
-4. `Chờ duyệt`: mở proposal và bấm Approve.
+2. `Stale data`: mở row stale và bấm `Check again`.
+3. `Run history`: cho thấy `runId`/status của checker.
+4. `Pending review`: mở proposal và bấm `Approve`.
 5. Refresh/reopen Explore để cho thấy content đã archive hoặc được xử lý theo
    quyết định admin.
 
 Lưu ý để nói đúng trong demo:
 
-- Nút lớn `Tải lại dữ liệu` chỉ reload dữ liệu trang; nó không trigger checker.
-- Nút `Kiểm tra lại` chỉ đặt row về `due`; checker sẽ xử lý ở lượt chạy tiếp theo.
+- Nút lớn `Refresh data` chỉ reload dữ liệu trang; nó không trigger checker.
+- Nút `Check again` chỉ đặt row về `due`; checker sẽ xử lý ở lượt chạy tiếp theo.
 - Admin page đang quản lý freshness/proposal/report/run history, chưa phải giao
   diện điều khiển Python crawler.
 

@@ -241,21 +241,21 @@ chụp ảnh chỉ phần giao diện cần thiết.
 ### DF-03 — Admin xem báo cáo
 
 - **Tài khoản:** Admin.
-- **Thao tác:** Mở `/admin/data-freshness`, chọn `Báo sai`.
+- **Thao tác:** Mở `/admin/data-freshness`, chọn `Reports`.
 - **Mong đợi:** Report DF-02 hiện đúng loại nội dung, lý do, ghi chú và thời
   gian.
 
 ### DF-04 — Admin xem stale và yêu cầu kiểm tra lại
 
 - **Dữ liệu:** Mục 2.1.
-- **Thao tác:** Chọn `Dữ liệu stale`, nhấn `Kiểm tra lại` trên `<PLACE_STALE>`.
+- **Thao tác:** Chọn `Stale data`, nhấn `Check again` trên `<PLACE_STALE>`.
 - **Mong đợi:** Không lỗi quyền; `next_check_at` được đặt về hiện tại và
   `freshness_status = 'due'`.
 
 ### DF-05 — Admin duyệt proposal và archive
 
 - **Dữ liệu:** Mục 2.2.
-- **Thao tác:** Chọn `Chờ duyệt`, tìm `<PLACE_REVIEW>`, nhấn Approve.
+- **Thao tác:** Chọn `Pending review`, tìm `<PLACE_REVIEW>`, nhấn `Approve`.
 - **Mong đợi:** Proposal thành `approved`, `place.status` thành `archived`,
   địa điểm biến mất khỏi Explore và Trip Planner.
 

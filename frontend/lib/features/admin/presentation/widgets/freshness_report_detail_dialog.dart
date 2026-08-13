@@ -31,10 +31,13 @@ class _FreshnessReportDetailDialogState
     setState(() => _saving = true);
     try {
       await widget.onResolve();
-      if (mounted)
+      if (mounted) {
         setState(() => _report = _report.copyWith(status: 'resolved'));
+      }
     } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted) {
+        setState(() => _saving = false);
+      }
     }
   }
 

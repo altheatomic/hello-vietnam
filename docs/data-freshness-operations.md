@@ -15,7 +15,7 @@ and evidence requirements, see
 - Remediation migration: `backend/supabase/migrations/20260807000100_fix_data_freshness_source_selection.sql`
 - Checker Edge Function: `data-freshness-check`
 - Authenticated report/admin Edge Function: `data-freshness`
-- Cron job: `data-freshness-daily`, scheduled at 02:15 UTC
+- Cron job: `data-freshness-daily`, scheduled at 19:15 UTC (02:15 Vietnam time)
 - Default checker batch: 50 records per run
 - Supabase Vault secret: `data_freshness_check_secret`
 - Edge Function secret: `DATA_FRESHNESS_CHECK_SECRET`

@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(16);
+select plan(18);
 
 select has_table('public', 'content_freshness');
 select has_table('public', 'content_change_proposal');
@@ -51,6 +51,24 @@ select has_column('public', 'activity', 'status');
 select has_column('public', 'culture', 'status');
 select has_column('public', 'local_products', 'status');
 select has_column('public', 'food', 'status');
+select is(
+  (
+    select schedule
+    from cron.job
+    where jobname = 'data-freshness-daily'
+  ),
+  '15 19 * * *',
+  'data freshness runs at 19:15 UTC (02:15 Vietnam time)'
+);
+select like(
+  (
+    select command
+    from cron.job
+    where jobname = 'data-freshness-daily'
+  ),
+  '%invoke_data_freshness_cron()%',
+  'data freshness cron keeps the existing invocation command'
+);
 
 select * from finish();
 
