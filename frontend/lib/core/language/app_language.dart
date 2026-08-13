@@ -588,11 +588,14 @@ class AppStrings {
     'Subtotal': 'Tạm tính',
     'Total': 'Tổng cộng',
     'Enter voucher code': 'Nhập mã voucher',
-    'Select your payment method:': 'Chọn phương thức thanh toán:',
+    'Payment provider': 'Cổng thanh toán',
+    'Stripe Sandbox Checkout': 'Thanh toán thử nghiệm qua Stripe',
+    'Choose an eligible card or wallet securely on Stripe.':
+        'Chọn thẻ hoặc ví điện tử đủ điều kiện một cách bảo mật trên Stripe.',
+    'Stripe Sandbox': 'Stripe thử nghiệm',
     'Premium subscription': 'Gói Premium',
     'Select or enter voucher code': 'Chọn hoặc nhập mã ưu đãi',
     'Remove': 'Xóa',
-    'Add another payment method': 'Thêm phương thức thanh toán khác',
     'Select Voucher': 'Chọn mã ưu đãi',
     'Available Vouchers': 'Mã ưu đãi hiện có',
     'Or enter code manually': 'Hoặc nhập mã thủ công',
@@ -619,8 +622,6 @@ class AppStrings {
     'months': 'tháng',
     'Discount applied': 'Đã áp dụng giảm giá',
     'Total Amount': 'Tổng thanh toán',
-    'Payment Method': 'Phương thức thanh toán',
-    'Change': 'Đổi',
     'Important Information': 'Thông tin quan trọng',
     'TEST MODE · No real charge': 'CHẾ ĐỘ THỬ NGHIỆM · Không thu tiền thật',
     'This is a one-time sandbox payment. Premium access does not renew automatically.':
@@ -649,8 +650,6 @@ class AppStrings {
     'Premium Benefits Activated': 'Quyền lợi Premium đã kích hoạt',
     'Personalized Itinerary Generator': 'Tạo lịch trình cá nhân hóa',
     'Exclusive Vouchers & Coupons': 'Mã ưu đãi & coupon độc quyền',
-    'Download Receipt': 'Tải biên lai',
-    'Receipt download is coming soon.': 'Tính năng tải biên lai sẽ sớm có.',
     'Go to Home': 'Về trang chủ',
     'Reward': 'Phần thưởng',
     'Available Points': 'Điểm hiện có',
@@ -751,7 +750,7 @@ class AppStrings {
     'Pick one option below to continue': 'Chọn một mức để tiếp tục',
     'Do you want a lunch break?': 'Bạn có muốn nghỉ trưa không?',
     'We can reserve a 90-minute midday break and suggest nearby '
-        'restaurants, or skip it and keep exploring instead.':
+            'restaurants, or skip it and keep exploring instead.':
         'Chúng tôi có thể giữ 90 phút nghỉ trưa và gợi ý nhà hàng gần đó, '
         'hoặc bỏ qua để tiếp tục khám phá.',
     'Yes, reserve lunch time': 'Có, giữ thời gian nghỉ trưa',
@@ -759,7 +758,7 @@ class AppStrings {
         'Giữ khoảng nghỉ trưa và xem gợi ý nhà hàng gần đó.',
     'No, keep exploring': 'Không, tiếp tục khám phá',
     'Skip the midday break so the day can fit more activities '
-        'or end earlier.':
+            'or end earlier.':
         'Bỏ qua nghỉ trưa để lịch trình có thêm hoạt động hoặc kết thúc '
         'sớm hơn.',
     'Generate': 'Tạo lịch trình',
@@ -1127,7 +1126,7 @@ class AppStrings {
     'Not enough places found for your selection. Try selecting more '
             'interests (step 4) or fewer days (step 3).':
         'Không đủ địa điểm phù hợp với lựa chọn của bạn. Hãy thử chọn thêm '
-            'sở thích (bước 4) hoặc giảm số ngày (bước 3).',
+        'sở thích (bước 4) hoặc giảm số ngày (bước 3).',
     'Could not generate your trip. Please try again.':
         'Không thể tạo chuyến đi. Vui lòng thử lại.',
     'Destinations': 'Điểm đến',

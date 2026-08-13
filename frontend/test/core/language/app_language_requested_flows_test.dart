@@ -44,6 +44,13 @@ void main() {
     'Loading wishlist': 'Đang tải danh sách yêu thích',
     'Load wishlist failed.': 'Không tải được danh sách yêu thích.',
     'Sign in': 'Đăng nhập',
+
+    // Premium payment.
+    'Payment provider': 'Cổng thanh toán',
+    'Stripe Sandbox Checkout': 'Thanh toán thử nghiệm qua Stripe',
+    'Choose an eligible card or wallet securely on Stripe.':
+        'Chọn thẻ hoặc ví điện tử đủ điều kiện một cách bảo mật trên Stripe.',
+    'Stripe Sandbox': 'Stripe thử nghiệm',
   };
 
   test('localizes requested flows in Vietnamese', () {
