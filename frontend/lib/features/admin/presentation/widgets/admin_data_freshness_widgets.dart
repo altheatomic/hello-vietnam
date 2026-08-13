@@ -12,11 +12,11 @@ class AdminFreshnessOverviewCards extends StatelessWidget {
       ('Due / stale', overview.due, Icons.schedule),
       ('Pending', overview.pending, Icons.rate_review_outlined),
       (
-        'Tự hết hạn hôm nay',
+        'Auto-expired today',
         overview.autoExpiredToday,
         Icons.event_busy_outlined,
       ),
-      ('Run lỗi', overview.failedRuns, Icons.error_outline),
+      ('Failed runs', overview.failedRuns, Icons.error_outline),
     ];
     return Wrap(
       spacing: 12,
@@ -112,15 +112,15 @@ class AdminFreshnessProposalCard extends StatelessWidget {
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Xác nhận'),
+                      : const Text('Approve'),
                 ),
                 OutlinedButton(
                   onPressed: onReject,
-                  child: const Text('Giữ hoạt động'),
+                  child: const Text('Keep active'),
                 ),
                 TextButton(
                   onPressed: onCheckAgain,
-                  child: const Text('Kiểm tra lại'),
+                  child: const Text('Check again'),
                 ),
               ],
             ),
@@ -153,7 +153,7 @@ class AdminFreshnessReportCard extends StatelessWidget {
         children: <Widget>[
           TextButton(
             onPressed: onOpenDetails,
-            child: const Text('Xem chi tiết'),
+            child: const Text('View details'),
           ),
         ],
       ),
@@ -185,7 +185,7 @@ class AdminFreshnessStaleCard extends StatelessWidget {
       ),
       trailing: TextButton(
         onPressed: onCheckAgain,
-        child: const Text('Kiểm tra lại'),
+        child: const Text('Check again'),
       ),
     ),
   );

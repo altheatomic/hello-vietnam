@@ -17,10 +17,12 @@ class FreshnessReportDetailDialog extends StatefulWidget {
   final Future<void> Function() onResolve;
 
   @override
-  State<FreshnessReportDetailDialog> createState() => _FreshnessReportDetailDialogState();
+  State<FreshnessReportDetailDialog> createState() =>
+      _FreshnessReportDetailDialogState();
 }
 
-class _FreshnessReportDetailDialogState extends State<FreshnessReportDetailDialog> {
+class _FreshnessReportDetailDialogState
+    extends State<FreshnessReportDetailDialog> {
   late AdminFreshnessReport _report = widget.report;
   bool _saving = false;
 
@@ -29,7 +31,8 @@ class _FreshnessReportDetailDialogState extends State<FreshnessReportDetailDialo
     setState(() => _saving = true);
     try {
       await widget.onResolve();
-      if (mounted) setState(() => _report = _report.copyWith(status: 'resolved'));
+      if (mounted)
+        setState(() => _report = _report.copyWith(status: 'resolved'));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -66,24 +69,24 @@ class _FreshnessReportDetailDialogState extends State<FreshnessReportDetailDialo
                     children: <Widget>[
                       _Reporter(report: _report),
                       const SizedBox(height: 20),
-                      const _SectionLabel('LOẠI VẤN ĐỀ'),
+                      const _SectionLabel('ISSUE TYPE'),
                       const SizedBox(height: 8),
                       _IssueChip(reason: _report.reason),
                       const SizedBox(height: 20),
-                      const _SectionLabel('MỤC BỊ ẢNH HƯỞNG'),
+                      const _SectionLabel('AFFECTED ITEM'),
                       const SizedBox(height: 8),
                       _InfoBlock(
                         icon: Icons.place_outlined,
-                        title: _report.contentType ?? 'Không rõ loại nội dung',
-                        subtitle: _report.contentId ?? 'Không rõ mã nội dung',
+                        title: _report.contentType ?? 'Unknown content type',
+                        subtitle: _report.contentId ?? 'Unknown content ID',
                       ),
                       const SizedBox(height: 20),
-                      const _SectionLabel('MÔ TẢ'),
+                      const _SectionLabel('DESCRIPTION'),
                       const SizedBox(height: 8),
                       _Description(
                         _report.note?.trim().isNotEmpty == true
                             ? _report.note!.trim()
-                            : 'Không có mô tả.',
+                            : 'No description provided.',
                       ),
                     ],
                   ),
@@ -121,7 +124,7 @@ class _Header extends StatelessWidget {
     child: Row(
       children: <Widget>[
         const Text(
-          'Chi tiết báo sai',
+          'Report details',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -130,7 +133,7 @@ class _Header extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         const Text(
-          'Báo sai',
+          'Report',
           style: TextStyle(fontSize: 13, color: Color(0xFF62748E)),
         ),
         const SizedBox(width: 12),
@@ -142,9 +145,13 @@ class _Header extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: 'Đóng',
+          tooltip: 'Close',
           onPressed: onClose,
-          icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF90A1B9)),
+          icon: const Icon(
+            Icons.close_rounded,
+            size: 20,
+            color: Color(0xFF90A1B9),
+          ),
         ),
       ],
     ),
@@ -174,15 +181,22 @@ class _Reporter extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const Text('Người báo cáo', style: TextStyle(fontSize: 14, color: Color(0xFF62748E))),
-              const SizedBox(height: 2),
-              Text(
-                report.reporterName ?? 'Không rõ người dùng',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF0F172B)),
+              const Text(
+                'Reporter',
+                style: TextStyle(fontSize: 14, color: Color(0xFF62748E)),
               ),
               const SizedBox(height: 2),
               Text(
-                report.reporterEmail ?? 'Báo sai dữ liệu',
+                report.reporterName ?? 'Unknown user',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0F172B),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                report.reporterEmail ?? 'Data issue report',
                 style: const TextStyle(fontSize: 14, color: Color(0xFF62748E)),
               ),
             ],
@@ -229,14 +243,25 @@ class _IssueChip extends StatelessWidget {
       children: <Widget>[
         const Icon(Icons.flag_outlined, size: 20, color: Color(0xFFEF4444)),
         const SizedBox(width: 10),
-        Text(reason, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF0F172B))),
+        Text(
+          reason,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF0F172B),
+          ),
+        ),
       ],
     ),
   );
 }
 
 class _InfoBlock extends StatelessWidget {
-  const _InfoBlock({required this.icon, required this.title, required this.subtitle});
+  const _InfoBlock({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
 
   final IconData icon;
   final String title;
@@ -258,9 +283,18 @@ class _InfoBlock extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172B))),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0F172B),
+                ),
+              ),
               const SizedBox(height: 3),
-              SelectableText(subtitle, style: const TextStyle(color: Color(0xFF62748E))),
+              SelectableText(
+                subtitle,
+                style: const TextStyle(color: Color(0xFF62748E)),
+              ),
             ],
           ),
         ),
@@ -283,12 +317,24 @@ class _Description extends StatelessWidget {
       borderRadius: BorderRadius.circular(10),
       border: Border.all(color: const Color(0xFFF1F5F9)),
     ),
-    child: Text(text, style: const TextStyle(fontSize: 14, height: 1.5, color: Color(0xFF334155))),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        height: 1.5,
+        color: Color(0xFF334155),
+      ),
+    ),
   );
 }
 
 class _Footer extends StatelessWidget {
-  const _Footer({required this.onClose, required this.onEdit, required this.onResolve, required this.saving});
+  const _Footer({
+    required this.onClose,
+    required this.onEdit,
+    required this.onResolve,
+    required this.saving,
+  });
 
   final VoidCallback onClose;
   final VoidCallback? onEdit;
@@ -298,21 +344,31 @@ class _Footer extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.fromLTRB(24, 14, 24, 18),
-    decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFF1F5F9)))),
+    decoration: const BoxDecoration(
+      border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+    ),
     child: Wrap(
       alignment: WrapAlignment.end,
       spacing: 10,
       runSpacing: 8,
       children: <Widget>[
-        OutlinedButton.icon(onPressed: onEdit, icon: const Icon(Icons.edit_outlined, size: 16), label: const Text('Chỉnh sửa')),
+        OutlinedButton.icon(
+          onPressed: onEdit,
+          icon: const Icon(Icons.edit_outlined, size: 16),
+          label: const Text('Edit item'),
+        ),
         OutlinedButton.icon(
           onPressed: saving ? null : () => onResolve(),
           icon: saving
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Icon(Icons.check_circle_outline, size: 16),
-          label: const Text('Đã xử lý'),
+          label: const Text('Mark resolved'),
         ),
-        TextButton(onPressed: onClose, child: const Text('Đóng')),
+        TextButton(onPressed: onClose, child: const Text('Close')),
       ],
     ),
   );
@@ -333,7 +389,11 @@ class _StatusBadge extends StatelessWidget {
     ),
     child: Text(
       status == 'open' ? 'pending' : status,
-      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1D4ED8)),
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF1D4ED8),
+      ),
     ),
   );
 }

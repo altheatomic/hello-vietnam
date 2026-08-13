@@ -45,10 +45,10 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
   String? _processingProposal;
 
   static const List<String> _tabs = <String>[
-    'Chờ duyệt',
-    'Báo sai',
-    'Dữ liệu stale',
-    'Lịch sử chạy',
+    'Pending review',
+    'Reports',
+    'Stale data',
+    'Run history',
   ];
 
   @override
@@ -106,11 +106,11 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
                     ),
                   ),
                 ),
-                  FilledButton.icon(
-                    onPressed: _loading ? null : _reload,
-                    icon: const Icon(Icons.update_rounded),
-                    label: const Text('Tải lại dữ liệu'),
-                  ),
+                FilledButton.icon(
+                  onPressed: _loading ? null : _reload,
+                  icon: const Icon(Icons.update_rounded),
+                  label: const Text('Refresh data'),
+                ),
               ],
             ),
             const SizedBox(height: 18),
@@ -153,7 +153,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
     switch (_tab) {
       case 1:
         return _reports.items.isEmpty
-            ? const AdminFreshnessEmptyState(label: 'Chưa có báo sai đang mở.')
+            ? const AdminFreshnessEmptyState(label: 'No open reports.')
             : Column(
                 children: _reports.items
                     .map(
@@ -166,9 +166,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
               );
       case 2:
         return _stale.items.isEmpty
-            ? const AdminFreshnessEmptyState(
-                label: 'Không có dữ liệu stale cần hiển thị.',
-              )
+            ? const AdminFreshnessEmptyState(label: 'No stale data to display.')
             : Column(
                 children: _stale.items
                     .map(
@@ -181,7 +179,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
               );
       case 3:
         return _runs.items.isEmpty
-            ? const AdminFreshnessEmptyState(label: 'Chưa có lịch sử chạy.')
+            ? const AdminFreshnessEmptyState(label: 'No run history yet.')
             : Column(
                 children: _runs.items
                     .map(
@@ -193,7 +191,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
       default:
         return _queue.items.isEmpty
             ? const AdminFreshnessEmptyState(
-                label: 'Không có đề xuất chờ duyệt.',
+                label: 'No proposals awaiting review.',
               )
             : Column(
                 children: _queue.items
@@ -283,7 +281,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Không thể cập nhật trạng thái báo sai: $error')),
+            SnackBar(content: Text('Could not update report status: $error')),
           );
         }
       }
@@ -304,9 +302,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
     );
   }
 
-  Future<void> _resolveReport(
-    AdminFreshnessReport report,
-  ) async {
+  Future<void> _resolveReport(AdminFreshnessReport report) async {
     try {
       await _repository.updateReportStatus(
         reportId: report.id,
@@ -316,7 +312,7 @@ class _AdminDataFreshnessPageState extends State<AdminDataFreshnessPage> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Không thể xử lý báo sai: $error')),
+          SnackBar(content: Text('Could not resolve report: $error')),
         );
       }
     }
@@ -348,7 +344,7 @@ class _ErrorRetry extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     children: <Widget>[
       Expanded(child: Text(message)),
-      TextButton(onPressed: onRetry, child: const Text('Thử lại')),
+      TextButton(onPressed: onRetry, child: const Text('Retry')),
     ],
   );
 }

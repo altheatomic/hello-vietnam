@@ -5,7 +5,7 @@ import 'package:hellovietnam/features/admin/domain/admin_data_freshness.dart';
 import 'package:hellovietnam/features/admin/presentation/pages/admin_data_freshness_page.dart';
 
 void main() {
-  testWidgets('renders the four freshness queue tabs and a proposal diff', (
+  testWidgets('renders the admin freshness workflow entirely in English', (
     tester,
   ) async {
     final _FakeRepository repository = _FakeRepository();
@@ -14,12 +14,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Chờ duyệt'), findsOneWidget);
-    expect(find.text('Báo sai'), findsOneWidget);
-    expect(find.text('Dữ liệu stale'), findsOneWidget);
-    expect(find.text('Lịch sử chạy'), findsOneWidget);
-    expect(find.text('Tải lại dữ liệu'), findsOneWidget);
-    expect(find.text('Kiểm tra ngay'), findsNothing);
+    expect(find.text('Pending review'), findsOneWidget);
+    expect(find.text('Reports'), findsOneWidget);
+    expect(find.text('Stale data'), findsOneWidget);
+    expect(find.text('Run history'), findsOneWidget);
+    expect(find.text('Refresh data'), findsOneWidget);
+    expect(find.text('Auto-expired today'), findsOneWidget);
+    expect(find.text('Failed runs'), findsOneWidget);
+    expect(find.text('Approve'), findsOneWidget);
+    expect(find.text('Keep active'), findsOneWidget);
+    expect(find.text('Check again'), findsOneWidget);
+    expect(find.text('Chờ duyệt'), findsNothing);
+    expect(find.text('Tải lại dữ liệu'), findsNothing);
     expect(find.text('Old Street'), findsOneWidget);
     expect(find.text('New Street'), findsOneWidget);
   });
@@ -41,12 +47,20 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Báo sai'));
+    await tester.tap(find.text('Reports'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Xem chi tiết'));
+    await tester.tap(find.text('View details'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Chi tiết báo sai'), findsOneWidget);
+    expect(find.text('Report details'), findsOneWidget);
+    expect(find.text('ISSUE TYPE'), findsOneWidget);
+    expect(find.text('AFFECTED ITEM'), findsOneWidget);
+    expect(find.text('DESCRIPTION'), findsOneWidget);
+    expect(find.text('Reporter'), findsOneWidget);
+    expect(find.text('Edit item'), findsOneWidget);
+    expect(find.text('Mark resolved'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
+    expect(find.text('Chi tiết báo sai'), findsNothing);
     expect(find.textContaining('activity-1'), findsOneWidget);
     expect(find.text('The event has ended.').last, findsOneWidget);
   });
