@@ -105,6 +105,82 @@ void main() {
     expect(find.byKey(const Key('upgrade-continue')), findsOneWidget);
   });
 
+  testWidgets('payment flow delegates eligible methods to Stripe Checkout', (
+    WidgetTester tester,
+  ) async {
+    final PremiumEntitlementController controller =
+        PremiumEntitlementController(
+          loadSubscription: () async => null,
+          currentUserId: () => 'user-1',
+        );
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UpgradePaymentPage(
+          planId: '6m',
+          repository: _FakePaymentRepository(),
+          entitlementController: controller,
+          awardPurchase: (_) async {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Stripe Sandbox Checkout'), findsOneWidget);
+    expect(
+      find.text('Choose an eligible card or wallet securely on Stripe.'),
+      findsOneWidget,
+    );
+    expect(find.text('G Pay'), findsNothing);
+    expect(find.text('VISA'), findsNothing);
+    expect(find.text('Add another payment method'), findsNothing);
+    expect(find.text('Select your payment method:'), findsNothing);
+
+    final ElevatedButton continueButton = tester.widget<ElevatedButton>(
+      find.byKey(const Key('payment-continue')),
+    );
+    expect(continueButton.onPressed, isNotNull);
+    await tester.tap(find.byKey(const Key('payment-continue')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Confirm Payment'), findsWidgets);
+    expect(find.text('Payment provider'), findsOneWidget);
+    expect(find.text('Stripe Sandbox Checkout'), findsOneWidget);
+    expect(find.text('Change'), findsNothing);
+  });
+
+  testWidgets('returned checkout reports Stripe without fake receipt action', (
+    WidgetTester tester,
+  ) async {
+    final PremiumEntitlementController controller =
+        PremiumEntitlementController(
+          loadSubscription: () async => activeSubscription(),
+          currentUserId: () => 'user-1',
+        );
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UpgradePaymentPage(
+          planId: '6m',
+          checkoutSessionId: 'cs_test_123',
+          repository: _FakePaymentRepository(),
+          entitlementController: controller,
+          awardPurchase: (_) async {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Stripe Sandbox'), 300);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Stripe Sandbox'), findsOneWidget);
+    expect(find.text('VISA'), findsNothing);
+    expect(find.text('G Pay'), findsNothing);
+    expect(find.text('Download Receipt'), findsNothing);
+  });
+
   testWidgets('payment result survives entitlement verification failure', (
     WidgetTester tester,
   ) async {

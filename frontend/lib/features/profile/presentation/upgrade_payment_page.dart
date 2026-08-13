@@ -34,20 +34,6 @@ Color _paymentBorder(BuildContext context) => _paymentIsDark(context)
     ? Colors.white.withValues(alpha: 0.10)
     : const Color(0xFFE5E7EB);
 
-class _PaymentMethod {
-  const _PaymentMethod({
-    required this.id,
-    required this.label,
-    required this.icon,
-    this.iconColor = AppColors.textPrimary,
-  });
-
-  final String id;
-  final String label;
-  final IconData icon;
-  final Color iconColor;
-}
-
 class _VoucherOption {
   const _VoucherOption({
     required this.code,
@@ -99,7 +85,6 @@ class _VoucherOption {
 class _PaymentFlowData {
   const _PaymentFlowData({
     required this.plan,
-    required this.method,
     required this.discountMinor,
     required this.finalAmountMinor,
     this.voucherCode,
@@ -107,7 +92,6 @@ class _PaymentFlowData {
   });
 
   final SubscriptionPlanInfo plan;
-  final _PaymentMethod method;
   final String? voucherCode;
   final int discountMinor;
   final int finalAmountMinor;
@@ -138,21 +122,6 @@ class UpgradePaymentPage extends StatefulWidget {
 }
 
 class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
-  static const List<_PaymentMethod> _methods = <_PaymentMethod>[
-    _PaymentMethod(
-      id: 'visa',
-      label: 'VISA',
-      icon: Icons.credit_card_rounded,
-      iconColor: Color(0xFFFFD166),
-    ),
-    _PaymentMethod(
-      id: 'gpay',
-      label: 'G Pay',
-      icon: Icons.phone_iphone_rounded,
-      iconColor: Color(0xFF111827),
-    ),
-  ];
-
   late final SubscriptionRepository _repository;
   late final PremiumEntitlementController _entitlementController;
   late final SubscriptionPurchaseAwarder _awardPurchase;
@@ -161,7 +130,6 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
   late Future<SubscriptionPlanInfo> _planFuture;
   SubscriptionPlanInfo? _plan;
   VoucherPreview? _voucherPreview;
-  String? _selectedMethodId = 'visa';
   String? _pendingCheckoutSessionId;
   bool _checkoutSyncFailed = false;
   bool _isConfirmingCheckout = false;
@@ -211,15 +179,11 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
       await _awardSubscriptionPurchase(result);
       await _entitlementController.refresh(force: true);
       if (!mounted) return;
-      final _PaymentMethod method = _methods.firstWhere(
-        (_PaymentMethod item) => item.id == 'visa',
-      );
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => _PaymentSuccessPage(
             data: _PaymentFlowData(
               plan: plan,
-              method: method,
               voucherCode: result.voucherCode,
               discountMinor: result.discountMinor,
               finalAmountMinor: result.finalAmountMinor,
@@ -313,13 +277,6 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
   }
 
   void _continueToConfirmation(SubscriptionPlanInfo plan) {
-    final String? methodId = _selectedMethodId;
-    if (methodId == null) return;
-
-    final _PaymentMethod method = _methods.firstWhere(
-      (_PaymentMethod item) => item.id == methodId,
-      orElse: () => _methods.first,
-    );
     final int discount = _voucherPreview?.discountMinor ?? 0;
     final int finalAmount = plan.priceMinor - discount;
     Navigator.of(context).push(
@@ -327,7 +284,6 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
         builder: (_) => _PaymentConfirmationPage(
           data: _PaymentFlowData(
             plan: plan,
-            method: method,
             voucherCode: _voucherPreview?.code,
             discountMinor: discount,
             finalAmountMinor: finalAmount,
@@ -416,7 +372,7 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                             padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
                             children: <Widget>[
                               Text(
-                                context.l10n.ui('Select your payment method:'),
+                                context.l10n.ui('Payment provider'),
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
@@ -438,17 +394,7 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                                 onRemove: _removeVoucher,
                               ),
                               const SizedBox(height: 12),
-                              ..._methods.map(
-                                (method) => _PaymentCard(
-                                  method: method,
-                                  isSelected: method.id == _selectedMethodId,
-                                  onTap: () => setState(
-                                    () => _selectedMethodId = method.id,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              const _AddPaymentMethodCard(),
+                              const _StripeCheckoutProviderCard(),
                             ],
                           );
                         },
@@ -464,7 +410,7 @@ class _UpgradePaymentPageState extends State<UpgradePaymentPage> {
                   height: 54,
                   child: ElevatedButton(
                     key: const Key('payment-continue'),
-                    onPressed: _selectedMethodId == null || _plan == null
+                    onPressed: _plan == null
                         ? null
                         : () => _continueToConfirmation(_plan!),
                     style: ElevatedButton.styleFrom(
@@ -863,176 +809,45 @@ class _VoucherApplyCard extends StatelessWidget {
   }
 }
 
-class _PaymentCard extends StatelessWidget {
-  const _PaymentCard({
-    required this.method,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final _PaymentMethod method;
-  final bool isSelected;
-  final VoidCallback onTap;
+class _StripeCheckoutProviderCard extends StatelessWidget {
+  const _StripeCheckoutProviderCard();
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = _paymentIsDark(context);
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: AppConstants.defaultAnimation,
-        margin: const EdgeInsets.only(bottom: 10),
-        height: 68,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark
-                    ? const Color(0xFF12384A).withValues(alpha: 0.86)
-                    : const Color(0xFFD9F2FF).withValues(alpha: 0.82))
-              : _paymentSurface(context),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF10C4DA)
-                : _paymentBorder(context),
-            width: isSelected ? 2.0 : 1,
-          ),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.10),
-              blurRadius: 14,
-              offset: const Offset(0, 7),
-            ),
-          ],
-        ),
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: method.id == 'gpay'
-                    ? (isDark
-                          ? Colors.white.withValues(alpha: 0.10)
-                          : const Color(0xFFF3F4F6))
-                    : null,
-                gradient: method.id == 'visa'
-                    ? const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: <Color>[Color(0xFF00C7DF), Color(0xFF4AA8FF)],
-                      )
-                    : null,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Icon(
-                method.icon,
-                size: 27,
-                color: isDark && method.id == 'gpay'
-                    ? _paymentText(context)
-                    : method.iconColor,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Text(
-              method.label,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: _paymentText(context),
-              ),
-            ),
-            const Spacer(),
-            _PaymentSelectionIndicator(isSelected: isSelected),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PaymentSelectionIndicator extends StatelessWidget {
-  const _PaymentSelectionIndicator({required this.isSelected});
-
-  final bool isSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isDark = _paymentIsDark(context);
-
-    if (isSelected) {
-      return Container(
-        width: 36,
-        height: 36,
-        decoration: const BoxDecoration(
-          color: Color(0xFF10C4DA),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.check_rounded, color: Colors.white, size: 25),
-      );
-    }
-
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.28)
-              : const Color(0xFFA8B0BE),
-          width: 2,
-        ),
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : const Color(0xFFE5E7EB),
-      ),
-    );
-  }
-}
-
-class _AddPaymentMethodCard extends StatelessWidget {
-  const _AddPaymentMethodCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isDark = _paymentIsDark(context);
-
-    return Container(
-      height: 46,
-      decoration: BoxDecoration(
-        color: _paymentSurface(context),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _paymentBorder(context)),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.10),
-            blurRadius: 14,
-            offset: const Offset(0, 7),
-          ),
-        ],
-      ),
+    return _GlassPanel(
+      padding: const EdgeInsets.all(16),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Flexible(
-            child: Text(
-              context.l10n.ui('Add another payment method'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: _paymentText(context),
-              ),
-            ),
+          const _GradientIconBox(
+            icon: Icons.lock_outline_rounded,
+            iconColor: Color(0xFFFFD166),
           ),
-          const SizedBox(width: 10),
-          Icon(
-            Icons.chevron_right_rounded,
-            size: 22,
-            color: _paymentMuted(context),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  context.l10n.ui('Stripe Sandbox Checkout'),
+                  style: TextStyle(
+                    color: _paymentText(context),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  context.l10n.ui(
+                    'Choose an eligible card or wallet securely on Stripe.',
+                  ),
+                  style: TextStyle(
+                    color: _paymentMuted(context),
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1650,7 +1465,6 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
     if (!mounted) return;
     final _PaymentFlowData successData = _PaymentFlowData(
       plan: widget.data.plan,
-      method: widget.data.method,
       voucherCode: result.voucherCode ?? widget.data.voucherCode,
       discountMinor: result.discountMinor,
       finalAmountMinor: result.finalAmountMinor,
@@ -1772,10 +1586,16 @@ class _PaymentConfirmationPageState extends State<_PaymentConfirmationPage> {
                   months: months,
                 ),
                 const SizedBox(height: 16),
-                _ConfirmPaymentMethodCard(
-                  method: data.method,
-                  onChange: () => Navigator.of(context).pop(),
+                Text(
+                  context.l10n.ui('Payment provider'),
+                  style: TextStyle(
+                    color: _paymentText(context),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
+                const SizedBox(height: 10),
+                const _StripeCheckoutProviderCard(),
                 const SizedBox(height: 16),
                 const _ImportantInfoCard(),
                 const SizedBox(height: 22),
@@ -2038,95 +1858,6 @@ class _ConfirmationSummaryCard extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ConfirmPaymentMethodCard extends StatelessWidget {
-  const _ConfirmPaymentMethodCard({
-    required this.method,
-    required this.onChange,
-  });
-
-  final _PaymentMethod method;
-  final VoidCallback onChange;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color text = _paymentText(context);
-    final Color muted = _paymentMuted(context);
-
-    return _GlassPanel(
-      child: Row(
-        children: <Widget>[
-          _PaymentMethodIcon(method: method, size: 48),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  context.l10n.ui('Payment Method'),
-                  style: TextStyle(color: muted, fontSize: 13),
-                ),
-                Text(
-                  method.label,
-                  style: TextStyle(color: text, fontWeight: FontWeight.w800),
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: onChange,
-            child: Text(
-              context.l10n.ui('Change'),
-              style: const TextStyle(
-                color: Color(0xFF2EB9F8),
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PaymentMethodIcon extends StatelessWidget {
-  const _PaymentMethodIcon({required this.method, this.size = 72});
-
-  final _PaymentMethod method;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isDark = _paymentIsDark(context);
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: method.id == 'gpay'
-            ? (isDark
-                  ? Colors.white.withValues(alpha: 0.10)
-                  : const Color(0xFFF3F4F6))
-            : null,
-        gradient: method.id == 'visa'
-            ? const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: <Color>[Color(0xFF00C7DF), Color(0xFF4AA8FF)],
-              )
-            : null,
-        borderRadius: BorderRadius.circular(size * 0.3),
-      ),
-      child: Icon(
-        method.icon,
-        size: size * 0.53,
-        color: isDark && method.id == 'gpay'
-            ? _paymentText(context)
-            : method.iconColor,
       ),
     );
   }
@@ -2484,22 +2215,6 @@ class _PaymentSuccessPage extends StatelessWidget {
               validUntilLabel: _dateLabel(validUntil),
               formatMoney: formatMoney,
             ),
-            const SizedBox(height: 28),
-            _SecondaryActionButton(
-              icon: Icons.download_rounded,
-              label: context.l10n.ui('Download Receipt'),
-              onTap: () {
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        context.l10n.ui('Receipt download is coming soon.'),
-                      ),
-                    ),
-                  );
-              },
-            ),
             const SizedBox(height: 18),
             SizedBox(
               height: 64,
@@ -2626,7 +2341,7 @@ class _SuccessTransactionCard extends StatelessWidget {
             bgColor: Color(0xFFDDF7FF),
             label: 'Amount Paid',
             value: formatMoney(data.finalAmountMinor),
-            trailing: data.method.label,
+            trailing: context.l10n.ui('Stripe Sandbox'),
             valueColor: const Color(0xFF35B7F0),
           ),
           if (data.discountMinor > 0)
@@ -2833,52 +2548,6 @@ class _BenefitsActivatedCard extends StatelessWidget {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _SecondaryActionButton extends StatelessWidget {
-  const _SecondaryActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isDark = _paymentIsDark(context);
-
-    return Material(
-      color: _paymentSurface(context),
-      borderRadius: BorderRadius.circular(18),
-      elevation: 8,
-      shadowColor: Colors.black.withValues(alpha: isDark ? 0.24 : 0.10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: SizedBox(
-          height: 58,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Icon(icon, color: _paymentText(context), size: 26),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  color: _paymentText(context),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
